@@ -53,6 +53,7 @@ type MsgType string
 
 const (
 	MsgTypeText  = MsgType("T")
+	MsgTypeOptIn = MsgType("O")
 	MsgTypeVoice = MsgType("V")
 )
 
@@ -271,7 +272,7 @@ func NewOutgoingOptInMsg(rt *runtime.Runtime, session *Session, flow *Flow, optI
 	m.Direction = DirectionOut
 	m.Status = MsgStatusQueued
 	m.Visibility = VisibilityVisible
-	m.MsgType = MsgTypeText
+	m.MsgType = MsgTypeOptIn
 	m.MsgCount = 1
 	m.CreatedOn = createdOn
 
