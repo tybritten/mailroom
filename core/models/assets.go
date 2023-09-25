@@ -196,22 +196,21 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	}
 
 	if prev == nil || refresh&RefreshFields > 0 {
-		userFields, systemFields, err := loadFields(ctx, db, orgID)
+		fields, err := loadAssetType(ctx, db, orgID, "fields", loadFields)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error loading field assets for org %d", orgID)
 		}
-		oa.fields = userFields
-		oa.fieldsByUUID = make(map[assets.FieldUUID]*Field, len(userFields)+len(systemFields))
-		oa.fieldsByKey = make(map[string]*Field, len(userFields)+len(systemFields))
-		for _, f := range userFields {
+		oa.fields = make([]assets.Field, 0, len(fields))
+		oa.fieldsByUUID = make(map[assets.FieldUUID]*Field, len(fields))
+		oa.fieldsByKey = make(map[string]*Field, len(fields))
+		for _, f := range fields {
 			field := f.(*Field)
 			oa.fieldsByUUID[field.UUID()] = field
 			oa.fieldsByKey[field.Key()] = field
-		}
-		for _, f := range systemFields {
-			field := f.(*Field)
-			oa.fieldsByUUID[field.UUID()] = field
-			oa.fieldsByKey[field.Key()] = field
+
+			if !field.System() {
+				oa.fields = append(oa.fields, f)
+			}
 		}
 	} else {
 		oa.fields = prev.fields
