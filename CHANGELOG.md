@@ -1,3 +1,12 @@
+v8.3.23 (2023-09-25)
+-------------------------
+ * Fix loading of channel features and queuing of optin messages
+ * Use optin msg type
+ * Update to latest goflow
+ * Simplify loading org assets of different types
+ * Replace more logrus with slog
+ * Use optin on broadcast to set urn_auth when queueing to courier
+
 v8.3.22 (2023-09-22)
 -------------------------
  * Switch to go 1.21 and start switching to slog
