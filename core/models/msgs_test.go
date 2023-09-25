@@ -152,7 +152,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		expectedChannelID := models.NilChannelID
 		if tc.Channel != nil {
 			ch = oa.ChannelByUUID(tc.Channel.UUID)
-			chRef = ch.ChannelReference()
+			chRef = ch.Reference()
 			expectedChannelID = ch.ID()
 		}
 
@@ -486,7 +486,7 @@ func TestNewOutgoingIVR(t *testing.T) {
 
 	createdOn := time.Date(2021, 7, 26, 12, 6, 30, 0, time.UTC)
 
-	flowMsg := flows.NewIVRMsgOut(testdata.Cathy.URN, vonage.ChannelReference(), "Hello", "http://example.com/hi.mp3", "eng-US")
+	flowMsg := flows.NewIVRMsgOut(testdata.Cathy.URN, vonage.Reference(), "Hello", "http://example.com/hi.mp3", "eng-US")
 	dbMsg := models.NewOutgoingIVR(rt.Config, testdata.Org1.ID, conn, flowMsg, createdOn)
 
 	assert.Equal(t, flowMsg.UUID(), dbMsg.UUID())

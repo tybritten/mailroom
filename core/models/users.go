@@ -6,7 +6,6 @@ import (
 	"database/sql/driver"
 	"strings"
 
-	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/null/v3"
 	"github.com/pkg/errors"
@@ -37,45 +36,43 @@ const (
 
 // User is our type for a user asset
 type User struct {
-	u struct {
-		ID        UserID   `json:"id"`
-		Email     string   `json:"email"`
-		FirstName string   `json:"first_name"`
-		LastName  string   `json:"last_name"`
-		Role      UserRole `json:"role_code"`
-		Team      *Team    `json:"team"`
-	}
+	ID_        UserID   `json:"id"`
+	Email_     string   `json:"email"`
+	FirstName_ string   `json:"first_name"`
+	LastName_  string   `json:"last_name"`
+	Role_      UserRole `json:"role_code"`
+	Team_      *Team    `json:"team"`
 }
 
 // ID returns the ID
-func (u *User) ID() UserID { return u.u.ID }
+func (u *User) ID() UserID { return u.ID_ }
 
 // Email returns the email address
-func (u *User) Email() string { return u.u.Email }
+func (u *User) Email() string { return u.Email_ }
 
 // Role returns the user's role in the current org
-func (u *User) Role() UserRole { return u.u.Role }
+func (u *User) Role() UserRole { return u.Role_ }
 
 // Name returns the name
 func (u *User) Name() string {
 	names := make([]string, 0, 2)
-	if u.u.FirstName != "" {
-		names = append(names, u.u.FirstName)
+	if u.FirstName_ != "" {
+		names = append(names, u.FirstName_)
 	}
-	if u.u.LastName != "" {
-		names = append(names, u.u.LastName)
+	if u.LastName_ != "" {
+		names = append(names, u.LastName_)
 	}
 	return strings.Join(names, " ")
 }
 
 // Team returns the user's ticketing team if any
 func (u *User) Team() *Team {
-	return u.u.Team
+	return u.Team_
 }
 
 var _ assets.User = (*User)(nil)
 
-const selectOrgUsersSQL = `
+const sqlSelectUsersByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
            SELECT u.id, u.email, u.first_name, u.last_name, m.role_code, row_to_json(team_struct) AS team
              FROM orgs_orgmembership m
@@ -88,21 +85,10 @@ LEFT JOIN LATERAL (SELECT id, uuid, name FROM tickets_team WHERE tickets_team.id
 
 // loadUsers loads all the users for the passed in org
 func loadUsers(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.User, error) {
-	rows, err := db.QueryContext(ctx, selectOrgUsersSQL, orgID)
+	rows, err := db.QueryContext(ctx, sqlSelectUsersByOrg, orgID)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, errors.Wrapf(err, "error querying users for org: %d", orgID)
 	}
-	defer rows.Close()
 
-	users := make([]assets.User, 0, 10)
-	for rows.Next() {
-		user := &User{}
-		err := dbutil.ScanJSON(rows, &user.u)
-		if err != nil {
-			return nil, errors.Wrapf(err, "error unmarshalling user")
-		}
-		users = append(users, user)
-	}
-
-	return users, nil
+	return ScanJSONRows(rows, func() assets.User { return &User{} })
 }

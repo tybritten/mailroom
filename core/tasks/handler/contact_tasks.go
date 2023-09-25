@@ -257,13 +257,13 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 
 	if eventType == models.EventTypeIncomingCall {
 		urn := contacts[0].URNForID(event.URNID())
-		trig = tb.Channel(channel.ChannelReference(), triggers.ChannelEventTypeIncomingCall).WithCall(urn).Build()
+		trig = tb.Channel(channel.Reference(), triggers.ChannelEventTypeIncomingCall).WithCall(urn).Build()
 	} else if eventType == models.EventTypeOptIn && flowOptIn != nil {
 		trig = tb.OptIn(flowOptIn, triggers.OptInEventTypeStarted).Build()
 	} else if eventType == models.EventTypeOptOut && flowOptIn != nil {
 		trig = tb.OptIn(flowOptIn, triggers.OptInEventTypeStopped).Build()
 	} else {
-		trig = tb.Channel(channel.ChannelReference(), triggers.ChannelEventType(eventType)).WithParams(params).Build()
+		trig = tb.Channel(channel.Reference(), triggers.ChannelEventType(eventType)).WithParams(params).Build()
 	}
 
 	// if we have a channel connection we set the connection on the session before our event hooks fire
@@ -440,7 +440,7 @@ func handleMsgEvent(ctx context.Context, rt *runtime.Runtime, event *MsgEvent) e
 		}
 	}
 
-	msgIn := flows.NewMsgIn(event.MsgUUID, event.URN, channel.ChannelReference(), event.Text, availableAttachments)
+	msgIn := flows.NewMsgIn(event.MsgUUID, event.URN, channel.Reference(), event.Text, availableAttachments)
 	msgIn.SetExternalID(string(event.MsgExternalID))
 	msgIn.SetID(flows.MsgID(event.MsgID))
 
