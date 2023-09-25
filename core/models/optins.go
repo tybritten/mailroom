@@ -33,10 +33,10 @@ func (o *OptIn) Name() string           { return o.Name_ }
 
 const sqlSelectOptInsByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
-    SELECT id, uuid, name
-      FROM msgs_optin o
-     WHERE o.org_id = $1 AND o.is_active
-  ORDER BY o.id ASC
+      SELECT id, uuid, name
+        FROM msgs_optin o
+       WHERE o.org_id = $1 AND o.is_active
+    ORDER BY o.id ASC
 ) r;`
 
 // loads the optins for the passed in org

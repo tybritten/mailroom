@@ -4,12 +4,11 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
-
-	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -35,62 +34,48 @@ const (
 
 // Group is our mailroom type for contact groups
 type Group struct {
-	g struct {
-		ID     GroupID          `json:"id"`
-		UUID   assets.GroupUUID `json:"uuid"`
-		Name   string           `json:"name"`
-		Query  string           `json:"query"`
-		Status GroupStatus      `json:"status"`
-		Type   GroupType        `json:"group_type"`
-	}
+	ID_     GroupID          `json:"id"`
+	UUID_   assets.GroupUUID `json:"uuid"`
+	Name_   string           `json:"name"`
+	Query_  string           `json:"query"`
+	Status_ GroupStatus      `json:"status"`
+	Type_   GroupType        `json:"group_type"`
 }
 
 // ID returns the ID for this group
-func (g *Group) ID() GroupID { return g.g.ID }
+func (g *Group) ID() GroupID { return g.ID_ }
 
 // UUID returns the uuid for this group
-func (g *Group) UUID() assets.GroupUUID { return g.g.UUID }
+func (g *Group) UUID() assets.GroupUUID { return g.UUID_ }
 
 // Name returns the name for this group
-func (g *Group) Name() string { return g.g.Name }
+func (g *Group) Name() string { return g.Name_ }
 
 // Query returns the query string (if any) for this group
-func (g *Group) Query() string { return g.g.Query }
+func (g *Group) Query() string { return g.Query_ }
 
 // Status returns the status of this group
-func (g *Group) Status() GroupStatus { return g.g.Status }
+func (g *Group) Status() GroupStatus { return g.Status_ }
 
 // Type returns the type of this group
-func (g *Group) Type() GroupType { return g.g.Type }
+func (g *Group) Type() GroupType { return g.Type_ }
 
 // loads the groups for the passed in org
 func loadGroups(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Group, error) {
-	rows, err := db.QueryContext(ctx, selectGroupsSQL, orgID)
+	rows, err := db.QueryContext(ctx, sqlSelectGroupsByOrg, orgID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error querying groups for org: %d", orgID)
 	}
-	defer rows.Close()
 
-	groups := make([]assets.Group, 0, 10)
-	for rows.Next() {
-		group := &Group{}
-		err = dbutil.ScanJSON(rows, &group.g)
-		if err != nil {
-			return nil, errors.Wrap(err, "error reading group row")
-		}
-
-		groups = append(groups, group)
-	}
-
-	return groups, nil
+	return ScanJSONRows(rows, func() assets.Group { return &Group{} })
 }
 
-const selectGroupsSQL = `
+const sqlSelectGroupsByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
-    SELECT id, uuid, name, query, status, group_type
-      FROM contacts_contactgroup 
-     WHERE org_id = $1 AND is_active = TRUE
-  ORDER BY name ASC
+      SELECT id, uuid, name, query, status, group_type
+        FROM contacts_contactgroup 
+       WHERE org_id = $1 AND is_active = TRUE
+    ORDER BY name ASC
 ) r;`
 
 // RemoveContactsFromGroups fires a bulk SQL query to remove all the contacts in the passed in groups
@@ -122,7 +107,7 @@ IN (
 
 // AddContactsToGroups fires a bulk SQL query to remove all the contacts in the passed in groups
 func AddContactsToGroups(ctx context.Context, tx DBorTx, adds []*GroupAdd) error {
-	return BulkQuery(ctx, "adding contacts to groups", tx, addContactsToGroupsSQL, adds)
+	return BulkQuery(ctx, "adding contacts to groups", tx, sqlAddContactsToGroups, adds)
 }
 
 // GroupAdd is our struct to track a final group additions
@@ -131,14 +116,10 @@ type GroupAdd struct {
 	GroupID   GroupID   `db:"group_id"`
 }
 
-const addContactsToGroupsSQL = `
-INSERT INTO 
-	contacts_contactgroup_contacts
-	(contact_id, contactgroup_id)
-VALUES(:contact_id, :group_id)
-ON CONFLICT
-	DO NOTHING
-`
+const sqlAddContactsToGroups = `
+INSERT INTO contacts_contactgroup_contacts(contact_id, contactgroup_id)
+                                    VALUES(:contact_id, :group_id)
+ON CONFLICT DO NOTHING`
 
 // ContactIDsForGroupIDs returns the unique contacts that are in the passed in groups
 func ContactIDsForGroupIDs(ctx context.Context, tx DBorTx, groupIDs []GroupID) ([]ContactID, error) {

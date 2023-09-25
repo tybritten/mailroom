@@ -40,12 +40,12 @@ func loadResthooks(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Resth
 
 const sqlSelectResthooksByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
-    SELECT id, slug, (
-        SELECT ARRAY_AGG(u.target_url) FROM (SELECT rs.target_url FROM api_resthooksubscriber rs WHERE r.id = rs.resthook_id AND rs.is_active = TRUE ORDER BY rs.target_url ASC) u
-	  ) subscribers
-      FROM api_resthook r
-     WHERE r.org_id = $1 AND r.is_active = TRUE
-  ORDER BY r.slug ASC
+      SELECT id, slug, (
+          SELECT ARRAY_AGG(u.target_url) FROM (SELECT rs.target_url FROM api_resthooksubscriber rs WHERE r.id = rs.resthook_id AND rs.is_active = TRUE ORDER BY rs.target_url ASC) u
+        ) subscribers
+        FROM api_resthook r
+       WHERE r.org_id = $1 AND r.is_active = TRUE
+    ORDER BY r.slug ASC
 ) r;`
 
 // UnsubscribeResthooks unsubscribles all the resthooks passed in

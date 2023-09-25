@@ -36,10 +36,10 @@ func (t *Topic) IsDefault() bool { return t.IsDefault_ }
 
 const sqlSelectTopicsByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
-    SELECT t.id as id, t.uuid as uuid, t.org_id as org_id, t.name as name, t.is_default as is_default
-      FROM tickets_topic t
-     WHERE t.org_id = $1 AND t.is_active = TRUE
-  ORDER BY t.is_default DESC, t.created_on ASC
+      SELECT t.id as id, t.uuid as uuid, t.org_id as org_id, t.name as name, t.is_default as is_default
+        FROM tickets_topic t
+       WHERE t.org_id = $1 AND t.is_active = TRUE
+    ORDER BY t.is_default DESC, t.created_on ASC
 ) r;`
 
 // loadTopics loads all the topics for the passed in org

@@ -355,12 +355,12 @@ func StartIVRFlow(
 	if !start.ParentSummary.IsNull() {
 		trigger = triggers.NewBuilder(oa.Env(), flowRef, contact).
 			FlowAction(history, json.RawMessage(start.ParentSummary)).
-			WithCall(channel.ChannelReference(), urn).
+			WithCall(channel.Reference(), urn).
 			Build()
 	} else {
 		trigger = triggers.NewBuilder(oa.Env(), flowRef, contact).
 			Manual().
-			WithCall(channel.ChannelReference(), urn).
+			WithCall(channel.Reference(), urn).
 			WithParams(params).
 			Build()
 	}
@@ -573,7 +573,7 @@ func buildMsgResume(
 		attachments = []utils.Attachment{resume.Attachment}
 	}
 
-	msgIn := flows.NewMsgIn(msgUUID, urn, channel.ChannelReference(), resume.Input, attachments)
+	msgIn := flows.NewMsgIn(msgUUID, urn, channel.Reference(), resume.Input, attachments)
 
 	// create an incoming message
 	msg := models.NewIncomingIVR(rt.Config, oa.OrgID(), call, msgIn, time.Now())
