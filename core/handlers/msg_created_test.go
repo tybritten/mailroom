@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
@@ -14,7 +13,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/stretchr/testify/assert"
+	"github.com/nyaruka/redisx/assertredis"
 )
 
 func TestMsgCreated(t *testing.T) {
@@ -95,18 +94,11 @@ func TestMsgCreated(t *testing.T) {
 
 	handlers.RunTestCases(t, ctx, rt, tcs)
 
-	rc := rt.RP.Get()
-	defer rc.Close()
-
 	// Cathy should have 1 batch of queued messages at high priority
-	count, err := redis.Int(rc.Do("zcard", fmt.Sprintf("msgs:%s|10/1", testdata.TwilioChannel.UUID)))
-	assert.NoError(t, err)
-	assert.Equal(t, 1, count)
+	assertredis.ZCard(t, rt.RP, fmt.Sprintf("msgs:%s|10/1", testdata.TwilioChannel.UUID), 1)
 
 	// One bulk for George
-	count, err = redis.Int(rc.Do("zcard", fmt.Sprintf("msgs:%s|10/0", testdata.TwilioChannel.UUID)))
-	assert.NoError(t, err)
-	assert.Equal(t, 1, count)
+	assertredis.ZCard(t, rt.RP, fmt.Sprintf("msgs:%s|10/0", testdata.TwilioChannel.UUID), 1)
 }
 
 func TestNewURN(t *testing.T) {

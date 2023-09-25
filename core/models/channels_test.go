@@ -19,8 +19,6 @@ func TestChannels(t *testing.T) {
 	// add some tel specific config to channel 2
 	rt.DB.MustExec(`UPDATE channels_channel SET config = '{"matching_prefixes": ["250", "251"], "allow_international": true}' WHERE id = $1`, testdata.VonageChannel.ID)
 
-	facebook := testdata.InsertChannel(rt, testdata.Org1, "FBA", "Facebook", "5678", []string{"facebook"}, "SR", nil)
-
 	oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, 1, models.RefreshChannels)
 	require.NoError(t, err)
 
@@ -67,18 +65,7 @@ func TestChannels(t *testing.T) {
 			"12345",
 			[]string{"facebook"},
 			[]assets.ChannelRole{"send", "receive"},
-			[]assets.ChannelFeature{},
-			nil,
-			false,
-		},
-		{
-			facebook.ID,
-			facebook.UUID,
-			"Facebook",
-			"5678",
-			[]string{"facebook"},
-			[]assets.ChannelRole{"send", "receive"},
-			[]assets.ChannelFeature{assets.ChannelFeatureOptIns},
+			[]assets.ChannelFeature{"optins"},
 			nil,
 			false,
 		},
@@ -92,6 +79,7 @@ func TestChannels(t *testing.T) {
 		assert.Equal(t, tc.Name, channel.Name())
 		assert.Equal(t, tc.Address, channel.Address())
 		assert.Equal(t, tc.Roles, channel.Roles())
+		assert.Equal(t, tc.Features, channel.Features())
 		assert.Equal(t, tc.Schemes, channel.Schemes())
 		assert.Equal(t, tc.Prefixes, channel.MatchPrefixes())
 		assert.Equal(t, tc.AllowInternational, channel.AllowInternational())
