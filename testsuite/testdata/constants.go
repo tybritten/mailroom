@@ -11,7 +11,7 @@ var Surveyor = &User{7, "surveyor1@nyaruka.com"}
 
 var TwilioChannel = &Channel{10000, "74729f45-7f29-4868-9dc4-90e491e3c7d8", "T"}
 var VonageChannel = &Channel{10001, "19012bfd-3ce3-4cae-9bb9-76cf92c73d49", "NX"}
-var TwitterChannel = &Channel{10002, "0f661e8b-ea9d-4bd3-9953-d368340acf91", "TT"}
+var FacebookChannel = &Channel{10002, "0f661e8b-ea9d-4bd3-9953-d368340acf91", "FBA"}
 
 var Cathy = &Contact{10000, "6393abc0-283d-4c9b-a1b3-641a035c34bf", "tel:+16055741111", 10000}
 var Bob = &Contact{10001, "b699a406-7e44-49be-9f01-1a82893e8a10", "tel:+16055742222", 10001}

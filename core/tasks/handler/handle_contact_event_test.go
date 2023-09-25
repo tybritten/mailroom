@@ -73,7 +73,7 @@ func TestMsgEvents(t *testing.T) {
 		// 0:
 		{
 			org:           testdata.Org1,
-			channel:       testdata.TwitterChannel,
+			channel:       testdata.FacebookChannel,
 			contact:       testdata.Cathy,
 			text:          "noop",
 			expectedReply: "",
@@ -82,7 +82,7 @@ func TestMsgEvents(t *testing.T) {
 		// 1:
 		{
 			org:           testdata.Org1,
-			channel:       testdata.TwitterChannel,
+			channel:       testdata.FacebookChannel,
 			contact:       testdata.Cathy,
 			text:          "start other",
 			expectedReply: "",
@@ -91,7 +91,7 @@ func TestMsgEvents(t *testing.T) {
 		// 2:
 		{
 			org:           testdata.Org1,
-			channel:       testdata.TwitterChannel,
+			channel:       testdata.FacebookChannel,
 			contact:       testdata.Cathy,
 			text:          "start",
 			expectedReply: "What is your favorite color?",
@@ -101,7 +101,7 @@ func TestMsgEvents(t *testing.T) {
 		// 3:
 		{
 			org:           testdata.Org1,
-			channel:       testdata.TwitterChannel,
+			channel:       testdata.FacebookChannel,
 			contact:       testdata.Cathy,
 			text:          "purple",
 			expectedReply: "I don't know that color. Try again.",
@@ -111,7 +111,7 @@ func TestMsgEvents(t *testing.T) {
 		// 4:
 		{
 			org:           testdata.Org1,
-			channel:       testdata.TwitterChannel,
+			channel:       testdata.FacebookChannel,
 			contact:       testdata.Cathy,
 			text:          "blue",
 			expectedReply: "Good choice, I like Blue too! What is your favorite beer?",
@@ -121,7 +121,7 @@ func TestMsgEvents(t *testing.T) {
 		// 5:
 		{
 			org:           testdata.Org1,
-			channel:       testdata.TwitterChannel,
+			channel:       testdata.FacebookChannel,
 			contact:       testdata.Cathy,
 			text:          "MUTZIG",
 			expectedReply: "Mmmmm... delicious Mutzig. If only they made blue Mutzig! Lastly, what is your name?",
@@ -131,7 +131,7 @@ func TestMsgEvents(t *testing.T) {
 		// 6:
 		{
 			org:           testdata.Org1,
-			channel:       testdata.TwitterChannel,
+			channel:       testdata.FacebookChannel,
 			contact:       testdata.Cathy,
 			text:          "Cathy",
 			expectedReply: "Thanks Cathy, we are all done!",
@@ -141,7 +141,7 @@ func TestMsgEvents(t *testing.T) {
 		// 7:
 		{
 			org:           testdata.Org1,
-			channel:       testdata.TwitterChannel,
+			channel:       testdata.FacebookChannel,
 			contact:       testdata.Cathy,
 			text:          "noop",
 			expectedReply: "",
@@ -210,7 +210,7 @@ func TestMsgEvents(t *testing.T) {
 		// 14:
 		{
 			org:           testdata.Org1,
-			channel:       testdata.TwitterChannel,
+			channel:       testdata.FacebookChannel,
 			contact:       testdata.Bob,
 			text:          "ivr",
 			expectedReply: "",
@@ -223,7 +223,7 @@ func TestMsgEvents(t *testing.T) {
 				rt.DB.MustExec(`UPDATE contacts_contact SET status = 'S' WHERE id = $1`, testdata.George.ID)
 			},
 			org:           testdata.Org1,
-			channel:       testdata.TwitterChannel,
+			channel:       testdata.FacebookChannel,
 			contact:       testdata.George,
 			text:          "start",
 			expectedReply: "What is your favorite color?",
@@ -353,8 +353,8 @@ func TestMsgEvents(t *testing.T) {
 
 	// check messages queued to courier
 	testsuite.AssertCourierQueues(t, map[string][]int{
-		fmt.Sprintf("msgs:%s|10/1", testdata.TwitterChannel.UUID): {1, 1, 1, 1, 1, 1},
-		fmt.Sprintf("msgs:%s|10/1", testdata.Org2Channel.UUID):    {1, 1, 1, 1, 1, 1, 1, 1, 1},
+		fmt.Sprintf("msgs:%s|10/1", testdata.FacebookChannel.UUID): {1, 1, 1, 1, 1, 1},
+		fmt.Sprintf("msgs:%s|10/1", testdata.Org2Channel.UUID):     {1, 1, 1, 1, 1, 1, 1, 1, 1},
 	})
 
 	// Fred's sessions should not have a timeout because courier will set them
@@ -416,7 +416,7 @@ func TestChannelEvents(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetAll)
 
 	// add some channel event triggers
-	testdata.InsertNewConversationTrigger(rt, testdata.Org1, testdata.Favorites, testdata.TwitterChannel)
+	testdata.InsertNewConversationTrigger(rt, testdata.Org1, testdata.Favorites, testdata.FacebookChannel)
 	testdata.InsertReferralTrigger(rt, testdata.Org1, testdata.PickANumber, "", testdata.VonageChannel)
 	testdata.InsertOptInTrigger(rt, testdata.Org1, testdata.Favorites, testdata.VonageChannel)
 	testdata.InsertOptOutTrigger(rt, testdata.Org1, testdata.PickANumber, testdata.VonageChannel)
@@ -440,7 +440,7 @@ func TestChannelEvents(t *testing.T) {
 			models.EventTypeNewConversation,
 			testdata.Cathy.ID,
 			testdata.Cathy.URNID,
-			testdata.TwitterChannel.ID,
+			testdata.FacebookChannel.ID,
 			nil,
 			"channel",
 			"What is your favorite color?",
@@ -470,7 +470,7 @@ func TestChannelEvents(t *testing.T) {
 			models.EventTypeReferral,
 			testdata.Cathy.ID,
 			testdata.Cathy.URNID,
-			testdata.TwitterChannel.ID,
+			testdata.FacebookChannel.ID,
 			nil,
 			"",
 			"",
@@ -648,43 +648,43 @@ func TestTimedEvents(t *testing.T) {
 		Org       *testdata.Org
 	}{
 		// 0: start the flow
-		{handler.MsgEventType, testdata.Cathy, "start", "What is your favorite color?", testdata.TwitterChannel, testdata.Org1},
+		{handler.MsgEventType, testdata.Cathy, "start", "What is your favorite color?", testdata.FacebookChannel, testdata.Org1},
 
 		// 1: this expiration does nothing because the times don't match
-		{handler.ExpirationEventType, testdata.Cathy, "bad", "", testdata.TwitterChannel, testdata.Org1},
+		{handler.ExpirationEventType, testdata.Cathy, "bad", "", testdata.FacebookChannel, testdata.Org1},
 
 		// 2: this checks that the flow wasn't expired
-		{handler.MsgEventType, testdata.Cathy, "red", "Good choice, I like Red too! What is your favorite beer?", testdata.TwitterChannel, testdata.Org1},
+		{handler.MsgEventType, testdata.Cathy, "red", "Good choice, I like Red too! What is your favorite beer?", testdata.FacebookChannel, testdata.Org1},
 
 		// 3: this expiration will actually take
-		{handler.ExpirationEventType, testdata.Cathy, "good", "", testdata.TwitterChannel, testdata.Org1},
+		{handler.ExpirationEventType, testdata.Cathy, "good", "", testdata.FacebookChannel, testdata.Org1},
 
 		// 4: we won't get a response as we will be out of the flow
-		{handler.MsgEventType, testdata.Cathy, "mutzig", "", testdata.TwitterChannel, testdata.Org1},
+		{handler.MsgEventType, testdata.Cathy, "mutzig", "", testdata.FacebookChannel, testdata.Org1},
 
 		// 5: start the parent expiration flow
-		{handler.MsgEventType, testdata.Cathy, "parent", "Child", testdata.TwitterChannel, testdata.Org1},
+		{handler.MsgEventType, testdata.Cathy, "parent", "Child", testdata.FacebookChannel, testdata.Org1},
 
 		// 6: respond, should bring us out
-		{handler.MsgEventType, testdata.Cathy, "hi", "Completed", testdata.TwitterChannel, testdata.Org1},
+		{handler.MsgEventType, testdata.Cathy, "hi", "Completed", testdata.FacebookChannel, testdata.Org1},
 
 		// 7: expiring our child should be a no op
-		{handler.ExpirationEventType, testdata.Cathy, "child", "", testdata.TwitterChannel, testdata.Org1},
+		{handler.ExpirationEventType, testdata.Cathy, "child", "", testdata.FacebookChannel, testdata.Org1},
 
 		// 8: respond one last time, should be done
-		{handler.MsgEventType, testdata.Cathy, "done", "Ended", testdata.TwitterChannel, testdata.Org1},
+		{handler.MsgEventType, testdata.Cathy, "done", "Ended", testdata.FacebookChannel, testdata.Org1},
 
 		// 9: start our favorite flow again
-		{handler.MsgEventType, testdata.Cathy, "start", "What is your favorite color?", testdata.TwitterChannel, testdata.Org1},
+		{handler.MsgEventType, testdata.Cathy, "start", "What is your favorite color?", testdata.FacebookChannel, testdata.Org1},
 
 		// 10: timeout on the color question
-		{handler.TimeoutEventType, testdata.Cathy, "", "Sorry you can't participate right now, I'll try again later.", testdata.TwitterChannel, testdata.Org1},
+		{handler.TimeoutEventType, testdata.Cathy, "", "Sorry you can't participate right now, I'll try again later.", testdata.FacebookChannel, testdata.Org1},
 
 		// 11: start the pick a number flow
-		{handler.MsgEventType, testdata.Cathy, "pick", "Pick a number between 1-10.", testdata.TwitterChannel, testdata.Org1},
+		{handler.MsgEventType, testdata.Cathy, "pick", "Pick a number between 1-10.", testdata.FacebookChannel, testdata.Org1},
 
 		// 12: try to resume with timeout even tho flow doesn't have one set
-		{handler.TimeoutEventType, testdata.Cathy, "", "", testdata.TwitterChannel, testdata.Org1},
+		{handler.TimeoutEventType, testdata.Cathy, "", "", testdata.FacebookChannel, testdata.Org1},
 	}
 
 	last := time.Now()
