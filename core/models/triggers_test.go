@@ -259,9 +259,9 @@ func TestFindMatchingReferralTrigger(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	fooID := testdata.InsertReferralTrigger(rt, testdata.Org1, testdata.Favorites, "foo", testdata.TwitterChannel)
+	fooID := testdata.InsertReferralTrigger(rt, testdata.Org1, testdata.Favorites, "foo", testdata.FacebookChannel)
 	barID := testdata.InsertReferralTrigger(rt, testdata.Org1, testdata.Favorites, "bar", nil)
-	bazID := testdata.InsertReferralTrigger(rt, testdata.Org1, testdata.Favorites, "", testdata.TwitterChannel)
+	bazID := testdata.InsertReferralTrigger(rt, testdata.Org1, testdata.Favorites, "", testdata.FacebookChannel)
 
 	oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, testdata.Org1.ID, models.RefreshTriggers)
 	require.NoError(t, err)
@@ -273,12 +273,12 @@ func TestFindMatchingReferralTrigger(t *testing.T) {
 	}{
 		{"", testdata.TwilioChannel.ID, models.NilTriggerID},
 		{"foo", testdata.TwilioChannel.ID, models.NilTriggerID},
-		{"foo", testdata.TwitterChannel.ID, fooID},
-		{"FOO", testdata.TwitterChannel.ID, fooID},
+		{"foo", testdata.FacebookChannel.ID, fooID},
+		{"FOO", testdata.FacebookChannel.ID, fooID},
 		{"bar", testdata.TwilioChannel.ID, barID},
-		{"bar", testdata.TwitterChannel.ID, barID},
+		{"bar", testdata.FacebookChannel.ID, barID},
 		{"zap", testdata.TwilioChannel.ID, models.NilTriggerID},
-		{"zap", testdata.TwitterChannel.ID, bazID},
+		{"zap", testdata.FacebookChannel.ID, bazID},
 	}
 
 	for i, tc := range tcs {

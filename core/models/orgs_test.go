@@ -24,7 +24,7 @@ func TestOrgs(t *testing.T) {
 
 	tz, _ := time.LoadLocation("America/Los_Angeles")
 
-	rt.DB.MustExec("UPDATE channels_channel SET country = 'FR' WHERE id = $1;", testdata.TwitterChannel.ID)
+	rt.DB.MustExec("UPDATE channels_channel SET country = 'FR' WHERE id = $1;", testdata.FacebookChannel.ID)
 	rt.DB.MustExec("UPDATE channels_channel SET country = 'US' WHERE id IN ($1,$2);", testdata.TwilioChannel.ID, testdata.VonageChannel.ID)
 
 	rt.DB.MustExec(`UPDATE orgs_org SET flow_languages = '{"fra", "eng"}' WHERE id = $1`, testdata.Org1.ID)

@@ -31,8 +31,8 @@ func TestMsgCreated(t *testing.T) {
 	// delete all URNs for bob
 	rt.DB.MustExec(`DELETE FROM contacts_contacturn WHERE contact_id = $1`, testdata.Bob.ID)
 
-	// change alexandrias URN to a twitter URN and set her language to eng so that a template gets used for her
-	rt.DB.MustExec(`UPDATE contacts_contacturn SET identity = 'twitter:12345', path='12345', scheme='twitter' WHERE contact_id = $1`, testdata.Alexandria.ID)
+	// change alexandrias URN to a facebook URN and set her language to eng so that a template gets used for her
+	rt.DB.MustExec(`UPDATE contacts_contacturn SET identity = 'facebook:12345', path='12345', scheme='facebook' WHERE contact_id = $1`, testdata.Alexandria.ID)
 	rt.DB.MustExec(`UPDATE contacts_contact SET language='eng' WHERE id = $1`, testdata.Alexandria.ID)
 
 	msg1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "start", models.MsgStatusHandled)
@@ -85,7 +85,7 @@ func TestMsgCreated(t *testing.T) {
 						testdata.Alexandria.ID,
 						`Hi Alexandia, are you still experiencing problems with tooth?`,
 						`{"templating":{"template":{"uuid":"9c22b594-fcab-4b29-9bcb-ce4404894a80","name":"revive_issue"},"variables":["Alexandia","tooth"],"namespace":"2d40b45c_25cd_4965_9019_f05d0124c5fa"}}`,
-						testdata.TwitterChannel.ID,
+						testdata.FacebookChannel.ID,
 					},
 					Count: 1,
 				},
@@ -115,8 +115,8 @@ func TestNewURN(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetAll)
 
 	// switch our twitter channel to telegram
-	telegramUUID := testdata.TwitterChannel.UUID
-	telegramID := testdata.TwitterChannel.ID
+	telegramUUID := testdata.FacebookChannel.UUID
+	telegramID := testdata.FacebookChannel.ID
 	rt.DB.MustExec(
 		`UPDATE channels_channel SET channel_type = 'TG', name = 'Telegram', schemes = ARRAY['telegram'] WHERE uuid = $1`,
 		telegramUUID,
