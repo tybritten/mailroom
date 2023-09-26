@@ -1,3 +1,7 @@
+v8.3.24 (2023-09-26)
+-------------------------
+ * Update to latest goflow
+
 v8.3.23 (2023-09-25)
 -------------------------
  * Fix loading of channel features and queuing of optin messages
