@@ -212,10 +212,9 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 		// create scenes for our contacts
 		scenes := make([]*models.Scene, 0, len(tc.Modifiers))
 		for contact, mods := range tc.Modifiers {
-			contacts, err := models.LoadContacts(ctx, rt.DB, oa, []models.ContactID{contact.ID})
+			contact, err := models.LoadContact(ctx, rt.DB, oa, contact.ID)
 			assert.NoError(t, err)
 
-			contact := contacts[0]
 			flowContact, err := contact.FlowContact(oa)
 			assert.NoError(t, err)
 

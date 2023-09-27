@@ -35,7 +35,7 @@
         },
         "status": 500,
         "response": {
-            "error": "error loading contact: no such contact #123456789 in org #1"
+            "error": "error loading contact: sql: no rows in result set"
         }
     },
     {

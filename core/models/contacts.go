@@ -246,7 +246,7 @@ func LoadContact(ctx context.Context, db Queryer, oa *OrgAssets, id ContactID) (
 		return nil, err
 	}
 	if len(contacts) == 0 {
-		return nil, errors.Errorf("no such contact #%d in org #%d", id, oa.OrgID())
+		return nil, sql.ErrNoRows
 	}
 	return contacts[0], nil
 }
@@ -579,11 +579,10 @@ func CreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, nam
 	}
 
 	// load a full contact so that we can calculate dynamic groups
-	contacts, err := LoadContacts(ctx, db, oa, []ContactID{contactID})
+	contact, err := LoadContact(ctx, db, oa, contactID)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "error loading new contact")
 	}
-	contact := contacts[0]
 
 	flowContact, err := contact.FlowContact(oa)
 	if err != nil {
@@ -616,11 +615,10 @@ func GetOrCreateContact(ctx context.Context, db DB, oa *OrgAssets, urnz []urns.U
 	}
 
 	// load a full contact so that we can calculate dynamic groups
-	contacts, err := LoadContacts(ctx, db, oa, []ContactID{contactID})
+	contact, err := LoadContact(ctx, db, oa, contactID)
 	if err != nil {
 		return nil, nil, false, errors.Wrapf(err, "error loading new contact")
 	}
-	contact := contacts[0]
 
 	flowContact, err := contact.FlowContact(oa)
 	if err != nil {

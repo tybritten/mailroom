@@ -23,10 +23,10 @@ type Contact struct {
 func (c *Contact) Load(rt *runtime.Runtime, oa *models.OrgAssets) (*models.Contact, *flows.Contact, []*models.ContactURN) {
 	ctx := context.Background()
 
-	contacts, err := models.LoadContacts(ctx, rt.DB, oa, []models.ContactID{c.ID})
-	must(err, len(contacts) == 1)
+	contact, err := models.LoadContact(ctx, rt.DB, oa, c.ID)
+	must(err)
 
-	flowContact, err := contacts[0].FlowContact(oa)
+	flowContact, err := contact.FlowContact(oa)
 	must(err)
 
 	var urnIDs []models.URNID
@@ -36,7 +36,7 @@ func (c *Contact) Load(rt *runtime.Runtime, oa *models.OrgAssets) (*models.Conta
 	urns, err := models.LoadContactURNs(ctx, rt.DB, urnIDs)
 	must(err)
 
-	return contacts[0], flowContact, urns
+	return contact, flowContact, urns
 }
 
 type Group struct {
