@@ -115,14 +115,14 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 	}
 
 	if m.Type() == models.MsgTypeOptIn {
+		// this is an optin request
 		optIn := oa.OptInByID(m.OptInID())
-		if optIn != nil { // always a chance optin no longer exists
+		if optIn != nil {
 			msg.OptIn = &OptIn{ID: optIn.ID(), Name: optIn.Name()}
 		}
 	} else if m.OptInID() != models.NilOptInID {
 		// an optin on a broadcast message means use it for authentication
 		msg.URNAuth = u.AuthTokens[fmt.Sprintf("optin:%d", m.OptInID())]
-
 	}
 
 	if m.Contact != nil {
