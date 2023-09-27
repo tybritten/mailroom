@@ -114,17 +114,15 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		msg.Origin = MsgOriginChat
 	}
 
-	if m.OptInID() != models.NilOptInID {
-		// an optin on a broadcast message means use it for authentication
-		if m.BroadcastID() != models.NilBroadcastID {
-			msg.URNAuth = u.AuthTokens[fmt.Sprintf("optin:%d", m.OptInID())]
-		} else {
-			// otherwise it means to request opt-in from the contact
-			optIn := oa.OptInByID(m.OptInID())
-			if optIn != nil { // always a chance optin no longer exists
-				msg.OptIn = &OptIn{ID: optIn.ID(), Name: optIn.Name()}
-			}
+	if m.Type() == models.MsgTypeOptIn {
+		optIn := oa.OptInByID(m.OptInID())
+		if optIn != nil { // always a chance optin no longer exists
+			msg.OptIn = &OptIn{ID: optIn.ID(), Name: optIn.Name()}
 		}
+	} else if m.OptInID() != models.NilOptInID {
+		// an optin on a broadcast message means use it for authentication
+		msg.URNAuth = u.AuthTokens[fmt.Sprintf("optin:%d", m.OptInID())]
+
 	}
 
 	if m.Contact != nil {
