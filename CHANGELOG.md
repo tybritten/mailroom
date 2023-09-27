@@ -1,3 +1,8 @@
+v8.3.25 (2023-09-27)
+-------------------------
+ * Update to latest goflow
+ * Simplify queuing of optin requests to courier
+
 v8.3.24 (2023-09-26)
 -------------------------
  * Update to latest goflow
