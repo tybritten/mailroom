@@ -1,3 +1,7 @@
+v8.3.26 (2023-09-27)
+-------------------------
+ * Simplify where we load a single contact and ignore events rather than error where contact no longer exists
+
 v8.3.25 (2023-09-27)
 -------------------------
  * Update to latest goflow
