@@ -205,14 +205,11 @@ func handleCallback(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	}
 
 	// load our contact
-	contacts, err := models.LoadContacts(ctx, rt.ReadonlyDB, oa, []models.ContactID{conn.ContactID()})
+	contact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, conn.ContactID())
 	if err != nil {
 		return conn, svc.WriteErrorResponse(w, errors.Wrapf(err, "no such contact"))
 	}
-	if len(contacts) == 0 {
-		return conn, svc.WriteErrorResponse(w, errors.Errorf("no contact with id: %d", conn.ContactID()))
-	}
-	if contacts[0].Status() != models.ContactStatusActive {
+	if contact.Status() != models.ContactStatusActive {
 		return conn, svc.WriteErrorResponse(w, errors.Errorf("no contact with id: %d", conn.ContactID()))
 	}
 
@@ -224,7 +221,7 @@ func handleCallback(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 
 	// make sure our URN is indeed present on our contact, no funny business
 	found := false
-	for _, u := range contacts[0].URNs() {
+	for _, u := range contact.URNs() {
 		if u.Identity() == urn.Identity() {
 			found = true
 		}
@@ -238,9 +235,9 @@ func handleCallback(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	// if this a start, start our contact
 	switch request.Action {
 	case actionStart:
-		err = ivr.StartIVRFlow(ctx, rt, svc, resumeURL, oa, ch, conn, contacts[0], urn, conn.StartID(), r, w)
+		err = ivr.StartIVRFlow(ctx, rt, svc, resumeURL, oa, ch, conn, contact, urn, conn.StartID(), r, w)
 	case actionResume:
-		err = ivr.ResumeIVRFlow(ctx, rt, resumeURL, svc, oa, ch, conn, contacts[0], urn, r, w)
+		err = ivr.ResumeIVRFlow(ctx, rt, resumeURL, svc, oa, ch, conn, contact, urn, r, w)
 	case actionStatus:
 		err = ivr.HandleIVRStatus(ctx, rt, oa, svc, conn, r, w)
 

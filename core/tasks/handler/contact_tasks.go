@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"time"
 
@@ -46,12 +47,13 @@ func handleTimedEvent(ctx context.Context, rt *runtime.Runtime, eventType string
 	}
 
 	// load our contact
-	contacts, err := models.LoadContacts(ctx, rt.ReadonlyDB, oa, []models.ContactID{event.ContactID})
+	modelContact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, event.ContactID)
 	if err != nil {
+		if err == sql.ErrNoRows { // if contact no longer exists, ignore event
+			return nil
+		}
 		return errors.Wrapf(err, "error loading contact")
 	}
-
-	modelContact := contacts[0]
 
 	// build our flow contact
 	contact, err := modelContact.FlowContact(oa)
@@ -144,17 +146,18 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 	}
 
 	// load our contact
-	contacts, err := models.LoadContacts(ctx, rt.ReadonlyDB, oa, []models.ContactID{event.ContactID()})
+	modelContact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, event.ContactID())
 	if err != nil {
+		if err == sql.ErrNoRows { // if contact no longer exists, ignore event
+			return nil, nil
+		}
 		return nil, errors.Wrapf(err, "error loading contact")
 	}
 
-	// contact has been deleted or is blocked, ignore this event
-	if len(contacts) == 0 || contacts[0].Status() == models.ContactStatusBlocked {
+	// if contact is blocked, ignore event
+	if modelContact.Status() == models.ContactStatusBlocked {
 		return nil, nil
 	}
-
-	modelContact := contacts[0]
 
 	if models.ContactSeenEvents[eventType] {
 		err = modelContact.UpdateLastSeenOn(ctx, rt.DB, event.OccurredOn())
@@ -256,7 +259,7 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 	var trig flows.Trigger
 
 	if eventType == models.EventTypeIncomingCall {
-		urn := contacts[0].URNForID(event.URNID())
+		urn := modelContact.URNForID(event.URNID())
 		trig = tb.Channel(channel.Reference(), triggers.ChannelEventTypeIncomingCall).WithCall(urn).Build()
 	} else if eventType == models.EventTypeOptIn && flowOptIn != nil {
 		trig = tb.OptIn(flowOptIn, triggers.OptInEventTypeStarted).Build()
@@ -525,17 +528,13 @@ func handleTicketEvent(ctx context.Context, rt *runtime.Runtime, event *models.T
 	modelTicket := tickets[0]
 
 	// load our contact
-	contacts, err := models.LoadContacts(ctx, rt.ReadonlyDB, oa, []models.ContactID{modelTicket.ContactID()})
+	modelContact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, modelTicket.ContactID())
 	if err != nil {
+		if err == sql.ErrNoRows { // if contact no longer exists, ignore event
+			return nil
+		}
 		return errors.Wrapf(err, "error loading contact")
 	}
-
-	// contact has been deleted ignore this event
-	if len(contacts) == 0 {
-		return nil
-	}
-
-	modelContact := contacts[0]
 
 	// build our flow contact
 	contact, err := modelContact.FlowContact(oa)
