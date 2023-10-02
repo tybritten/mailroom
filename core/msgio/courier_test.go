@@ -138,7 +138,7 @@ func TestNewCourierMsg(t *testing.T) {
 	}`, session.ID(), msg2.UUID()))
 
 	// try a broadcast message which won't have session and flow fields set and won't be high priority
-	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Blast"}, models.NilScheduleID, []*testdata.Contact{testFred}, nil)
+	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Blast"}, nil, models.NilScheduleID, []*testdata.Contact{testFred}, nil)
 	bcastMsg1 := flows.NewMsgOut(fredURN, assets.NewChannelReference(testdata.TwilioChannel.UUID, "Test Channel"), "Blast", nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
 	msg3, err := models.NewOutgoingBroadcastMsg(rt, oa.Org(), channel, fred, bcastMsg1, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC), &models.BroadcastBatch{BroadcastID: bcastID, OptInID: optInID, CreatedByID: testdata.Admin.ID})
 	require.NoError(t, err)

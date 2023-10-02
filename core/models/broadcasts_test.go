@@ -2,6 +2,7 @@ package models_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/i18n"
@@ -76,7 +77,7 @@ func TestBroadcastTranslations(t *testing.T) {
 		rt.DB.MustExec(`DELETE FROM msgs_broadcast`)
 	}()
 
-	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Hello", `spa`: "Hola"}, models.NilScheduleID, []*testdata.Contact{testdata.Cathy}, nil)
+	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Hello", `spa`: "Hola"}, nil, models.NilScheduleID, []*testdata.Contact{testdata.Cathy}, nil)
 
 	type TestStruct struct {
 		Translations flows.BroadcastTranslations `json:"translations"`
@@ -109,7 +110,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	// we need a broadcast id to insert messages but the content here is ignored
-	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, "eng", map[i18n.Language]string{"eng": "Test"}, models.NilScheduleID, nil, nil)
+	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, "eng", map[i18n.Language]string{"eng": "Test"}, nil, models.NilScheduleID, nil, nil)
 
 	tcs := []struct {
 		contactLanguage      i18n.Language
@@ -213,4 +214,25 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestInsertChildBroadcast(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetData)
+
+	optIn := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
+	schedID := testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodDaily, time.Now())
+	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Hello"}, optIn, schedID, []*testdata.Contact{testdata.Bob, testdata.Cathy}, nil)
+
+	parent := &models.Broadcast{}
+	err := rt.DB.GetContext(ctx, parent, `SELECT id, org_id, translations, base_language, optin_id, query, created_by_id, parent_id FROM msgs_broadcast WHERE id = $1`, bcastID)
+	require.NoError(t, err)
+
+	child, err := models.InsertChildBroadcast(ctx, rt.DB, parent)
+	assert.NoError(t, err)
+	assert.Equal(t, parent.ID, child.ParentID)
+	assert.Equal(t, parent.OrgID, child.OrgID)
+	assert.Equal(t, parent.BaseLanguage, child.BaseLanguage)
+	assert.Equal(t, parent.OptInID, child.OptInID)
 }
