@@ -1,3 +1,7 @@
+v8.3.29 (2023-10-02)
+-------------------------
+ * Fix loading of scheduled broadcast with optin
+
 v8.3.28 (2023-10-02)
 -------------------------
  * Ensure child broadcasts are saved with parent's optin
