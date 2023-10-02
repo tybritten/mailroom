@@ -16,10 +16,12 @@ func TestGetExpired(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
+	optIn := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
+
 	// add a schedule and tie a broadcast to it
 	s1 := testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodNever, time.Now().Add(-24*time.Hour))
 
-	testdata.InsertBroadcast(rt, testdata.Org1, "eng", map[i18n.Language]string{"eng": "Test message", "fra": "Un Message"}, nil, s1,
+	testdata.InsertBroadcast(rt, testdata.Org1, "eng", map[i18n.Language]string{"eng": "Test message", "fra": "Un Message"}, optIn, s1,
 		[]*testdata.Contact{testdata.Cathy, testdata.George}, []*testdata.Group{testdata.DoctorsGroup},
 	)
 
@@ -58,6 +60,7 @@ func TestGetExpired(t *testing.T) {
 	assert.Equal(t, models.TemplateStateUnevaluated, bcast.TemplateState)
 	assert.Equal(t, "Test message", bcast.Translations["eng"].Text)
 	assert.Equal(t, "Un Message", bcast.Translations["fra"].Text)
+	assert.Equal(t, optIn.ID, bcast.OptInID)
 	assert.Equal(t, testdata.Org1.ID, bcast.OrgID)
 	assert.Equal(t, []models.ContactID{testdata.Cathy.ID, testdata.George.ID}, bcast.ContactIDs)
 	assert.Equal(t, []models.GroupID{testdata.DoctorsGroup.ID}, bcast.GroupIDs)
