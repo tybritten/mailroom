@@ -1,3 +1,8 @@
+v8.3.27 (2023-10-02)
+-------------------------
+ * Update to latest goflow
+ * Fix scheduled broadcasts and optins
+
 v8.3.26 (2023-09-27)
 -------------------------
  * Simplify where we load a single contact and ignore events rather than error where contact no longer exists
