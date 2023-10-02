@@ -349,11 +349,11 @@ func TestArchiveContactTriggers(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetAll)
 
 	everybodyID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "join", models.MatchFirst, nil, nil)
-	cathyOnly1ID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, nil, nil, []*testdata.Contact{testdata.Cathy})
-	cathyOnly2ID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, nil, nil, []*testdata.Contact{testdata.Cathy})
-	cathyAndGeorgeID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, nil, nil, []*testdata.Contact{testdata.Cathy, testdata.George})
-	cathyAndGroupID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, []*testdata.Group{testdata.DoctorsGroup}, nil, []*testdata.Contact{testdata.Cathy})
-	georgeOnlyID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, nil, nil, []*testdata.Contact{testdata.George})
+	cathyOnly1ID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, nil, nil, []*testdata.Contact{testdata.Cathy})
+	cathyOnly2ID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, nil, nil, []*testdata.Contact{testdata.Cathy})
+	cathyAndGeorgeID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, nil, nil, []*testdata.Contact{testdata.Cathy, testdata.George})
+	cathyAndGroupID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, []*testdata.Group{testdata.DoctorsGroup}, nil, []*testdata.Contact{testdata.Cathy})
+	georgeOnlyID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, nil, nil, []*testdata.Contact{testdata.George})
 
 	err := models.ArchiveContactTriggers(ctx, rt.DB, []models.ContactID{testdata.Cathy.ID, testdata.Bob.ID})
 	require.NoError(t, err)

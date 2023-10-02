@@ -95,16 +95,21 @@ func insertOutgoingMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact 
 	return &MsgOut{Msg: Msg{ID: id}, FlowMsg: fm}
 }
 
-func InsertBroadcast(rt *runtime.Runtime, org *Org, baseLanguage i18n.Language, text map[i18n.Language]string, schedID models.ScheduleID, contacts []*Contact, groups []*Group) models.BroadcastID {
+func InsertBroadcast(rt *runtime.Runtime, org *Org, baseLanguage i18n.Language, text map[i18n.Language]string, optIn *OptIn, schedID models.ScheduleID, contacts []*Contact, groups []*Group) models.BroadcastID {
 	translations := make(flows.BroadcastTranslations)
 	for lang, t := range text {
 		translations[lang] = &flows.BroadcastTranslation{Text: t}
 	}
 
+	var optInID models.OptInID
+	if optIn != nil {
+		optInID = optIn.ID
+	}
+
 	var id models.BroadcastID
 	must(rt.DB.Get(&id,
-		`INSERT INTO msgs_broadcast(org_id, base_language, translations, schedule_id, status, created_on, modified_on, created_by_id, modified_by_id, is_active)
-		VALUES($1, $2, $3, $4, 'P', NOW(), NOW(), 1, 1, TRUE) RETURNING id`, org.ID, baseLanguage, translations, schedID,
+		`INSERT INTO msgs_broadcast(org_id, base_language, translations, optin_id, schedule_id, status, created_on, modified_on, created_by_id, modified_by_id, is_active)
+		VALUES($1, $2, $3, $4, $5, 'P', NOW(), NOW(), 1, 1, TRUE) RETURNING id`, org.ID, baseLanguage, translations, optInID, schedID,
 	))
 
 	for _, contact := range contacts {
