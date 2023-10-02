@@ -1,3 +1,7 @@
+v8.3.28 (2023-10-02)
+-------------------------
+ * Ensure child broadcasts are saved with parent's optin
+
 v8.3.27 (2023-10-02)
 -------------------------
  * Update to latest goflow
