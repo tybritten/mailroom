@@ -47,13 +47,14 @@ type Broadcast struct {
 
 // NewBroadcast creates a new broadcast with the passed in parameters
 func NewBroadcast(orgID OrgID, translations flows.BroadcastTranslations,
-	state TemplateState, baseLanguage i18n.Language, urns []urns.URN, contactIDs []ContactID, groupIDs []GroupID, query string, createdByID UserID) *Broadcast {
+	state TemplateState, baseLanguage i18n.Language, optInID OptInID, urns []urns.URN, contactIDs []ContactID, groupIDs []GroupID, query string, createdByID UserID) *Broadcast {
 
 	return &Broadcast{
 		OrgID:         orgID,
 		Translations:  translations,
 		TemplateState: state,
 		BaseLanguage:  baseLanguage,
+		OptInID:       optInID,
 		URNs:          urns,
 		ContactIDs:    contactIDs,
 		GroupIDs:      groupIDs,
@@ -78,7 +79,7 @@ func NewBroadcastFromEvent(ctx context.Context, tx DBorTx, oa *OrgAssets, event 
 		}
 	}
 
-	return NewBroadcast(oa.OrgID(), event.Translations, TemplateStateEvaluated, event.BaseLanguage, event.URNs, contactIDs, groupIDs, event.ContactQuery, NilUserID), nil
+	return NewBroadcast(oa.OrgID(), event.Translations, TemplateStateEvaluated, event.BaseLanguage, NilOptInID, event.URNs, contactIDs, groupIDs, event.ContactQuery, NilUserID), nil
 }
 
 func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastBatch {
@@ -114,6 +115,7 @@ func InsertChildBroadcast(ctx context.Context, db DBorTx, parent *Broadcast) (*B
 		parent.Translations,
 		parent.TemplateState,
 		parent.BaseLanguage,
+		parent.OptInID,
 		parent.URNs,
 		parent.ContactIDs,
 		parent.GroupIDs,

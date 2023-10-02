@@ -189,7 +189,9 @@ func TestBroadcastTask(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetAll)
 
-	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
+	polls := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
+
+	oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, testdata.Org1.ID, models.RefreshOptIns)
 	assert.NoError(t, err)
 	eng := i18n.Language("eng")
 
@@ -200,17 +202,18 @@ func TestBroadcastTask(t *testing.T) {
 	testdata.InsertContactURN(rt, testdata.Org1, testdata.Cathy, urns.URN("tel:+12065551212"), 1001, nil)
 
 	tcs := []struct {
-		Translations  flows.BroadcastTranslations
-		TemplateState models.TemplateState
-		BaseLanguage  i18n.Language
-		GroupIDs      []models.GroupID
-		ContactIDs    []models.ContactID
-		URNs          []urns.URN
-		CreatedByID   models.UserID
-		Queue         string
-		BatchCount    int
-		MsgCount      int
-		MsgText       string
+		translations     flows.BroadcastTranslations
+		templateState    models.TemplateState
+		baseLanguage     i18n.Language
+		optIn            *testdata.OptIn
+		groupIDs         []models.GroupID
+		contactIDs       []models.ContactID
+		URNs             []urns.URN
+		createdByID      models.UserID
+		queue            string
+		expectedBatches  int
+		expectedMsgCount int
+		expectedMsgText  string
 	}{
 		{
 			flows.BroadcastTranslations{
@@ -222,6 +225,7 @@ func TestBroadcastTask(t *testing.T) {
 			},
 			models.TemplateStateEvaluated,
 			eng,
+			polls,
 			doctorsOnly,
 			cathyOnly,
 			nil,
@@ -242,6 +246,7 @@ func TestBroadcastTask(t *testing.T) {
 			models.TemplateStateUnevaluated,
 			eng,
 			nil,
+			nil,
 			cathyOnly,
 			nil,
 			testdata.Agent.ID,
@@ -256,7 +261,12 @@ func TestBroadcastTask(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	for i, tc := range tcs {
-		bcast := models.NewBroadcast(oa.OrgID(), tc.Translations, tc.TemplateState, tc.BaseLanguage, tc.URNs, tc.ContactIDs, tc.GroupIDs, "", tc.CreatedByID)
+		var optInID models.OptInID
+		if tc.optIn != nil {
+			optInID = tc.optIn.ID
+		}
+
+		bcast := models.NewBroadcast(oa.OrgID(), tc.translations, tc.templateState, tc.baseLanguage, optInID, tc.URNs, tc.contactIDs, tc.groupIDs, "", tc.createdByID)
 
 		err = (&msgs.SendBroadcastTask{Broadcast: bcast}).Perform(ctx, rt, testdata.Org1.ID)
 		assert.NoError(t, err)
@@ -265,7 +275,7 @@ func TestBroadcastTask(t *testing.T) {
 		var task *queue.Task
 		count := 0
 		for {
-			task, err = queue.PopNextTask(rc, tc.Queue)
+			task, err = queue.PopNextTask(rc, tc.queue)
 			assert.NoError(t, err)
 			if task == nil {
 				break
@@ -282,11 +292,15 @@ func TestBroadcastTask(t *testing.T) {
 		}
 
 		// assert our count of batches
-		assert.Equal(t, tc.BatchCount, count, "%d: unexpected batch count", i)
+		assert.Equal(t, tc.expectedBatches, count, "%d: unexpected batch count", i)
 
 		// assert our count of total msgs created
-		assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE org_id = 1 AND created_on > $1 AND text = $2`, lastNow, tc.MsgText).
-			Returns(tc.MsgCount, "%d: unexpected msg count", i)
+		assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE org_id = 1 AND created_on > $1 AND text = $2`, lastNow, tc.expectedMsgText).
+			Returns(tc.expectedMsgCount, "%d: unexpected msg count", i)
+
+		if tc.optIn != nil {
+			assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE org_id = 1 AND created_on > $1 AND optin_id = $2`, lastNow, optInID)
+		}
 
 		lastNow = time.Now()
 		time.Sleep(10 * time.Millisecond)

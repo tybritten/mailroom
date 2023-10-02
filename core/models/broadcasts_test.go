@@ -21,6 +21,7 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetData)
 
 	translations := flows.BroadcastTranslations{"eng": {Text: "Hi there"}}
+	optIn := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
 
 	// create a broadcast which doesn't actually exist in the DB
 	bcast := models.NewBroadcast(
@@ -28,6 +29,7 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 		translations,
 		models.TemplateStateUnevaluated,
 		"eng",
+		optIn.ID,
 		[]urns.URN{"tel:+593979012345"},
 		[]models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID, testdata.Cathy.ID},
 		[]models.GroupID{testdata.DoctorsGroup.ID},
@@ -40,6 +42,7 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 	assert.Equal(t, i18n.Language("eng"), bcast.BaseLanguage)
 	assert.Equal(t, translations, bcast.Translations)
 	assert.Equal(t, models.TemplateStateUnevaluated, bcast.TemplateState)
+	assert.Equal(t, optIn.ID, bcast.OptInID)
 	assert.Equal(t, []urns.URN{"tel:+593979012345"}, bcast.URNs)
 	assert.Equal(t, []models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID, testdata.Cathy.ID}, bcast.ContactIDs)
 	assert.Equal(t, []models.GroupID{testdata.DoctorsGroup.ID}, bcast.GroupIDs)
@@ -51,6 +54,7 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 	assert.Equal(t, i18n.Language("eng"), batch.BaseLanguage)
 	assert.Equal(t, translations, batch.Translations)
 	assert.Equal(t, models.TemplateStateUnevaluated, batch.TemplateState)
+	assert.Equal(t, optIn.ID, batch.OptInID)
 	assert.Equal(t, []models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID}, batch.ContactIDs)
 
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
@@ -99,7 +103,9 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 		testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 	}()
 
-	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
+	polls := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
+
+	oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, testdata.Org1.ID, models.RefreshOptIns)
 	require.NoError(t, err)
 
 	// we need a broadcast id to insert messages but the content here is ignored
@@ -110,13 +116,14 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 		translations         flows.BroadcastTranslations
 		baseLanguage         i18n.Language
 		templateState        models.TemplateState
+		optInID              models.OptInID
 		expectedText         string
 		expectedAttachments  []utils.Attachment
 		expectedQuickReplies []string
 		expectedLocale       i18n.Locale
 		expectedError        string
 	}{
-		{
+		{ // 0
 			contactLanguage:      i18n.NilLanguage,
 			translations:         flows.BroadcastTranslations{"eng": {Text: "Hi @Cathy"}},
 			baseLanguage:         "eng",
@@ -126,8 +133,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			expectedQuickReplies: nil,
 			expectedLocale:       "eng",
 		},
-		{
-			// contact language not set, uses base language
+		{ // 1: contact language not set, uses base language
 			contactLanguage:      i18n.NilLanguage,
 			translations:         flows.BroadcastTranslations{"eng": {Text: "Hello @contact.name"}, "spa": {Text: "Hola @contact.name"}},
 			baseLanguage:         "eng",
@@ -137,8 +143,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			expectedQuickReplies: nil,
 			expectedLocale:       "eng",
 		},
-		{
-			// contact language iggnored if it isn't a valid org language, even if translation exists
+		{ // 2: contact language iggnored if it isn't a valid org language, even if translation exists
 			contactLanguage:      "spa",
 			translations:         flows.BroadcastTranslations{"eng": {Text: "Hello @contact.name"}, "spa": {Text: "Hola @contact.name"}},
 			baseLanguage:         "eng",
@@ -148,8 +153,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			expectedQuickReplies: nil,
 			expectedLocale:       "eng",
 		},
-		{
-			// contact language used
+		{ // 3: contact language used
 			contactLanguage: "fra",
 			translations: flows.BroadcastTranslations{
 				"eng": {Text: "Hello @contact.name", Attachments: []utils.Attachment{"audio/mp3:http://test.en.mp3"}, QuickReplies: []string{"yes", "no"}},
@@ -162,13 +166,23 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			expectedQuickReplies: []string{"oui", "no"},
 			expectedLocale:       "fra",
 		},
-		{
-			// broken broadcast with no translation in base language
+		{ // 4: broken broadcast with no translation in base language
 			contactLanguage: i18n.NilLanguage,
 			translations:    flows.BroadcastTranslations{"fra": {Text: "Bonjour @contact.name"}},
 			baseLanguage:    "eng",
 			templateState:   models.TemplateStateUnevaluated,
 			expectedError:   "error creating broadcast message: broadcast has no translation in base language",
+		},
+		{ // 5: broadcast with optin
+			contactLanguage:      i18n.NilLanguage,
+			translations:         flows.BroadcastTranslations{"eng": {Text: "Hi @Cathy"}},
+			baseLanguage:         "eng",
+			templateState:        models.TemplateStateEvaluated,
+			optInID:              polls.ID,
+			expectedText:         "Hi @Cathy",
+			expectedAttachments:  []utils.Attachment{},
+			expectedQuickReplies: nil,
+			expectedLocale:       "eng",
 		},
 	}
 
@@ -179,6 +193,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			Translations:  tc.translations,
 			BaseLanguage:  tc.baseLanguage,
 			TemplateState: tc.templateState,
+			OptInID:       tc.optInID,
 			ContactIDs:    []models.ContactID{testdata.Cathy.ID},
 		}
 
@@ -194,6 +209,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 				assert.Equal(t, tc.expectedAttachments, msgs[0].Attachments(), "attachments mismatch in test case %d", i)
 				assert.Equal(t, tc.expectedQuickReplies, msgs[0].QuickReplies(), "quick replies mismatch in test case %d", i)
 				assert.Equal(t, tc.expectedLocale, msgs[0].Locale(), "msg locale mismatch in test case %d", i)
+				assert.Equal(t, tc.optInID, msgs[0].OptInID(), "optin id mismatch in test case %d", i)
 			}
 		}
 	}
