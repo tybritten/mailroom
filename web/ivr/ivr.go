@@ -116,7 +116,7 @@ func handleIncoming(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	}
 
 	// we first create an incoming call channel event and see if that matches
-	event := models.NewChannelEvent(models.EventTypeIncomingCall, oa.OrgID(), ch.ID(), contact.ID(), urnID, nil, false)
+	event := models.NewChannelEvent(models.EventTypeIncomingCall, oa.OrgID(), ch.ID(), contact.ID(), urnID, models.NilOptInID, nil, false)
 
 	externalID, err := svc.CallIDForRequest(r)
 	if err != nil {

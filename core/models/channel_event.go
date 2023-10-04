@@ -43,6 +43,7 @@ type ChannelEvent struct {
 		ChannelID  ChannelID        `json:"channel_id"   db:"channel_id"`
 		ContactID  ContactID        `json:"contact_id"   db:"contact_id"`
 		URNID      URNID            `json:"urn_id"       db:"contact_urn_id"`
+		OptInID    OptInID          `json:"optin_id"     db:"optin_id"`
 		Extra      null.Map[any]    `json:"extra"        db:"extra"`
 		OccurredOn time.Time        `json:"occurred_on"  db:"occurred_on"`
 
@@ -61,6 +62,7 @@ func (e *ChannelEvent) OrgID() OrgID          { return e.e.OrgID }
 func (e *ChannelEvent) ChannelID() ChannelID  { return e.e.ChannelID }
 func (e *ChannelEvent) IsNewContact() bool    { return e.e.NewContact }
 func (e *ChannelEvent) OccurredOn() time.Time { return e.e.OccurredOn }
+func (e *ChannelEvent) OptInID() OptInID      { return e.e.OptInID }
 func (e *ChannelEvent) Extra() map[string]any { return e.e.Extra }
 func (e *ChannelEvent) ExtraString(key string) string {
 	asStr, ok := e.e.Extra[key].(string)
@@ -68,13 +70,6 @@ func (e *ChannelEvent) ExtraString(key string) string {
 		return asStr
 	}
 	return ""
-}
-func (e *ChannelEvent) ExtraInt(key string) int {
-	asFloat, ok := e.e.Extra[key].(float64)
-	if ok {
-		return int(asFloat)
-	}
-	return 0
 }
 
 // MarshalJSON is our custom marshaller so that our inner struct get output
@@ -88,8 +83,8 @@ func (e *ChannelEvent) UnmarshalJSON(b []byte) error {
 }
 
 const sqlInsertChannelEvent = `
-INSERT INTO channels_channelevent(event_type, extra, occurred_on, created_on, channel_id, contact_id, contact_urn_id, org_id)
-	 VALUES(:event_type, :extra, :occurred_on, :created_on, :channel_id, :contact_id, :contact_urn_id, :org_id)
+INSERT INTO channels_channelevent(event_type, extra, occurred_on, created_on, channel_id, contact_id, contact_urn_id, optin_id, org_id)
+	 VALUES(:event_type, :extra, :occurred_on, :created_on, :channel_id, :contact_id, :contact_urn_id, :optin_id, :org_id)
   RETURNING id`
 
 // Insert inserts this channel event to our DB. The ID of the channel event will be
@@ -99,7 +94,7 @@ func (e *ChannelEvent) Insert(ctx context.Context, db DBorTx) error {
 }
 
 // NewChannelEvent creates a new channel event for the passed in parameters, returning it
-func NewChannelEvent(eventType ChannelEventType, orgID OrgID, channelID ChannelID, contactID ContactID, urnID URNID, extra map[string]any, isNewContact bool) *ChannelEvent {
+func NewChannelEvent(eventType ChannelEventType, orgID OrgID, channelID ChannelID, contactID ContactID, urnID URNID, optInID OptInID, extra map[string]any, isNewContact bool) *ChannelEvent {
 	event := &ChannelEvent{}
 	e := &event.e
 
@@ -108,6 +103,7 @@ func NewChannelEvent(eventType ChannelEventType, orgID OrgID, channelID ChannelI
 	e.ChannelID = channelID
 	e.ContactID = contactID
 	e.URNID = urnID
+	e.OptInID = optInID
 	e.NewContact = isNewContact
 
 	if extra == nil {
