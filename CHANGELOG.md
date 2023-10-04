@@ -1,3 +1,7 @@
+v8.3.30 (2023-10-04)
+-------------------------
+ * Add optin to channelevent
+
 v8.3.29 (2023-10-02)
 -------------------------
  * Fix loading of scheduled broadcast with optin
