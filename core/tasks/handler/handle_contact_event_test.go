@@ -431,6 +431,7 @@ func TestChannelEvents(t *testing.T) {
 		ContactID           models.ContactID
 		URNID               models.URNID
 		ChannelID           models.ChannelID
+		OptInID             models.OptInID
 		Extra               map[string]any
 		expectedTriggerType string
 		expectedResponse    string
@@ -441,6 +442,7 @@ func TestChannelEvents(t *testing.T) {
 			testdata.Cathy.ID,
 			testdata.Cathy.URNID,
 			testdata.FacebookChannel.ID,
+			models.NilOptInID,
 			nil,
 			"channel",
 			"What is your favorite color?",
@@ -451,6 +453,7 @@ func TestChannelEvents(t *testing.T) {
 			testdata.Cathy.ID,
 			testdata.Cathy.URNID,
 			testdata.VonageChannel.ID,
+			models.NilOptInID,
 			nil,
 			"",
 			"",
@@ -461,6 +464,7 @@ func TestChannelEvents(t *testing.T) {
 			testdata.Cathy.ID,
 			testdata.Cathy.URNID,
 			testdata.VonageChannel.ID,
+			models.NilOptInID,
 			nil,
 			"",
 			"",
@@ -471,6 +475,7 @@ func TestChannelEvents(t *testing.T) {
 			testdata.Cathy.ID,
 			testdata.Cathy.URNID,
 			testdata.FacebookChannel.ID,
+			models.NilOptInID,
 			nil,
 			"",
 			"",
@@ -480,6 +485,7 @@ func TestChannelEvents(t *testing.T) {
 			models.EventTypeReferral,
 			testdata.Cathy.ID, testdata.Cathy.URNID,
 			testdata.VonageChannel.ID,
+			models.NilOptInID,
 			nil,
 			"channel",
 			"Pick a number between 1-10.",
@@ -490,7 +496,8 @@ func TestChannelEvents(t *testing.T) {
 			testdata.Cathy.ID,
 			testdata.Cathy.URNID,
 			testdata.VonageChannel.ID,
-			map[string]any{"optin_id": polls.ID, "optin_name": "Polls"},
+			polls.ID,
+			map[string]any{"title": "Polls", "payload": fmt.Sprint(polls.ID)},
 			"optin",
 			"What is your favorite color?",
 			true,
@@ -500,7 +507,8 @@ func TestChannelEvents(t *testing.T) {
 			testdata.Cathy.ID,
 			testdata.Cathy.URNID,
 			testdata.VonageChannel.ID,
-			map[string]any{"optin_id": polls.ID, "optin_name": "Polls"},
+			polls.ID,
+			map[string]any{"title": "Polls", "payload": fmt.Sprint(polls.ID)},
 			"optin",
 			"Pick a number between 1-10.",
 			true,
@@ -513,17 +521,15 @@ func TestChannelEvents(t *testing.T) {
 		start := time.Now()
 		time.Sleep(time.Millisecond * 5)
 
-		event := models.NewChannelEvent(tc.EventType, testdata.Org1.ID, tc.ChannelID, tc.ContactID, tc.URNID, tc.Extra, false)
-		eventJSON, err := json.Marshal(event)
-		assert.NoError(t, err)
+		event := models.NewChannelEvent(tc.EventType, testdata.Org1.ID, tc.ChannelID, tc.ContactID, tc.URNID, tc.OptInID, tc.Extra, false)
 
 		task := &queue.Task{
 			Type:  string(tc.EventType),
 			OrgID: int(testdata.Org1.ID),
-			Task:  eventJSON,
+			Task:  jsonx.MustMarshal(event),
 		}
 
-		err = handler.QueueHandleTask(rc, tc.ContactID, task)
+		err := handler.QueueHandleTask(rc, tc.ContactID, task)
 		assert.NoError(t, err, "%d: error adding task", i)
 
 		task, err = queue.PopNextTask(rc, queue.HandlerQueue)

@@ -247,8 +247,7 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 
 	var flowOptIn *flows.OptIn
 	if eventType == models.EventTypeOptIn || eventType == models.EventTypeOptOut {
-		optInID := models.OptInID(event.ExtraInt("optin_id"))
-		optIn := oa.OptInByID(optInID)
+		optIn := oa.OptInByID(event.OptInID())
 		if optIn != nil {
 			flowOptIn = oa.SessionAssets().OptIns().Get(optIn.UUID())
 		}
