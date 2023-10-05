@@ -204,14 +204,10 @@ SELECT ROW_TO_JSON(r) FROM (
 	FROM
 		flows_flow f
 	INNER JOIN LATERAL (
-		SELECT 
-			flow_id, spec_version, definition, revision
-		FROM 
-			flows_flowrevision
-		WHERE
-			flow_id = f.id AND is_active = TRUE
-		ORDER BY 
-			revision DESC
+		SELECT flow_id, spec_version, definition, revision
+		FROM flows_flowrevision
+		WHERE flow_id = f.id
+		ORDER BY revision DESC
 		LIMIT 1
 	) fr ON fr.flow_id = f.id
 	%s
