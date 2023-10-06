@@ -350,7 +350,7 @@ func mockVonageHandler(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		form := &CallForm{}
 		json.Unmarshal(body, form)
-		slog.Info("test server called", "method", r.Method, "url", r.URL.String(), "body", string(body), "form", form)
+		slog.Info("test server called", "method", r.Method, "url", r.URL.String(), "body", body, "form", form)
 
 		// end of a leg
 		if form.Action == "transfer" {

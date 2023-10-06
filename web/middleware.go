@@ -1,7 +1,6 @@
 package web
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -41,7 +40,7 @@ func panicRecovery(next http.Handler) http.Handler {
 		defer func() {
 			if rvr := recover(); rvr != nil {
 				debug.PrintStack()
-				slog.Error("recovered from panic in web handling", "error", errors.New(fmt.Sprint(rvr)))
+				slog.Error("recovered from panic in web handling", "error", fmt.Sprint(rvr))
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			}
 		}()
