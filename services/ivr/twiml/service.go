@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"sort"
@@ -26,7 +27,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // IgnoreSignatures controls whether we ignore signatures (public for testing overriding)
@@ -350,7 +350,7 @@ func (s *service) StatusForRequest(r *http.Request) (models.CallStatus, models.C
 		return models.CallStatusErrored, models.CallErrorProvider, 0
 
 	default:
-		logrus.WithField("call_status", status).Error("unknown call status in status callback")
+		slog.Error("unknown call status in status callback", "call_status", status)
 		return models.CallStatusFailed, models.CallErrorProvider, 0
 	}
 }

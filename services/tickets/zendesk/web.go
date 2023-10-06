@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/nyaruka/mailroom/services/tickets"
 	"github.com/nyaruka/mailroom/web"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -146,7 +146,7 @@ func handleEventCallback(ctx context.Context, rt *runtime.Runtime, r *http.Reque
 }
 
 func processChannelEvent(ctx context.Context, rt *runtime.Runtime, event *channelEvent, l *models.HTTPLogger) error {
-	lr := logrus.WithField("integration_id", event.IntegrationID).WithField("subdomain", event.Subdomain)
+	lr := slog.With("integration_id", event.IntegrationID, "subdomain", event.Subdomain)
 
 	switch event.TypeID {
 
