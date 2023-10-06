@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -26,7 +27,6 @@ import (
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/nyaruka/mailroom/web"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,7 +34,7 @@ import (
 // mocks the Twilio API
 func mockTwilioHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	logrus.WithField("method", r.Method).WithField("url", r.URL.String()).WithField("form", r.Form).Info("test server called")
+	slog.Info("test server called", "method", r.Method, "url", r.URL.String(), "form", r.Form)
 	if strings.HasSuffix(r.URL.String(), "Calls.json") {
 		to := r.Form.Get("To")
 		if to == "+16055741111" {
@@ -350,7 +350,7 @@ func mockVonageHandler(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		form := &CallForm{}
 		json.Unmarshal(body, form)
-		logrus.WithField("method", r.Method).WithField("url", r.URL.String()).WithField("body", string(body)).WithField("form", form).Info("test server called")
+		slog.Info("test server called", "method", r.Method, "url", r.URL.String(), "body", string(body), "form", form)
 
 		// end of a leg
 		if form.Action == "transfer" {

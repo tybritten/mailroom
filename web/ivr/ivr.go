@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
@@ -18,7 +19,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -73,18 +73,18 @@ func newIVRHandler(handler ivrHandlerFn, logType models.ChannelLogType) web.Hand
 		call, rerr := handler(ctx, rt, oa, ch, svc, r, recorder.ResponseWriter)
 		if call != nil {
 			if err := call.AttachLog(ctx, rt.DB, clog); err != nil {
-				logrus.WithError(err).WithField("http_request", r).Error("error attaching ivr channel log")
+				slog.Error("error attaching ivr channel log", "error", err, "http_request", r)
 			}
 		}
 
 		if err := recorder.End(); err != nil {
-			logrus.WithError(err).WithField("http_request", r).Error("error recording IVR request")
+			slog.Error("error recording IVR request", "error", err, "http_request", r)
 		}
 
 		clog.End()
 
 		if err := models.InsertChannelLogs(ctx, rt, []*models.ChannelLog{clog}); err != nil {
-			logrus.WithError(err).WithField("http_request", r).Error("error writing ivr channel log")
+			slog.Error("error writing ivr channel log", "error", err, "http_request", r)
 		}
 
 		return rerr
@@ -132,8 +132,7 @@ func handleIncoming(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	// try to handle this event
 	session, err := handler.HandleChannelEvent(ctx, rt, models.EventTypeIncomingCall, event, call)
 	if err != nil {
-		logrus.WithError(err).WithField("http_request", r).Error("error handling incoming call")
-
+		slog.Error("error handling incoming call", "error", err, "http_request", r)
 		return call, svc.WriteErrorResponse(w, errors.Wrapf(err, "error handling incoming call"))
 	}
 
@@ -247,7 +246,7 @@ func handleCallback(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 
 	// had an error? mark our call as errored and log it
 	if err != nil {
-		logrus.WithError(err).WithField("http_request", r).Error("error while handling IVR")
+		slog.Error("error while handling IVR", "error", err, "http_request", r)
 		return conn, ivr.HandleAsFailure(ctx, rt.DB, svc, conn, w, err)
 	}
 
@@ -290,7 +289,7 @@ func handleStatus(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets
 
 	// had an error? mark our call as errored and log it
 	if err != nil {
-		logrus.WithError(err).WithField("http_request", r).Error("error while handling status")
+		slog.Error("error while handling status", "error", err, "http_request", r)
 		return conn, ivr.HandleAsFailure(ctx, rt.DB, svc, conn, w, err)
 	}
 
