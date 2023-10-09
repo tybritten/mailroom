@@ -30,11 +30,11 @@ func TestMsgEvents(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetAll)
 
-	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "start", models.MatchOnly, nil, nil)
-	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.IVRFlow, "ivr", models.MatchOnly, nil, nil)
+	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "start", models.MatchOnly, nil, nil, nil)
+	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.IVRFlow, "ivr", models.MatchOnly, nil, nil, nil)
 
-	testdata.InsertKeywordTrigger(rt, testdata.Org2, testdata.Org2Favorites, "start", models.MatchOnly, nil, nil)
-	testdata.InsertCatchallTrigger(rt, testdata.Org2, testdata.Org2SingleMessage, nil, nil)
+	testdata.InsertKeywordTrigger(rt, testdata.Org2, testdata.Org2Favorites, "start", models.MatchOnly, nil, nil, nil)
+	testdata.InsertCatchallTrigger(rt, testdata.Org2, testdata.Org2SingleMessage, nil, nil, nil)
 
 	// give Cathy and Bob some tickets...
 	openTickets := map[*testdata.Contact][]*testdata.Ticket{
@@ -642,8 +642,8 @@ func TestTimedEvents(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetAll)
 
 	// create some keyword triggers
-	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "start", models.MatchOnly, nil, nil)
-	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.PickANumber, "pick", models.MatchOnly, nil, nil)
+	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "start", models.MatchOnly, nil, nil, nil)
+	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.PickANumber, "pick", models.MatchOnly, nil, nil, nil)
 
 	tcs := []struct {
 		EventType string
