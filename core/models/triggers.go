@@ -116,7 +116,7 @@ func loadTriggers(ctx context.Context, db *sql.DB, orgID OrgID) ([]*Trigger, err
 }
 
 // FindMatchingMsgTrigger finds the best match trigger for an incoming message from the given contact
-func FindMatchingMsgTrigger(oa *OrgAssets, contact *flows.Contact, text string) *Trigger {
+func FindMatchingMsgTrigger(oa *OrgAssets, channel *Channel, contact *flows.Contact, text string) *Trigger {
 	// determine our message keyword
 	words := utils.TokenizeString(text)
 	keyword := ""
@@ -132,28 +132,28 @@ func FindMatchingMsgTrigger(oa *OrgAssets, contact *flows.Contact, text string) 
 	})
 
 	// if we have a matching keyword trigger return that, otherwise we move on to catchall triggers..
-	byKeyword := findBestTriggerMatch(candidates, nil, contact)
+	byKeyword := findBestTriggerMatch(candidates, channel, contact)
 	if byKeyword != nil {
 		return byKeyword
 	}
 
 	candidates = findTriggerCandidates(oa, CatchallTriggerType, nil)
 
-	return findBestTriggerMatch(candidates, nil, contact)
+	return findBestTriggerMatch(candidates, channel, contact)
 }
 
 // FindMatchingIncomingCallTrigger finds the best match trigger for incoming calls
-func FindMatchingIncomingCallTrigger(oa *OrgAssets, contact *flows.Contact) *Trigger {
+func FindMatchingIncomingCallTrigger(oa *OrgAssets, channel *Channel, contact *flows.Contact) *Trigger {
 	candidates := findTriggerCandidates(oa, IncomingCallTriggerType, nil)
 
-	return findBestTriggerMatch(candidates, nil, contact)
+	return findBestTriggerMatch(candidates, channel, contact)
 }
 
 // FindMatchingMissedCallTrigger finds the best match trigger for missed incoming calls
-func FindMatchingMissedCallTrigger(oa *OrgAssets) *Trigger {
+func FindMatchingMissedCallTrigger(oa *OrgAssets, channel *Channel) *Trigger {
 	candidates := findTriggerCandidates(oa, MissedCallTriggerType, nil)
 
-	return findBestTriggerMatch(candidates, nil, nil)
+	return findBestTriggerMatch(candidates, channel, nil)
 }
 
 // FindMatchingNewConversationTrigger finds the best match trigger for new conversation channel events

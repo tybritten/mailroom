@@ -187,9 +187,9 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 	case models.EventTypeReferral:
 		trigger = models.FindMatchingReferralTrigger(oa, channel, event.ExtraString("referrer_id"))
 	case models.EventTypeMissedCall:
-		trigger = models.FindMatchingMissedCallTrigger(oa)
+		trigger = models.FindMatchingMissedCallTrigger(oa, channel)
 	case models.EventTypeIncomingCall:
-		trigger = models.FindMatchingIncomingCallTrigger(oa, contact)
+		trigger = models.FindMatchingIncomingCallTrigger(oa, channel, contact)
 	case models.EventTypeOptIn:
 		trigger = models.FindMatchingOptInTrigger(oa, channel)
 	case models.EventTypeOptOut:
@@ -410,7 +410,7 @@ func handleMsgEvent(ctx context.Context, rt *runtime.Runtime, event *MsgEvent) e
 	}
 
 	// find any matching triggers
-	trigger := models.FindMatchingMsgTrigger(oa, contact, event.Text)
+	trigger := models.FindMatchingMsgTrigger(oa, channel, contact, event.Text)
 
 	// look for a waiting session for this contact
 	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, contact)

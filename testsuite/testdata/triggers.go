@@ -5,16 +5,16 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-func InsertKeywordTrigger(rt *runtime.Runtime, org *Org, flow *Flow, keyword string, matchType models.MatchType, includeGroups []*Group, excludeGroups []*Group) models.TriggerID {
-	return insertTrigger(rt, org, models.KeywordTriggerType, flow, keyword, matchType, models.NilScheduleID, includeGroups, excludeGroups, nil, "", nil)
+func InsertKeywordTrigger(rt *runtime.Runtime, org *Org, flow *Flow, keyword string, matchType models.MatchType, includeGroups []*Group, excludeGroups []*Group, channel *Channel) models.TriggerID {
+	return insertTrigger(rt, org, models.KeywordTriggerType, flow, keyword, matchType, models.NilScheduleID, includeGroups, excludeGroups, nil, "", channel)
 }
 
-func InsertIncomingCallTrigger(rt *runtime.Runtime, org *Org, flow *Flow, includeGroups, excludeGroups []*Group) models.TriggerID {
-	return insertTrigger(rt, org, models.IncomingCallTriggerType, flow, "", "", models.NilScheduleID, includeGroups, excludeGroups, nil, "", nil)
+func InsertIncomingCallTrigger(rt *runtime.Runtime, org *Org, flow *Flow, includeGroups, excludeGroups []*Group, channel *Channel) models.TriggerID {
+	return insertTrigger(rt, org, models.IncomingCallTriggerType, flow, "", "", models.NilScheduleID, includeGroups, excludeGroups, nil, "", channel)
 }
 
-func InsertMissedCallTrigger(rt *runtime.Runtime, org *Org, flow *Flow) models.TriggerID {
-	return insertTrigger(rt, org, models.MissedCallTriggerType, flow, "", "", models.NilScheduleID, nil, nil, nil, "", nil)
+func InsertMissedCallTrigger(rt *runtime.Runtime, org *Org, flow *Flow, channel *Channel) models.TriggerID {
+	return insertTrigger(rt, org, models.MissedCallTriggerType, flow, "", "", models.NilScheduleID, nil, nil, nil, "", channel)
 }
 
 func InsertNewConversationTrigger(rt *runtime.Runtime, org *Org, flow *Flow, channel *Channel) models.TriggerID {
@@ -33,8 +33,8 @@ func InsertReferralTrigger(rt *runtime.Runtime, org *Org, flow *Flow, referrerID
 	return insertTrigger(rt, org, models.ReferralTriggerType, flow, "", "", models.NilScheduleID, nil, nil, nil, referrerID, channel)
 }
 
-func InsertCatchallTrigger(rt *runtime.Runtime, org *Org, flow *Flow, includeGroups, excludeGroups []*Group) models.TriggerID {
-	return insertTrigger(rt, org, models.CatchallTriggerType, flow, "", "", models.NilScheduleID, includeGroups, excludeGroups, nil, "", nil)
+func InsertCatchallTrigger(rt *runtime.Runtime, org *Org, flow *Flow, includeGroups, excludeGroups []*Group, channel *Channel) models.TriggerID {
+	return insertTrigger(rt, org, models.CatchallTriggerType, flow, "", "", models.NilScheduleID, includeGroups, excludeGroups, nil, "", channel)
 }
 
 func InsertScheduledTrigger(rt *runtime.Runtime, org *Org, flow *Flow, schedID models.ScheduleID, includeGroups, excludeGroups []*Group, includeContacts []*Contact) models.TriggerID {
