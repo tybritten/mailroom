@@ -1,3 +1,9 @@
+v8.3.32 (2023-10-10)
+-------------------------
+ * Update to latest goflow
+ * Fix filtering by trigger optional channel
+ * Use more slog, replacing logrus
+
 v8.3.31 (2023-10-05)
 -------------------------
  * Update test database
