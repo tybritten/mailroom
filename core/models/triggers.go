@@ -50,16 +50,16 @@ const NilTriggerID = TriggerID(0)
 // Trigger represents a trigger in an organization
 type Trigger struct {
 	t struct {
-		ID              TriggerID   `json:"id"`
-		FlowID          FlowID      `json:"flow_id"`
-		TriggerType     TriggerType `json:"trigger_type"`
-		Keyword         string      `json:"keyword"`
-		MatchType       MatchType   `json:"match_type"`
-		ChannelID       ChannelID   `json:"channel_id"`
-		ReferrerID      string      `json:"referrer_id"`
-		IncludeGroupIDs []GroupID   `json:"include_group_ids"`
-		ExcludeGroupIDs []GroupID   `json:"exclude_group_ids"`
-		ContactIDs      []ContactID `json:"contact_ids,omitempty"`
+		ID              TriggerID      `json:"id"`
+		FlowID          FlowID         `json:"flow_id"`
+		TriggerType     TriggerType    `json:"trigger_type"`
+		Keywords        pq.StringArray `json:"keywords"`
+		MatchType       MatchType      `json:"match_type"`
+		ChannelID       ChannelID      `json:"channel_id"`
+		ReferrerID      string         `json:"referrer_id"`
+		IncludeGroupIDs []GroupID      `json:"include_group_ids"`
+		ExcludeGroupIDs []GroupID      `json:"exclude_group_ids"`
+		ContactIDs      []ContactID    `json:"contact_ids,omitempty"`
 	}
 }
 
@@ -68,7 +68,7 @@ func (t *Trigger) ID() TriggerID { return t.t.ID }
 
 func (t *Trigger) FlowID() FlowID             { return t.t.FlowID }
 func (t *Trigger) TriggerType() TriggerType   { return t.t.TriggerType }
-func (t *Trigger) Keyword() string            { return t.t.Keyword }
+func (t *Trigger) Keywords() []string         { return []string(t.t.Keywords) }
 func (t *Trigger) MatchType() MatchType       { return t.t.MatchType }
 func (t *Trigger) ChannelID() ChannelID       { return t.t.ChannelID }
 func (t *Trigger) ReferrerID() string         { return t.t.ReferrerID }
@@ -82,20 +82,9 @@ func (t *Trigger) KeywordMatchType() triggers.KeywordMatchType {
 	return triggers.KeywordMatchTypeOnlyWord
 }
 
-// Match returns the match for this trigger, if any
-func (t *Trigger) Match() *triggers.KeywordMatch {
-	if t.Keyword() != "" {
-		return &triggers.KeywordMatch{
-			Type:    t.KeywordMatchType(),
-			Keyword: t.Keyword(),
-		}
-	}
-	return nil
-}
-
 // loadTriggers loads all non-schedule triggers for the passed in org
 func loadTriggers(ctx context.Context, db *sql.DB, orgID OrgID) ([]*Trigger, error) {
-	rows, err := db.QueryContext(ctx, selectTriggersSQL, orgID)
+	rows, err := db.QueryContext(ctx, sqlSelectTriggersByOrg, orgID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error querying triggers for org: %d", orgID)
 	}
@@ -116,7 +105,7 @@ func loadTriggers(ctx context.Context, db *sql.DB, orgID OrgID) ([]*Trigger, err
 }
 
 // FindMatchingMsgTrigger finds the best match trigger for an incoming message from the given contact
-func FindMatchingMsgTrigger(oa *OrgAssets, channel *Channel, contact *flows.Contact, text string) *Trigger {
+func FindMatchingMsgTrigger(oa *OrgAssets, channel *Channel, contact *flows.Contact, text string) (*Trigger, string) {
 	// determine our message keyword
 	words := utils.TokenizeString(text)
 	keyword := ""
@@ -127,19 +116,29 @@ func FindMatchingMsgTrigger(oa *OrgAssets, channel *Channel, contact *flows.Cont
 		only = len(words) == 1
 	}
 
+	// for each candidate trigger, the keyword that matched
+	candidateKeywords := make(map[*Trigger]string, 10)
+
 	candidates := findTriggerCandidates(oa, KeywordTriggerType, func(t *Trigger) bool {
-		return envs.CollateEquals(oa.Env(), t.Keyword(), keyword) && (t.MatchType() == MatchFirst || (t.MatchType() == MatchOnly && only))
+		for _, k := range t.Keywords() {
+			m := envs.CollateEquals(oa.Env(), k, keyword) && (t.MatchType() == MatchFirst || (t.MatchType() == MatchOnly && only))
+			if m {
+				candidateKeywords[t] = k
+				return true
+			}
+		}
+		return false
 	})
 
 	// if we have a matching keyword trigger return that, otherwise we move on to catchall triggers..
 	byKeyword := findBestTriggerMatch(candidates, channel, contact)
 	if byKeyword != nil {
-		return byKeyword
+		return byKeyword, candidateKeywords[byKeyword]
 	}
 
 	candidates = findTriggerCandidates(oa, CatchallTriggerType, nil)
 
-	return findBestTriggerMatch(candidates, channel, contact)
+	return findBestTriggerMatch(candidates, channel, contact), ""
 }
 
 // FindMatchingIncomingCallTrigger finds the best match trigger for incoming calls
@@ -306,30 +305,24 @@ func triggerMatchQualifiers(t *Trigger, channel *Channel, contactGroups map[Grou
 	return true, score
 }
 
-const selectTriggersSQL = `
-SELECT ROW_TO_JSON(r) FROM (SELECT
-	t.id as id, 
-	t.flow_id as flow_id,
-	t.trigger_type as trigger_type,
-	t.keyword as keyword,
-	t.match_type as match_type,
-	t.channel_id as channel_id,
-	COALESCE(t.referrer_id, '') as referrer_id,
-	ARRAY_REMOVE(ARRAY_AGG(DISTINCT ig.contactgroup_id), NULL) as include_group_ids,
-	ARRAY_REMOVE(ARRAY_AGG(DISTINCT eg.contactgroup_id), NULL) as exclude_group_ids
-FROM 
-	triggers_trigger t
-	LEFT OUTER JOIN triggers_trigger_groups ig ON t.id = ig.trigger_id
-	LEFT OUTER JOIN triggers_trigger_exclude_groups eg ON t.id = eg.trigger_id
-WHERE 
-	t.org_id = $1 AND 
-	t.is_active = TRUE AND
-	t.is_archived = FALSE AND
-	t.trigger_type != 'S'
-GROUP BY 
-	t.id
-) r;
-`
+const sqlSelectTriggersByOrg = `
+SELECT ROW_TO_JSON(r) FROM (
+             SELECT
+                    t.id as id, 
+                    t.flow_id as flow_id,
+                    t.trigger_type as trigger_type,
+                    CASE WHEN t.keyword IS NOT NULL AND t.keyword != '' THEN ARRAY[t.keyword] ELSE NULL END as keywords,
+                    t.match_type as match_type,
+                    t.channel_id as channel_id,
+                    COALESCE(t.referrer_id, '') as referrer_id,
+                    ARRAY_REMOVE(ARRAY_AGG(DISTINCT ig.contactgroup_id), NULL) as include_group_ids,
+                    ARRAY_REMOVE(ARRAY_AGG(DISTINCT eg.contactgroup_id), NULL) as exclude_group_ids
+               FROM triggers_trigger t
+    LEFT OUTER JOIN triggers_trigger_groups ig ON t.id = ig.trigger_id
+    LEFT OUTER JOIN triggers_trigger_exclude_groups eg ON t.id = eg.trigger_id
+              WHERE t.org_id = $1 AND t.is_active = TRUE AND t.is_archived = FALSE AND t.trigger_type != 'S'
+           GROUP BY t.id
+) r;`
 
 const selectTriggersByContactIDsSQL = `
 SELECT 

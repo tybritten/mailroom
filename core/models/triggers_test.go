@@ -9,7 +9,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +28,7 @@ func TestLoadTriggers(t *testing.T) {
 		id               models.TriggerID
 		type_            models.TriggerType
 		flowID           models.FlowID
-		keyword          string
+		keywords         []string
 		keywordMatchType models.MatchType
 		referrerID       string
 		includeGroups    []models.GroupID
@@ -41,14 +40,14 @@ func TestLoadTriggers(t *testing.T) {
 			id:               testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "join", models.MatchFirst, nil, nil, nil),
 			type_:            models.KeywordTriggerType,
 			flowID:           testdata.Favorites.ID,
-			keyword:          "join",
+			keywords:         []string{"join"},
 			keywordMatchType: models.MatchFirst,
 		},
 		{
 			id:               testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "join", models.MatchFirst, nil, nil, testdata.TwilioChannel),
 			type_:            models.KeywordTriggerType,
 			flowID:           testdata.Favorites.ID,
-			keyword:          "join",
+			keywords:         []string{"join"},
 			keywordMatchType: models.MatchFirst,
 			channelID:        testdata.TwilioChannel.ID,
 		},
@@ -56,7 +55,7 @@ func TestLoadTriggers(t *testing.T) {
 			id:               testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.PickANumber, "start", models.MatchOnly, []*testdata.Group{testdata.DoctorsGroup, testdata.TestersGroup}, []*testdata.Group{farmersGroup}, nil),
 			type_:            models.KeywordTriggerType,
 			flowID:           testdata.PickANumber.ID,
-			keyword:          "start",
+			keywords:         []string{"start"},
 			keywordMatchType: models.MatchOnly,
 			includeGroups:    []models.GroupID{testdata.DoctorsGroup.ID, testdata.TestersGroup.ID},
 			excludeGroups:    []models.GroupID{farmersGroup.ID},
@@ -69,9 +68,10 @@ func TestLoadTriggers(t *testing.T) {
 			excludeGroups: []models.GroupID{farmersGroup.ID},
 		},
 		{
-			id:            testdata.InsertIncomingCallTrigger(rt, testdata.Org1, testdata.Favorites, []*testdata.Group{testdata.DoctorsGroup, testdata.TestersGroup}, []*testdata.Group{farmersGroup}, testdata.TwilioChannel),
-			type_:         models.IncomingCallTriggerType,
-			flowID:        testdata.Favorites.ID,
+			id:     testdata.InsertIncomingCallTrigger(rt, testdata.Org1, testdata.Favorites, []*testdata.Group{testdata.DoctorsGroup, testdata.TestersGroup}, []*testdata.Group{farmersGroup}, testdata.TwilioChannel),
+			type_:  models.IncomingCallTriggerType,
+			flowID: testdata.Favorites.ID,
+
 			includeGroups: []models.GroupID{testdata.DoctorsGroup.ID, testdata.TestersGroup.ID},
 			excludeGroups: []models.GroupID{farmersGroup.ID},
 			channelID:     testdata.TwilioChannel.ID,
@@ -123,7 +123,7 @@ func TestLoadTriggers(t *testing.T) {
 		assert.Equal(t, tc.id, actual.ID(), "id mismatch in trigger #%d", i)
 		assert.Equal(t, tc.type_, actual.TriggerType(), "type mismatch in trigger #%d", i)
 		assert.Equal(t, tc.flowID, actual.FlowID(), "flow id mismatch in trigger #%d", i)
-		assert.Equal(t, tc.keyword, actual.Keyword(), "keyword mismatch in trigger #%d", i)
+		assert.Equal(t, tc.keywords, actual.Keywords(), "keywords mismatch in trigger #%d", i)
 		assert.Equal(t, tc.keywordMatchType, actual.MatchType(), "match type mismatch in trigger #%d", i)
 		assert.Equal(t, tc.referrerID, actual.ReferrerID(), "referrer id mismatch in trigger #%d", i)
 		assert.ElementsMatch(t, tc.includeGroups, actual.IncludeGroupIDs(), "include groups mismatch in trigger #%d", i)
@@ -172,34 +172,36 @@ func TestFindMatchingMsgTrigger(t *testing.T) {
 		channel           *models.Channel
 		contact           *flows.Contact
 		expectedTriggerID models.TriggerID
+		expectedKeyword   string
 	}{
-		{" join ", nil, cathy, joinID},
-		{"JOIN", nil, cathy, joinID},
-		{"JOIN", twilioChannels[0], cathy, joinTwilioOnlyID},
-		{"JOIN", facebookChannels[0], cathy, joinID},
-		{"join this", nil, cathy, joinID},
-		{"resist", nil, george, resistID},
-		{"resist", twilioChannels[0], george, resistTwilioOnlyID},
-		{"resist", nil, bob, doctorsID},
-		{"resist", twilioChannels[0], cathy, resistTwilioOnlyID},
-		{"resist", nil, cathy, doctorsAndNotTestersID},
-		{"resist this", nil, cathy, doctorsCatchallID},
-		{" 👍 ", nil, george, emojiID},
-		{"👍🏾", nil, george, emojiID}, // is 👍 + 🏾
-		{"😀👍", nil, george, othersAllID},
-		{"other", nil, cathy, doctorsCatchallID},
-		{"other", nil, george, othersAllID},
-		{"", nil, george, othersAllID},
-		{"start", twilioChannels[0], cathy, startTwilioOnlyID},
-		{"start", facebookChannels[0], cathy, doctorsCatchallID},
-		{"start", twilioChannels[0], george, startTwilioOnlyID},
-		{"start", facebookChannels[0], george, othersAllID},
+		{" join ", nil, cathy, joinID, "join"},
+		{"JOIN", nil, cathy, joinID, "join"},
+		{"JOIN", twilioChannels[0], cathy, joinTwilioOnlyID, "join"},
+		{"JOIN", facebookChannels[0], cathy, joinID, "join"},
+		{"join this", nil, cathy, joinID, "join"},
+		{"resist", nil, george, resistID, "resist"},
+		{"resist", twilioChannels[0], george, resistTwilioOnlyID, "resist"},
+		{"resist", nil, bob, doctorsID, "resist"},
+		{"resist", twilioChannels[0], cathy, resistTwilioOnlyID, "resist"},
+		{"resist", nil, cathy, doctorsAndNotTestersID, "resist"},
+		{"resist this", nil, cathy, doctorsCatchallID, ""},
+		{" 👍 ", nil, george, emojiID, "👍"},
+		{"👍🏾", nil, george, emojiID, "👍"}, // is 👍 + 🏾
+		{"😀👍", nil, george, othersAllID, ""},
+		{"other", nil, cathy, doctorsCatchallID, ""},
+		{"other", nil, george, othersAllID, ""},
+		{"", nil, george, othersAllID, ""},
+		{"start", twilioChannels[0], cathy, startTwilioOnlyID, "start"},
+		{"start", facebookChannels[0], cathy, doctorsCatchallID, ""},
+		{"start", twilioChannels[0], george, startTwilioOnlyID, "start"},
+		{"start", facebookChannels[0], george, othersAllID, ""},
 	}
 
 	for _, tc := range tcs {
-		trigger := models.FindMatchingMsgTrigger(oa, tc.channel, tc.contact, tc.text)
+		trigger, keyword := models.FindMatchingMsgTrigger(oa, tc.channel, tc.contact, tc.text)
 
 		assertTrigger(t, tc.expectedTriggerID, trigger, "trigger mismatch for %s sending '%s'", tc.contact.Name(), tc.text)
+		assert.Equal(t, tc.expectedKeyword, keyword, "keyword mismatch for %s sending '%s'", tc.contact.Name(), tc.text)
 	}
 }
 
