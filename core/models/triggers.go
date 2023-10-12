@@ -308,15 +308,15 @@ func triggerMatchQualifiers(t *Trigger, channel *Channel, contactGroups map[Grou
 const sqlSelectTriggersByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
              SELECT
-                    t.id as id, 
-                    t.flow_id as flow_id,
-                    t.trigger_type as trigger_type,
-                    CASE WHEN t.keyword IS NOT NULL AND t.keyword != '' THEN ARRAY[t.keyword] ELSE NULL END as keywords,
-                    t.match_type as match_type,
-                    t.channel_id as channel_id,
-                    COALESCE(t.referrer_id, '') as referrer_id,
-                    ARRAY_REMOVE(ARRAY_AGG(DISTINCT ig.contactgroup_id), NULL) as include_group_ids,
-                    ARRAY_REMOVE(ARRAY_AGG(DISTINCT eg.contactgroup_id), NULL) as exclude_group_ids
+                    t.id AS id, 
+                    t.flow_id AS flow_id,
+                    t.trigger_type AS trigger_type,
+					t.keywords AS keywords,
+                    t.match_type AS match_type,
+                    t.channel_id AS channel_id,
+                    COALESCE(t.referrer_id, '') AS referrer_id,
+                    ARRAY_REMOVE(ARRAY_AGG(DISTINCT ig.contactgroup_id), NULL) AS include_group_ids,
+                    ARRAY_REMOVE(ARRAY_AGG(DISTINCT eg.contactgroup_id), NULL) AS exclude_group_ids
                FROM triggers_trigger t
     LEFT OUTER JOIN triggers_trigger_groups ig ON t.id = ig.trigger_id
     LEFT OUTER JOIN triggers_trigger_exclude_groups eg ON t.id = eg.trigger_id

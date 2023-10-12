@@ -37,14 +37,14 @@ func TestLoadTriggers(t *testing.T) {
 		channelID        models.ChannelID
 	}{
 		{
-			id:               testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "join", models.MatchFirst, nil, nil, nil),
+			id:               testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, []string{"join"}, models.MatchFirst, nil, nil, nil),
 			type_:            models.KeywordTriggerType,
 			flowID:           testdata.Favorites.ID,
 			keywords:         []string{"join"},
 			keywordMatchType: models.MatchFirst,
 		},
 		{
-			id:               testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "join", models.MatchFirst, nil, nil, testdata.TwilioChannel),
+			id:               testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, []string{"join"}, models.MatchFirst, nil, nil, testdata.TwilioChannel),
 			type_:            models.KeywordTriggerType,
 			flowID:           testdata.Favorites.ID,
 			keywords:         []string{"join"},
@@ -52,7 +52,7 @@ func TestLoadTriggers(t *testing.T) {
 			channelID:        testdata.TwilioChannel.ID,
 		},
 		{
-			id:               testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.PickANumber, "start", models.MatchOnly, []*testdata.Group{testdata.DoctorsGroup, testdata.TestersGroup}, []*testdata.Group{farmersGroup}, nil),
+			id:               testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.PickANumber, []string{"start"}, models.MatchOnly, []*testdata.Group{testdata.DoctorsGroup, testdata.TestersGroup}, []*testdata.Group{farmersGroup}, nil),
 			type_:            models.KeywordTriggerType,
 			flowID:           testdata.PickANumber.ID,
 			keywords:         []string{"start"},
@@ -140,14 +140,14 @@ func TestFindMatchingMsgTrigger(t *testing.T) {
 
 	rt.DB.MustExec(`DELETE FROM triggers_trigger`)
 
-	joinID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "join", models.MatchFirst, nil, nil, nil)
-	joinTwilioOnlyID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "join", models.MatchFirst, nil, nil, testdata.TwilioChannel)
-	startTwilioOnlyID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "start", models.MatchFirst, nil, nil, testdata.TwilioChannel)
-	resistID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.SingleMessage, "resist", models.MatchOnly, nil, nil, nil)
-	resistTwilioOnlyID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.SingleMessage, "resist", models.MatchOnly, nil, nil, testdata.TwilioChannel)
-	emojiID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.PickANumber, "👍", models.MatchFirst, nil, nil, nil)
-	doctorsID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.SingleMessage, "resist", models.MatchOnly, []*testdata.Group{testdata.DoctorsGroup}, nil, nil)
-	doctorsAndNotTestersID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.SingleMessage, "resist", models.MatchOnly, []*testdata.Group{testdata.DoctorsGroup}, []*testdata.Group{testdata.TestersGroup}, nil)
+	joinID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, []string{"join"}, models.MatchFirst, nil, nil, nil)
+	joinTwilioOnlyID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, []string{"join"}, models.MatchFirst, nil, nil, testdata.TwilioChannel)
+	startTwilioOnlyID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, []string{"start"}, models.MatchFirst, nil, nil, testdata.TwilioChannel)
+	resistID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.SingleMessage, []string{"resist"}, models.MatchOnly, nil, nil, nil)
+	resistTwilioOnlyID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.SingleMessage, []string{"resist"}, models.MatchOnly, nil, nil, testdata.TwilioChannel)
+	emojiID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.PickANumber, []string{"👍"}, models.MatchFirst, nil, nil, nil)
+	doctorsID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.SingleMessage, []string{"resist"}, models.MatchOnly, []*testdata.Group{testdata.DoctorsGroup}, nil, nil)
+	doctorsAndNotTestersID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.SingleMessage, []string{"resist"}, models.MatchOnly, []*testdata.Group{testdata.DoctorsGroup}, []*testdata.Group{testdata.TestersGroup}, nil)
 	doctorsCatchallID := testdata.InsertCatchallTrigger(rt, testdata.Org1, testdata.SingleMessage, []*testdata.Group{testdata.DoctorsGroup}, nil, nil)
 	othersAllID := testdata.InsertCatchallTrigger(rt, testdata.Org1, testdata.SingleMessage, nil, nil, nil)
 
@@ -405,7 +405,7 @@ func TestArchiveContactTriggers(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetAll)
 
-	everybodyID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, "join", models.MatchFirst, nil, nil, nil)
+	everybodyID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, []string{"join"}, models.MatchFirst, nil, nil, nil)
 	cathyOnly1ID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, nil, nil, []*testdata.Contact{testdata.Cathy})
 	cathyOnly2ID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, nil, nil, []*testdata.Contact{testdata.Cathy})
 	cathyAndGeorgeID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, nil, nil, []*testdata.Contact{testdata.Cathy, testdata.George})
