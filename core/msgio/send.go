@@ -2,12 +2,12 @@ package msgio
 
 import (
 	"context"
+	"log/slog"
 	"slices"
 
 	"github.com/edganiukov/fcm"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/maps"
 )
 
@@ -37,7 +37,7 @@ func QueueMessages(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, f
 		// save an update in the common case)
 		err := models.MarkMessagesForRequeuing(ctx, db, retry)
 		if err != nil {
-			logrus.WithError(err).Error("error marking messages as initializing")
+			slog.Error("error marking messages as initializing", "error", err)
 		}
 	}
 }
@@ -52,7 +52,7 @@ func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc *
 	for _, batch := range models.ChunkSlice(urnIDs, 1000) {
 		urns, err := models.LoadContactURNs(ctx, db, batch)
 		if err != nil {
-			logrus.WithError(err).Error("error getting contact URNs")
+			slog.Error("error getting contact URNs", "error", err)
 			return nil
 		}
 		for _, u := range urns {
@@ -74,7 +74,7 @@ func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc *
 	for orgID, orgSends := range sendsByOrg {
 		oa, err := models.GetOrgAssets(ctx, rt, orgID)
 		if err != nil {
-			logrus.WithError(err).Error("error getting org assets")
+			slog.Error("error getting org assets", "error", err)
 		} else {
 			queued = append(queued, tryToQueueForOrg(ctx, rt, db, fc, oa, orgSends)...)
 		}
@@ -122,7 +122,7 @@ func tryToQueueForOrg(ctx context.Context, rt *runtime.Runtime, db models.DBorTx
 
 			// just log the error and continue to try - messages that weren't queued will be retried later
 			if err != nil {
-				logrus.WithField("channel_uuid", cc.channel.UUID()).WithField("contact_id", cc.contactID).WithError(err).Error("error queuing messages")
+				slog.Error("error queuing messages", "error", err, "channel_uuid", cc.channel.UUID(), "contact_id", cc.contactID)
 			} else {
 				for _, s := range contactSends {
 					queued = append(queued, s.Msg)
@@ -140,7 +140,7 @@ func tryToQueueForOrg(ctx context.Context, rt *runtime.Runtime, db models.DBorTx
 		for channel, msgs := range androidMsgs {
 			err := SyncAndroidChannel(fc, channel)
 			if err != nil {
-				logrus.WithField("channel_uuid", channel.UUID()).WithError(err).Error("error syncing messages")
+				slog.Error("error syncing messages", "error", err, "channel_uuid", channel.UUID())
 			}
 
 			// even if syncing fails, we consider these messages queued because the device will try to sync by itself
