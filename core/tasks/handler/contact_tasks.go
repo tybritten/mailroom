@@ -410,7 +410,7 @@ func handleMsgEvent(ctx context.Context, rt *runtime.Runtime, event *MsgEvent) e
 	}
 
 	// find any matching triggers
-	trigger := models.FindMatchingMsgTrigger(oa, channel, contact, event.Text)
+	trigger, keyword := models.FindMatchingMsgTrigger(oa, channel, contact, event.Text)
 
 	// look for a waiting session for this contact
 	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, contact)
@@ -480,8 +480,13 @@ func handleMsgEvent(ctx context.Context, rt *runtime.Runtime, event *MsgEvent) e
 				return nil
 			}
 
+			tb := triggers.NewBuilder(oa.Env(), flow.Reference(), contact).Msg(msgIn)
+			if keyword != "" {
+				tb = tb.WithMatch(&triggers.KeywordMatch{Type: trigger.KeywordMatchType(), Keyword: keyword})
+			}
+
 			// otherwise build the trigger and start the flow directly
-			trigger := triggers.NewBuilder(oa.Env(), flow.Reference(), contact).Msg(msgIn).WithMatch(trigger.Match()).Build()
+			trigger := tb.Build()
 			_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{modelContact}, []flows.Trigger{trigger}, flowMsgHook, true)
 			if err != nil {
 				return errors.Wrapf(err, "error starting flow for contact")
