@@ -2,6 +2,20 @@ package testdata
 
 // Constants used in tests, these are tied to the DB created by the RapidPro `mailroom_db` management command.
 
+var AuthGroupIDs = map[string]int{
+	"Alpha":            1,
+	"Beta":             2,
+	"Dashboard":        3,
+	"Surveyors":        4,
+	"Customer Support": 5,
+	"Granters":         6,
+	"Administrators":   7,
+	"Editors":          8,
+	"Viewers":          9,
+	"Agents":           10,
+	"Prometheus":       11,
+}
+
 var Org1 = &Org{1, "bf0514a5-9407-44c9-b0f9-3f36f9c18414"}
 var Admin = &User{3, "admin1@nyaruka.com"}
 var Editor = &User{4, "editor1@nyaruka.com"}
