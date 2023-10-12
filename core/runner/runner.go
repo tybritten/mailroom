@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -377,7 +378,7 @@ func StartFlowForContacts(
 
 	// retry committing our sessions one at a time
 	if err != nil {
-		logrus.WithError(err).Debug("failed committing bulk transaction, retrying one at a time")
+		slog.Debug("failed committing bulk transaction, retrying one at a time", "error", err)
 
 		tx.Rollback()
 

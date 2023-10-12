@@ -3,6 +3,7 @@ package hooks
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/assets"
@@ -11,7 +12,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // CommitFieldChangesHook is our hook for contact field changes
@@ -30,11 +30,11 @@ func (h *commitFieldChangesHook) Apply(ctx context.Context, rt *runtime.Runtime,
 			event := e.(*events.ContactFieldChangedEvent)
 			field := oa.FieldByKey(event.Field.Key)
 			if field == nil {
-				logrus.WithFields(logrus.Fields{
-					"field_key":  event.Field.Key,
-					"field_name": event.Field.Name,
-					"session_id": scene.SessionID(),
-				}).Debug("unable to find field with key, ignoring")
+				slog.Debug("unable to find field with key, ignoring",
+					"field_key", event.Field.Key,
+					"field_name", event.Field.Name,
+					"session_id", scene.SessionID(),
+				)
 				continue
 			}
 

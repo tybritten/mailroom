@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -9,7 +10,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // UpdateCampaignEventsHook is our hook to update any campaign events
@@ -44,11 +44,11 @@ func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtim
 			case *events.ContactFieldChangedEvent:
 				field := oa.FieldByKey(event.Field.Key)
 				if field == nil {
-					logrus.WithFields(logrus.Fields{
-						"field_key":  event.Field.Key,
-						"field_name": event.Field.Name,
-						"session_id": s.SessionID(),
-					}).Debug("unable to find field with key, ignoring for campaign updates")
+					slog.Debug("unable to find field with key, ignoring for campaign updates",
+						"field_key", event.Field.Key,
+						"field_name", event.Field.Name,
+						"session_id", s.SessionID(),
+					)
 					continue
 				}
 				fieldChanges[field.ID()] = true

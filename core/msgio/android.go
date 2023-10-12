@@ -1,13 +1,13 @@
 package msgio
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/edganiukov/fcm"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // SyncAndroidChannel tries to trigger sync of the given Android channel via FCM
@@ -37,7 +37,7 @@ func SyncAndroidChannel(fc *fcm.Client, channel *models.Channel) error {
 		return errors.Wrap(err, "error syncing channel")
 	}
 
-	logrus.WithField("elapsed", time.Since(start)).WithField("channel_uuid", channel.UUID()).Debug("android sync complete")
+	slog.Debug("android sync complete", "elapsed", time.Since(start), "channel_uuid", channel.UUID())
 	return nil
 }
 
