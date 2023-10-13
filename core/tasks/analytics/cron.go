@@ -2,13 +2,13 @@ package analytics
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/queue"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -37,13 +37,13 @@ func reportAnalytics(ctx context.Context, rt *runtime.Runtime) error {
 	// calculate size of batch queue
 	batchSize, err := queue.Size(rc, queue.BatchQueue)
 	if err != nil {
-		logrus.WithError(err).Error("error calculating batch queue size")
+		slog.Error("error calculating batch queue size", "error", err)
 	}
 
 	// and size of handler queue
 	handlerSize, err := queue.Size(rc, queue.HandlerQueue)
 	if err != nil {
-		logrus.WithError(err).Error("error calculating handler queue size")
+		slog.Error("error calculating handler queue size", "error", err)
 	}
 
 	// get our DB and redis stats
@@ -69,16 +69,16 @@ func reportAnalytics(ctx context.Context, rt *runtime.Runtime) error {
 	analytics.Gauge("mr.handler_queue", float64(handlerSize))
 	analytics.Gauge("mr.batch_queue", float64(batchSize))
 
-	logrus.WithFields(logrus.Fields{
-		"db_busy":          dbStats.InUse,
-		"db_idle":          dbStats.Idle,
-		"db_wait_time":     dbWaitDurationInPeriod,
-		"db_wait_count":    dbWaitCountInPeriod,
-		"redis_wait_time":  dbWaitDurationInPeriod,
-		"redis_wait_count": dbWaitCountInPeriod,
-		"handler_size":     handlerSize,
-		"batch_size":       batchSize,
-	}).Info("current analytics")
+	slog.Info("current analytics",
+		"db_busy", dbStats.InUse,
+		"db_idle", dbStats.Idle,
+		"db_wait_time", dbWaitDurationInPeriod,
+		"db_wait_count", dbWaitCountInPeriod,
+		"redis_wait_time", dbWaitDurationInPeriod,
+		"redis_wait_count", dbWaitCountInPeriod,
+		"handler_size", handlerSize,
+		"batch_size", batchSize,
+	)
 
 	return nil
 }
