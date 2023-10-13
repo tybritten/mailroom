@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -14,7 +15,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // TypeHandleContactEvent is the task type for flagging that a contact has tasks to be handled
@@ -55,7 +55,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 		if err != nil {
 			return errors.Wrapf(err, "error re-adding contact task after failing to get lock")
 		}
-		logrus.WithFields(logrus.Fields{"org_id": orgID, "contact_id": t.ContactID}).Info("failed to get lock for contact, requeued and skipping")
+		slog.Info("failed to get lock for contact, requeued and skipping", "org_id", orgID, "contact_id", t.ContactID)
 		return nil
 	}
 
@@ -130,11 +130,11 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 
 		// if we get an error processing an event, requeue it for later and return our error
 		if err != nil {
-			log := logrus.WithFields(logrus.Fields{"org_id": orgID, "contact_id": t.ContactID, "event": event})
+			log := slog.With("org_id", orgID, "contact_id", t.ContactID, "event", event)
 
 			if qerr := dbutil.AsQueryError(err); qerr != nil {
 				query, params := qerr.Query()
-				log = log.WithFields(logrus.Fields{"sql": query, "sql_params": params})
+				log = log.With("sql", query, "sql_params", params)
 			}
 
 			contactEvent.ErrorCount++
@@ -142,14 +142,14 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 				rc := rt.RP.Get()
 				retryErr := queueHandleTask(rc, t.ContactID, contactEvent, true)
 				if retryErr != nil {
-					logrus.WithError(retryErr).Error("error requeuing errored contact event")
+					slog.Error("error requeuing errored contact event", "error", retryErr)
 				}
 				rc.Close()
 
-				log.WithError(err).WithField("error_count", contactEvent.ErrorCount).Error("error handling contact event")
+				log.Error("error handling contact event", "error", err, "error_count", contactEvent.ErrorCount)
 				return nil
 			}
-			log.WithError(err).Error("error handling contact event, permanent failure")
+			log.Error("error handling contact event, permanent failure", "error", err)
 			return nil
 		}
 	}

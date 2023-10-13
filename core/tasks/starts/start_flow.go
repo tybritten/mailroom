@@ -2,6 +2,7 @@ package starts
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/nyaruka/gocommon/i18n"
@@ -13,7 +14,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/ivr"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -149,7 +149,7 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, start *mod
 				return errors.Wrap(err, "error queuing flow start batch")
 			}
 			// if we've already queued other batches.. we don't want to error and have the task be retried
-			logrus.WithError(err).Error("error queuing flow start batch")
+			slog.Error("error queuing flow start batch", "error", err)
 		}
 	}
 
