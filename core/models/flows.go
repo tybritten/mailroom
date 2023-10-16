@@ -6,6 +6,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/nyaruka/gocommon/dbutil"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // FlowID is the type for flow IDs
@@ -166,7 +166,7 @@ func loadFlow(ctx context.Context, db *sql.DB, sql string, orgID OrgID, arg any)
 		return nil, errors.Wrapf(err, "error reading flow definition by: %s", arg)
 	}
 
-	logrus.WithField("elapsed", time.Since(start)).WithField("org_id", orgID).WithField("flow", arg).Debug("loaded flow")
+	slog.Debug("loaded flow", "elapsed", time.Since(start), "org_id", orgID, "flow", arg)
 
 	return flow, nil
 }
