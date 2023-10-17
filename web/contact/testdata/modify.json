@@ -1409,10 +1409,6 @@
             "modifiers": [
                 {
                     "type": "ticket",
-                    "ticketer": {
-                        "uuid": "ffc903f7-8cbb-443f-9627-87106842d1aa",
-                        "name": "RapidPro Tickets"
-                    },
                     "topic": {
                         "uuid": "0a8f2e00-fef6-402c-bd79-d789446ec0e0",
                         "name": "Support"
@@ -1444,10 +1440,6 @@
                         ],
                         "ticket": {
                             "uuid": "d2f852ec-7b4e-457f-ae7f-f8b243c49ff5",
-                            "ticketer": {
-                                "uuid": "ffc903f7-8cbb-443f-9627-87106842d1aa",
-                                "name": "RapidPro Tickets"
-                            },
                             "topic": {
                                 "uuid": "0a8f2e00-fef6-402c-bd79-d789446ec0e0",
                                 "name": "Support"
@@ -1465,10 +1457,6 @@
                             "created_on": "2018-07-06T12:30:00.123456789Z",
                             "ticket": {
                                 "uuid": "d2f852ec-7b4e-457f-ae7f-f8b243c49ff5",
-                                "ticketer": {
-                                    "uuid": "ffc903f7-8cbb-443f-9627-87106842d1aa",
-                                    "name": "RapidPro Tickets"
-                                },
                                 "topic": {
                                     "uuid": "0a8f2e00-fef6-402c-bd79-d789446ec0e0",
                                     "name": "Support"
@@ -1561,10 +1549,6 @@
                         ],
                         "ticket": {
                             "uuid": "d2f852ec-7b4e-457f-ae7f-f8b243c49ff5",
-                            "ticketer": {
-                                "uuid": "ffc903f7-8cbb-443f-9627-87106842d1aa",
-                                "name": "RapidPro Tickets"
-                            },
                             "topic": {
                                 "uuid": "0a8f2e00-fef6-402c-bd79-d789446ec0e0",
                                 "name": "Support"
@@ -1655,10 +1639,6 @@
                         ],
                         "ticket": {
                             "uuid": "d2f852ec-7b4e-457f-ae7f-f8b243c49ff5",
-                            "ticketer": {
-                                "uuid": "ffc903f7-8cbb-443f-9627-87106842d1aa",
-                                "name": "RapidPro Tickets"
-                            },
                             "topic": {
                                 "uuid": "0a8f2e00-fef6-402c-bd79-d789446ec0e0",
                                 "name": "Support"

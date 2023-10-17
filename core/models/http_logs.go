@@ -24,9 +24,6 @@ const (
 	// LogTypeClassifierCalled is our type for when we call a classifier
 	LogTypeClassifierCalled = "classifier_called"
 
-	// LogTypeTicketerCalled is our type for when we call a ticketer
-	LogTypeTicketerCalled = "ticketer_called"
-
 	// LogTypeAirtimeTransferred is our type for when we make an airtime transfer
 	LogTypeAirtimeTransferred = "airtime_transferred"
 )
@@ -46,7 +43,6 @@ type HTTPLog struct {
 	CreatedOn         time.Time         `db:"created_on"`
 	FlowID            FlowID            `db:"flow_id"`
 	ClassifierID      ClassifierID      `db:"classifier_id"`
-	TicketerID        TicketerID        `db:"ticketer_id"`
 	AirtimeTransferID AirtimeTransferID `db:"airtime_transfer_id"`
 }
 
@@ -90,8 +86,8 @@ func (h *HTTPLog) SetAirtimeTransferID(tid AirtimeTransferID) {
 }
 
 const insertHTTPLogsSQL = `
-INSERT INTO request_logs_httplog( log_type,  org_id,  url,  status_code,  flow_id,  classifier_id,  ticketer_id,  airtime_transfer_id,  request,  response,  is_error,  request_time,  num_retries,  created_on)
-					      VALUES(:log_type, :org_id, :url, :status_code, :flow_id, :classifier_id, :ticketer_id, :airtime_transfer_id, :request, :response, :is_error, :request_time, :num_retries, :created_on)
+INSERT INTO request_logs_httplog( log_type,  org_id,  url,  status_code,  flow_id,  classifier_id,  airtime_transfer_id,  request,  response,  is_error,  request_time,  num_retries,  created_on)
+					      VALUES(:log_type, :org_id, :url, :status_code, :flow_id, :classifier_id, :airtime_transfer_id, :request, :response, :is_error, :request_time, :num_retries, :created_on)
 RETURNING id
 `
 

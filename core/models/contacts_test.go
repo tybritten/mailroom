@@ -79,7 +79,7 @@ func TestContacts(t *testing.T) {
 	assert.Equal(t, "tel:+16055742222?id=10001", bob.URNs()[0].String())
 	assert.Equal(t, "whatsapp:250788373373?id=30000", bob.URNs()[1].String())
 	assert.Equal(t, 0, bob.Groups().Count())
-	assert.Nil(t, bob.Ticket()) // because ticketer no longer exists
+	assert.NotNil(t, bob.Ticket())
 
 	assert.Equal(t, "George", george.Name())
 	assert.Equal(t, decimal.RequireFromString("30"), george.Fields()["age"].QueryValue())
