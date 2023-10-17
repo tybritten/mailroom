@@ -16,7 +16,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/maps"
 )
 
@@ -56,7 +55,7 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 	if err != nil {
 		// if this flow just isn't available anymore, log this error
 		if err == models.ErrNotFound {
-			logrus.WithField("contact_uuid", session.Contact().UUID()).WithField("session_uuid", session.UUID()).WithField("flow_id", session.CurrentFlowID()).Error("unable to find flow for resume")
+			slog.Error("unable to find flow for resume", "contact_uuid", session.Contact().UUID(), "session_uuid", session.UUID(), "flow_id", session.CurrentFlowID())
 			return nil, models.ExitSessions(ctx, rt.DB, []models.SessionID{session.ID()}, models.SessionStatusFailed)
 		}
 		return nil, errors.Wrapf(err, "error loading session flow: %d", session.CurrentFlowID())
@@ -118,7 +117,7 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 		return nil, errors.Wrapf(err, "error committing session changes on resume")
 	}
 
-	logrus.WithField("contact_uuid", resume.Contact().UUID()).WithField("session_uuid", session.UUID()).WithField("resume_type", resume.Type()).WithField("elapsed", time.Since(start)).Info("resumed session")
+	slog.Info("resumed session", "contact_uuid", resume.Contact().UUID(), "session_uuid", session.UUID(), "resume_type", resume.Type(), "elapsed", time.Since(start))
 	return session, nil
 }
 
@@ -131,7 +130,7 @@ func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, batch *models.Flow
 		defer func() {
 			err := models.MarkStartComplete(ctx, rt.DB, batch.StartID)
 			if err != nil {
-				logrus.WithError(err).WithField("start_id", batch.StartID).Error("error marking start as complete")
+				slog.Error("error marking start as complete", "error", err, "start_id", batch.StartID)
 			}
 		}()
 	}
@@ -145,7 +144,7 @@ func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, batch *models.Flow
 	// try to load our flow
 	flow, err := oa.FlowByID(batch.FlowID)
 	if err == models.ErrNotFound {
-		logrus.WithField("flow_id", batch.FlowID).Info("skipping flow start, flow no longer active or archived")
+		slog.Info("skipping flow start, flow no longer active or archived", "flow_id", batch.FlowID)
 		return nil, nil
 	}
 	if err != nil {
@@ -257,7 +256,7 @@ func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, f
 	}
 
 	if len(remaining) > 0 {
-		logrus.WithField("contacts", remaining).Warn("failed to acquire locks for contacts")
+		slog.Warn("failed to acquire locks for contacts", "contacts", remaining)
 	}
 
 	return sessions, nil
@@ -313,7 +312,7 @@ func StartFlowForContacts(
 	}
 
 	start := time.Now()
-	log := logrus.WithField("flow_name", flow.Name()).WithField("flow_uuid", flow.UUID())
+	log := slog.With("flow_name", flow.Name(), "flow_uuid", flow.UUID())
 
 	// for each trigger start the flow
 	sessions := make([]flows.Session, 0, len(triggers))
@@ -321,15 +320,15 @@ func StartFlowForContacts(
 
 	for _, trigger := range triggers {
 		// start our flow session
-		log := log.WithField("contact_uuid", trigger.Contact().UUID())
+		log := log.With("contact_uuid", trigger.Contact().UUID())
 		start := time.Now()
 
 		session, sprint, err := goflow.Engine(rt.Config).NewSession(sa, trigger)
 		if err != nil {
-			log.WithError(err).Errorf("error starting flow")
+			log.Error("error starting flow", "error", err)
 			continue
 		}
-		log.WithField("elapsed", time.Since(start)).Info("flow engine start")
+		log.Info("flow engine start", "elapsed", time.Since(start))
 		analytics.Gauge("mr.flow_start_elapsed", float64(time.Since(start)))
 
 		sessions = append(sessions, session)
@@ -372,7 +371,7 @@ func StartFlowForContacts(
 		err = tx.Commit()
 
 		if err == nil {
-			logrus.WithField("elapsed", time.Since(commitStart)).WithField("count", len(sessions)).Debug("sessions committed")
+			slog.Debug("sessions committed", "elapsed", time.Since(commitStart), "count", len(sessions))
 		}
 	}
 
@@ -401,7 +400,7 @@ func StartFlowForContacts(
 				err = models.InterruptSessionsForContactsTx(txCTX, tx, []models.ContactID{models.ContactID(session.Contact().ID())})
 				if err != nil {
 					tx.Rollback()
-					log.WithField("contact_uuid", session.Contact().UUID()).WithError(err).Errorf("error interrupting contact")
+					log.Error("error interrupting contact", "error", err, "contact_uuid", session.Contact().UUID())
 					continue
 				}
 			}
@@ -409,14 +408,14 @@ func StartFlowForContacts(
 			dbSession, err := models.InsertSessions(txCTX, rt, tx, oa, []flows.Session{session}, []flows.Sprint{sprint}, []*models.Contact{contact}, hook)
 			if err != nil {
 				tx.Rollback()
-				log.WithField("contact_uuid", session.Contact().UUID()).WithError(err).Errorf("error writing session to db")
+				log.Error("error writing session to db", "error", err, "contact_uuid", session.Contact().UUID())
 				continue
 			}
 
 			err = tx.Commit()
 			if err != nil {
 				tx.Rollback()
-				log.WithField("contact_uuid", session.Contact().UUID()).WithError(err).Errorf("error comitting session to db")
+				log.Error("error comitting session to db", "error", err, "contact_uuid", session.Contact().UUID())
 				continue
 			}
 
@@ -448,7 +447,7 @@ func StartFlowForContacts(
 
 		// we failed with our post commit hooks, try one at a time, logging those errors
 		for _, session := range dbSessions {
-			log = log.WithField("contact_uuid", session.ContactUUID())
+			log = log.With("contact_uuid", session.ContactUUID())
 
 			txCTX, cancel = context.WithTimeout(ctx, postCommitTimeout)
 			defer cancel()
@@ -456,14 +455,14 @@ func StartFlowForContacts(
 			tx, err := rt.DB.BeginTxx(txCTX, nil)
 			if err != nil {
 				tx.Rollback()
-				log.WithError(err).Error("error starting transaction to retry post commits")
+				log.Error("error starting transaction to retry post commits", "error", err)
 				continue
 			}
 
 			err = models.ApplyEventPostCommitHooks(ctx, rt, tx, oa, []*models.Scene{session.Scene()})
 			if err != nil {
 				tx.Rollback()
-				log.WithError(err).Errorf("error applying post commit hook")
+				log.Error("error applying post commit hook", "error", err)
 				continue
 			}
 
@@ -471,13 +470,13 @@ func StartFlowForContacts(
 
 			if err != nil {
 				tx.Rollback()
-				log.WithError(err).Errorf("error comitting post commit hook")
+				log.Error("error comitting post commit hook", "error", err)
 				continue
 			}
 		}
 	}
 
 	// figure out both average and total for total execution and commit time for our flows
-	log.WithField("elapsed", time.Since(start)).WithField("count", len(dbSessions)).Info("flow started, sessions created")
+	log.Info("flow started, sessions created", "elapsed", time.Since(start), "count", len(dbSessions))
 	return dbSessions, nil
 }
