@@ -29,14 +29,11 @@ func TestContacts(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetAll)
 
 	// for now it's still possible to have more than one open ticket in the database
-	testdata.InsertOpenTicket(rt, testdata.Org1, testdata.Cathy, testdata.Zendesk, testdata.SupportTopic, "Where are my shoes?", "1234", time.Now(), testdata.Agent)
-	testdata.InsertOpenTicket(rt, testdata.Org1, testdata.Cathy, testdata.Zendesk, testdata.SalesTopic, "Where are my pants?", "2345", time.Now(), nil)
+	testdata.InsertOpenTicket(rt, testdata.Org1, testdata.Cathy, testdata.SupportTopic, "Where are my shoes?", time.Now(), testdata.Agent)
+	testdata.InsertOpenTicket(rt, testdata.Org1, testdata.Cathy, testdata.SalesTopic, "Where are my pants?", time.Now(), nil)
 
 	testdata.InsertContactURN(rt, testdata.Org1, testdata.Bob, "whatsapp:250788373373", 999, nil)
-	testdata.InsertOpenTicket(rt, testdata.Org1, testdata.Bob, testdata.Mailgun, testdata.DefaultTopic, "His name is Bob", "", time.Now(), testdata.Editor)
-
-	// delete mailgun ticketer
-	rt.DB.MustExec(`UPDATE tickets_ticketer SET is_active = false WHERE id = $1`, testdata.Mailgun.ID)
+	testdata.InsertOpenTicket(rt, testdata.Org1, testdata.Bob, testdata.DefaultTopic, "His name is Bob", time.Now(), testdata.Editor)
 
 	org, err := models.GetOrgAssetsWithRefresh(ctx, rt, testdata.Org1.ID, models.RefreshAll)
 	assert.NoError(t, err)

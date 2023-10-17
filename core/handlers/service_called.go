@@ -25,17 +25,11 @@ func handleServiceCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	slog.Debug("service called", "contact", scene.ContactUUID(), "session", scene.SessionID(), "service", event.Service)
 
 	var classifier *models.Classifier
-	var ticketer *models.Ticketer
 
 	if event.Service == "classifier" {
 		classifier = oa.ClassifierByUUID(event.Classifier.UUID)
 		if classifier == nil {
 			return errors.Errorf("unable to find classifier with UUID: %s", event.Classifier.UUID)
-		}
-	} else if event.Service == "ticketer" {
-		ticketer = oa.TicketerByUUID(event.Ticketer.UUID)
-		if ticketer == nil {
-			return errors.Errorf("unable to find ticketer with UUID: %s", event.Ticketer.UUID)
 		}
 	}
 
@@ -58,21 +52,7 @@ func handleServiceCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 				httpLog.Retries,
 				httpLog.CreatedOn,
 			)
-		} else if event.Service == "ticketer" {
-			log = models.NewTicketerCalledLog(
-				oa.OrgID(),
-				ticketer.ID(),
-				httpLog.URL,
-				httpLog.StatusCode,
-				httpLog.Request,
-				httpLog.Response,
-				httpLog.Status != flows.CallStatusSuccess,
-				time.Duration(httpLog.ElapsedMS)*time.Millisecond,
-				httpLog.Retries,
-				httpLog.CreatedOn,
-			)
 		}
-
 		scene.AppendToEventPreCommitHook(hooks.InsertHTTPLogsHook, log)
 	}
 

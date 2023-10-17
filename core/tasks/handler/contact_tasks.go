@@ -405,9 +405,6 @@ func handleMsgEvent(ctx context.Context, rt *runtime.Runtime, event *MsgEvent) e
 	if err != nil {
 		return errors.Wrapf(err, "unable to look up open tickets for contact")
 	}
-	if ticket != nil {
-		ticket.ForwardIncoming(ctx, rt, oa, event.MsgUUID, event.Text, attachments)
-	}
 
 	// find any matching triggers
 	trigger, keyword := models.FindMatchingMsgTrigger(oa, channel, contact, event.Text)
@@ -581,10 +578,7 @@ func handleTicketEvent(ctx context.Context, rt *runtime.Runtime, event *models.T
 	}
 
 	// build our flow ticket
-	ticket, err := tickets[0].FlowTicket(oa)
-	if err != nil {
-		return errors.Wrapf(err, "error creating flow contact")
-	}
+	ticket := tickets[0].FlowTicket(oa)
 
 	// build our flow trigger
 	var flowTrigger flows.Trigger

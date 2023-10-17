@@ -207,12 +207,8 @@ func (c *Contact) FlowContact(oa *OrgAssets) (*flows.Contact, error) {
 
 	// convert our ticket to a flow ticket
 	var ticket *flows.Ticket
-	var err error
 	if c.ticket != nil {
-		ticket, err = c.ticket.FlowTicket(oa)
-		if err != nil {
-			return nil, errors.Wrapf(err, "error creating flow ticket")
-		}
+		ticket = c.ticket.FlowTicket(oa)
 	}
 
 	// create our flow contact
@@ -331,10 +327,7 @@ func LoadContacts(ctx context.Context, db Queryer, oa *OrgAssets, ids []ContactI
 		// grab the last opened open ticket
 		if len(e.Tickets) > 0 {
 			t := e.Tickets[0]
-			ticketer := oa.TicketerByID(t.TicketerID)
-			if ticketer != nil {
-				contact.ticket = NewTicket(t.UUID, oa.OrgID(), NilUserID, NilFlowID, contact.ID(), ticketer.ID(), t.ExternalID, t.TopicID, t.Body, t.AssigneeID, nil)
-			}
+			contact.ticket = NewTicket(t.UUID, oa.OrgID(), NilUserID, NilFlowID, contact.ID(), t.TopicID, t.Body, t.AssigneeID)
 		}
 
 		contacts = append(contacts, contact)

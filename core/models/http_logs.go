@@ -5,7 +5,6 @@ import (
 	"database/sql/driver"
 	"time"
 
-	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/null/v3"
 )
 
@@ -80,13 +79,6 @@ func NewClassifierCalledLog(orgID OrgID, cid ClassifierID, url string, statusCod
 	return h
 }
 
-// NewTicketerCalledLog creates a new HTTP log for a ticketer call
-func NewTicketerCalledLog(orgID OrgID, tid TicketerID, url string, statusCode int, request, response string, isError bool, elapsed time.Duration, retries int, createdOn time.Time) *HTTPLog {
-	h := newHTTPLog(orgID, LogTypeTicketerCalled, url, statusCode, request, response, isError, elapsed, retries, createdOn)
-	h.TicketerID = tid
-	return h
-}
-
 // NewAirtimeTransferredLog creates a new HTTP log for an airtime transfer
 func NewAirtimeTransferredLog(orgID OrgID, url string, statusCode int, request, response string, isError bool, elapsed time.Duration, retries int, createdOn time.Time) *HTTPLog {
 	return newHTTPLog(orgID, LogTypeAirtimeTransferred, url, statusCode, request, response, isError, elapsed, retries, createdOn)
@@ -112,34 +104,3 @@ func (i *HTTPLogID) Scan(value any) error         { return null.ScanInt(value, i
 func (i HTTPLogID) Value() (driver.Value, error)  { return null.IntValue(i) }
 func (i *HTTPLogID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
 func (i HTTPLogID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
-
-// HTTPLogger is a logger for HTTPLogs
-type HTTPLogger struct {
-	logs []*HTTPLog
-}
-
-// Ticketer creates a callback for engine HTTP logs which are associated with the given ticketer
-func (h *HTTPLogger) Ticketer(t *Ticketer) flows.HTTPLogCallback {
-	return func(l *flows.HTTPLog) {
-		h.logs = append(h.logs, NewTicketerCalledLog(
-			t.OrgID(),
-			t.ID(),
-			l.URL,
-			l.StatusCode,
-			l.Request,
-			l.Response,
-			l.Status != flows.CallStatusSuccess,
-			time.Duration(l.ElapsedMS)*time.Millisecond,
-			l.Retries,
-			l.CreatedOn,
-		))
-	}
-}
-
-// Insert this logger's logs into the database
-func (h *HTTPLogger) Insert(ctx context.Context, db DBorTx) error {
-	if len(h.logs) > 0 {
-		return InsertHTTPLogs(ctx, db, h.logs)
-	}
-	return nil
-}
