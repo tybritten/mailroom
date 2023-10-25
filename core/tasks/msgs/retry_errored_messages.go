@@ -2,6 +2,7 @@ package msgs
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/nyaruka/mailroom"
@@ -9,7 +10,6 @@ import (
 	"github.com/nyaruka/mailroom/core/msgio"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -37,7 +37,7 @@ func RetryErroredMessages(ctx context.Context, rt *runtime.Runtime) error {
 
 	msgio.QueueMessages(ctx, rt, rt.DB, nil, msgs)
 
-	logrus.WithField("count", len(msgs)).WithField("elapsed", time.Since(start)).Info("retried errored messages")
+	slog.Info("retried errored messages", "count", len(msgs), "elapsed", time.Since(start))
 
 	return nil
 }

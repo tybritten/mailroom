@@ -3,6 +3,7 @@ package incidents
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -11,7 +12,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -63,7 +63,7 @@ func checkWebhookIncident(ctx context.Context, rt *runtime.Runtime, incident *mo
 		}
 	}
 
-	log := logrus.WithFields(logrus.Fields{"incident_id": incident.ID, "unhealthy": len(nodeUUIDs) - len(healthyNodeUUIDs), "healthy": len(healthyNodeUUIDs)})
+	log := slog.With("incident_id", incident.ID, "unhealthy", len(nodeUUIDs)-len(healthyNodeUUIDs), "healthy", len(healthyNodeUUIDs))
 
 	// if all of the nodes are now healthy the incident has ended
 	if len(healthyNodeUUIDs) == len(nodeUUIDs) {

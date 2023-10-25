@@ -2,6 +2,7 @@ package ivr
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/nyaruka/mailroom"
@@ -9,7 +10,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -18,7 +18,7 @@ func init() {
 
 // RetryCalls looks for calls that need to be retried and retries them
 func RetryCalls(ctx context.Context, rt *runtime.Runtime) error {
-	log := logrus.WithField("comp", "ivr_cron_retryer")
+	log := slog.With("comp", "ivr_cron_retryer")
 	start := time.Now()
 
 	// find all calls that need restarting
@@ -35,19 +35,19 @@ func RetryCalls(ctx context.Context, rt *runtime.Runtime) error {
 
 	// schedules requests for each call
 	for _, call := range calls {
-		log = log.WithField("call_id", call.ID())
+		log = log.With("call_id", call.ID())
 
 		// if the channel for this call is throttled, move on
 		if throttledChannels[call.ChannelID()] {
 			call.MarkThrottled(ctx, rt.DB, time.Now())
-			log.WithField("channel_id", call.ChannelID()).Info("skipping call, throttled")
+			log.Info("skipping call, throttled", "channel_id", call.ChannelID())
 			continue
 		}
 
 		// load the org for this call
 		oa, err := models.GetOrgAssets(ctx, rt, call.OrgID())
 		if err != nil {
-			log.WithError(err).WithField("org_id", call.OrgID()).Error("error loading org")
+			log.Error("error loading org", "error", err, "org_id", call.OrgID())
 			continue
 		}
 
@@ -57,7 +57,7 @@ func RetryCalls(ctx context.Context, rt *runtime.Runtime) error {
 			// fail this call, channel is no longer active
 			err = models.BulkUpdateCallStatuses(ctx, rt.DB, []models.CallID{call.ID()}, models.CallStatusFailed)
 			if err != nil {
-				log.WithError(err).WithField("channel_id", call.ChannelID()).Error("error marking call as failed due to missing channel")
+				log.Error("error marking call as failed due to missing channel", "error", err, "channel_id", call.ChannelID())
 			}
 			continue
 		}
@@ -65,7 +65,7 @@ func RetryCalls(ctx context.Context, rt *runtime.Runtime) error {
 		// finally load the full URN
 		urn, err := models.URNForID(ctx, rt.DB, oa, call.ContactURNID())
 		if err != nil {
-			log.WithError(err).WithField("urn_id", call.ContactURNID()).Error("unable to load contact urn")
+			log.Error("unable to load contact urn", "error", err, "urn_id", call.ContactURNID())
 			continue
 		}
 
@@ -74,7 +74,7 @@ func RetryCalls(ctx context.Context, rt *runtime.Runtime) error {
 			clogs = append(clogs, clog)
 		}
 		if err != nil {
-			log.WithError(err).Error(err)
+			log.Error("error requesting start for call", "error", err)
 			continue
 		}
 
@@ -84,10 +84,10 @@ func RetryCalls(ctx context.Context, rt *runtime.Runtime) error {
 
 	// log any error inserting our channel logs, but continue
 	if err := models.InsertChannelLogs(ctx, rt, clogs); err != nil {
-		logrus.WithError(err).Error("error inserting channel logs")
+		slog.Error("error inserting channel logs", "error", err)
 	}
 
-	log.WithField("count", len(calls)).WithField("elapsed", time.Since(start)).Info("retried errored calls")
+	log.Info("retried errored calls", "count", len(calls), "elapsed", time.Since(start))
 
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/nyaruka/mailroom"
@@ -12,7 +13,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 var retriedMsgs = redisx.NewIntervalSet("retried_msgs", time.Hour*24, 2)
@@ -27,7 +27,7 @@ func RetryPendingMsgs(ctx context.Context, rt *runtime.Runtime) error {
 		return nil
 	}
 
-	log := logrus.WithField("comp", "handler_retrier")
+	log := slog.With("comp", "handler_retrier")
 	start := time.Now()
 
 	rc := rt.RP.Get()
@@ -99,7 +99,7 @@ func RetryPendingMsgs(ctx context.Context, rt *runtime.Runtime) error {
 		retried++
 	}
 
-	log.WithField("retried", retried).WithField("elapsed", time.Since(start)).Info("queued pending messages to be retried")
+	log.Info("queued pending messages to be retried", "retried", retried, "elapsed", time.Since(start))
 	return nil
 }
 

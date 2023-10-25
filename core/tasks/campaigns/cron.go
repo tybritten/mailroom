@@ -14,9 +14,9 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
+	"golang.org/x/exp/slog"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -31,7 +31,7 @@ func init() {
 
 // QueueEventFires looks for all due campaign event fires and queues them to be started
 func QueueEventFires(ctx context.Context, rt *runtime.Runtime) error {
-	log := logrus.WithField("comp", "campaign_events")
+	log := slog.With("comp", "campaign_events")
 	start := time.Now()
 
 	// find all events that need to be fired
@@ -110,12 +110,14 @@ func QueueEventFires(ctx context.Context, rt *runtime.Runtime) error {
 
 	analytics.Gauge("mr.campaign_event_cron_elapsed", float64(time.Since(start))/float64(time.Second))
 	analytics.Gauge("mr.campaign_event_cron_count", float64(numFires))
-	log.WithFields(logrus.Fields{
-		"elapsed": time.Since(start),
-		"fires":   numFires,
-		"dupes":   numDupes,
-		"tasks":   numTasks,
-	}).Info("campaign event fire queuing complete")
+
+	log.Info("campaign event fire queuing complete",
+		"elapsed", time.Since(start),
+		"fires", numFires,
+		"dupes", numDupes,
+		"tasks", numTasks,
+	)
+
 	return nil
 }
 
@@ -136,7 +138,7 @@ func queueFiresTask(rp *redis.Pool, orgID models.OrgID, task *FireCampaignEventT
 		}
 	}
 
-	logrus.WithField("comp", "campaign_events").WithField("event", task.EventUUID).WithField("fires", len(task.FireIDs)).Debug("queued campaign event fire task")
+	slog.Debug("queued campaign event fire task", "comp", "campaign_events", "event", task.EventUUID, "fires", len(task.FireIDs))
 	return nil
 }
 

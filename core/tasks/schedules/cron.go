@@ -2,6 +2,8 @@ package schedules
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/nyaruka/gocommon/uuids"
@@ -13,7 +15,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -26,7 +27,7 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 	// things that are schedules right at the minute as well (and DB time may be slightly drifted)
 	time.Sleep(time.Second * 1)
 
-	log := logrus.WithField("comp", "schedules_cron")
+	log := slog.With("comp", "schedules_cron")
 	start := time.Now()
 
 	rc := rt.RP.Get()
@@ -44,27 +45,27 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 	noops := 0
 
 	for _, s := range unfired {
-		log := log.WithField("schedule_id", s.ID())
+		log := log.With("schedule_id", s.ID())
 		now := time.Now()
 
 		// grab our timezone
 		tz, err := s.Timezone()
 		if err != nil {
-			log.WithError(err).Error("error firing schedule, unknown timezone")
+			log.Error("error firing schedule, unknown timezone", "error", err)
 			continue
 		}
 
 		// calculate our next fire
 		nextFire, err := s.GetNextFire(tz, now)
 		if err != nil {
-			log.WithError(err).Error("error calculating next fire for schedule")
+			log.Error("error calculating next fire for schedule", "error", err)
 			continue
 		}
 
 		// open a transaction for committing all the items for this fire
 		tx, err := rt.DB.BeginTxx(ctx, nil)
 		if err != nil {
-			log.WithError(err).Error("error starting transaction for schedule fire")
+			log.Error("error starting transaction for schedule fire", "error", err)
 			continue
 		}
 
@@ -75,7 +76,7 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 			// clone our broadcast, our schedule broadcast is just a template
 			bcast, err := models.InsertChildBroadcast(ctx, tx, s.Broadcast())
 			if err != nil {
-				log.WithError(err).Error("error inserting new broadcast for schedule")
+				log.Error("error inserting new broadcast for schedule", "error", err)
 				tx.Rollback()
 				continue
 			}
@@ -91,7 +92,7 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 			// insert our flow start
 			err := models.InsertFlowStarts(ctx, tx, []*models.FlowStart{start})
 			if err != nil {
-				log.WithError(err).Error("error inserting new flow start for schedule")
+				log.Error("error inserting new flow start for schedule", "error", err)
 				tx.Rollback()
 				continue
 			}
@@ -107,7 +108,7 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 		// update our next fire for this schedule
 		err = s.UpdateFires(ctx, tx, now, nextFire)
 		if err != nil {
-			log.WithError(err).Error("error updating next fire for schedule")
+			log.Error("error updating next fire for schedule", "error", err)
 			tx.Rollback()
 			continue
 		}
@@ -115,7 +116,7 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 		// commit our transaction
 		err = tx.Commit()
 		if err != nil {
-			log.WithError(err).Error("error comitting schedule transaction")
+			log.Error("error comitting schedule transaction", "error", err)
 			tx.Rollback()
 			continue
 		}
@@ -124,17 +125,17 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 		if task != nil {
 			err = tasks.Queue(rc, queue.BatchQueue, s.OrgID(), task, queue.HighPriority)
 			if err != nil {
-				log.WithError(err).Errorf("error queueing %s task from schedule", task.Type())
+				log.Error(fmt.Sprintf("error queueing %s task from schedule", task.Type()), "error", err)
 			}
 		}
 	}
 
-	log.WithFields(logrus.Fields{
-		"broadcasts": broadcasts,
-		"triggers":   triggers,
-		"noops":      noops,
-		"elapsed":    time.Since(start),
-	}).Info("fired schedules")
+	log.Info("fired schedules",
+		"broadcasts", broadcasts,
+		"triggers", triggers,
+		"noops", noops,
+		"elapsed", time.Since(start),
+	)
 
 	return nil
 }
