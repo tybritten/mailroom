@@ -3,6 +3,7 @@ package timeouts
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/nyaruka/mailroom"
@@ -11,7 +12,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 var marker = redisx.NewIntervalSet("session_timeouts", time.Hour*24, 2)
@@ -23,7 +23,7 @@ func init() {
 // timeoutRuns looks for any runs that have timed out and schedules for them to continue
 // TODO: extend lock
 func timeoutSessions(ctx context.Context, rt *runtime.Runtime) error {
-	log := logrus.WithField("comp", "timeout")
+	log := slog.With("comp", "timeout")
 	start := time.Now()
 
 	// find all sessions that need to be expired (we exclude IVR runs)
@@ -75,7 +75,7 @@ func timeoutSessions(ctx context.Context, rt *runtime.Runtime) error {
 		numQueued++
 	}
 
-	log.WithField("dupes", numDupes).WithField("queued", numQueued).WithField("elapsed", time.Since(start)).Info("session timeouts queued")
+	log.Info("session timeouts queued", "dupes", numDupes, "queued", numQueued, "elapsed", time.Since(start))
 	return nil
 }
 

@@ -3,6 +3,7 @@ package expirations
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/nyaruka/mailroom"
@@ -12,7 +13,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -29,7 +29,7 @@ func init() {
 // HandleWaitExpirations handles waiting messaging sessions whose waits have expired, resuming those that can be resumed,
 // and expiring those that can't
 func HandleWaitExpirations(ctx context.Context, rt *runtime.Runtime) error {
-	log := logrus.WithField("comp", "expirer")
+	log := slog.With("comp", "expirer")
 	start := time.Now()
 
 	rc := rt.RP.Get()
@@ -108,7 +108,8 @@ func HandleWaitExpirations(ctx context.Context, rt *runtime.Runtime) error {
 		}
 	}
 
-	log.WithField("expired", numExpired).WithField("dupes", numDupes).WithField("queued", numQueued).WithField("elapsed", time.Since(start)).Info("session expirations queued")
+	log.Info("session expirations queued", "expired", numExpired, "dupes", numDupes, "queued", numQueued, "elapsed", time.Since(start))
+
 	return nil
 }
 
@@ -129,7 +130,7 @@ type ExpiredWait struct {
 
 // ExpireVoiceSessions looks for voice sessions that should be expired and ends them
 func ExpireVoiceSessions(ctx context.Context, rt *runtime.Runtime) error {
-	log := logrus.WithField("comp", "ivr_cron_expirer")
+	log := slog.With("comp", "ivr_cron_expirer")
 	start := time.Now()
 
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
@@ -158,7 +159,7 @@ func ExpireVoiceSessions(ctx context.Context, rt *runtime.Runtime) error {
 		// load our call
 		conn, err := models.GetCallByID(ctx, rt.DB, expiredWait.OrgID, expiredWait.CallID)
 		if err != nil {
-			log.WithError(err).WithField("call_id", expiredWait.CallID).Error("unable to load call")
+			log.Error("unable to load call", "error", err, "call_id", expiredWait.CallID)
 			continue
 		}
 
@@ -166,7 +167,7 @@ func ExpireVoiceSessions(ctx context.Context, rt *runtime.Runtime) error {
 		clog, err := ivr.HangupCall(ctx, rt, conn)
 		if err != nil {
 			// log error but carry on with other calls
-			log.WithError(err).WithField("call_id", conn.ID()).Error("error hanging up call")
+			log.Error("error hanging up call", "error", err, "call_id", conn.ID())
 		}
 
 		if clog != nil {
@@ -178,9 +179,9 @@ func ExpireVoiceSessions(ctx context.Context, rt *runtime.Runtime) error {
 	if len(expiredSessions) > 0 {
 		err := models.ExitSessions(ctx, rt.DB, expiredSessions, models.SessionStatusExpired)
 		if err != nil {
-			log.WithError(err).Error("error expiring sessions for expired calls")
+			log.Error("error expiring sessions for expired calls", "error", err)
 		}
-		log.WithField("count", len(expiredSessions)).WithField("elapsed", time.Since(start)).Info("expired and hung up on call")
+		log.Info("expired and hung up on call", "count", len(expiredSessions), "elapsed", time.Since(start))
 	}
 
 	if err := models.InsertChannelLogs(ctx, rt, clogs); err != nil {

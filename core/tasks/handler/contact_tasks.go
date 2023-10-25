@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -25,7 +26,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -39,7 +39,7 @@ const (
 // handleTimedEvent is called for timeout events
 func handleTimedEvent(ctx context.Context, rt *runtime.Runtime, eventType string, event *TimedEvent) error {
 	start := time.Now()
-	log := logrus.WithFields(logrus.Fields{"event_type": eventType, "contact_id": event.ContactID, "session_id": event.SessionID})
+	log := slog.With("event_type", eventType, "contact_id", event.ContactID, "session_id", event.SessionID)
 
 	oa, err := models.GetOrgAssets(ctx, rt, event.OrgID)
 	if err != nil {
@@ -84,12 +84,12 @@ func handleTimedEvent(ctx context.Context, rt *runtime.Runtime, eventType string
 		}
 
 		if expiresOn == nil {
-			log.WithField("event_expiration", event.Time).Info("ignoring expiration, session no longer waiting")
+			log.Info("ignoring expiration, session no longer waiting", "event_expiration", event.Time)
 			return nil
 		}
 
 		if expiresOn != nil && !expiresOn.Equal(event.Time) {
-			log.WithField("event_expiration", event.Time).WithField("run_expiration", expiresOn).Info("ignoring expiration, has been updated")
+			log.Info("ignoring expiration, has been updated", "event_expiration", event.Time, "run_expiration", expiresOn)
 			return nil
 		}
 
@@ -97,14 +97,14 @@ func handleTimedEvent(ctx context.Context, rt *runtime.Runtime, eventType string
 
 	case TimeoutEventType:
 		if session.WaitTimeoutOn() == nil {
-			log.WithField("session_id", session.ID()).Info("ignoring session timeout, has no timeout set")
+			log.Info("ignoring session timeout, has no timeout set", "session_id", session.ID())
 			return nil
 		}
 
 		// check that the timeout is the same
 		timeout := *session.WaitTimeoutOn()
 		if !timeout.Equal(event.Time) {
-			log.WithField("event_timeout", event.Time).WithField("session_timeout", timeout).Info("ignoring timeout, has been updated")
+			log.Info("ignoring timeout, has been updated", "event_timeout", event.Time, "session_timeout", timeout)
 			return nil
 		}
 
@@ -120,14 +120,14 @@ func handleTimedEvent(ctx context.Context, rt *runtime.Runtime, eventType string
 		// on the session
 		var eerr *engine.Error
 		if errors.As(err, &eerr) && eerr.Code() == engine.ErrorResumeRejectedByWait && resume.Type() == resumes.TypeWaitTimeout {
-			log.WithField("session_id", session.ID()).Info("clearing session timeout which is no longer set in flow")
+			log.Info("clearing session timeout which is no longer set in flow", "session_id", session.ID())
 			return errors.Wrap(session.ClearWaitTimeout(ctx, rt.DB), "error clearing session timeout")
 		}
 
 		return errors.Wrap(err, "error resuming flow for timeout")
 	}
 
-	log.WithField("elapsed", time.Since(start)).Info("handled timed event")
+	log.Info("handled timed event", "elapsed", time.Since(start))
 	return nil
 }
 
@@ -141,7 +141,7 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 	// load the channel for this event
 	channel := oa.ChannelByID(event.ChannelID())
 	if channel == nil {
-		logrus.WithField("channel_id", event.ChannelID).Info("ignoring event, couldn't find channel")
+		slog.Info("ignoring event, couldn't find channel", "channel_id", event.ChannelID)
 		return nil, nil
 	}
 
@@ -209,7 +209,7 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 
 	// no trigger, noop, move on
 	if trigger == nil {
-		logrus.WithField("channel_id", event.ChannelID()).WithField("event_type", eventType).WithField("extra", event.Extra()).Info("ignoring channel event, no trigger found")
+		slog.Info("ignoring channel event, no trigger found", "channel_id", event.ChannelID(), "event_type", eventType, "extra", event.Extra())
 		return nil, nil
 	}
 
@@ -558,7 +558,7 @@ func handleTicketEvent(ctx context.Context, rt *runtime.Runtime, event *models.T
 
 	// no trigger, noop, move on
 	if trigger == nil {
-		logrus.WithField("ticket_id", event.TicketID).WithField("event_type", event.EventType()).Info("ignoring ticket event, no trigger found")
+		slog.Info("ignoring ticket event, no trigger found", "ticket_id", event.TicketID, "event_type", event.EventType())
 		return nil
 	}
 
