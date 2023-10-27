@@ -6,12 +6,12 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Queryer lets us pass anything that supports QueryContext to a function (sql.DB, sql.Tx, sqlx.DB, sqlx.Tx)
@@ -51,7 +51,7 @@ func BulkQuery[T any](ctx context.Context, label string, tx DBorTx, sql string, 
 		return errors.Wrap(err, "error making bulk query")
 	}
 
-	logrus.WithField("elapsed", time.Since(start)).WithField("rows", len(structs)).Infof("%s bulk sql complete", label)
+	slog.Info(fmt.Sprintf("%s bulk sql complete", label), "elapsed", time.Since(start), "rows", len(structs))
 
 	return nil
 }
@@ -67,7 +67,7 @@ func BulkQueryBatches(ctx context.Context, label string, tx DBorTx, sql string, 
 			return errors.Wrap(err, "error making bulk batch query")
 		}
 
-		logrus.WithField("elapsed", time.Since(start)).WithField("rows", len(batch)).WithField("batch", i+1).Infof("%s bulk sql batch complete", label)
+		slog.Info(fmt.Sprintf("%s bulk sql batch complete", label), "elapsed", time.Since(start), "rows", len(batch), "batch", i+1)
 	}
 
 	return nil

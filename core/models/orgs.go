@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime"
 	"net/http"
 	"path/filepath"
@@ -25,7 +26,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Register a airtime service factory with the engine
@@ -199,7 +199,7 @@ func LoadOrg(ctx context.Context, cfg *runtime.Config, db *sql.DB, orgID OrgID) 
 		return nil, errors.Wrapf(err, "error unmarshalling org")
 	}
 
-	logrus.WithField("elapsed", time.Since(start)).WithField("org_id", orgID).Debug("loaded org environment")
+	slog.Debug("loaded org environment", "elapsed", time.Since(start), "org_id", orgID)
 
 	return org, nil
 }
