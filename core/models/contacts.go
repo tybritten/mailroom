@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"strconv"
 	"time"
@@ -23,7 +24,6 @@ import (
 	"github.com/nyaruka/null/v3"
 	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // URNID is our type for urn ids, which can be null
@@ -317,7 +317,7 @@ func LoadContacts(ctx context.Context, db Queryer, oa *OrgAssets, ids []ContactI
 		for _, u := range e.URNs {
 			urn, err := u.AsURN(oa)
 			if err != nil {
-				logrus.WithField("urn", u).WithField("org_id", oa.OrgID()).WithField("contact_id", contact.id).Warn("invalid URN, ignoring")
+				slog.Warn("invalid URN, ignoring", "urn", u, "org_id", oa.OrgID(), "contact_id", contact.id)
 				continue
 			}
 			contactURNs = append(contactURNs, urn)
@@ -333,7 +333,7 @@ func LoadContacts(ctx context.Context, db Queryer, oa *OrgAssets, ids []ContactI
 		contacts = append(contacts, contact)
 	}
 
-	logrus.WithField("elapsed", time.Since(start)).WithField("count", len(contacts)).Debug("loaded contacts")
+	slog.Debug("loaded contacts", "elapsed", time.Since(start), "count", len(contacts))
 
 	return contacts, nil
 }

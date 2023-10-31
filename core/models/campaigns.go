@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -15,7 +16,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // FireID is our id for our event fires
@@ -420,7 +420,7 @@ func LoadEventFires(ctx context.Context, db *sqlx.DB, ids []FireID) ([]*EventFir
 		fires = append(fires, fire)
 	}
 
-	logrus.WithField("elapsed", time.Since(start)).WithField("count", len(fires)).Debug("event fires loaded")
+	slog.Debug("event fires loaded", "elapsed", time.Since(start), "count", len(fires))
 
 	return fires, nil
 }

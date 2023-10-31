@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -22,7 +23,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // maximum number of repeated messages to same contact allowed in 5 minute window
@@ -361,7 +361,7 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 			m.Status = MsgStatusFailed
 			m.FailedReason = MsgFailedLooping
 
-			logrus.WithFields(logrus.Fields{"contact_id": contact.ID(), "text": out.Text(), "repetitions": repetitions}).Error("too many repetitions, failing message")
+			slog.Error("too many repetitions, failing message", "contact_id", contact.ID(), "text", out.Text(), "repetitions", repetitions)
 		}
 	}
 

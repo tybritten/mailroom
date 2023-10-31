@@ -1,3 +1,8 @@
+v8.3.34 (2023-10-27)
+-------------------------
+ * Update to latest goflow
+ * Replace more logrus use by slog
+
 v8.3.33 (2023-10-13)
 -------------------------
  * Read from Trigger.keywords instead of keyword

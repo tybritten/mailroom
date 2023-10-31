@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Refresh is our type for the pieces of org assets we want fresh (not cached)
@@ -694,7 +694,7 @@ func loadAssetType[A any](ctx context.Context, db *sql.DB, orgID OrgID, name str
 
 	as, err := f(ctx, db, orgID)
 
-	logrus.WithField("elapsed", time.Since(start)).WithField("org_id", orgID).WithField("count", len(as)).Debugf("loaded %s", name)
+	slog.Debug(fmt.Sprintf("loaded %s", name), "elapsed", time.Since(start), "org_id", orgID, "count", len(as))
 
 	return as, err
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"log/slog"
 	"time"
 
 	"github.com/nyaruka/goflow/assets"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Location is our mailroom type for administrative locations
@@ -108,7 +108,7 @@ func loadLocations(ctx context.Context, db *sql.DB, oa *OrgAssets) ([]assets.Loc
 		return nil, errors.Wrapf(err, "error unmarshalling hierarchy: %s", string(locationJSON))
 	}
 
-	logrus.WithField("elapsed", time.Since(start)).WithField("org_id", oa.orgID).Debug("loaded locations")
+	slog.Debug("loaded locations", "elapsed", time.Since(start), "org_id", oa.orgID)
 
 	return []assets.LocationHierarchy{hierarchy}, nil
 }
