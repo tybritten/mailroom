@@ -3,6 +3,7 @@ package testsuite
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path"
@@ -14,7 +15,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/rp-indexer/v8/indexers"
 	"github.com/olivere/elastic/v7"
-	"github.com/sirupsen/logrus"
 )
 
 var _db *sqlx.DB
@@ -84,7 +84,7 @@ func Runtime() (context.Context, *runtime.Runtime) {
 		Config:            cfg,
 	}
 
-	logrus.SetLevel(logrus.DebugLevel)
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})))
 
 	return context.Background(), rt
 }

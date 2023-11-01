@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.45.24
 	github.com/buger/jsonparser v1.1.1
 	github.com/edganiukov/fcm v0.4.0
+	github.com/getsentry/sentry-go v0.22.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
@@ -27,8 +28,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_model v0.5.0
 	github.com/prometheus/common v0.44.0
+	github.com/samber/slog-multi v1.0.2
+	github.com/samber/slog-sentry v1.2.2
 	github.com/shopspring/decimal v1.3.1
-	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 )
@@ -37,11 +39,9 @@ require (
 	github.com/Shopify/gomail v0.0.0-20220729171026-0784ece65e69 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20221202181307-76fa05c21b12 // indirect
 	github.com/blevesearch/segment v0.9.1 // indirect
-	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
-	github.com/getsentry/raven-go v0.2.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
@@ -56,7 +56,9 @@ require (
 	github.com/nyaruka/null/v2 v2.0.3 // indirect
 	github.com/nyaruka/phonenumbers v1.1.8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/samber/lo v1.38.1 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
