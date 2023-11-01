@@ -1,3 +1,8 @@
+v8.3.35 (2023-11-01)
+-------------------------
+ * Remove logrus usage and hook sentry to slog
+ * Update to latest gocommon
+
 v8.3.34 (2023-10-27)
 -------------------------
  * Update to latest goflow
