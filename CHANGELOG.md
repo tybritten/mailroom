@@ -1,3 +1,7 @@
+v8.3.36 (2023-11-02)
+-------------------------
+ * Rework flow start tasks to not require flow_type
+
 v8.3.35 (2023-11-01)
 -------------------------
  * Remove logrus usage and hook sentry to slog
