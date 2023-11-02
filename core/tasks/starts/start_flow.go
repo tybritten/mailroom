@@ -133,11 +133,11 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, start *mod
 	for i, idBatch := range idBatches {
 		isLast := (i == len(idBatches)-1)
 
-		batch := start.CreateBatch(idBatch, isLast, len(contactIDs))
+		batch := start.CreateBatch(idBatch, flow.FlowType(), isLast, len(contactIDs))
 
 		// task is different if we are an IVR flow
 		var batchTask tasks.Task
-		if start.FlowType == models.FlowTypeVoice {
+		if flow.FlowType() == models.FlowTypeVoice {
 			batchTask = &ivr.StartIVRFlowBatchTask{FlowStartBatch: batch}
 		} else {
 			batchTask = &StartFlowBatchTask{FlowStartBatch: batch}

@@ -94,7 +94,7 @@ func TestTwilioIVR(t *testing.T) {
 		}, 
 		"results": {}
 	}`)
-	start := models.NewFlowStart(testdata.Org1.ID, models.StartTypeTrigger, models.FlowTypeVoice, testdata.IVRFlow.ID).
+	start := models.NewFlowStart(testdata.Org1.ID, models.StartTypeTrigger, testdata.IVRFlow.ID).
 		WithContactIDs([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID, testdata.George.ID}).
 		WithParentSummary(parentSummary)
 
@@ -397,7 +397,7 @@ func TestVonageIVR(t *testing.T) {
 	vonage.IgnoreSignatures = true
 
 	// create a flow start for cathy and george
-	start := models.NewFlowStart(testdata.Org1.ID, models.StartTypeTrigger, models.FlowTypeVoice, testdata.IVRFlow.ID).
+	start := models.NewFlowStart(testdata.Org1.ID, models.StartTypeTrigger, testdata.IVRFlow.ID).
 		WithContactIDs([]models.ContactID{testdata.Cathy.ID, testdata.George.ID}).
 		WithParams(json.RawMessage(`{"ref_id":"123"}`))
 

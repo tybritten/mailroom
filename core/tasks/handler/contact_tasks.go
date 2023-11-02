@@ -725,7 +725,7 @@ func TriggerIVRFlow(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 	tx, _ := rt.DB.BeginTxx(ctx, nil)
 
 	// create and insert our flow start
-	start := models.NewFlowStart(orgID, models.StartTypeTrigger, models.FlowTypeVoice, flowID).WithContactIDs(contactIDs)
+	start := models.NewFlowStart(orgID, models.StartTypeTrigger, flowID).WithContactIDs(contactIDs)
 	err := models.InsertFlowStarts(ctx, tx, []*models.FlowStart{start})
 	if err != nil {
 		tx.Rollback()
@@ -749,7 +749,7 @@ func TriggerIVRFlow(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 	}
 
 	// create our batch of all our contacts
-	task := &ivr.StartIVRFlowBatchTask{FlowStartBatch: start.CreateBatch(contactIDs, true, len(contactIDs))}
+	task := &ivr.StartIVRFlowBatchTask{FlowStartBatch: start.CreateBatch(contactIDs, models.FlowTypeVoice, true, len(contactIDs))}
 
 	// queue this to our ivr starter, it will take care of creating the calls then calling back in
 	rc := rt.RP.Get()
