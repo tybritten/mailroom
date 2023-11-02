@@ -121,7 +121,6 @@ func TestStartsBuilding(t *testing.T) {
         	"started_previously": false
 		},
 		"flow_id": %d,
-		"flow_type": "M",
 		"group_ids": [%d],
 		"org_id": 1,
 		"params": {
