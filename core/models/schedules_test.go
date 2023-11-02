@@ -47,7 +47,6 @@ func TestGetExpired(t *testing.T) {
 	assert.Nil(t, schedules[1].Broadcast())
 	start := schedules[1].FlowStart()
 	assert.NotNil(t, start)
-	assert.Equal(t, models.FlowTypeMessaging, start.FlowType)
 	assert.Equal(t, testdata.Favorites.ID, start.FlowID)
 	assert.Equal(t, testdata.Org1.ID, start.OrgID)
 	assert.Equal(t, []models.ContactID{testdata.Cathy.ID, testdata.George.ID}, start.ContactIDs)
