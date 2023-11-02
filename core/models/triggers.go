@@ -3,11 +3,13 @@ package models
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"sort"
 	"strings"
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/dbutil"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/envs"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/triggers"
@@ -51,6 +53,7 @@ const NilTriggerID = TriggerID(0)
 type Trigger struct {
 	t struct {
 		ID              TriggerID      `json:"id"`
+		OrgID           OrgID          `json:"org_id"`
 		FlowID          FlowID         `json:"flow_id"`
 		TriggerType     TriggerType    `json:"trigger_type"`
 		Keywords        pq.StringArray `json:"keywords"`
@@ -64,8 +67,8 @@ type Trigger struct {
 }
 
 // ID returns the id of this trigger
-func (t *Trigger) ID() TriggerID { return t.t.ID }
-
+func (t *Trigger) ID() TriggerID              { return t.t.ID }
+func (t *Trigger) OrgID() OrgID               { return t.t.OrgID }
 func (t *Trigger) FlowID() FlowID             { return t.t.FlowID }
 func (t *Trigger) TriggerType() TriggerType   { return t.t.TriggerType }
 func (t *Trigger) Keywords() []string         { return []string(t.t.Keywords) }
@@ -80,6 +83,19 @@ func (t *Trigger) KeywordMatchType() triggers.KeywordMatchType {
 		return triggers.KeywordMatchTypeFirstWord
 	}
 	return triggers.KeywordMatchTypeOnlyWord
+}
+
+func (t *Trigger) UnmarshalJSON(b []byte) error { return json.Unmarshal(b, &t.t) }
+
+// Start generates an insertable flow start for scheduled trigger
+func (t *Trigger) FlowStart() *FlowStart {
+	// TODO remove flow type from start task payload so we don't have to know it here
+	s := NewFlowStart(t.t.OrgID, StartTypeTrigger, FlowTypeMessaging, t.t.FlowID).
+		WithContactIDs(t.t.ContactIDs).
+		WithGroupIDs(t.t.IncludeGroupIDs).
+		WithExcludeGroupIDs(t.t.ExcludeGroupIDs)
+	s.UUID = uuids.New()
+	return s
 }
 
 // loadTriggers loads all non-schedule triggers for the passed in org
@@ -308,7 +324,8 @@ func triggerMatchQualifiers(t *Trigger, channel *Channel, contactGroups map[Grou
 const sqlSelectTriggersByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
              SELECT
-                    t.id AS id, 
+                    t.id AS id,
+					t.org_id AS org_id,
                     t.flow_id AS flow_id,
                     t.trigger_type AS trigger_type,
 					t.keywords AS keywords,
