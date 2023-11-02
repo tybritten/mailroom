@@ -86,8 +86,8 @@ func (t *Trigger) KeywordMatchType() triggers.KeywordMatchType {
 
 func (t *Trigger) UnmarshalJSON(b []byte) error { return json.Unmarshal(b, &t.t) }
 
-// Start generates an insertable flow start for scheduled trigger
-func (t *Trigger) FlowStart() *FlowStart {
+// CreateStart generates an insertable flow start for scheduled trigger
+func (t *Trigger) CreateStart() *FlowStart {
 	return NewFlowStart(t.t.OrgID, StartTypeTrigger, t.t.FlowID).
 		WithContactIDs(t.t.ContactIDs).
 		WithGroupIDs(t.t.IncludeGroupIDs).
@@ -320,13 +320,13 @@ func triggerMatchQualifiers(t *Trigger, channel *Channel, contactGroups map[Grou
 const sqlSelectTriggersByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
              SELECT
-                    t.id AS id,
-					t.org_id AS org_id,
-                    t.flow_id AS flow_id,
-                    t.trigger_type AS trigger_type,
-					t.keywords AS keywords,
-                    t.match_type AS match_type,
-                    t.channel_id AS channel_id,
+                    t.id,
+                    t.org_id,
+                    t.flow_id,
+                    t.trigger_type,
+                    t.keywords,
+                    t.match_type,
+                    t.channel_id,
                     COALESCE(t.referrer_id, '') AS referrer_id,
                     ARRAY_REMOVE(ARRAY_AGG(DISTINCT ig.contactgroup_id), NULL) AS include_group_ids,
                     ARRAY_REMOVE(ARRAY_AGG(DISTINCT eg.contactgroup_id), NULL) AS exclude_group_ids

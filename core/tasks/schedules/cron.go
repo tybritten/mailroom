@@ -85,7 +85,7 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 			broadcasts++
 
 		} else if s.Trigger() != nil {
-			start := s.Trigger().FlowStart()
+			start := s.Trigger().CreateStart()
 
 			// insert our flow start
 			err := models.InsertFlowStarts(ctx, tx, []*models.FlowStart{start})
