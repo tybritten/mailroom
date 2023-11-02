@@ -81,7 +81,6 @@ type FlowStart struct {
 	OrgID       OrgID      `json:"org_id"        db:"org_id"`
 	CreatedByID UserID     `json:"created_by_id" db:"created_by_id"`
 	FlowID      FlowID     `json:"flow_id"       db:"flow_id"`
-	FlowType    FlowType   `json:"flow_type"`
 
 	URNs            []urns.URN  `json:"urns,omitempty"`
 	ContactIDs      []ContactID `json:"contact_ids,omitempty"`
@@ -97,14 +96,8 @@ type FlowStart struct {
 }
 
 // NewFlowStart creates a new flow start objects for the passed in parameters
-func NewFlowStart(orgID OrgID, startType StartType, flowType FlowType, flowID FlowID) *FlowStart {
-	return &FlowStart{
-		UUID:      uuids.New(),
-		OrgID:     orgID,
-		StartType: startType,
-		FlowType:  flowType,
-		FlowID:    flowID,
-	}
+func NewFlowStart(orgID OrgID, startType StartType, flowID FlowID) *FlowStart {
+	return &FlowStart{UUID: uuids.New(), OrgID: orgID, StartType: startType, FlowID: flowID}
 }
 
 func (s *FlowStart) WithGroupIDs(groupIDs []GroupID) *FlowStart {
@@ -254,13 +247,13 @@ const sqlInsertStartGroup = `
 INSERT INTO flows_flowstart_groups(flowstart_id, contactgroup_id) VALUES(:flowstart_id, :contactgroup_id)`
 
 // CreateBatch creates a batch for this start using the passed in contact ids
-func (s *FlowStart) CreateBatch(contactIDs []ContactID, last bool, totalContacts int) *FlowStartBatch {
+func (s *FlowStart) CreateBatch(contactIDs []ContactID, flowType FlowType, last bool, totalContacts int) *FlowStartBatch {
 	return &FlowStartBatch{
 		StartID:        s.ID,
 		StartType:      s.StartType,
 		OrgID:          s.OrgID,
 		FlowID:         s.FlowID,
-		FlowType:       s.FlowType,
+		FlowType:       flowType,
 		ContactIDs:     contactIDs,
 		ParentSummary:  s.ParentSummary,
 		SessionHistory: s.SessionHistory,

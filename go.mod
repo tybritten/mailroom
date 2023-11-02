@@ -19,7 +19,6 @@ require (
 	github.com/nyaruka/ezconf v0.2.1
 	github.com/nyaruka/gocommon v1.42.2
 	github.com/nyaruka/goflow v0.197.2
-	github.com/nyaruka/logrus_sentry v0.8.2-0.20190129182604-c2962b80ba7d
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.5.0
 	github.com/nyaruka/rp-indexer/v8 v8.3.0

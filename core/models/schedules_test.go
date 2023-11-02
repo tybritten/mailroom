@@ -45,6 +45,7 @@ func TestGetExpired(t *testing.T) {
 
 	assert.Equal(t, s2, schedules[1].ID())
 	assert.Nil(t, schedules[1].Broadcast())
+
 	trigger := schedules[1].Trigger()
 	assert.NotNil(t, trigger)
 	assert.Equal(t, testdata.Favorites.ID, trigger.FlowID())

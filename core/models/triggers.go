@@ -9,7 +9,6 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/dbutil"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/envs"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/triggers"
@@ -89,13 +88,10 @@ func (t *Trigger) UnmarshalJSON(b []byte) error { return json.Unmarshal(b, &t.t)
 
 // Start generates an insertable flow start for scheduled trigger
 func (t *Trigger) FlowStart() *FlowStart {
-	// TODO remove flow type from start task payload so we don't have to know it here
-	s := NewFlowStart(t.t.OrgID, StartTypeTrigger, FlowTypeMessaging, t.t.FlowID).
+	return NewFlowStart(t.t.OrgID, StartTypeTrigger, t.t.FlowID).
 		WithContactIDs(t.t.ContactIDs).
 		WithGroupIDs(t.t.IncludeGroupIDs).
 		WithExcludeGroupIDs(t.t.ExcludeGroupIDs)
-	s.UUID = uuids.New()
-	return s
 }
 
 // loadTriggers loads all non-schedule triggers for the passed in org
