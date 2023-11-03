@@ -108,6 +108,40 @@ func MarkBroadcastFailed(ctx context.Context, db DBorTx, id BroadcastID) error {
 	return errors.Wrapf(err, "error marking broadcast #%d as failed", id)
 }
 
+// InsertBroadcast inserts the given broadcast into the DB
+func InsertBroadcast(ctx context.Context, db DBorTx, bcast *Broadcast) error {
+	err := BulkQuery(ctx, "inserting broadcast", db, sqlInsertBroadcast, []*Broadcast{bcast})
+	if err != nil {
+		return errors.Wrap(err, "error inserting broadcast")
+	}
+
+	// build up all our contact associations
+	contacts := make([]*broadcastContact, 0, len(bcast.ContactIDs))
+	for _, contactID := range bcast.ContactIDs {
+		contacts = append(contacts, &broadcastContact{BroadcastID: bcast.ID, ContactID: contactID})
+	}
+
+	// insert our contacts
+	err = BulkQuery(ctx, "inserting broadcast contacts", db, sqlInsertBroadcastContacts, contacts)
+	if err != nil {
+		return errors.Wrapf(err, "error inserting contacts for broadcast")
+	}
+
+	// build up all our group associations
+	groups := make([]*broadcastGroup, 0, len(bcast.GroupIDs))
+	for _, groupID := range bcast.GroupIDs {
+		groups = append(groups, &broadcastGroup{BroadcastID: bcast.ID, GroupID: groupID})
+	}
+
+	// insert our groups
+	err = BulkQuery(ctx, "inserting broadcast groups", db, sqlInsertBroadcastGroups, groups)
+	if err != nil {
+		return errors.Wrapf(err, "error inserting groups for broadcast")
+	}
+
+	return nil
+}
+
 // InsertChildBroadcast clones the passed in broadcast as a parent, then inserts that broadcast into the DB
 func InsertChildBroadcast(ctx context.Context, db DBorTx, parent *Broadcast) (*Broadcast, error) {
 	child := NewBroadcast(
@@ -124,37 +158,7 @@ func InsertChildBroadcast(ctx context.Context, db DBorTx, parent *Broadcast) (*B
 	)
 	child.ParentID = parent.ID
 
-	// insert our broadcast
-	err := BulkQuery(ctx, "inserting broadcast", db, sqlInsertBroadcast, []*Broadcast{child})
-	if err != nil {
-		return nil, errors.Wrapf(err, "error inserting child broadcast for broadcast: %d", parent.ID)
-	}
-
-	// build up all our contact associations
-	contacts := make([]*broadcastContact, 0, len(child.ContactIDs))
-	for _, contactID := range child.ContactIDs {
-		contacts = append(contacts, &broadcastContact{BroadcastID: child.ID, ContactID: contactID})
-	}
-
-	// insert our contacts
-	err = BulkQuery(ctx, "inserting broadcast contacts", db, sqlInsertBroadcastContacts, contacts)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error inserting contacts for broadcast")
-	}
-
-	// build up all our group associations
-	groups := make([]*broadcastGroup, 0, len(child.GroupIDs))
-	for _, groupID := range child.GroupIDs {
-		groups = append(groups, &broadcastGroup{BroadcastID: child.ID, GroupID: groupID})
-	}
-
-	// insert our groups
-	err = BulkQuery(ctx, "inserting broadcast groups", db, sqlInsertBroadcastGroups, groups)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error inserting groups for broadcast")
-	}
-
-	return child, nil
+	return child, InsertBroadcast(ctx, db, child)
 }
 
 type broadcastContact struct {
