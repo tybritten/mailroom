@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/queue"
@@ -85,9 +84,8 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 			task = &msgs.SendBroadcastTask{Broadcast: bcast}
 			broadcasts++
 
-		} else if s.FlowStart() != nil {
-			start := s.FlowStart()
-			start.UUID = uuids.New()
+		} else if s.Trigger() != nil {
+			start := s.Trigger().CreateStart()
 
 			// insert our flow start
 			err := models.InsertFlowStarts(ctx, tx, []*models.FlowStart{start})
@@ -101,7 +99,7 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 			task = &starts.StartFlowTask{FlowStart: start}
 			triggers++
 		} else {
-			log.Info("schedule found with no associated active broadcast or trigger, ignoring")
+			log.Error("schedule found with no associated active broadcast or trigger")
 			noops++
 		}
 

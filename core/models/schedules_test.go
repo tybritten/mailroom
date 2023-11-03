@@ -45,12 +45,13 @@ func TestGetExpired(t *testing.T) {
 
 	assert.Equal(t, s2, schedules[1].ID())
 	assert.Nil(t, schedules[1].Broadcast())
-	start := schedules[1].FlowStart()
-	assert.NotNil(t, start)
-	assert.Equal(t, testdata.Favorites.ID, start.FlowID)
-	assert.Equal(t, testdata.Org1.ID, start.OrgID)
-	assert.Equal(t, []models.ContactID{testdata.Cathy.ID, testdata.George.ID}, start.ContactIDs)
-	assert.Equal(t, []models.GroupID{testdata.DoctorsGroup.ID}, start.GroupIDs)
+
+	trigger := schedules[1].Trigger()
+	assert.NotNil(t, trigger)
+	assert.Equal(t, testdata.Favorites.ID, trigger.FlowID())
+	assert.Equal(t, testdata.Org1.ID, trigger.OrgID())
+	assert.Equal(t, []models.ContactID{testdata.Cathy.ID, testdata.George.ID}, trigger.ContactIDs())
+	assert.Equal(t, []models.GroupID{testdata.DoctorsGroup.ID}, trigger.IncludeGroupIDs())
 
 	assert.Equal(t, s1, schedules[2].ID())
 	bcast := schedules[2].Broadcast()
