@@ -88,6 +88,24 @@ func (s *Schedule) Timezone() (*time.Location, error) {
 	return time.LoadLocation(s.s.Timezone)
 }
 
+func (s *Schedule) DeleteAssociated(ctx context.Context, tx *sql.Tx) error {
+	if _, err := tx.ExecContext(ctx, `UPDATE schedules_schedule SET is_active = FALSE WHERE id = $1`, s.s.ID); err != nil {
+		return errors.Wrap(err, "error deactivating schedule")
+	}
+
+	if s.Broadcast() != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE msgs_broadcast SET is_active = FALSE WHERE id = $1`, s.Broadcast().ID); err != nil {
+			return errors.Wrap(err, "error deactivating scheduled broadcast")
+		}
+	} else if s.Trigger() != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE triggers_trigger SET is_active = FALSE WHERE id = $1`, s.Trigger().ID()); err != nil {
+			return errors.Wrap(err, "error deactivating scheduled trigger")
+		}
+	}
+
+	return nil
+}
+
 // UpdateFires updates the next and last fire for a shedule on the db
 func (s *Schedule) UpdateFires(ctx context.Context, tx DBorTx, last time.Time, next *time.Time) error {
 	_, err := tx.ExecContext(ctx, `UPDATE schedules_schedule SET last_fire = $2, next_fire = $3 WHERE id = $1`,
