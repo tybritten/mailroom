@@ -1,3 +1,7 @@
+v8.3.37 (2023-11-03)
+-------------------------
+ * Rework schedule firing so that we load the trigger
+
 v8.3.36 (2023-11-02)
 -------------------------
  * Rework flow start tasks to not require flow_type
