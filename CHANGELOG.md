@@ -1,3 +1,7 @@
+v8.3.38 (2023-11-06)
+-------------------------
+ * Deactivate schedules along with their broadcast/trigger if they have no more firing to do
+
 v8.3.37 (2023-11-03)
 -------------------------
  * Rework schedule firing so that we load the trigger
