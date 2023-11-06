@@ -113,7 +113,7 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 			}
 		} else {
 			// delete schedule and associated broadcast or trigger
-			err = s.DeleteAssociated(ctx, tx.Tx)
+			err = s.DeleteWithTarget(ctx, tx.Tx)
 			if err != nil {
 				log.Error("error deleting schedule", "error", err)
 				tx.Rollback()
