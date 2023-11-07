@@ -1,3 +1,8 @@
+v8.3.40 (2023-11-07)
+-------------------------
+ * Add medium field to notifications and start writing
+ * Update test database
+
 v8.3.39 (2023-11-07)
 -------------------------
  * Actually delete schedule objects instead of soft deletes
