@@ -97,18 +97,18 @@ func (s *Schedule) Timezone() (*time.Location, error) {
 
 // DeleteWithTarget deactivates this schedule along with its associated broadcast or flow start
 func (s *Schedule) DeleteWithTarget(ctx context.Context, tx *sql.Tx) error {
-	if _, err := tx.ExecContext(ctx, `UPDATE schedules_schedule SET is_active = FALSE WHERE id = $1`, s.s.ID); err != nil {
-		return errors.Wrap(err, "error deactivating schedule")
-	}
-
 	if s.Broadcast() != nil {
-		if _, err := tx.ExecContext(ctx, `UPDATE msgs_broadcast SET is_active = FALSE WHERE id = $1`, s.Broadcast().ID); err != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE msgs_broadcast SET is_active = FALSE, schedule_id = NULL WHERE id = $1`, s.Broadcast().ID); err != nil {
 			return errors.Wrap(err, "error deactivating scheduled broadcast")
 		}
 	} else if s.Trigger() != nil {
-		if _, err := tx.ExecContext(ctx, `UPDATE triggers_trigger SET is_active = FALSE WHERE id = $1`, s.Trigger().ID()); err != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE triggers_trigger SET is_active = FALSE, schedule_id = NULL WHERE id = $1`, s.Trigger().ID()); err != nil {
 			return errors.Wrap(err, "error deactivating scheduled trigger")
 		}
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM schedules_schedule WHERE id = $1`, s.s.ID); err != nil {
+		return errors.Wrap(err, "error deleting schedule")
 	}
 
 	return nil
