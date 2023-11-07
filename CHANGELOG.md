@@ -1,3 +1,7 @@
+v8.3.39 (2023-11-07)
+-------------------------
+ * Actually delete schedule objects instead of soft deletes
+
 v8.3.38 (2023-11-06)
 -------------------------
  * Deactivate schedules along with their broadcast/trigger if they have no more firing to do
