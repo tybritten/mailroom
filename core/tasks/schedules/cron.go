@@ -103,12 +103,22 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 			noops++
 		}
 
-		// update our next fire for this schedule
-		err = s.UpdateFires(ctx, tx, now, nextFire)
-		if err != nil {
-			log.Error("error updating next fire for schedule", "error", err)
-			tx.Rollback()
-			continue
+		if nextFire != nil {
+			// update our next fire for this schedule
+			err = s.UpdateFires(ctx, tx, now, nextFire)
+			if err != nil {
+				log.Error("error updating next fire for schedule", "error", err)
+				tx.Rollback()
+				continue
+			}
+		} else {
+			// delete schedule and associated broadcast or trigger
+			err = s.DeleteWithTarget(ctx, tx.Tx)
+			if err != nil {
+				log.Error("error deleting schedule", "error", err)
+				tx.Rollback()
+				continue
+			}
 		}
 
 		// commit our transaction
@@ -128,12 +138,6 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 		}
 	}
 
-	log.Info("fired schedules",
-		"broadcasts", broadcasts,
-		"triggers", triggers,
-		"noops", noops,
-		"elapsed", time.Since(start),
-	)
-
+	log.Info("fired schedules", "broadcasts", broadcasts, "triggers", triggers, "noops", noops, "elapsed", time.Since(start))
 	return nil
 }

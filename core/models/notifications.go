@@ -26,9 +26,14 @@ const (
 type EmailStatus string
 
 const (
-	EmailStatusPending = "P"
-	EmailStatusSent    = "S"
-	EmailStatusNone    = "N"
+	EmailStatusPending EmailStatus = "P"
+	EmailStatusSent    EmailStatus = "S"
+	EmailStatusNone    EmailStatus = "N"
+)
+
+const (
+	MediumUI    = "U"
+	MediumEmail = "E"
 )
 
 type Notification struct {
@@ -37,6 +42,7 @@ type Notification struct {
 	Type        NotificationType `db:"notification_type"`
 	Scope       string           `db:"scope"`
 	UserID      UserID           `db:"user_id"`
+	Medium      string           `db:"medium"`
 	IsSeen      bool             `db:"is_seen"`
 	EmailStatus EmailStatus      `db:"email_status"`
 	CreatedOn   time.Time        `db:"created_on"`
@@ -52,6 +58,8 @@ func NotifyImportFinished(ctx context.Context, db DBorTx, imp *ContactImport) er
 		Type:            NotificationTypeImportFinished,
 		Scope:           fmt.Sprintf("contact:%d", imp.ID),
 		UserID:          imp.CreatedByID,
+		Medium:          MediumUI,
+		EmailStatus:     EmailStatusNone,
 		ContactImportID: imp.ID,
 	}
 
@@ -65,11 +73,13 @@ func NotifyIncidentStarted(ctx context.Context, db DBorTx, oa *OrgAssets, incide
 
 	for i, admin := range admins {
 		notifications[i] = &Notification{
-			OrgID:      incident.OrgID,
-			Type:       NotificationTypeIncidentStarted,
-			Scope:      strconv.Itoa(int(incident.ID)),
-			UserID:     admin.ID(),
-			IncidentID: incident.ID,
+			OrgID:       incident.OrgID,
+			Type:        NotificationTypeIncidentStarted,
+			Scope:       strconv.Itoa(int(incident.ID)),
+			UserID:      admin.ID(),
+			Medium:      MediumUI,
+			EmailStatus: EmailStatusNone,
+			IncidentID:  incident.ID,
 		}
 	}
 
@@ -115,19 +125,23 @@ func NotificationsFromTicketEvents(ctx context.Context, db DBorTx, oa *OrgAssets
 
 	for userID := range notifyTicketsOpened {
 		notifications = append(notifications, &Notification{
-			OrgID:  oa.OrgID(),
-			Type:   NotificationTypeTicketsOpened,
-			Scope:  "",
-			UserID: userID,
+			OrgID:       oa.OrgID(),
+			Type:        NotificationTypeTicketsOpened,
+			Scope:       "",
+			UserID:      userID,
+			Medium:      MediumUI,
+			EmailStatus: EmailStatusNone,
 		})
 	}
 
 	for userID := range notifyTicketsActivity {
 		notifications = append(notifications, &Notification{
-			OrgID:  oa.OrgID(),
-			Type:   NotificationTypeTicketsActivity,
-			Scope:  "",
-			UserID: userID,
+			OrgID:       oa.OrgID(),
+			Type:        NotificationTypeTicketsActivity,
+			Scope:       "",
+			UserID:      userID,
+			Medium:      MediumUI,
+			EmailStatus: EmailStatusNone,
 		})
 	}
 
@@ -135,8 +149,8 @@ func NotificationsFromTicketEvents(ctx context.Context, db DBorTx, oa *OrgAssets
 }
 
 const insertNotificationSQL = `
-INSERT INTO notifications_notification(org_id,  notification_type,  scope,  user_id, is_seen, email_status, created_on,  contact_import_id,  incident_id) 
-                               VALUES(:org_id, :notification_type, :scope, :user_id,   FALSE,          'N',      NOW(), :contact_import_id, :incident_id) 
+INSERT INTO notifications_notification(org_id,  notification_type,  scope,  user_id,  medium, is_seen,  email_status, created_on,  contact_import_id,  incident_id) 
+                               VALUES(:org_id, :notification_type, :scope, :user_id, :medium,   FALSE, :email_status,      NOW(), :contact_import_id, :incident_id) 
 							   ON CONFLICT DO NOTHING`
 
 func insertNotifications(ctx context.Context, db DBorTx, notifications []*Notification) error {

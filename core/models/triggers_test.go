@@ -2,6 +2,7 @@ package models_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
@@ -406,11 +407,11 @@ func TestArchiveContactTriggers(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetAll)
 
 	everybodyID := testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, []string{"join"}, models.MatchFirst, nil, nil, nil)
-	cathyOnly1ID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, nil, nil, []*testdata.Contact{testdata.Cathy})
-	cathyOnly2ID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, nil, nil, []*testdata.Contact{testdata.Cathy})
-	cathyAndGeorgeID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, nil, nil, []*testdata.Contact{testdata.Cathy, testdata.George})
-	cathyAndGroupID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, []*testdata.Group{testdata.DoctorsGroup}, nil, []*testdata.Contact{testdata.Cathy})
-	georgeOnlyID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, models.NilScheduleID, nil, nil, []*testdata.Contact{testdata.George})
+	cathyOnly1ID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodMonthly, time.Now()), nil, nil, []*testdata.Contact{testdata.Cathy})
+	cathyOnly2ID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodMonthly, time.Now()), nil, nil, []*testdata.Contact{testdata.Cathy})
+	cathyAndGeorgeID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodMonthly, time.Now()), nil, nil, []*testdata.Contact{testdata.Cathy, testdata.George})
+	cathyAndGroupID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodMonthly, time.Now()), []*testdata.Group{testdata.DoctorsGroup}, nil, []*testdata.Contact{testdata.Cathy})
+	georgeOnlyID := testdata.InsertScheduledTrigger(rt, testdata.Org1, testdata.Favorites, testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodMonthly, time.Now()), nil, nil, []*testdata.Contact{testdata.George})
 
 	err := models.ArchiveContactTriggers(ctx, rt.DB, []models.ContactID{testdata.Cathy.ID, testdata.Bob.ID})
 	require.NoError(t, err)

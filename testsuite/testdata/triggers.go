@@ -55,8 +55,8 @@ func insertTrigger(rt *runtime.Runtime, org *Org, triggerType models.TriggerType
 	var id models.TriggerID
 	must(rt.DB.Get(&id,
 		`INSERT INTO triggers_trigger(is_active, created_on, modified_on, keywords, referrer_id, is_archived, 
-									  flow_id, trigger_type, match_type, schedule_id, created_by_id, modified_by_id, org_id, channel_id)
-		VALUES(TRUE, now(), now(), $1, $6, false, $2, $3, $4, $5, 1, 1, $8, $7) RETURNING id`, pq.Array(keywords), flow.ID, triggerType, matchType, schedID, referrerID, channelID, org.ID,
+									  flow_id, trigger_type, match_type, schedule_id, priority, created_by_id, modified_by_id, org_id, channel_id)
+		VALUES(TRUE, now(), now(), $1, $6, false, $2, $3, $4, $5, 1, 1, 1, $8, $7) RETURNING id`, pq.Array(keywords), flow.ID, triggerType, matchType, schedID, referrerID, channelID, org.ID,
 	))
 
 	// insert group associations

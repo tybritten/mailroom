@@ -19,20 +19,26 @@ type ScheduleID int
 // NilScheduleID is our constant for a nil schedule id
 const NilScheduleID = ScheduleID(0)
 
+// RepeatPeriod is the different ways a schedule can repeat
 type RepeatPeriod string
 
-const RepeatPeriodNever = RepeatPeriod("O")
-const RepeatPeriodDaily = RepeatPeriod("D")
-const RepeatPeriodWeekly = RepeatPeriod("W")
-const RepeatPeriodMonthly = RepeatPeriod("M")
+const (
+	RepeatPeriodNever   = RepeatPeriod("O")
+	RepeatPeriodDaily   = RepeatPeriod("D")
+	RepeatPeriodWeekly  = RepeatPeriod("W")
+	RepeatPeriodMonthly = RepeatPeriod("M")
+)
 
-const Monday = 'M'
-const Tuesday = 'T'
-const Wednesday = 'W'
-const Thursday = 'R'
-const Friday = 'F'
-const Saturday = 'S'
-const Sunday = 'U'
+// day of the week constants for weekly repeating schedules
+const (
+	Monday    = 'M'
+	Tuesday   = 'T'
+	Wednesday = 'W'
+	Thursday  = 'R'
+	Friday    = 'F'
+	Saturday  = 'S'
+	Sunday    = 'U'
+)
 
 var dayStrToDayInt = map[byte]time.Weekday{
 	Sunday:    0,
@@ -66,6 +72,7 @@ type Schedule struct {
 	}
 }
 
+// NewSchedule creates a new schedule object
 func NewSchedule(period RepeatPeriod, hourOfDay, minuteOfHour, dayOfMonth *int, daysOfWeek string) *Schedule {
 	sched := &Schedule{}
 	s := &sched.s
@@ -86,6 +93,25 @@ func (s *Schedule) NextFire() *time.Time       { return s.s.NextFire }
 func (s *Schedule) LastFire() *time.Time       { return s.s.LastFire }
 func (s *Schedule) Timezone() (*time.Location, error) {
 	return time.LoadLocation(s.s.Timezone)
+}
+
+// DeleteWithTarget deactivates this schedule along with its associated broadcast or flow start
+func (s *Schedule) DeleteWithTarget(ctx context.Context, tx *sql.Tx) error {
+	if s.Broadcast() != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE msgs_broadcast SET is_active = FALSE, schedule_id = NULL WHERE id = $1`, s.Broadcast().ID); err != nil {
+			return errors.Wrap(err, "error deactivating scheduled broadcast")
+		}
+	} else if s.Trigger() != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE triggers_trigger SET is_active = FALSE, schedule_id = NULL WHERE id = $1`, s.Trigger().ID()); err != nil {
+			return errors.Wrap(err, "error deactivating scheduled trigger")
+		}
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM schedules_schedule WHERE id = $1`, s.s.ID); err != nil {
+		return errors.Wrap(err, "error deleting schedule")
+	}
+
+	return nil
 }
 
 // UpdateFires updates the next and last fire for a shedule on the db
@@ -193,7 +219,7 @@ func daysInMonth(t time.Time) int {
 	return lastDay.Day()
 }
 
-const selectUnfiredSchedules = `
+const sqlSelectUnfiredSchedules = `
 SELECT ROW_TO_JSON(s) FROM (
     SELECT
         s.id as id,
@@ -241,7 +267,7 @@ SELECT ROW_TO_JSON(s) FROM (
 
 // GetUnfiredSchedules returns all unfired schedules
 func GetUnfiredSchedules(ctx context.Context, db *sql.DB) ([]*Schedule, error) {
-	rows, err := db.QueryContext(ctx, selectUnfiredSchedules)
+	rows, err := db.QueryContext(ctx, sqlSelectUnfiredSchedules)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error selecting unfired schedules")
 	}

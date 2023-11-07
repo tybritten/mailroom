@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/goflow/test"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/queue"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -59,4 +60,23 @@ func AssertContactTasks(t *testing.T, orgID models.OrgID, contactID models.Conta
 	actualJSON := jsonx.MustMarshal(tasks)
 
 	test.AssertEqualJSON(t, expectedJSON, actualJSON, "")
+}
+
+// AssertBatchTasks asserts that the given org has the given batch tasks queued for them
+func AssertBatchTasks(t *testing.T, orgID models.OrgID, expected map[string]int, msgAndArgs ...any) {
+	rc := getRC()
+	defer rc.Close()
+
+	tasks, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("batch:%d", orgID), 0, -1))
+	require.NoError(t, err)
+
+	actual := make(map[string]int, 5)
+	for _, taskJSON := range tasks {
+		task := &queue.Task{}
+		jsonx.MustUnmarshal(json.RawMessage(taskJSON), task)
+
+		actual[task.Type] += 1
+	}
+
+	assert.Equal(t, expected, actual, msgAndArgs...)
 }
