@@ -68,10 +68,10 @@ func TestCheckSchedules(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) from msgs_broadcast_contacts WHERE broadcast_id = 3`).Returns(2)
 	assertdb.Query(t, rt.DB, `SELECT count(*) from msgs_broadcast_groups WHERE broadcast_id = 4`).Returns(1)
 
-	// the one-off schedules should de deactivated along with their broadcast and trigger
-	assertdb.Query(t, rt.DB, `SELECT is_active FROM schedules_schedule WHERE id = $1`, s1).Returns(false)
+	// the one-off schedules should de deleted and their broadcast and trigger deactivated
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM schedules_schedule WHERE id = $1`, s1).Returns(0)
 	assertdb.Query(t, rt.DB, `SELECT is_active FROM msgs_broadcast WHERE id = $1`, b1).Returns(false)
-	assertdb.Query(t, rt.DB, `SELECT is_active FROM schedules_schedule WHERE id = $1`, s3).Returns(false)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM schedules_schedule WHERE id = $1`, s3).Returns(0)
 	assertdb.Query(t, rt.DB, `SELECT is_active FROM triggers_trigger WHERE id = $1`, t1).Returns(false)
 
 	// the repeating schedules should have next_fire and last_fire updated
