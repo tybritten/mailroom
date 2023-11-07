@@ -29,13 +29,13 @@ func TestStartFlowBatch(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetAll)
 
 	// create a start object
-	start1 := models.NewFlowStart(models.OrgID(1), models.StartTypeManual, models.FlowTypeMessaging, testdata.SingleMessage.ID).
+	start1 := models.NewFlowStart(models.OrgID(1), models.StartTypeManual, testdata.SingleMessage.ID).
 		WithContactIDs([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID, testdata.George.ID, testdata.Alexandria.ID})
 	err := models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start1})
 	require.NoError(t, err)
 
-	batch1 := start1.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, false, 4)
-	batch2 := start1.CreateBatch([]models.ContactID{testdata.George.ID, testdata.Alexandria.ID}, true, 4)
+	batch1 := start1.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, models.FlowTypeBackground, false, 4)
+	batch2 := start1.CreateBatch([]models.ContactID{testdata.George.ID, testdata.Alexandria.ID}, models.FlowTypeBackground, true, 4)
 
 	// start the first batch...
 	sessions, err := runner.StartFlowBatch(ctx, rt, batch1)
@@ -65,10 +65,10 @@ func TestStartFlowBatch(t *testing.T) {
 
 	// create a start object with params
 	testdata.InsertFlowStart(rt, testdata.Org1, testdata.IncomingExtraFlow, nil)
-	start2 := models.NewFlowStart(models.OrgID(1), models.StartTypeManual, models.FlowTypeMessaging, testdata.IncomingExtraFlow.ID).
+	start2 := models.NewFlowStart(models.OrgID(1), models.StartTypeManual, testdata.IncomingExtraFlow.ID).
 		WithContactIDs([]models.ContactID{testdata.Cathy.ID}).
 		WithParams([]byte(`{"name":"Fred", "age":33}`))
-	batch3 := start2.CreateBatch([]models.ContactID{testdata.Cathy.ID}, true, 1)
+	batch3 := start2.CreateBatch([]models.ContactID{testdata.Cathy.ID}, models.FlowTypeMessaging, true, 1)
 
 	sessions, err = runner.StartFlowBatch(ctx, rt, batch3)
 	require.NoError(t, err)

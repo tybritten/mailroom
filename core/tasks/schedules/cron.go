@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/queue"
@@ -85,9 +84,8 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 			task = &msgs.SendBroadcastTask{Broadcast: bcast}
 			broadcasts++
 
-		} else if s.FlowStart() != nil {
-			start := s.FlowStart()
-			start.UUID = uuids.New()
+		} else if s.Trigger() != nil {
+			start := s.Trigger().CreateStart()
 
 			// insert our flow start
 			err := models.InsertFlowStarts(ctx, tx, []*models.FlowStart{start})
@@ -101,16 +99,26 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 			task = &starts.StartFlowTask{FlowStart: start}
 			triggers++
 		} else {
-			log.Info("schedule found with no associated active broadcast or trigger, ignoring")
+			log.Error("schedule found with no associated active broadcast or trigger")
 			noops++
 		}
 
-		// update our next fire for this schedule
-		err = s.UpdateFires(ctx, tx, now, nextFire)
-		if err != nil {
-			log.Error("error updating next fire for schedule", "error", err)
-			tx.Rollback()
-			continue
+		if nextFire != nil {
+			// update our next fire for this schedule
+			err = s.UpdateFires(ctx, tx, now, nextFire)
+			if err != nil {
+				log.Error("error updating next fire for schedule", "error", err)
+				tx.Rollback()
+				continue
+			}
+		} else {
+			// delete schedule and associated broadcast or trigger
+			err = s.DeleteWithTarget(ctx, tx.Tx)
+			if err != nil {
+				log.Error("error deleting schedule", "error", err)
+				tx.Rollback()
+				continue
+			}
 		}
 
 		// commit our transaction
@@ -130,12 +138,6 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 		}
 	}
 
-	log.Info("fired schedules",
-		"broadcasts", broadcasts,
-		"triggers", triggers,
-		"noops", noops,
-		"elapsed", time.Since(start),
-	)
-
+	log.Info("fired schedules", "broadcasts", broadcasts, "triggers", triggers, "noops", noops, "elapsed", time.Since(start))
 	return nil
 }

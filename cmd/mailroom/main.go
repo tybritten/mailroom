@@ -7,15 +7,16 @@ import (
 	"os/signal"
 	goruntime "runtime"
 	"syscall"
+	"time"
 
+	"github.com/getsentry/sentry-go"
 	_ "github.com/lib/pq"
 	"github.com/nyaruka/ezconf"
 	"github.com/nyaruka/gocommon/uuids"
-	"github.com/nyaruka/logrus_sentry"
 	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils"
-	"github.com/sirupsen/logrus"
+	slogmulti "github.com/samber/slog-multi"
+	slogsentry "github.com/samber/slog-sentry"
 
 	_ "github.com/nyaruka/mailroom/core/handlers"
 	_ "github.com/nyaruka/mailroom/core/hooks"
@@ -67,46 +68,52 @@ func main() {
 		os.Exit(1)
 	}
 
-	level, err := logrus.ParseLevel(config.LogLevel)
+	var level slog.Level
+	err := level.UnmarshalText([]byte(config.LogLevel))
 	if err != nil {
-		slog.Error("invalid log level", "level", level)
+		ulog.Fatalf("invalid log level %s", level)
 		os.Exit(1)
 	}
 
-	logrus.SetLevel(level)
-	logrus.SetOutput(os.Stdout)
-	logrus.SetFormatter(&logrus.TextFormatter{})
+	// configure our logger
+	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+	slog.SetDefault(slog.New(logHandler))
 
-	// configure golang std structured logging to route to logrus
-	slog.SetDefault(slog.New(utils.NewLogrusHandler(logrus.StandardLogger())))
-
-	log := slog.With("comp", "main")
-	log.Info("starting mailroom", "version", version, "released", date)
+	logger := slog.With("comp", "main")
+	logger.Info("starting mailroom", "version", version, "released", date)
 
 	// if we have a DSN entry, try to initialize it
 	if config.SentryDSN != "" {
-		hook, err := logrus_sentry.NewSentryHook(config.SentryDSN, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel})
-		hook.Timeout = 0
-		hook.StacktraceConfiguration.Enable = true
-		hook.StacktraceConfiguration.Skip = 4
-		hook.StacktraceConfiguration.Context = 5
-		hook.StacktraceConfiguration.IncludeErrorBreadcrumb = true
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:           config.SentryDSN,
+			EnableTracing: false,
+		})
 		if err != nil {
-			log.Error("unable to configure sentry hook", "dsn", config.SentryDSN, "error", err)
+			ulog.Fatalf("error initiating sentry client, error %s, dsn %s", err, config.SentryDSN)
 			os.Exit(1)
 		}
-		logrus.StandardLogger().Hooks.Add(hook)
+
+		defer sentry.Flush(2 * time.Second)
+
+		logger = slog.New(
+			slogmulti.Fanout(
+				logHandler,
+				slogsentry.Option{Level: slog.LevelError}.NewSentryHandler(),
+			),
+		)
+		logger = logger.With("release", version)
+		slog.SetDefault(logger)
 	}
 
 	if config.UUIDSeed != 0 {
 		uuids.SetGenerator(uuids.NewSeededGenerator(int64(config.UUIDSeed)))
-		log.Warn("using seeded UUID generation", "uuid-seed", config.UUIDSeed)
+		logger.Warn("using seeded UUID generation", "uuid-seed", config.UUIDSeed)
 	}
 
 	mr := mailroom.NewMailroom(config)
 	err = mr.Start()
 	if err != nil {
-		log.Error("unable to start server", "error", err)
+		logger.Error("unable to start server", "error", err)
 	}
 
 	// handle our signals

@@ -1,3 +1,29 @@
+v8.3.40 (2023-11-07)
+-------------------------
+ * Add medium field to notifications and start writing
+ * Update test database
+
+v8.3.39 (2023-11-07)
+-------------------------
+ * Actually delete schedule objects instead of soft deletes
+
+v8.3.38 (2023-11-06)
+-------------------------
+ * Deactivate schedules along with their broadcast/trigger if they have no more firing to do
+
+v8.3.37 (2023-11-03)
+-------------------------
+ * Rework schedule firing so that we load the trigger
+
+v8.3.36 (2023-11-02)
+-------------------------
+ * Rework flow start tasks to not require flow_type
+
+v8.3.35 (2023-11-01)
+-------------------------
+ * Remove logrus usage and hook sentry to slog
+ * Update to latest gocommon
+
 v8.3.34 (2023-10-27)
 -------------------------
  * Update to latest goflow

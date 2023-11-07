@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"sort"
 	"strings"
 
@@ -51,6 +52,7 @@ const NilTriggerID = TriggerID(0)
 type Trigger struct {
 	t struct {
 		ID              TriggerID      `json:"id"`
+		OrgID           OrgID          `json:"org_id"`
 		FlowID          FlowID         `json:"flow_id"`
 		TriggerType     TriggerType    `json:"trigger_type"`
 		Keywords        pq.StringArray `json:"keywords"`
@@ -64,8 +66,8 @@ type Trigger struct {
 }
 
 // ID returns the id of this trigger
-func (t *Trigger) ID() TriggerID { return t.t.ID }
-
+func (t *Trigger) ID() TriggerID              { return t.t.ID }
+func (t *Trigger) OrgID() OrgID               { return t.t.OrgID }
 func (t *Trigger) FlowID() FlowID             { return t.t.FlowID }
 func (t *Trigger) TriggerType() TriggerType   { return t.t.TriggerType }
 func (t *Trigger) Keywords() []string         { return []string(t.t.Keywords) }
@@ -80,6 +82,16 @@ func (t *Trigger) KeywordMatchType() triggers.KeywordMatchType {
 		return triggers.KeywordMatchTypeFirstWord
 	}
 	return triggers.KeywordMatchTypeOnlyWord
+}
+
+func (t *Trigger) UnmarshalJSON(b []byte) error { return json.Unmarshal(b, &t.t) }
+
+// CreateStart generates an insertable flow start for scheduled trigger
+func (t *Trigger) CreateStart() *FlowStart {
+	return NewFlowStart(t.t.OrgID, StartTypeTrigger, t.t.FlowID).
+		WithContactIDs(t.t.ContactIDs).
+		WithGroupIDs(t.t.IncludeGroupIDs).
+		WithExcludeGroupIDs(t.t.ExcludeGroupIDs)
 }
 
 // loadTriggers loads all non-schedule triggers for the passed in org
@@ -308,12 +320,13 @@ func triggerMatchQualifiers(t *Trigger, channel *Channel, contactGroups map[Grou
 const sqlSelectTriggersByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
              SELECT
-                    t.id AS id, 
-                    t.flow_id AS flow_id,
-                    t.trigger_type AS trigger_type,
-					t.keywords AS keywords,
-                    t.match_type AS match_type,
-                    t.channel_id AS channel_id,
+                    t.id,
+                    t.org_id,
+                    t.flow_id,
+                    t.trigger_type,
+                    t.keywords,
+                    t.match_type,
+                    t.channel_id,
                     COALESCE(t.referrer_id, '') AS referrer_id,
                     ARRAY_REMOVE(ARRAY_AGG(DISTINCT ig.contactgroup_id), NULL) AS include_group_ids,
                     ARRAY_REMOVE(ARRAY_AGG(DISTINCT eg.contactgroup_id), NULL) AS exclude_group_ids
@@ -324,42 +337,25 @@ SELECT ROW_TO_JSON(r) FROM (
            GROUP BY t.id
 ) r;`
 
-const selectTriggersByContactIDsSQL = `
-SELECT 
-	t.id AS id
-FROM
-	triggers_trigger t
-INNER JOIN 
-	triggers_trigger_contacts tc ON tc.trigger_id = t.id
-WHERE
-	tc.contact_id = ANY($1) AND
-	is_archived = FALSE
-`
+const sqlSelectTriggersByContactIDs = `
+    SELECT t.id AS id
+      FROM triggers_trigger t
+INNER JOIN triggers_trigger_contacts tc ON tc.trigger_id = t.id
+     WHERE tc.contact_id = ANY($1) AND is_archived = FALSE`
 
-const deleteContactTriggersForIDsSQL = `
-DELETE FROM
-	triggers_trigger_contacts
-WHERE
-	contact_id = ANY($1)
-`
-
-const archiveEmptyTriggersSQL = `
-UPDATE 
-	triggers_trigger
-SET 
-	is_archived = TRUE
-WHERE
-	id = ANY($1) AND
+const sqlArchiveEmptyTriggers = `
+UPDATE triggers_trigger
+   SET is_archived = TRUE
+ WHERE id = ANY($1) AND
 	NOT EXISTS (SELECT * FROM triggers_trigger_contacts WHERE trigger_id = triggers_trigger.id) AND
 	NOT EXISTS (SELECT * FROM triggers_trigger_groups WHERE trigger_id = triggers_trigger.id) AND
-	NOT EXISTS (SELECT * FROM triggers_trigger_exclude_groups WHERE trigger_id = triggers_trigger.id)
-`
+	NOT EXISTS (SELECT * FROM triggers_trigger_exclude_groups WHERE trigger_id = triggers_trigger.id)`
 
 // ArchiveContactTriggers removes the given contacts from any triggers and archives any triggers
 // which reference only those contacts
 func ArchiveContactTriggers(ctx context.Context, tx DBorTx, contactIDs []ContactID) error {
 	// start by getting all the active triggers that reference these contacts
-	rows, err := tx.QueryxContext(ctx, selectTriggersByContactIDsSQL, pq.Array(contactIDs))
+	rows, err := tx.QueryxContext(ctx, sqlSelectTriggersByContactIDs, pq.Array(contactIDs))
 	if err != nil {
 		return errors.Wrapf(err, "error finding triggers for contacts")
 	}
@@ -376,13 +372,13 @@ func ArchiveContactTriggers(ctx context.Context, tx DBorTx, contactIDs []Contact
 	}
 
 	// remove any references to these contacts in triggers
-	_, err = tx.ExecContext(ctx, deleteContactTriggersForIDsSQL, pq.Array(contactIDs))
+	_, err = tx.ExecContext(ctx, `DELETE FROM triggers_trigger_contacts WHERE contact_id = ANY($1)`, pq.Array(contactIDs))
 	if err != nil {
 		return errors.Wrapf(err, "error removing contacts from triggers")
 	}
 
 	// archive any of the original triggers which are now not referencing any contact or group
-	_, err = tx.ExecContext(ctx, archiveEmptyTriggersSQL, pq.Array(triggerIDs))
+	_, err = tx.ExecContext(ctx, sqlArchiveEmptyTriggers, pq.Array(triggerIDs))
 	if err != nil {
 		return errors.Wrapf(err, "error archiving empty triggers")
 	}
