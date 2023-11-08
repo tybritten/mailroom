@@ -1,3 +1,7 @@
+v8.3.41 (2023-11-08)
+-------------------------
+ * Stop reading from Schedule.is_active which is no longer used
+
 v8.3.40 (2023-11-07)
 -------------------------
  * Add medium field to notifications and start writing
