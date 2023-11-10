@@ -46,9 +46,17 @@ type broadcastRequest struct {
 func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastRequest) (any, int, error) {
 	bcast := models.NewBroadcast(r.OrgID, r.Translations, models.TemplateStateUnevaluated, r.BaseLanguage, r.OptInID, nil, r.ContactIDs, r.GroupIDs, r.Query, r.UserID)
 
-	err := models.InsertBroadcast(ctx, rt.DB, bcast)
+	tx, err := rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, 0, errors.Wrapf(err, "unable to insert broadcast")
+		return nil, 0, errors.Wrapf(err, "error beginning transaction")
+	}
+
+	if err := models.InsertBroadcast(ctx, tx, bcast); err != nil {
+		return nil, 0, errors.Wrapf(err, "error inserting broadcast")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, 0, errors.Wrapf(err, "error committing transaction")
 	}
 
 	task := &msgs.SendBroadcastTask{Broadcast: bcast}
