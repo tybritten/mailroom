@@ -12,7 +12,7 @@ import (
 )
 
 // Function is the function that will be called on our schedule
-type Function func(context.Context, *runtime.Runtime) error
+type Function func(context.Context, *runtime.Runtime) (map[string]any, error)
 
 // Start calls the passed in function every interval, making sure it acquires a
 // lock so that only one process is running at once. Note that across processes
@@ -63,7 +63,7 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, interval time.D
 
 				// ok, got the lock, run our cron function
 				start := time.Now()
-				err = fireCron(rt, name, cronFunc)
+				res, err := fireCron(rt, name, cronFunc)
 				if err != nil {
 					log.Error("error while running cron", "error", err)
 				}
@@ -75,9 +75,17 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, interval time.D
 					log.Error("error releasing lock", "error", err)
 				}
 
-				// if cron too longer than a minute, log
+				logArgs := make([]any, 0, len(res)*2+2)
+				for k, v := range res {
+					logArgs = append(logArgs, k, v)
+				}
+				logArgs = append(logArgs, "elapsed", elapsed)
+
+				// if cron too longer than a minute, log as error
 				if elapsed > time.Minute {
-					log.With("elapsed", elapsed).Error("cron took too long")
+					log.With(logArgs...).Error("cron took too long")
+				} else {
+					log.With(logArgs...).Info("cron completed")
 				}
 			}
 
@@ -93,7 +101,7 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, interval time.D
 
 // fireCron is just a wrapper around the cron function we will call for the purposes of
 // catching and logging panics
-func fireCron(rt *runtime.Runtime, name string, cronFunc Function) error {
+func fireCron(rt *runtime.Runtime, name string, cronFunc Function) (map[string]any, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
 	defer cancel()
 

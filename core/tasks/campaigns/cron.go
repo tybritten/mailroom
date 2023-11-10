@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
@@ -30,17 +29,14 @@ func init() {
 }
 
 // QueueEventFires looks for all due campaign event fires and queues them to be started
-func QueueEventFires(ctx context.Context, rt *runtime.Runtime) error {
-	log := slog.With("comp", "campaign_events")
-	start := time.Now()
-
+func QueueEventFires(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	// find all events that need to be fired
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()
 
 	rows, err := rt.DB.QueryxContext(ctx, expiredEventsQuery)
 	if err != nil {
-		return errors.Wrapf(err, "error loading expired campaign events")
+		return nil, errors.Wrapf(err, "error loading expired campaign events")
 	}
 	defer rows.Close()
 
@@ -55,7 +51,7 @@ func QueueEventFires(ctx context.Context, rt *runtime.Runtime) error {
 		row := &eventFireRow{}
 		err := rows.StructScan(row)
 		if err != nil {
-			return errors.Wrapf(err, "error reading event fire row")
+			return nil, errors.Wrapf(err, "error reading event fire row")
 		}
 
 		numFires++
@@ -64,7 +60,7 @@ func QueueEventFires(ctx context.Context, rt *runtime.Runtime) error {
 		taskID := fmt.Sprintf("%d", row.FireID)
 		dupe, err := campaignsMarker.IsMember(rc, taskID)
 		if err != nil {
-			return errors.Wrap(err, "error checking task lock")
+			return nil, errors.Wrap(err, "error checking task lock")
 		}
 
 		// this has already been queued, skip
@@ -83,7 +79,7 @@ func QueueEventFires(ctx context.Context, rt *runtime.Runtime) error {
 		if task != nil {
 			err = queueFiresTask(rt.RP, orgID, task)
 			if err != nil {
-				return errors.Wrapf(err, "error queueing task")
+				return nil, errors.Wrapf(err, "error queueing task")
 			}
 			numTasks++
 		}
@@ -103,22 +99,12 @@ func QueueEventFires(ctx context.Context, rt *runtime.Runtime) error {
 	// queue our last task if we have one
 	if task != nil {
 		if err := queueFiresTask(rt.RP, orgID, task); err != nil {
-			return errors.Wrapf(err, "error queueing task")
+			return nil, errors.Wrapf(err, "error queueing task")
 		}
 		numTasks++
 	}
 
-	analytics.Gauge("mr.campaign_event_cron_elapsed", float64(time.Since(start))/float64(time.Second))
-	analytics.Gauge("mr.campaign_event_cron_count", float64(numFires))
-
-	log.Info("campaign event fire queuing complete",
-		"elapsed", time.Since(start),
-		"fires", numFires,
-		"dupes", numDupes,
-		"tasks", numTasks,
-	)
-
-	return nil
+	return map[string]any{"fires": numFires, "dupes": numDupes, "tasks": numTasks}, nil
 }
 
 func queueFiresTask(rp *redis.Pool, orgID models.OrgID, task *FireCampaignEventTask) error {

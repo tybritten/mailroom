@@ -39,8 +39,9 @@ func TestCheckSchedules(t *testing.T) {
 	testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodDaily, time.Now().Add(-time.Hour))
 
 	// run our task
-	err := checkSchedules(ctx, rt)
+	res, err := checkSchedules(ctx, rt)
 	assert.NoError(t, err)
+	assert.Equal(t, map[string]any{"broadcasts": 2, "triggers": 2, "noops": 1}, res)
 
 	// should have 2 flow starts added to our DB ready to go
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowstart WHERE flow_id = $1 AND start_type = 'T' AND status = 'P'`, testdata.Favorites.ID).Returns(2)

@@ -9,7 +9,7 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/msgs"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRetryErroredMessages(t *testing.T) {
@@ -20,8 +20,8 @@ func TestRetryErroredMessages(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 
 	// nothing to retry
-	err := msgs.RetryErroredMessages(ctx, rt)
-	require.NoError(t, err)
+	_, err := msgs.RetryErroredMessages(ctx, rt)
+	assert.NoError(t, err)
 
 	testsuite.AssertCourierQueues(t, map[string][]int{})
 
@@ -43,8 +43,9 @@ func TestRetryErroredMessages(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE status = 'E'`).Returns(4)
 
 	// try again...
-	err = msgs.RetryErroredMessages(ctx, rt)
-	require.NoError(t, err)
+	res, err := msgs.RetryErroredMessages(ctx, rt)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]any{"retried": 4}, res)
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE status = 'D'`).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE status = 'E'`).Returns(1)
