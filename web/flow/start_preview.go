@@ -15,7 +15,8 @@ import (
 )
 
 func init() {
-	web.RegisterRoute(http.MethodPost, "/mr/flow/preview_start", web.RequireAuthToken(web.JSONPayload(handlePreviewStart)))
+	web.RegisterRoute(http.MethodPost, "/mr/flow/start_preview", web.RequireAuthToken(web.JSONPayload(handleStartPreview)))
+	web.RegisterRoute(http.MethodPost, "/mr/flow/preview_start", web.RequireAuthToken(web.JSONPayload(handleStartPreview))) // deprecated
 }
 
 // Generates a preview of which contacts will be started in the given flow.
@@ -56,7 +57,7 @@ type previewResponse struct {
 	Total int    `json:"total"`
 }
 
-func handlePreviewStart(ctx context.Context, rt *runtime.Runtime, r *previewRequest) (any, int, error) {
+func handleStartPreview(ctx context.Context, rt *runtime.Runtime, r *previewRequest) (any, int, error) {
 	oa, err := models.GetOrgAssets(ctx, rt, r.OrgID)
 	if err != nil {
 		return nil, 0, errors.Wrapf(err, "unable to load org assets")
