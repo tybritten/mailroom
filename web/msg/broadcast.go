@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/queue"
@@ -29,6 +30,7 @@ func init() {
 //	  "base_language": "eng",
 //	  "group_ids": [101, 102],
 //	  "contact_ids": [4646],
+//	  "urns": [4646],
 //	  "optin_id": 456
 //	}
 type broadcastRequest struct {
@@ -38,13 +40,14 @@ type broadcastRequest struct {
 	BaseLanguage i18n.Language               `json:"base_language" validate:"required"`
 	ContactIDs   []models.ContactID          `json:"contact_ids"`
 	GroupIDs     []models.GroupID            `json:"group_ids"`
+	URNs         []urns.URN                  `json:"urns"`
 	Query        string                      `json:"query"`
 	OptInID      models.OptInID              `json:"optin_id"`
 }
 
 // handles a request to create the given broadcast
 func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastRequest) (any, int, error) {
-	bcast := models.NewBroadcast(r.OrgID, r.Translations, models.TemplateStateUnevaluated, r.BaseLanguage, r.OptInID, nil, r.ContactIDs, r.GroupIDs, r.Query, r.UserID)
+	bcast := models.NewBroadcast(r.OrgID, r.Translations, models.TemplateStateUnevaluated, r.BaseLanguage, r.OptInID, r.URNs, r.ContactIDs, r.GroupIDs, r.Query, r.UserID)
 
 	tx, err := rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
