@@ -31,12 +31,15 @@
                 }
             },
             "base_language": "eng",
+            "group_ids": [
+                10000
+            ],
             "contact_ids": [
                 10002,
                 10003
             ],
-            "group_ids": [
-                10000
+            "urns": [
+                "tel:+1234567890"
             ],
             "query": "age > 20",
             "optin_id": $polls_id$
@@ -46,6 +49,10 @@
             "id": 1
         },
         "db_assertions": [
+            {
+                "query": "SELECT count(*) FROM msgs_broadcast WHERE translations->'eng'->>'text' = 'Hello' AND base_language = 'eng' AND urns = '{\"tel:+1234567890\"}' AND query = 'age > 20' AND optin_id = $polls_id$",
+                "count": 1
+            },
             {
                 "query": "SELECT count(*) FROM msgs_broadcast_contacts WHERE broadcast_id = 1",
                 "count": 2

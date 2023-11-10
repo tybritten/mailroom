@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/excellent"
@@ -31,18 +32,30 @@ const (
 
 // Broadcast represents a broadcast that needs to be sent
 type Broadcast struct {
-	ID            BroadcastID                 `json:"broadcast_id,omitempty"  db:"id"`
-	OrgID         OrgID                       `json:"org_id"                  db:"org_id"`
-	Translations  flows.BroadcastTranslations `json:"translations"            db:"translations"`
+	ID            BroadcastID                 `json:"broadcast_id,omitempty"`
+	OrgID         OrgID                       `json:"org_id"`
+	Translations  flows.BroadcastTranslations `json:"translations"`
 	TemplateState TemplateState               `json:"template_state"`
-	BaseLanguage  i18n.Language               `json:"base_language"           db:"base_language"`
-	OptInID       OptInID                     `json:"optin_id"                db:"optin_id"`
+	BaseLanguage  i18n.Language               `json:"base_language"`
+	OptInID       OptInID                     `json:"optin_id"`
 	URNs          []urns.URN                  `json:"urns,omitempty"`
 	ContactIDs    []ContactID                 `json:"contact_ids,omitempty"`
 	GroupIDs      []GroupID                   `json:"group_ids,omitempty"`
-	Query         null.String                 `json:"query,omitempty"         db:"query"`
-	CreatedByID   UserID                      `json:"created_by_id,omitempty" db:"created_by_id"`
-	ParentID      BroadcastID                 `json:"parent_id,omitempty"     db:"parent_id"`
+	Query         string                      `json:"query,omitempty"`
+	CreatedByID   UserID                      `json:"created_by_id,omitempty"`
+	ParentID      BroadcastID                 `json:"parent_id,omitempty"`
+}
+
+type dbBroadcast struct {
+	ID           BroadcastID                 `db:"id"`
+	OrgID        OrgID                       `db:"org_id"`
+	Translations flows.BroadcastTranslations `db:"translations"`
+	BaseLanguage i18n.Language               `db:"base_language"`
+	OptInID      OptInID                     `db:"optin_id"`
+	URNs         pq.StringArray              `db:"urns"`
+	Query        null.String                 `db:"query"`
+	CreatedByID  UserID                      `db:"created_by_id"`
+	ParentID     BroadcastID                 `db:"parent_id"`
 }
 
 // NewBroadcast creates a new broadcast with the passed in parameters
@@ -58,7 +71,7 @@ func NewBroadcast(orgID OrgID, translations flows.BroadcastTranslations,
 		URNs:          urns,
 		ContactIDs:    contactIDs,
 		GroupIDs:      groupIDs,
-		Query:         null.String(query),
+		Query:         query,
 		CreatedByID:   createdByID,
 	}
 }
@@ -111,10 +124,28 @@ func MarkBroadcastFailed(ctx context.Context, db DBorTx, id BroadcastID) error {
 
 // InsertBroadcast inserts the given broadcast into the DB
 func InsertBroadcast(ctx context.Context, db DBorTx, bcast *Broadcast) error {
-	err := BulkQuery(ctx, "inserting broadcast", db, sqlInsertBroadcast, []*Broadcast{bcast})
+	ua := make(pq.StringArray, len(bcast.URNs))
+	for i := range bcast.URNs {
+		ua[i] = string(bcast.URNs[i])
+	}
+	dbb := &dbBroadcast{
+		ID:           bcast.ID,
+		OrgID:        bcast.OrgID,
+		Translations: bcast.Translations,
+		BaseLanguage: bcast.BaseLanguage,
+		OptInID:      bcast.OptInID,
+		URNs:         ua,
+		Query:        null.String(bcast.Query),
+		CreatedByID:  bcast.CreatedByID,
+		ParentID:     bcast.ParentID,
+	}
+
+	err := BulkQuery(ctx, "inserting broadcast", db, sqlInsertBroadcast, []*dbBroadcast{dbb})
 	if err != nil {
 		return errors.Wrap(err, "error inserting broadcast")
 	}
+
+	bcast.ID = dbb.ID
 
 	// build up all our contact associations
 	contacts := make([]*broadcastContact, 0, len(bcast.ContactIDs))
@@ -154,7 +185,7 @@ func InsertChildBroadcast(ctx context.Context, db DBorTx, parent *Broadcast) (*B
 		parent.URNs,
 		parent.ContactIDs,
 		parent.GroupIDs,
-		string(parent.Query),
+		parent.Query,
 		parent.CreatedByID,
 	)
 	child.ParentID = parent.ID
@@ -174,8 +205,8 @@ type broadcastGroup struct {
 
 const sqlInsertBroadcast = `
 INSERT INTO
-	msgs_broadcast( org_id,  parent_id, created_on, modified_on, status,  translations,  base_language,  optin_id,  query, is_active)
-			VALUES(:org_id, :parent_id, NOW()     , NOW(),       'Q',    :translations, :base_language, :optin_id, :query,      TRUE)
+	msgs_broadcast( org_id,  parent_id, created_on, modified_on, status,  translations,  base_language,  urns,  optin_id,  query, is_active)
+			VALUES(:org_id, :parent_id, NOW()     , NOW(),       'Q',    :translations, :base_language, :urns, :optin_id, :query,      TRUE)
 RETURNING id`
 
 const sqlInsertBroadcastContacts = `INSERT INTO msgs_broadcast_contacts(broadcast_id, contact_id) VALUES(:broadcast_id, :contact_id)`
