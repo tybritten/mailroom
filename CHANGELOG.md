@@ -1,3 +1,7 @@
+v8.3.44 (2023-11-10)
+-------------------------
+ * Rename preview_start to start_preview for consistency
+
 v8.3.43 (2023-11-10)
 -------------------------
  * Rename preview_broadcast to broadcast_preview
