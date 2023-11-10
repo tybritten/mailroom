@@ -1,3 +1,8 @@
+v8.3.43 (2023-11-10)
+-------------------------
+ * Rename preview_broadcast to broadcast_preview
+ * Add web endpoint to create and send a broadcast
+
 v8.3.42 (2023-11-10)
 -------------------------
  * Tweak logging in schedules cron
