@@ -43,6 +43,18 @@ func TestResend(t *testing.T) {
 	})
 }
 
+func TestBroadcast(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetData)
+
+	polls := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
+
+	testsuite.RunWebTests(t, ctx, rt, "testdata/broadcast.json", map[string]string{
+		"polls_id": fmt.Sprintf("%d", polls.ID),
+	})
+}
+
 func TestPreviewBroadcast(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 

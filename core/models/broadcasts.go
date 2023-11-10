@@ -58,6 +58,7 @@ func NewBroadcast(orgID OrgID, translations flows.BroadcastTranslations,
 		URNs:          urns,
 		ContactIDs:    contactIDs,
 		GroupIDs:      groupIDs,
+		Query:         null.String(query),
 		CreatedByID:   createdByID,
 	}
 }
