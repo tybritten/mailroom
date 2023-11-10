@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	web.RegisterRoute(http.MethodPost, "/mr/msg/preview_broadcast", web.RequireAuthToken(web.JSONPayload(handlePreviewBroadcast)))
+	web.RegisterRoute(http.MethodPost, "/mr/msg/broadcast_preview", web.RequireAuthToken(web.JSONPayload(handleBroadcastPreview)))
 }
 
 // Generates a preview of which contacts will receive a broadcast.
@@ -53,7 +53,7 @@ type previewResponse struct {
 	Total int    `json:"total"`
 }
 
-func handlePreviewBroadcast(ctx context.Context, rt *runtime.Runtime, r *previewRequest) (any, int, error) {
+func handleBroadcastPreview(ctx context.Context, rt *runtime.Runtime, r *previewRequest) (any, int, error) {
 	oa, err := models.GetOrgAssets(ctx, rt, r.OrgID)
 	if err != nil {
 		return nil, 0, errors.Wrapf(err, "unable to load org assets")
