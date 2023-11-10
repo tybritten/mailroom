@@ -72,6 +72,8 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 
 		// if it is a broadcast
 		if s.Broadcast() != nil {
+			log = log.With("broadcast_id", s.Broadcast().ID)
+
 			// clone our broadcast, our schedule broadcast is just a template
 			bcast, err := models.InsertChildBroadcast(ctx, tx, s.Broadcast())
 			if err != nil {
@@ -85,6 +87,8 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 			broadcasts++
 
 		} else if s.Trigger() != nil {
+			log = log.With("trigger_id", s.Trigger().ID())
+
 			start := s.Trigger().CreateStart()
 
 			// insert our flow start
