@@ -1,3 +1,8 @@
+v8.3.42 (2023-11-10)
+-------------------------
+ * Tweak logging in schedules cron
+ * Support is_paused on schedules
+
 v8.3.41 (2023-11-08)
 -------------------------
  * Stop reading from Schedule.is_active which is no longer used
