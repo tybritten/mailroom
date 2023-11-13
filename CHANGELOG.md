@@ -1,3 +1,8 @@
+v8.3.45 (2023-11-13)
+-------------------------
+ * Rework cron functions to return results and do consistent logging
+ * Add URNs to broadcast endpoint
+
 v8.3.44 (2023-11-10)
 -------------------------
  * Rename preview_start to start_preview for consistency
