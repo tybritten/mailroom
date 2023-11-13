@@ -1,3 +1,8 @@
+v8.3.46 (2023-11-13)
+-------------------------
+ * Update to latest goflow
+ * Remove no longer used endpoint alias
+
 v8.3.45 (2023-11-13)
 -------------------------
  * Rework cron functions to return results and do consistent logging
