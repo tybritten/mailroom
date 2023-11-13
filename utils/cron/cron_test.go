@@ -23,7 +23,7 @@ func TestCron(t *testing.T) {
 	}
 
 	createCronFunc := func(running *bool, fired *int, delays map[int]time.Duration, defaultDelay time.Duration) cron.Function {
-		return func(ctx context.Context, rt *runtime.Runtime) error {
+		return func(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 			if *running {
 				assert.Fail(t, "more than 1 thread is trying to run our cron job")
 			}
@@ -36,7 +36,7 @@ func TestCron(t *testing.T) {
 			time.Sleep(delay)
 			*fired++
 			*running = false
-			return nil
+			return map[string]any{"fired": *fired}, nil
 		}
 	}
 

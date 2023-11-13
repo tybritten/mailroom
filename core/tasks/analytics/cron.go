@@ -24,7 +24,7 @@ var (
 )
 
 // calculates a bunch of stats every minute and both logs them and sends them to librato
-func reportAnalytics(ctx context.Context, rt *runtime.Runtime) error {
+func reportAnalytics(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	// We wait 15 seconds since we fire at the top of the minute, the same as expirations.
 	// That way any metrics related to the size of our queue are a bit more accurate (all expirations can
 	// usually be handled in 15 seconds). Something more complicated would take into account the age of
@@ -69,16 +69,14 @@ func reportAnalytics(ctx context.Context, rt *runtime.Runtime) error {
 	analytics.Gauge("mr.handler_queue", float64(handlerSize))
 	analytics.Gauge("mr.batch_queue", float64(batchSize))
 
-	slog.Info("current analytics",
-		"db_busy", dbStats.InUse,
-		"db_idle", dbStats.Idle,
-		"db_wait_time", dbWaitDurationInPeriod,
-		"db_wait_count", dbWaitCountInPeriod,
-		"redis_wait_time", dbWaitDurationInPeriod,
-		"redis_wait_count", dbWaitCountInPeriod,
-		"handler_size", handlerSize,
-		"batch_size", batchSize,
-	)
-
-	return nil
+	return map[string]any{
+		"db_busy":          dbStats.InUse,
+		"db_idle":          dbStats.Idle,
+		"db_wait_time":     dbWaitDurationInPeriod,
+		"db_wait_count":    dbWaitCountInPeriod,
+		"redis_wait_time":  dbWaitDurationInPeriod,
+		"redis_wait_count": dbWaitCountInPeriod,
+		"handler_size":     handlerSize,
+		"batch_size":       batchSize,
+	}, nil
 }

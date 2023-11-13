@@ -22,13 +22,12 @@ func init() {
 }
 
 // RetryPendingMsgs looks for any pending msgs older than five minutes and queues them to be handled again
-func RetryPendingMsgs(ctx context.Context, rt *runtime.Runtime) error {
+func RetryPendingMsgs(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	if !rt.Config.RetryPendingMessages {
-		return nil
+		return nil, nil
 	}
 
 	log := slog.With("comp", "handler_retrier")
-	start := time.Now()
 
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -36,19 +35,19 @@ func RetryPendingMsgs(ctx context.Context, rt *runtime.Runtime) error {
 	// check the size of our handle queue
 	handlerSize, err := queue.Size(rc, queue.HandlerQueue)
 	if err != nil {
-		return errors.Wrapf(err, "error finding size of handler queue")
+		return nil, errors.Wrapf(err, "error finding size of handler queue")
 	}
 
 	// if our queue has items in it, don't queue anything else in there, wait for it to be empty
 	if handlerSize > 0 {
 		log.Info("not retrying any messages, have messages in handler queue")
-		return nil
+		return nil, nil
 	}
 
 	// get all incoming messages that are still empty
 	rows, err := rt.DB.Queryx(unhandledMsgsQuery)
 	if err != nil {
-		return errors.Wrapf(err, "error querying for unhandled messages")
+		return nil, errors.Wrapf(err, "error querying for unhandled messages")
 	}
 	defer rows.Close()
 
@@ -61,7 +60,7 @@ func RetryPendingMsgs(ctx context.Context, rt *runtime.Runtime) error {
 
 		err = rows.Scan(&orgID, &contactID, &msgID, &eventJSON)
 		if err != nil {
-			return errors.Wrapf(err, "error scanning msg row")
+			return nil, errors.Wrapf(err, "error scanning msg row")
 		}
 
 		// our key is built such that we will only retry once an hour
@@ -69,7 +68,7 @@ func RetryPendingMsgs(ctx context.Context, rt *runtime.Runtime) error {
 
 		dupe, err := retriedMsgs.IsMember(rc, key)
 		if err != nil {
-			return errors.Wrapf(err, "error checking for dupe retry")
+			return nil, errors.Wrapf(err, "error checking for dupe retry")
 		}
 
 		// we already retried this, skip
@@ -87,20 +86,19 @@ func RetryPendingMsgs(ctx context.Context, rt *runtime.Runtime) error {
 		// queue this event up for handling
 		err = QueueHandleTask(rc, contactID, task)
 		if err != nil {
-			return errors.Wrapf(err, "error queuing retry for task")
+			return nil, errors.Wrapf(err, "error queuing retry for task")
 		}
 
 		// mark it as queued
 		err = retriedMsgs.Add(rc, key)
 		if err != nil {
-			return errors.Wrapf(err, "error marking task for retry")
+			return nil, errors.Wrapf(err, "error marking task for retry")
 		}
 
 		retried++
 	}
 
-	log.Info("queued pending messages to be retried", "retried", retried, "elapsed", time.Since(start))
-	return nil
+	return map[string]any{"retried": retried}, nil
 }
 
 const unhandledMsgsQuery = `

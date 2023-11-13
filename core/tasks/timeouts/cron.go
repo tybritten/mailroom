@@ -3,7 +3,6 @@ package timeouts
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/nyaruka/mailroom"
@@ -22,14 +21,11 @@ func init() {
 
 // timeoutRuns looks for any runs that have timed out and schedules for them to continue
 // TODO: extend lock
-func timeoutSessions(ctx context.Context, rt *runtime.Runtime) error {
-	log := slog.With("comp", "timeout")
-	start := time.Now()
-
+func timeoutSessions(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	// find all sessions that need to be expired (we exclude IVR runs)
 	rows, err := rt.DB.QueryxContext(ctx, timedoutSessionsSQL)
 	if err != nil {
-		return errors.Wrapf(err, "error selecting timed out sessions")
+		return nil, errors.Wrapf(err, "error selecting timed out sessions")
 	}
 	defer rows.Close()
 
@@ -43,14 +39,14 @@ func timeoutSessions(ctx context.Context, rt *runtime.Runtime) error {
 	for rows.Next() {
 		err := rows.StructScan(timeout)
 		if err != nil {
-			return errors.Wrapf(err, "error scanning timeout")
+			return nil, errors.Wrapf(err, "error scanning timeout")
 		}
 
 		// check whether we've already queued this
 		taskID := fmt.Sprintf("%d:%s", timeout.SessionID, timeout.TimeoutOn.Format(time.RFC3339))
 		queued, err := marker.IsMember(rc, taskID)
 		if err != nil {
-			return errors.Wrapf(err, "error checking whether task is queued")
+			return nil, errors.Wrapf(err, "error checking whether task is queued")
 		}
 
 		// already queued? move on
@@ -63,20 +59,19 @@ func timeoutSessions(ctx context.Context, rt *runtime.Runtime) error {
 		task := handler.NewTimeoutTask(timeout.OrgID, timeout.ContactID, timeout.SessionID, timeout.TimeoutOn)
 		err = handler.QueueHandleTask(rc, timeout.ContactID, task)
 		if err != nil {
-			return errors.Wrapf(err, "error adding new handle task")
+			return nil, errors.Wrapf(err, "error adding new handle task")
 		}
 
 		// and mark it as queued
 		err = marker.Add(rc, taskID)
 		if err != nil {
-			return errors.Wrapf(err, "error marking timeout task as queued")
+			return nil, errors.Wrapf(err, "error marking timeout task as queued")
 		}
 
 		numQueued++
 	}
 
-	log.Info("session timeouts queued", "dupes", numDupes, "queued", numQueued, "elapsed", time.Since(start))
-	return nil
+	return map[string]any{"dupes": numDupes, "queued": numQueued}, nil
 }
 
 const timedoutSessionsSQL = `

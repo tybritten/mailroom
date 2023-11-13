@@ -21,13 +21,12 @@ func init() {
 }
 
 // checkSchedules looks up any expired schedules and fires them, setting the next fire as needed
-func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
+func checkSchedules(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	// we sleep 1 second since we fire right on the minute and want to make sure to fire
 	// things that are schedules right at the minute as well (and DB time may be slightly drifted)
 	time.Sleep(time.Second * 1)
 
 	log := slog.With("comp", "schedules_cron")
-	start := time.Now()
 
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -35,7 +34,7 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 	// get any expired schedules
 	unfired, err := models.GetUnfiredSchedules(ctx, rt.DB.DB)
 	if err != nil {
-		return errors.Wrapf(err, "error while getting unfired schedules")
+		return nil, errors.Wrapf(err, "error while getting unfired schedules")
 	}
 
 	// for each unfired schedule
@@ -142,6 +141,5 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 		}
 	}
 
-	log.Info("fired schedules", "broadcasts", broadcasts, "triggers", triggers, "noops", noops, "elapsed", time.Since(start))
-	return nil
+	return map[string]any{"broadcasts": broadcasts, "triggers": triggers, "noops": noops}, nil
 }
