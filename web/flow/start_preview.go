@@ -16,7 +16,6 @@ import (
 
 func init() {
 	web.RegisterRoute(http.MethodPost, "/mr/flow/start_preview", web.RequireAuthToken(web.JSONPayload(handleStartPreview)))
-	web.RegisterRoute(http.MethodPost, "/mr/flow/preview_start", web.RequireAuthToken(web.JSONPayload(handleStartPreview))) // deprecated
 }
 
 // Generates a preview of which contacts will be started in the given flow.
