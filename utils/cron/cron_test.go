@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/utils/cron"
+	"github.com/nyaruka/redisx/assertredis"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,6 +64,12 @@ func TestCron(t *testing.T) {
 	fired = 0
 	quit = make(chan bool)
 	running = false
+
+	assertredis.Exists(t, rt.RP, "cron_stats:last_start")
+	assertredis.Exists(t, rt.RP, "cron_stats:last_time")
+	assertredis.HGet(t, rt.RP, "cron_stats:last_result", "test1", `{"fired":4}`)
+	assertredis.HGet(t, rt.RP, "cron_stats:call_count", "test1", "4")
+	assertredis.Exists(t, rt.RP, "cron_stats:total_time")
 
 	align()
 
