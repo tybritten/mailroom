@@ -1,3 +1,8 @@
+v8.3.47 (2023-11-20)
+-------------------------
+ * Update deps
+ * Write cron results to redis
+
 v8.3.46 (2023-11-13)
 -------------------------
  * Update to latest goflow
