@@ -38,12 +38,12 @@ func (t *Template) MarshalJSON() ([]byte, error) { return json.Marshal(t.t) }
 
 type TemplateTranslation struct {
 	t struct {
-		Channel       assets.ChannelReference `json:"channel"         validate:"required"`
-		Language      i18n.Language           `json:"language"        validate:"required"`
-		Country       null.String             `json:"country"`
-		Namespace     string                  `json:"namespace"`
-		Content       string                  `json:"content"         validate:"required"`
-		VariableCount int                     `json:"variable_count"`
+		Channel       *assets.ChannelReference `json:"channel"         validate:"required"`
+		Language      i18n.Language            `json:"language"        validate:"required"`
+		Country       null.String              `json:"country"`
+		Namespace     string                   `json:"namespace"`
+		Content       string                   `json:"content"         validate:"required"`
+		VariableCount int                      `json:"variable_count"`
 	}
 }
 
@@ -53,7 +53,7 @@ func (t *TemplateTranslation) UnmarshalJSON(data []byte) error { return json.Unm
 // MarshalJSON is our marshaller for json data
 func (t *TemplateTranslation) MarshalJSON() ([]byte, error) { return json.Marshal(t.t) }
 
-func (t *TemplateTranslation) Channel() assets.ChannelReference { return t.t.Channel }
+func (t *TemplateTranslation) Channel() *assets.ChannelReference { return t.t.Channel }
 func (t *TemplateTranslation) Locale() i18n.Locale {
 	return i18n.NewLocale(t.t.Language, i18n.Country(t.t.Country))
 }
