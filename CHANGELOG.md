@@ -1,3 +1,9 @@
+v8.3.48 (2023-11-28)
+-------------------------
+ * Use TemplateTranslation.locale instead of language and country
+ * Simplify loading of templates
+ * Update to latest goflow/gocommon/phonenumbers
+
 v8.3.47 (2023-11-20)
 -------------------------
  * Update deps
