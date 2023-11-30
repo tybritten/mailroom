@@ -24,7 +24,7 @@ func TestRetryMsgs(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 
 	// noop does nothing
-	cron := handler.RetryPendingCron{}
+	cron := handler.NewRetryPendingCron()
 	_, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 

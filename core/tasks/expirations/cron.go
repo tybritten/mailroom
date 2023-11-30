@@ -20,8 +20,8 @@ const (
 )
 
 func init() {
-	tasks.RegisterCron("run_expirations", time.Minute, false, NewExpirationsCron())
-	tasks.RegisterCron("expire_ivr_calls", time.Minute, false, &VoiceExpirationsCron{})
+	tasks.RegisterCron("run_expirations", false, NewExpirationsCron())
+	tasks.RegisterCron("expire_ivr_calls", false, &VoiceExpirationsCron{})
 }
 
 type ExpirationsCron struct {
@@ -32,6 +32,10 @@ func NewExpirationsCron() *ExpirationsCron {
 	return &ExpirationsCron{
 		marker: redisx.NewIntervalSet("run_expirations", time.Hour*24, 2),
 	}
+}
+
+func (c *ExpirationsCron) Next(last time.Time) time.Time {
+	return tasks.CronNext(last, time.Minute)
 }
 
 // handles waiting messaging sessions whose waits have expired, resuming those that can be resumed,
@@ -132,6 +136,10 @@ type ExpiredWait struct {
 }
 
 type VoiceExpirationsCron struct{}
+
+func (c *VoiceExpirationsCron) Next(last time.Time) time.Time {
+	return tasks.CronNext(last, time.Minute)
+}
 
 // looks for voice sessions that should be expired and ends them
 func (c *VoiceExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {

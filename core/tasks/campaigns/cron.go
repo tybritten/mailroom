@@ -23,10 +23,14 @@ const (
 var campaignsMarker = redisx.NewIntervalSet("campaign_event", time.Hour*24, 2)
 
 func init() {
-	tasks.RegisterCron("campaign_event", time.Second*60, false, &QueueEventsCron{})
+	tasks.RegisterCron("campaign_event", false, &QueueEventsCron{})
 }
 
 type QueueEventsCron struct{}
+
+func (c *QueueEventsCron) Next(last time.Time) time.Time {
+	return tasks.CronNext(last, time.Minute)
+}
 
 // QueueEventFires looks for all due campaign event fires and queues them to be started
 func (c *QueueEventsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {

@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("sessions_timeouts", time.Second*60, false, newTimeoutsCron())
+	tasks.RegisterCron("sessions_timeouts", false, newTimeoutsCron())
 }
 
 type timeoutsCron struct {
@@ -25,6 +25,10 @@ func newTimeoutsCron() tasks.Cron {
 	return &timeoutsCron{
 		marker: redisx.NewIntervalSet("session_timeouts", time.Hour*24, 2),
 	}
+}
+
+func (c *timeoutsCron) Next(last time.Time) time.Time {
+	return tasks.CronNext(last, time.Minute)
 }
 
 // timeoutRuns looks for any runs that have timed out and schedules for them to continue

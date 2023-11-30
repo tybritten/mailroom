@@ -12,10 +12,14 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("retry_errored_messages", time.Second*60, false, &RetryMessagesCron{})
+	tasks.RegisterCron("retry_errored_messages", false, &RetryMessagesCron{})
 }
 
 type RetryMessagesCron struct{}
+
+func (c *RetryMessagesCron) Next(last time.Time) time.Time {
+	return tasks.CronNext(last, time.Minute)
+}
 
 func (c *RetryMessagesCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	rc := rt.RP.Get()

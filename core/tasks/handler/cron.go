@@ -16,13 +16,21 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("retry_msgs", time.Minute*5, false, &RetryPendingCron{
-		marker: redisx.NewIntervalSet("retried_msgs", time.Hour*24, 2),
-	})
+	tasks.RegisterCron("retry_msgs", false, NewRetryPendingCron())
 }
 
 type RetryPendingCron struct {
 	marker *redisx.IntervalSet
+}
+
+func NewRetryPendingCron() *RetryPendingCron {
+	return &RetryPendingCron{
+		marker: redisx.NewIntervalSet("retried_msgs", time.Hour*24, 2),
+	}
+}
+
+func (c *RetryPendingCron) Next(last time.Time) time.Time {
+	return tasks.CronNext(last, time.Minute*5)
 }
 
 // looks for any pending msgs older than five minutes and queues them to be handled again

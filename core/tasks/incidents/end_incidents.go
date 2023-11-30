@@ -15,10 +15,14 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("end_incidents", time.Minute*3, false, &EndIncidentsCron{})
+	tasks.RegisterCron("end_incidents", false, &EndIncidentsCron{})
 }
 
 type EndIncidentsCron struct{}
+
+func (c *EndIncidentsCron) Next(last time.Time) time.Time {
+	return tasks.CronNext(last, time.Minute*3)
+}
 
 // EndIncidents checks open incidents and end any that no longer apply
 func (c *EndIncidentsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
