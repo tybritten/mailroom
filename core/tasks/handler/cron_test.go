@@ -21,10 +21,11 @@ func TestRetryMsgs(t *testing.T) {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	defer testsuite.Reset(testsuite.ResetAll)
+	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 
 	// noop does nothing
-	_, err := handler.RetryPendingMsgs(ctx, rt)
+	cron := handler.RetryPendingCron{}
+	_, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 
 	testMsgs := []struct {
@@ -44,7 +45,7 @@ func TestRetryMsgs(t *testing.T) {
 			uuids.New(), testdata.Org1.ID, testdata.TwilioChannel.ID, testdata.Cathy.ID, testdata.Cathy.URNID, msg.Text, models.DirectionIn, msg.Status, msg.CreatedOn)
 	}
 
-	res, err := handler.RetryPendingMsgs(ctx, rt)
+	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"retried": 1}, res)
 

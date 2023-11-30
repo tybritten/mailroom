@@ -4,18 +4,20 @@ import (
 	"context"
 	"time"
 
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/msgio"
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
 )
 
 func init() {
-	mailroom.RegisterCron("retry_errored_messages", time.Second*60, false, RetryErroredMessages)
+	tasks.RegisterCron("retry_errored_messages", time.Second*60, false, &RetryMessagesCron{})
 }
 
-func RetryErroredMessages(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+type RetryMessagesCron struct{}
+
+func (c *RetryMessagesCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	rc := rt.RP.Get()
 	defer rc.Close()
 

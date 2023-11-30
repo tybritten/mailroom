@@ -8,18 +8,20 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/goflow/flows"
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
 )
 
 func init() {
-	mailroom.RegisterCron("end_incidents", time.Minute*3, false, EndIncidents)
+	tasks.RegisterCron("end_incidents", time.Minute*3, false, &EndIncidentsCron{})
 }
 
+type EndIncidentsCron struct{}
+
 // EndIncidents checks open incidents and end any that no longer apply
-func EndIncidents(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+func (c *EndIncidentsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	incidents, err := models.GetOpenIncidents(ctx, rt.DB, []models.IncidentType{models.IncidentTypeWebhooksUnhealthy})
 	if err != nil {
 		return nil, errors.Wrap(err, "error fetching open incidents")

@@ -20,7 +20,8 @@ func TestRetryErroredMessages(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 
 	// nothing to retry
-	_, err := msgs.RetryErroredMessages(ctx, rt)
+	cron := &msgs.RetryMessagesCron{}
+	_, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 
 	testsuite.AssertCourierQueues(t, map[string][]int{})
@@ -43,7 +44,7 @@ func TestRetryErroredMessages(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE status = 'E'`).Returns(4)
 
 	// try again...
-	res, err := msgs.RetryErroredMessages(ctx, rt)
+	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"retried": 4}, res)
 

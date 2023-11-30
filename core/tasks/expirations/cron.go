@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/ivr"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
@@ -19,16 +19,24 @@ const (
 	expireBatchSize = 500
 )
 
-var expirationsMarker = redisx.NewIntervalSet("run_expirations", time.Hour*24, 2)
-
 func init() {
-	mailroom.RegisterCron("run_expirations", time.Minute, false, HandleWaitExpirations)
-	mailroom.RegisterCron("expire_ivr_calls", time.Minute, false, ExpireVoiceSessions)
+	tasks.RegisterCron("run_expirations", time.Minute, false, NewExpirationsCron())
+	tasks.RegisterCron("expire_ivr_calls", time.Minute, false, &VoiceExpirationsCron{})
 }
 
-// HandleWaitExpirations handles waiting messaging sessions whose waits have expired, resuming those that can be resumed,
+type ExpirationsCron struct {
+	marker *redisx.IntervalSet
+}
+
+func NewExpirationsCron() *ExpirationsCron {
+	return &ExpirationsCron{
+		marker: redisx.NewIntervalSet("run_expirations", time.Hour*24, 2),
+	}
+}
+
+// handles waiting messaging sessions whose waits have expired, resuming those that can be resumed,
 // and expiring those that can't
-func HandleWaitExpirations(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
@@ -70,7 +78,7 @@ func HandleWaitExpirations(ctx context.Context, rt *runtime.Runtime) (map[string
 
 		// create a contact task to resume this session
 		taskID := fmt.Sprintf("%d:%s", expiredWait.SessionID, expiredWait.WaitExpiresOn.Format(time.RFC3339))
-		queued, err := expirationsMarker.IsMember(rc, taskID)
+		queued, err := c.marker.IsMember(rc, taskID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error checking whether expiration is queued")
 		}
@@ -89,7 +97,7 @@ func HandleWaitExpirations(ctx context.Context, rt *runtime.Runtime) (map[string
 		}
 
 		// and mark it as queued
-		err = expirationsMarker.Add(rc, taskID)
+		err = c.marker.Add(rc, taskID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error marking expiration task as queued")
 		}
@@ -123,8 +131,10 @@ type ExpiredWait struct {
 	ContactID     models.ContactID `db:"contact_id"`
 }
 
-// ExpireVoiceSessions looks for voice sessions that should be expired and ends them
-func ExpireVoiceSessions(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+type VoiceExpirationsCron struct{}
+
+// looks for voice sessions that should be expired and ends them
+func (c *VoiceExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	log := slog.With("comp", "ivr_cron_expirer")
 
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)

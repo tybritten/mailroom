@@ -6,25 +6,25 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/analytics"
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/queue"
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	mailroom.RegisterCron("analytics", time.Second*60, true, reportAnalytics)
+	tasks.RegisterCron("analytics", time.Second*60, true, &analyticsCron{})
 }
 
-var (
+// calculates a bunch of stats every minute and both logs them and sends them to librato
+type analyticsCron struct {
 	// both sqlx and redis provide wait stats which are cummulative that we need to make into increments
 	dbWaitDuration    time.Duration
 	dbWaitCount       int64
 	redisWaitDuration time.Duration
 	redisWaitCount    int64
-)
+}
 
-// calculates a bunch of stats every minute and both logs them and sends them to librato
-func reportAnalytics(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+func (c *analyticsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	// We wait 15 seconds since we fire at the top of the minute, the same as expirations.
 	// That way any metrics related to the size of our queue are a bit more accurate (all expirations can
 	// usually be handled in 15 seconds). Something more complicated would take into account the age of
@@ -50,15 +50,15 @@ func reportAnalytics(ctx context.Context, rt *runtime.Runtime) (map[string]any, 
 	dbStats := rt.DB.Stats()
 	redisStats := rt.RP.Stats()
 
-	dbWaitDurationInPeriod := dbStats.WaitDuration - dbWaitDuration
-	dbWaitCountInPeriod := dbStats.WaitCount - dbWaitCount
-	redisWaitDurationInPeriod := redisStats.WaitDuration - redisWaitDuration
-	redisWaitCountInPeriod := redisStats.WaitCount - redisWaitCount
+	dbWaitDurationInPeriod := dbStats.WaitDuration - c.dbWaitDuration
+	dbWaitCountInPeriod := dbStats.WaitCount - c.dbWaitCount
+	redisWaitDurationInPeriod := redisStats.WaitDuration - c.redisWaitDuration
+	redisWaitCountInPeriod := redisStats.WaitCount - c.redisWaitCount
 
-	dbWaitDuration = dbStats.WaitDuration
-	dbWaitCount = dbStats.WaitCount
-	redisWaitDuration = redisStats.WaitDuration
-	redisWaitCount = redisStats.WaitCount
+	c.dbWaitDuration = dbStats.WaitDuration
+	c.dbWaitCount = dbStats.WaitCount
+	c.redisWaitDuration = redisStats.WaitDuration
+	c.redisWaitCount = redisStats.WaitCount
 
 	analytics.Gauge("mr.db_busy", float64(dbStats.InUse))
 	analytics.Gauge("mr.db_idle", float64(dbStats.Idle))

@@ -52,7 +52,8 @@ func TestEndIncidents(t *testing.T) {
 	id2, err := models.IncidentWebhooksUnhealthy(ctx, rt.DB, rt.RP, oa2, []flows.NodeUUID{"07d69080-475b-4395-aa96-ea6c28ea6cb6"})
 	require.NoError(t, err)
 
-	res, err := incidents.EndIncidents(ctx, rt)
+	cron := &incidents.EndIncidentsCron{}
+	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"ended": 1}, res)
 

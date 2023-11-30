@@ -7,15 +7,13 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/goflow/assets"
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/queue"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
-	"golang.org/x/exp/slog"
-
 	"github.com/pkg/errors"
+	"golang.org/x/exp/slog"
 )
 
 const (
@@ -25,11 +23,13 @@ const (
 var campaignsMarker = redisx.NewIntervalSet("campaign_event", time.Hour*24, 2)
 
 func init() {
-	mailroom.RegisterCron("campaign_event", time.Second*60, false, QueueEventFires)
+	tasks.RegisterCron("campaign_event", time.Second*60, false, &QueueEventsCron{})
 }
 
+type QueueEventsCron struct{}
+
 // QueueEventFires looks for all due campaign event fires and queues them to be started
-func QueueEventFires(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+func (c *QueueEventsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	// find all events that need to be fired
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()
@@ -77,7 +77,7 @@ func QueueEventFires(ctx context.Context, rt *runtime.Runtime) (map[string]any, 
 
 		// if not, queue up current task...
 		if task != nil {
-			err = queueFiresTask(rt.RP, orgID, task)
+			err = c.queueFiresTask(rt.RP, orgID, task)
 			if err != nil {
 				return nil, errors.Wrapf(err, "error queueing task")
 			}
@@ -98,7 +98,7 @@ func QueueEventFires(ctx context.Context, rt *runtime.Runtime) (map[string]any, 
 
 	// queue our last task if we have one
 	if task != nil {
-		if err := queueFiresTask(rt.RP, orgID, task); err != nil {
+		if err := c.queueFiresTask(rt.RP, orgID, task); err != nil {
 			return nil, errors.Wrapf(err, "error queueing task")
 		}
 		numTasks++
@@ -107,7 +107,7 @@ func QueueEventFires(ctx context.Context, rt *runtime.Runtime) (map[string]any, 
 	return map[string]any{"fires": numFires, "dupes": numDupes, "tasks": numTasks}, nil
 }
 
-func queueFiresTask(rp *redis.Pool, orgID models.OrgID, task *FireCampaignEventTask) error {
+func (c *QueueEventsCron) queueFiresTask(rp *redis.Pool, orgID models.OrgID, task *FireCampaignEventTask) error {
 	rc := rp.Get()
 	defer rc.Close()
 

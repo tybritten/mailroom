@@ -31,7 +31,8 @@ func TestTimeouts(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// schedule our timeouts
-	res, err := timeoutSessions(ctx, rt)
+	cron := newTimeoutsCron()
+	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"dupes": 0, "queued": 1}, res)
 

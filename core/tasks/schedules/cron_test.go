@@ -39,7 +39,8 @@ func TestCheckSchedules(t *testing.T) {
 	testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodDaily, time.Now().Add(-time.Hour))
 
 	// run our task
-	res, err := checkSchedules(ctx, rt)
+	cron := &schedulesCron{}
+	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"broadcasts": 2, "triggers": 2, "noops": 1}, res)
 

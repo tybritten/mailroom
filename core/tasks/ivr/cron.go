@@ -5,19 +5,21 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/ivr"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
 )
 
 func init() {
-	mailroom.RegisterCron("retry_ivr_calls", time.Minute, false, RetryCalls)
+	tasks.RegisterCron("retry_ivr_calls", time.Minute, false, &RetryCron{})
 }
 
+type RetryCron struct{}
+
 // RetryCalls looks for calls that need to be retried and retries them
-func RetryCalls(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+func (c *RetryCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	log := slog.With("comp", "ivr_cron_retryer")
 
 	// find all calls that need restarting

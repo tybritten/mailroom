@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/queue"
 	"github.com/nyaruka/mailroom/core/tasks"
@@ -17,11 +16,13 @@ import (
 )
 
 func init() {
-	mailroom.RegisterCron("fire_schedules", time.Minute*1, false, checkSchedules)
+	tasks.RegisterCron("fire_schedules", time.Minute*1, false, &schedulesCron{})
 }
 
+type schedulesCron struct{}
+
 // checkSchedules looks up any expired schedules and fires them, setting the next fire as needed
-func checkSchedules(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+func (c *schedulesCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	// we sleep 1 second since we fire right on the minute and want to make sure to fire
 	// things that are schedules right at the minute as well (and DB time may be slightly drifted)
 	time.Sleep(time.Second * 1)
