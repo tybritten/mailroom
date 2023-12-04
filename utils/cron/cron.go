@@ -39,7 +39,7 @@ type Function func(context.Context, *runtime.Runtime) (map[string]any, error)
 // lock so that only one process is running at once. Note that across processes
 // crons may be called more often than duration as there is no inter-process
 // coordination of cron fires. (this might be a worthy addition)
-func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, interval time.Duration, allInstances bool, cronFunc Function, timeout time.Duration, quit chan bool) {
+func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, allInstances bool, cronFunc Function, next func(time.Time) time.Time, timeout time.Duration, quit chan bool) {
 	wg.Add(1) // add ourselves to the wait group
 
 	lockName := fmt.Sprintf("lock:%s_lock", name) // for historical reasons...
@@ -49,7 +49,7 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, interval time.D
 		lockName = fmt.Sprintf("%s:%s", lockName, rt.Config.InstanceName)
 	}
 
-	locker := redisx.NewLocker(lockName, time.Minute*5)
+	locker := redisx.NewLocker(lockName, timeout+time.Second*30)
 
 	wait := time.Duration(0)
 	lastFire := time.Now()
@@ -84,7 +84,7 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, interval time.D
 
 				// ok, got the lock, run our cron function
 				started := time.Now()
-				results, err := fireCron(rt, name, cronFunc)
+				results, err := fireCron(rt, name, cronFunc, timeout)
 				if err != nil {
 					log.Error("error while running cron", "error", err)
 				}
@@ -100,7 +100,7 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, interval time.D
 			}
 
 			// calculate our next fire time
-			nextFire := NextFire(lastFire, interval)
+			nextFire := next(lastFire)
 			wait = time.Until(nextFire)
 			if wait < time.Duration(0) {
 				wait = time.Duration(0)
@@ -111,8 +111,8 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, interval time.D
 
 // fireCron is just a wrapper around the cron function we will call for the purposes of
 // catching and logging panics
-func fireCron(rt *runtime.Runtime, name string, cronFunc Function) (map[string]any, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+func fireCron(rt *runtime.Runtime, name string, cronFunc Function, timeout time.Duration) (map[string]any, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	defer func() {
@@ -160,19 +160,5 @@ func recordCompletion(rp *redis.Pool, name string, started, ended time.Time, res
 		log.Error("cron took too long")
 	} else {
 		log.Info("cron completed")
-	}
-}
-
-// NextFire returns the next time we should fire based on the passed in time and interval
-func NextFire(last time.Time, interval time.Duration) time.Time {
-	if interval >= time.Second && interval < time.Minute {
-		normalizedInterval := interval - ((time.Duration(last.Second()) * time.Second) % interval)
-		return last.Add(normalizedInterval)
-	} else if interval == time.Minute {
-		seconds := time.Duration(60-last.Second()) + 1
-		return last.Add(seconds * time.Second)
-	} else {
-		// no special treatment for other things
-		return last.Add(interval)
 	}
 }

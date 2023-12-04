@@ -35,7 +35,8 @@ func TestQueueEventFires(t *testing.T) {
 	org2CampaignEvent := testdata.InsertCampaignFlowEvent(rt, org2Campaign, testdata.Org2Favorites, testdata.AgeField, 1, "D")
 
 	// try with zero fires
-	res, err := campaigns.QueueEventFires(ctx, rt)
+	cron := &campaigns.QueueEventsCron{}
+	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"fires": 0, "dupes": 0, "tasks": 0}, res)
 
@@ -50,7 +51,7 @@ func TestQueueEventFires(t *testing.T) {
 	testdata.InsertEventFire(rt, testdata.Alexandria, testdata.RemindersEvent1, time.Now().Add(time.Hour*24)) // in future
 
 	// schedule our campaign to be started
-	res, err = campaigns.QueueEventFires(ctx, rt)
+	res, err = cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"fires": 4, "dupes": 0, "tasks": 3}, res)
 
@@ -58,7 +59,7 @@ func TestQueueEventFires(t *testing.T) {
 	assertFireTasks(t, rt, testdata.Org2, [][]models.FireID{{fire3ID}})
 
 	// running again won't double add those fires
-	res, err = campaigns.QueueEventFires(ctx, rt)
+	res, err = cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"fires": 4, "dupes": 4, "tasks": 0}, res)
 
@@ -75,7 +76,7 @@ func TestQueueEventFires(t *testing.T) {
 		testdata.InsertEventFire(rt, contact, testdata.RemindersEvent1, time.Now().Add(-time.Minute))
 	}
 
-	res, err = campaigns.QueueEventFires(ctx, rt)
+	res, err = cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"fires": 114, "dupes": 4, "tasks": 2}, res)
 
@@ -108,7 +109,8 @@ func TestQueueAndFireEvent(t *testing.T) {
 	f2ID := testdata.InsertEventFire(rt, testdata.George, testdata.RemindersEvent1, time.Now().Add(-time.Minute))
 
 	// queue the event task
-	_, err := campaigns.QueueEventFires(ctx, rt)
+	cron := &campaigns.QueueEventsCron{}
+	_, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 
 	// then actually work on the event
@@ -136,7 +138,7 @@ func TestQueueAndFireEvent(t *testing.T) {
 	f4ID := testdata.InsertEventFire(rt, testdata.Bob, testdata.RemindersEvent3, time.Now().Add(-time.Minute))
 
 	// queue the event task
-	_, err = campaigns.QueueEventFires(ctx, rt)
+	_, err = cron.Run(ctx, rt)
 	assert.NoError(t, err)
 
 	// then actually work on the event
@@ -173,7 +175,8 @@ func TestIVRCampaigns(t *testing.T) {
 	testdata.InsertEventFire(rt, testdata.George, testdata.RemindersEvent1, time.Now().Add(-time.Minute))
 
 	// schedule our campaign to be started
-	_, err := campaigns.QueueEventFires(ctx, rt)
+	cron := &campaigns.QueueEventsCron{}
+	_, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 
 	// then actually work on the event

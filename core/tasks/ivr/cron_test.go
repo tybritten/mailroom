@@ -48,7 +48,8 @@ func TestRetries(t *testing.T) {
 	rt.DB.MustExec(`UPDATE ivr_call SET status = 'E', next_attempt = NOW() WHERE external_id = 'call1';`)
 
 	// fire our retries
-	res, err := ivrtasks.RetryCalls(ctx, rt)
+	cron := &ivrtasks.RetryCron{}
+	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"retried": 1}, res)
 
@@ -61,7 +62,7 @@ func TestRetries(t *testing.T) {
 	rt.DB.MustExec(`UPDATE channels_channel SET is_active = FALSE WHERE id = $1`, testdata.TwilioChannel.ID)
 
 	models.FlushCache()
-	_, err = ivrtasks.RetryCalls(ctx, rt)
+	_, err = cron.Run(ctx, rt)
 	assert.NoError(t, err)
 
 	// this time should be failed

@@ -32,9 +32,9 @@ func addInitFunction(initFunc InitFunction) {
 }
 
 // RegisterCron registers a new cron function to run every interval
-func RegisterCron(name string, interval time.Duration, allInstances bool, fn cron.Function) {
+func RegisterCron(name string, allInstances bool, fn cron.Function, next func(time.Time) time.Time) {
 	addInitFunction(func(rt *runtime.Runtime, wg *sync.WaitGroup, quit chan bool) error {
-		cron.Start(rt, wg, name, interval, allInstances, fn, time.Minute*5, quit)
+		cron.Start(rt, wg, name, allInstances, fn, next, time.Minute*5, quit)
 		return nil
 	})
 }

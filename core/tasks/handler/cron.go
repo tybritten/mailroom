@@ -7,22 +7,34 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/queue"
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
 )
 
-var retriedMsgs = redisx.NewIntervalSet("retried_msgs", time.Hour*24, 2)
-
 func init() {
-	mailroom.RegisterCron("retry_msgs", time.Minute*5, false, RetryPendingMsgs)
+	tasks.RegisterCron("retry_msgs", false, NewRetryPendingCron())
 }
 
-// RetryPendingMsgs looks for any pending msgs older than five minutes and queues them to be handled again
-func RetryPendingMsgs(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+type RetryPendingCron struct {
+	marker *redisx.IntervalSet
+}
+
+func NewRetryPendingCron() *RetryPendingCron {
+	return &RetryPendingCron{
+		marker: redisx.NewIntervalSet("retried_msgs", time.Hour*24, 2),
+	}
+}
+
+func (c *RetryPendingCron) Next(last time.Time) time.Time {
+	return tasks.CronNext(last, time.Minute*5)
+}
+
+// looks for any pending msgs older than five minutes and queues them to be handled again
+func (c *RetryPendingCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	if !rt.Config.RetryPendingMessages {
 		return nil, nil
 	}
@@ -66,7 +78,7 @@ func RetryPendingMsgs(ctx context.Context, rt *runtime.Runtime) (map[string]any,
 		// our key is built such that we will only retry once an hour
 		key := fmt.Sprintf("%d_%d", msgID, time.Now().Hour())
 
-		dupe, err := retriedMsgs.IsMember(rc, key)
+		dupe, err := c.marker.IsMember(rc, key)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error checking for dupe retry")
 		}
@@ -90,7 +102,7 @@ func RetryPendingMsgs(ctx context.Context, rt *runtime.Runtime) (map[string]any,
 		}
 
 		// mark it as queued
-		err = retriedMsgs.Add(rc, key)
+		err = c.marker.Add(rc, key)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error marking task for retry")
 		}
