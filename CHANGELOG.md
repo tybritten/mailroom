@@ -1,3 +1,8 @@
+v8.3.49 (2023-12-04)
+-------------------------
+ * Change ChannelEvent.created_on to be db time
+ * Refactor cron jobs to use an interface
+
 v8.3.48 (2023-11-28)
 -------------------------
  * Use TemplateTranslation.locale instead of language and country
