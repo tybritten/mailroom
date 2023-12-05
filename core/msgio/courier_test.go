@@ -47,13 +47,15 @@ func TestNewCourierMsg(t *testing.T) {
 	cathyURN, _ := cathyURNs[0].AsURN(oa)
 	fredURN, _ := fredURNs[0].AsURN(oa)
 
+	tpl := oa.TemplateByUUID("9c22b594-fcab-4b29-9bcb-ce4404894a80")
+
 	flowMsg1 := flows.NewMsgOut(
 		cathyURN,
 		assets.NewChannelReference(testdata.TwilioChannel.UUID, "Test Channel"),
 		"Hi there",
 		[]utils.Attachment{utils.Attachment("image/jpeg:https://dl-foo.com/image.jpg")},
 		[]string{"yes", "no"},
-		flows.NewMsgTemplating(assets.NewTemplateReference("4474d39c-ac2c-486d-bceb-8a774a515299", "tpl"), []string{"name"}, "tpls"),
+		flows.NewMsgTemplating(assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"), []string{"name"}, "tpls"),
 		flows.MsgTopicPurchase,
 		`eng-US`,
 		flows.NilUnsendableReason,
@@ -64,7 +66,7 @@ func TestNewCourierMsg(t *testing.T) {
 	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, cathy)
 	require.NoError(t, err)
 
-	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg1, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
+	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg1, tpl, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	require.NoError(t, err)
 
 	createAndAssertCourierMsg(t, ctx, rt, oa, msg1, cathyURNs[0], fmt.Sprintf(`{
@@ -81,9 +83,10 @@ func TestNewCourierMsg(t *testing.T) {
 		"locale": "eng-US",
 		"metadata": {
 			"templating": {
+				"template": {"uuid": "9c22b594-fcab-4b29-9bcb-ce4404894a80", "name": "revive_issue"},
+				"variables": ["name"],
 				"namespace": "tpls",
-				"template": {"name": "tpl", "uuid": "4474d39c-ac2c-486d-bceb-8a774a515299"},
-				"variables": ["name"]
+				"language": "en_US"
 			},
 			"topic": "purchase"
 		},
@@ -114,7 +117,7 @@ func TestNewCourierMsg(t *testing.T) {
 	)
 	in1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "test", models.MsgStatusHandled)
 	session.SetIncomingMsg(in1.ID, null.String("EX123"))
-	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg2, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
+	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg2, nil, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	require.NoError(t, err)
 
 	createAndAssertCourierMsg(t, ctx, rt, oa, msg2, cathyURNs[0], fmt.Sprintf(`{
