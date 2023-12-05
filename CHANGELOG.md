@@ -1,3 +1,7 @@
+v8.3.51 (2023-12-05)
+-------------------------
+ * Save msg templating metdata with original template language
+
 v8.3.50 (2023-12-05)
 -------------------------
  * Always use created_on rather than occured_on when updating last_seen on based on a channel event
