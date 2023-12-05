@@ -25,6 +25,15 @@ func (t *Template) Translations() []assets.TemplateTranslation {
 	return trs
 }
 
+func (t *Template) FindTranslation(l i18n.Locale) *TemplateTranslation {
+	for _, tt := range t.Translations_ {
+		if tt.Locale() == l {
+			return tt
+		}
+	}
+	return nil
+}
+
 type TemplateTranslation struct {
 	Channel_        *assets.ChannelReference `json:"channel"`
 	Namespace_      string                   `json:"namespace"`

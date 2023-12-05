@@ -93,12 +93,14 @@ type OrgAssets struct {
 	ticketersByID   map[TicketerID]*Ticketer
 	ticketersByUUID map[assets.TicketerUUID]*Ticketer
 
+	templates       []assets.Template
+	templatesByUUID map[assets.TemplateUUID]*Template
+
 	topics       []assets.Topic
 	topicsByID   map[TopicID]*Topic
 	topicsByUUID map[assets.TopicUUID]*Topic
 
 	resthooks []assets.Resthook
-	templates []assets.Template
 	triggers  []*Trigger
 	globals   []assets.Global
 
@@ -326,8 +328,13 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 		if err != nil {
 			return nil, errors.Wrapf(err, "error loading templates for org %d", orgID)
 		}
+		oa.templatesByUUID = make(map[assets.TemplateUUID]*Template)
+		for _, t := range oa.templates {
+			oa.templatesByUUID[t.UUID()] = t.(*Template)
+		}
 	} else {
 		oa.templates = prev.templates
+		oa.templatesByUUID = prev.templatesByUUID
 	}
 
 	if prev == nil || refresh&RefreshGlobals > 0 {
@@ -681,6 +688,10 @@ func (a *OrgAssets) ResthookBySlug(slug string) *Resthook {
 
 func (a *OrgAssets) Templates() ([]assets.Template, error) {
 	return a.templates, nil
+}
+
+func (a *OrgAssets) TemplateByUUID(uuid assets.TemplateUUID) *Template {
+	return a.templatesByUUID[uuid]
 }
 
 func (a *OrgAssets) Globals() ([]assets.Global, error) {
