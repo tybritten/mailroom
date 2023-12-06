@@ -390,11 +390,15 @@ func buildMsgMetadata(m *flows.MsgOut, t *Template) map[string]any {
 	metadata := make(map[string]any)
 	if m.Templating() != nil && t != nil {
 		tt := t.FindTranslation(m.Locale())
-		metadata["templating"] = map[string]any{
-			"template":  m.Templating().Template(),
-			"variables": m.Templating().Variables(),
-			"namespace": m.Templating().Namespace(),
-			"language":  tt.ExternalLocale(), // i.e. en_US
+
+		type templating struct {
+			flows.MsgTemplating
+			Language string `json:"language"`
+		}
+
+		metadata["templating"] = templating{
+			MsgTemplating: *m.Templating(),
+			Language:      tt.ExternalLocale(), // i.e. en_US
 		}
 	}
 	if m.Topic() != flows.NilMsgTopic {
