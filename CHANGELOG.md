@@ -1,3 +1,7 @@
+v8.3.52 (2023-12-06)
+-------------------------
+ * Don't include templating variables if empty
+
 v8.3.51 (2023-12-05)
 -------------------------
  * Save msg templating metdata with original template language
