@@ -129,7 +129,7 @@ func fireCron(rt *runtime.Runtime, name string, cronFunc Function, timeout time.
 func recordCompletion(rp *redis.Pool, name string, started, ended time.Time, results map[string]any) {
 	log := slog.With("cron", name)
 	elapsed := ended.Sub(started)
-	elapsedSeconds := float64(elapsed / time.Second)
+	elapsedSeconds := elapsed.Seconds()
 
 	rc := rp.Get()
 	defer rc.Close()
