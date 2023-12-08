@@ -1,3 +1,7 @@
+v8.3.53 (2023-12-08)
+-------------------------
+ * Fix recording cron times
+
 v8.3.52 (2023-12-06)
 -------------------------
  * Don't include templating variables if empty
