@@ -160,7 +160,12 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 	}
 
 	if models.ContactSeenEvents[eventType] {
-		err = modelContact.UpdateLastSeenOn(ctx, rt.DB, event.CreatedOn())
+		lastSeenOn := event.CreatedOn()
+		if lastSeenOn.IsZero() {
+			lastSeenOn = time.Now()
+		}
+
+		err = modelContact.UpdateLastSeenOn(ctx, rt.DB, lastSeenOn)
 		if err != nil {
 			return nil, errors.Wrap(err, "error updating contact last_seen_on")
 		}
