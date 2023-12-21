@@ -9,7 +9,6 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
-	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/excellent/types"
 	"github.com/nyaruka/goflow/flows"
@@ -161,7 +160,12 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 	}
 
 	if models.ContactSeenEvents[eventType] {
-		err = modelContact.UpdateLastSeenOn(ctx, rt.DB, dates.Now())
+		lastSeenOn := event.CreatedOn()
+		if lastSeenOn.IsZero() {
+			lastSeenOn = time.Now()
+		}
+
+		err = modelContact.UpdateLastSeenOn(ctx, rt.DB, lastSeenOn)
 		if err != nil {
 			return nil, errors.Wrap(err, "error updating contact last_seen_on")
 		}
@@ -304,7 +308,7 @@ func handleStopEvent(ctx context.Context, rt *runtime.Runtime, event *StopEvent)
 		return err
 	}
 
-	err = models.UpdateContactLastSeenOn(ctx, tx, event.ContactID, dates.Now())
+	err = models.UpdateContactLastSeenOn(ctx, tx, event.ContactID, event.CreatedOn)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -616,7 +620,7 @@ func handleAsInbox(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsset
 	// usually last_seen_on is updated by handling the msg_received event in the engine sprint, but since this is an inbox
 	// message we manually create that event and handle it
 	msgEvent := events.NewMsgReceived(msg)
-	contact.SetLastSeenOn(dates.Now())
+	contact.SetLastSeenOn(msgEvent.CreatedOn())
 	contactEvents := map[*flows.Contact][]flows.Event{contact: {msgEvent}}
 
 	err := models.HandleAndCommitEvents(ctx, rt, oa, models.NilUserID, contactEvents)
