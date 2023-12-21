@@ -9,6 +9,7 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/excellent/types"
 	"github.com/nyaruka/goflow/flows"
@@ -160,9 +161,10 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 	}
 
 	if models.ContactSeenEvents[eventType] {
+		// in the case of an incoming call this event isn't in the db and doesn't have created on
 		lastSeenOn := event.CreatedOn()
 		if lastSeenOn.IsZero() {
-			lastSeenOn = time.Now()
+			lastSeenOn = dates.Now()
 		}
 
 		err = modelContact.UpdateLastSeenOn(ctx, rt.DB, lastSeenOn)
