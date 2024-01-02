@@ -10,7 +10,6 @@ import (
 	"github.com/nyaruka/mailroom/core/hooks"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/services/tickets"
 	"github.com/pkg/errors"
 )
 
@@ -23,11 +22,6 @@ func handleTicketOpened(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, o
 	event := e.(*events.TicketOpenedEvent)
 
 	slog.Debug("ticket opened", "contact", scene.ContactUUID(), "session", scene.SessionID(), "ticket", event.Ticket.UUID)
-
-	ticketer := oa.TicketerByUUID(event.Ticket.Ticketer.UUID)
-	if ticketer == nil {
-		return errors.Errorf("unable to find ticketer with UUID: %s", event.Ticket.Ticketer.UUID)
-	}
 
 	var topicID models.TopicID
 	if event.Ticket.Topic != nil {
@@ -62,15 +56,9 @@ func handleTicketOpened(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, o
 		scene.UserID(),
 		openedInID,
 		scene.ContactID(),
-		ticketer.ID(),
-		event.Ticket.ExternalID,
 		topicID,
 		event.Ticket.Body,
 		assigneeID,
-		map[string]any{
-			"contact-uuid":    scene.Contact().UUID(),
-			"contact-display": tickets.GetContactDisplay(oa.Env(), scene.Contact()),
-		},
 	)
 
 	scene.AppendToEventPreCommitHook(hooks.InsertTicketsHook, ticket)

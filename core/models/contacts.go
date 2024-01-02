@@ -207,12 +207,8 @@ func (c *Contact) FlowContact(oa *OrgAssets) (*flows.Contact, error) {
 
 	// convert our ticket to a flow ticket
 	var ticket *flows.Ticket
-	var err error
 	if c.ticket != nil {
-		ticket, err = c.ticket.FlowTicket(oa)
-		if err != nil {
-			return nil, errors.Wrapf(err, "error creating flow ticket")
-		}
+		ticket = c.ticket.FlowTicket(oa)
 	}
 
 	// create our flow contact
@@ -331,10 +327,7 @@ func LoadContacts(ctx context.Context, db Queryer, oa *OrgAssets, ids []ContactI
 		// grab the last opened open ticket
 		if len(e.Tickets) > 0 {
 			t := e.Tickets[0]
-			ticketer := oa.TicketerByID(t.TicketerID)
-			if ticketer != nil {
-				contact.ticket = NewTicket(t.UUID, oa.OrgID(), NilUserID, NilFlowID, contact.ID(), ticketer.ID(), t.ExternalID, t.TopicID, t.Body, t.AssigneeID, nil)
-			}
+			contact.ticket = NewTicket(t.UUID, oa.OrgID(), NilUserID, NilFlowID, contact.ID(), t.TopicID, t.Body, t.AssigneeID)
 		}
 
 		contacts = append(contacts, contact)
@@ -470,8 +463,6 @@ type contactEnvelope struct {
 	URNs     []ContactURN `json:"urns"`
 	Tickets  []struct {
 		UUID       flows.TicketUUID `json:"uuid"`
-		TicketerID TicketerID       `json:"ticketer_id"`
-		ExternalID string           `json:"external_id"`
 		TopicID    TopicID          `json:"topic_id"`
 		Body       string           `json:"body"`
 		AssigneeID UserID           `json:"assignee_id"`
@@ -529,14 +520,7 @@ LEFT JOIN (
 	SELECT
 		contact_id,
 		array_agg(
-			json_build_object(
-				'uuid', t.uuid,
-				'body', t.body,
-				'external_id', t.external_id,
-				'ticketer_id', t.ticketer_id,
-				'topic_id', t.topic_id,
-				'assignee_id', t.assignee_id
-			) ORDER BY t.opened_on DESC, t.id DESC
+			json_build_object('uuid', t.uuid, 'body', t.body, 'topic_id', t.topic_id, 'assignee_id', t.assignee_id) ORDER BY t.opened_on DESC, t.id DESC
 		) as tickets
 	FROM
 		tickets_ticket t

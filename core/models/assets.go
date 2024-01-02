@@ -40,10 +40,9 @@ const (
 	RefreshOptIns      = Refresh(1 << 11)
 	RefreshResthooks   = Refresh(1 << 12)
 	RefreshTemplates   = Refresh(1 << 13)
-	RefreshTicketers   = Refresh(1 << 14)
-	RefreshTopics      = Refresh(1 << 15)
-	RefreshTriggers    = Refresh(1 << 16)
-	RefreshUsers       = Refresh(1 << 17)
+	RefreshTopics      = Refresh(1 << 14)
+	RefreshTriggers    = Refresh(1 << 15)
+	RefreshUsers       = Refresh(1 << 16)
 )
 
 // OrgAssets is our top level cache of all things contained in an org. It is used to build
@@ -88,10 +87,6 @@ type OrgAssets struct {
 	optIns       []assets.OptIn
 	optInsByID   map[OptInID]*OptIn
 	optInsByUUID map[assets.OptInUUID]*OptIn
-
-	ticketers       []assets.Ticketer
-	ticketersByID   map[TicketerID]*Ticketer
-	ticketersByUUID map[assets.TicketerUUID]*Ticketer
 
 	templates       []assets.Template
 	templatesByUUID map[assets.TemplateUUID]*Template
@@ -363,23 +358,6 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	} else {
 		oa.flowByUUID = prev.flowByUUID
 		oa.flowByID = prev.flowByID
-	}
-
-	if prev == nil || refresh&RefreshTicketers > 0 {
-		oa.ticketers, err = loadAssetType(ctx, db, orgID, "ticketers", loadTicketers)
-		if err != nil {
-			return nil, errors.Wrapf(err, "error loading ticketer assets for org %d", orgID)
-		}
-		oa.ticketersByID = make(map[TicketerID]*Ticketer)
-		oa.ticketersByUUID = make(map[assets.TicketerUUID]*Ticketer)
-		for _, t := range oa.ticketers {
-			oa.ticketersByID[t.(*Ticketer).ID()] = t.(*Ticketer)
-			oa.ticketersByUUID[t.UUID()] = t.(*Ticketer)
-		}
-	} else {
-		oa.ticketers = prev.ticketers
-		oa.ticketersByID = prev.ticketersByID
-		oa.ticketersByUUID = prev.ticketersByUUID
 	}
 
 	if prev == nil || refresh&RefreshTopics > 0 {
@@ -696,18 +674,6 @@ func (a *OrgAssets) TemplateByUUID(uuid assets.TemplateUUID) *Template {
 
 func (a *OrgAssets) Globals() ([]assets.Global, error) {
 	return a.globals, nil
-}
-
-func (a *OrgAssets) Ticketers() ([]assets.Ticketer, error) {
-	return a.ticketers, nil
-}
-
-func (a *OrgAssets) TicketerByID(id TicketerID) *Ticketer {
-	return a.ticketersByID[id]
-}
-
-func (a *OrgAssets) TicketerByUUID(uuid assets.TicketerUUID) *Ticketer {
-	return a.ticketersByUUID[uuid]
 }
 
 func (a *OrgAssets) Topics() ([]assets.Topic, error) {
