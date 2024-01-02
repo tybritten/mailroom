@@ -164,7 +164,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		}
 
 		flowMsg := flows.NewMsgOut(tc.URN, chRef, tc.Text, tc.Attachments, tc.QuickReplies, nil, tc.Topic, i18n.NilLocale, tc.Unsendable)
-		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), ch, session, flow, flowMsg, now)
+		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), ch, session, flow, flowMsg, nil, now)
 
 		assert.NoError(t, err)
 
@@ -215,7 +215,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 	// check that msg loop detection triggers after 20 repeats of the same text
 	newOutgoing := func(text string) *models.Msg {
 		flowMsg := flows.NewMsgOut(urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)), assets.NewChannelReference(testdata.TwilioChannel.UUID, "Twilio"), text, nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg, now)
+		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg, nil, now)
 		require.NoError(t, err)
 		return msg
 	}

@@ -53,8 +53,10 @@ func TestExpirations(t *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	// expire our sessions...
-	err := expirations.HandleWaitExpirations(ctx, rt)
+	cron := expirations.NewExpirationsCron()
+	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
+	assert.Equal(t, map[string]any{"dupes": 0, "expired": 1, "queued": 2}, res)
 
 	// Cathy's session should be expired along with its runs
 	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE id = $1;`, s1ID).Columns(map[string]any{"status": "X"})
@@ -127,8 +129,10 @@ func TestExpireVoiceSessions(t *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	// expire our sessions...
-	err := expirations.ExpireVoiceSessions(ctx, rt)
+	cron := &expirations.VoiceExpirationsCron{}
+	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
+	assert.Equal(t, map[string]any{"expired": 1}, res)
 
 	// Cathy's session should be expired along with its runs
 	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE id = $1;`, s1ID).Columns(map[string]any{"status": "X"})

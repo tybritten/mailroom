@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/queue"
 	"github.com/nyaruka/mailroom/core/tasks"
@@ -17,17 +16,22 @@ import (
 )
 
 func init() {
-	mailroom.RegisterCron("fire_schedules", time.Minute*1, false, checkSchedules)
+	tasks.RegisterCron("fire_schedules", false, &schedulesCron{})
+}
+
+type schedulesCron struct{}
+
+func (c *schedulesCron) Next(last time.Time) time.Time {
+	return tasks.CronNext(last, time.Minute)
 }
 
 // checkSchedules looks up any expired schedules and fires them, setting the next fire as needed
-func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
+func (c *schedulesCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	// we sleep 1 second since we fire right on the minute and want to make sure to fire
 	// things that are schedules right at the minute as well (and DB time may be slightly drifted)
 	time.Sleep(time.Second * 1)
 
 	log := slog.With("comp", "schedules_cron")
-	start := time.Now()
 
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -35,7 +39,7 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 	// get any expired schedules
 	unfired, err := models.GetUnfiredSchedules(ctx, rt.DB.DB)
 	if err != nil {
-		return errors.Wrapf(err, "error while getting unfired schedules")
+		return nil, errors.Wrapf(err, "error while getting unfired schedules")
 	}
 
 	// for each unfired schedule
@@ -72,6 +76,8 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 
 		// if it is a broadcast
 		if s.Broadcast() != nil {
+			log = log.With("broadcast_id", s.Broadcast().ID)
+
 			// clone our broadcast, our schedule broadcast is just a template
 			bcast, err := models.InsertChildBroadcast(ctx, tx, s.Broadcast())
 			if err != nil {
@@ -85,6 +91,8 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 			broadcasts++
 
 		} else if s.Trigger() != nil {
+			log = log.With("trigger_id", s.Trigger().ID())
+
 			start := s.Trigger().CreateStart()
 
 			// insert our flow start
@@ -138,6 +146,5 @@ func checkSchedules(ctx context.Context, rt *runtime.Runtime) error {
 		}
 	}
 
-	log.Info("fired schedules", "broadcasts", broadcasts, "triggers", triggers, "noops", noops, "elapsed", time.Since(start))
-	return nil
+	return map[string]any{"broadcasts": broadcasts, "triggers": triggers, "noops": noops}, nil
 }

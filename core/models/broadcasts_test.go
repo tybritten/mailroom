@@ -1,11 +1,13 @@
 package models_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/utils"
@@ -225,9 +227,14 @@ func TestInsertChildBroadcast(t *testing.T) {
 	schedID := testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodDaily, time.Now())
 	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Hello"}, optIn, schedID, []*testdata.Contact{testdata.Bob, testdata.Cathy}, nil)
 
-	parent := &models.Broadcast{}
-	err := rt.DB.GetContext(ctx, parent, `SELECT id, org_id, translations, base_language, optin_id, query, created_by_id, parent_id FROM msgs_broadcast WHERE id = $1`, bcastID)
+	var bj json.RawMessage
+	err := rt.DB.GetContext(ctx, &bj, `SELECT ROW_TO_JSON(r) FROM (
+		SELECT id, org_id, translations, base_language, optin_id, query, created_by_id, parent_id FROM msgs_broadcast WHERE id = $1
+	) r`, bcastID)
 	require.NoError(t, err)
+
+	parent := &models.Broadcast{}
+	jsonx.MustUnmarshal(bj, parent)
 
 	child, err := models.InsertChildBroadcast(ctx, rt.DB, parent)
 	assert.NoError(t, err)

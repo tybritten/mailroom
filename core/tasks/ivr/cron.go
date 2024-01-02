@@ -5,21 +5,26 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/ivr"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
 )
 
 func init() {
-	mailroom.RegisterCron("retry_ivr_calls", time.Minute, false, RetryCalls)
+	tasks.RegisterCron("retry_ivr_calls", false, &RetryCron{})
+}
+
+type RetryCron struct{}
+
+func (c *RetryCron) Next(last time.Time) time.Time {
+	return tasks.CronNext(last, time.Minute)
 }
 
 // RetryCalls looks for calls that need to be retried and retries them
-func RetryCalls(ctx context.Context, rt *runtime.Runtime) error {
+func (c *RetryCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	log := slog.With("comp", "ivr_cron_retryer")
-	start := time.Now()
 
 	// find all calls that need restarting
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
@@ -27,7 +32,7 @@ func RetryCalls(ctx context.Context, rt *runtime.Runtime) error {
 
 	calls, err := models.LoadCallsToRetry(ctx, rt.DB, 100)
 	if err != nil {
-		return errors.Wrapf(err, "error loading calls to retry")
+		return nil, errors.Wrapf(err, "error loading calls to retry")
 	}
 
 	throttledChannels := make(map[models.ChannelID]bool)
@@ -87,7 +92,5 @@ func RetryCalls(ctx context.Context, rt *runtime.Runtime) error {
 		slog.Error("error inserting channel logs", "error", err)
 	}
 
-	log.Info("retried errored calls", "count", len(calls), "elapsed", time.Since(start))
-
-	return nil
+	return map[string]any{"retried": len(calls)}, nil
 }

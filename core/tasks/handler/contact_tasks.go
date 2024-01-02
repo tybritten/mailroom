@@ -9,6 +9,7 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/excellent/types"
 	"github.com/nyaruka/goflow/flows"
@@ -160,7 +161,13 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 	}
 
 	if models.ContactSeenEvents[eventType] {
-		err = modelContact.UpdateLastSeenOn(ctx, rt.DB, event.OccurredOn())
+		// in the case of an incoming call this event isn't in the db and doesn't have created on
+		lastSeenOn := event.CreatedOn()
+		if lastSeenOn.IsZero() {
+			lastSeenOn = dates.Now()
+		}
+
+		err = modelContact.UpdateLastSeenOn(ctx, rt.DB, lastSeenOn)
 		if err != nil {
 			return nil, errors.Wrap(err, "error updating contact last_seen_on")
 		}
@@ -303,7 +310,7 @@ func handleStopEvent(ctx context.Context, rt *runtime.Runtime, event *StopEvent)
 		return err
 	}
 
-	err = models.UpdateContactLastSeenOn(ctx, tx, event.ContactID, event.OccurredOn)
+	err = models.UpdateContactLastSeenOn(ctx, tx, event.ContactID, event.CreatedOn)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -671,6 +678,7 @@ type StopEvent struct {
 	ContactID  models.ContactID `json:"contact_id"`
 	OrgID      models.OrgID     `json:"org_id"`
 	OccurredOn time.Time        `json:"occurred_on"`
+	CreatedOn  time.Time        `json:"created_on"`
 }
 
 type MsgDeletedEvent struct {

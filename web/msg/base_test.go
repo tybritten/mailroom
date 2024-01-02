@@ -43,8 +43,22 @@ func TestResend(t *testing.T) {
 	})
 }
 
-func TestPreviewBroadcast(t *testing.T) {
+func TestBroadcast(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
-	testsuite.RunWebTests(t, ctx, rt, "testdata/preview_broadcast.json", nil)
+	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
+
+	polls := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
+
+	testsuite.RunWebTests(t, ctx, rt, "testdata/broadcast.json", map[string]string{
+		"polls_id": fmt.Sprintf("%d", polls.ID),
+	})
+
+	testsuite.AssertBatchTasks(t, testdata.Org1.ID, map[string]int{"send_broadcast": 1})
+}
+
+func TestBroadcastPreview(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	testsuite.RunWebTests(t, ctx, rt, "testdata/broadcast_preview.json", nil)
 }

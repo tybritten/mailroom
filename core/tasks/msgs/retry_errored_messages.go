@@ -2,42 +2,43 @@ package msgs
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/msgio"
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
 )
 
 func init() {
-	mailroom.RegisterCron("retry_errored_messages", time.Second*60, false, RetryErroredMessages)
+	tasks.RegisterCron("retry_errored_messages", false, &RetryMessagesCron{})
 }
 
-func RetryErroredMessages(ctx context.Context, rt *runtime.Runtime) error {
+type RetryMessagesCron struct{}
+
+func (c *RetryMessagesCron) Next(last time.Time) time.Time {
+	return tasks.CronNext(last, time.Minute)
+}
+
+func (c *RetryMessagesCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	start := time.Now()
-
 	msgs, err := models.GetMessagesForRetry(ctx, rt.DB)
 	if err != nil {
-		return errors.Wrap(err, "error fetching errored messages to retry")
+		return nil, errors.Wrap(err, "error fetching errored messages to retry")
 	}
 	if len(msgs) == 0 {
-		return nil // nothing to retry
+		return nil, nil // nothing to retry
 	}
 
 	err = models.MarkMessagesQueued(ctx, rt.DB, msgs)
 	if err != nil {
-		return errors.Wrap(err, "error marking messages as queued")
+		return nil, errors.Wrap(err, "error marking messages as queued")
 	}
 
 	msgio.QueueMessages(ctx, rt, rt.DB, nil, msgs)
 
-	slog.Info("retried errored messages", "count", len(msgs), "elapsed", time.Since(start))
-
-	return nil
+	return map[string]any{"retried": len(msgs)}, nil
 }

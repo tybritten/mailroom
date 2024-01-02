@@ -261,7 +261,7 @@ SELECT ROW_TO_JSON(s) FROM (
         ) r) AS trigger
         FROM schedules_schedule s 
         JOIN orgs_org o ON s.org_id = o.id
-       WHERE s.is_active = TRUE AND s.next_fire < NOW()
+       WHERE s.next_fire < NOW() AND NOT is_paused 
     ORDER BY s.next_fire ASC
 ) s;`
 

@@ -522,6 +522,8 @@ func TestChannelEvents(t *testing.T) {
 		time.Sleep(time.Millisecond * 5)
 
 		event := models.NewChannelEvent(tc.EventType, testdata.Org1.ID, tc.ChannelID, tc.ContactID, tc.URNID, tc.OptInID, tc.Extra, false)
+		err := event.Insert(ctx, rt.DB)
+		require.NoError(t, err)
 
 		task := &queue.Task{
 			Type:  string(tc.EventType),
@@ -529,7 +531,7 @@ func TestChannelEvents(t *testing.T) {
 			Task:  jsonx.MustMarshal(event),
 		}
 
-		err := handler.QueueHandleTask(rc, tc.ContactID, task)
+		err = handler.QueueHandleTask(rc, tc.ContactID, task)
 		assert.NoError(t, err, "%d: error adding task", i)
 
 		task, err = queue.PopNextTask(rc, queue.HandlerQueue)

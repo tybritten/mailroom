@@ -1,3 +1,67 @@
+v8.3.54 (2023-12-12)
+-------------------------
+ * Update deps
+
+v8.3.53 (2023-12-08)
+-------------------------
+ * Fix recording cron times
+
+v8.3.52 (2023-12-06)
+-------------------------
+ * Don't include templating variables if empty
+
+v8.3.51 (2023-12-05)
+-------------------------
+ * Save msg templating metdata with original template language
+
+v8.3.50 (2023-12-05)
+-------------------------
+ * Always use created_on rather than occured_on when updating last_seen on based on a channel event
+
+v8.3.49 (2023-12-04)
+-------------------------
+ * Change ChannelEvent.created_on to be db time
+ * Refactor cron jobs to use an interface
+
+v8.3.48 (2023-11-28)
+-------------------------
+ * Use TemplateTranslation.locale instead of language and country
+ * Simplify loading of templates
+ * Update to latest goflow/gocommon/phonenumbers
+
+v8.3.47 (2023-11-20)
+-------------------------
+ * Update deps
+ * Write cron results to redis
+
+v8.3.46 (2023-11-13)
+-------------------------
+ * Update to latest goflow
+ * Remove no longer used endpoint alias
+
+v8.3.45 (2023-11-13)
+-------------------------
+ * Rework cron functions to return results and do consistent logging
+ * Add URNs to broadcast endpoint
+
+v8.3.44 (2023-11-10)
+-------------------------
+ * Rename preview_start to start_preview for consistency
+
+v8.3.43 (2023-11-10)
+-------------------------
+ * Rename preview_broadcast to broadcast_preview
+ * Add web endpoint to create and send a broadcast
+
+v8.3.42 (2023-11-10)
+-------------------------
+ * Tweak logging in schedules cron
+ * Support is_paused on schedules
+
+v8.3.41 (2023-11-08)
+-------------------------
+ * Stop reading from Schedule.is_active which is no longer used
+
 v8.3.40 (2023-11-07)
 -------------------------
  * Add medium field to notifications and start writing
