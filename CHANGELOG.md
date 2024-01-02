@@ -1,3 +1,8 @@
+v8.3.55 (2024-01-02)
+-------------------------
+ * Fix last seen on for channel events
+ * Remove ticketers
+
 v8.3.54 (2023-12-12)
 -------------------------
  * Update deps
