@@ -1,3 +1,7 @@
+v9.0.0 (2024-01-05)
+-------------------------
+ * Update test database
+
 v8.3.55 (2024-01-02)
 -------------------------
  * Fix last seen on for channel events
