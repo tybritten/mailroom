@@ -287,7 +287,7 @@ func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType mode
 		}
 	}
 
-	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{modelContact}, []flows.Trigger{trig}, hook, true)
+	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{modelContact}, []flows.Trigger{trig}, hook, flow.FlowType().Interrupts())
 	if err != nil {
 		return nil, errors.Wrapf(err, "error starting flow for contact")
 	}
@@ -491,7 +491,7 @@ func handleMsgEvent(ctx context.Context, rt *runtime.Runtime, event *MsgEvent) e
 
 			// otherwise build the trigger and start the flow directly
 			trigger := tb.Build()
-			_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{modelContact}, []flows.Trigger{trigger}, flowMsgHook, true)
+			_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{modelContact}, []flows.Trigger{trigger}, flowMsgHook, flow.FlowType().Interrupts())
 			if err != nil {
 				return errors.Wrapf(err, "error starting flow for contact")
 			}
@@ -599,7 +599,7 @@ func handleTicketEvent(ctx context.Context, rt *runtime.Runtime, event *models.T
 		return errors.Errorf("unknown ticket event type: %s", event.EventType())
 	}
 
-	_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{modelContact}, []flows.Trigger{flowTrigger}, nil, true)
+	_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{modelContact}, []flows.Trigger{flowTrigger}, nil, flow.FlowType().Interrupts())
 	if err != nil {
 		return errors.Wrapf(err, "error starting flow for contact")
 	}
