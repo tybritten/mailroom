@@ -1,3 +1,7 @@
+v9.0.1 (2024-01-05)
+-------------------------
+ * Fix interrupting with background flows
+
 v9.0.0 (2024-01-05)
 -------------------------
  * Update test database
