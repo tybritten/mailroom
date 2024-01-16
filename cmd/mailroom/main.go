@@ -68,19 +68,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	var level slog.Level
-	err := level.UnmarshalText([]byte(config.LogLevel))
-	if err != nil {
-		ulog.Fatalf("invalid log level %s", level)
-		os.Exit(1)
-	}
-
 	// configure our logger
-	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: config.LogLevel})
 	slog.SetDefault(slog.New(logHandler))
 
-	logger := slog.With("comp", "main")
-	logger.Info("starting mailroom", "version", version, "released", date)
+	log := slog.With("comp", "main")
+	log.Info("starting mailroom", "version", version, "released", date)
 
 	// if we have a DSN entry, try to initialize it
 	if config.SentryDSN != "" {
@@ -95,25 +88,25 @@ func main() {
 
 		defer sentry.Flush(2 * time.Second)
 
-		logger = slog.New(
+		log = slog.New(
 			slogmulti.Fanout(
 				logHandler,
 				slogsentry.Option{Level: slog.LevelError}.NewSentryHandler(),
 			),
 		)
-		logger = logger.With("release", version)
-		slog.SetDefault(logger)
+		log = log.With("release", version)
+		slog.SetDefault(log)
 	}
 
 	if config.UUIDSeed != 0 {
 		uuids.SetGenerator(uuids.NewSeededGenerator(int64(config.UUIDSeed)))
-		logger.Warn("using seeded UUID generation", "uuid-seed", config.UUIDSeed)
+		log.Warn("using seeded UUID generation", "uuid-seed", config.UUIDSeed)
 	}
 
 	mr := mailroom.NewMailroom(config)
-	err = mr.Start()
+	err := mr.Start()
 	if err != nil {
-		logger.Error("unable to start server", "error", err)
+		log.Error("unable to start server", "error", err)
 	}
 
 	// handle our signals

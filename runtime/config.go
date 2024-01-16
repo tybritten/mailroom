@@ -3,6 +3,7 @@ package runtime
 import (
 	"encoding/csv"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 	"strings"
@@ -73,10 +74,10 @@ type Config struct {
 	FCMKey            string `help:"the FCM API key used to notify Android relayers to sync"`
 	MailgunSigningKey string `help:"the signing key used to validate requests from mailgun"`
 
-	InstanceName string `help:"the unique name of this instance used for analytics"`
-	LogLevel     string `help:"the logging level courier should use"`
-	UUIDSeed     int    `help:"seed to use for UUID generation in a testing environment"`
-	Version      string `help:"the version of this mailroom install"`
+	InstanceName string     `help:"the unique name of this instance used for analytics"`
+	LogLevel     slog.Level `help:"the logging level courier should use"`
+	UUIDSeed     int        `help:"seed to use for UUID generation in a testing environment"`
+	Version      string     `help:"the version of this mailroom install"`
 }
 
 // NewDefaultConfig returns a new default configuration object
@@ -129,7 +130,7 @@ func NewDefaultConfig() *Config {
 		AWSUseCredChain:    false,
 
 		InstanceName: hostname,
-		LogLevel:     "error",
+		LogLevel:     slog.LevelWarn,
 		UUIDSeed:     0,
 		Version:      "Dev",
 	}
