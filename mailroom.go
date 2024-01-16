@@ -4,13 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
-	"net/url"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/storage"
@@ -18,6 +15,7 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/cron"
 	"github.com/nyaruka/mailroom/web"
+	"github.com/nyaruka/redisx"
 	"github.com/olivere/elastic/v7"
 	"github.com/pkg/errors"
 )
@@ -105,7 +103,7 @@ func (mr *Mailroom) Start() error {
 		log.Warn("no distinct readonly db configured")
 	}
 
-	mr.rt.RP, err = openAndCheckRedisPool(c.Redis)
+	mr.rt.RP, err = redisx.NewPool(c.Redis)
 	if err != nil {
 		log.Error("redis not reachable", "error", err)
 	} else {
@@ -234,45 +232,6 @@ func openAndCheckDBConnection(url string, maxOpenConns int) (*sql.DB, *sqlx.DB, 
 	cancel()
 
 	return db.DB, db, err
-}
-
-func openAndCheckRedisPool(redisUrl string) (*redis.Pool, error) {
-	redisURL, _ := url.Parse(redisUrl)
-
-	rp := &redis.Pool{
-		Wait:        true,              // makes callers wait for a connection
-		MaxActive:   36,                // only open this many concurrent connections at once
-		MaxIdle:     4,                 // only keep up to this many idle
-		IdleTimeout: 240 * time.Second, // how long to wait before reaping a connection
-		Dial: func() (redis.Conn, error) {
-			conn, err := redis.Dial("tcp", redisURL.Host)
-			if err != nil {
-				return nil, err
-			}
-
-			// send auth if required
-			if redisURL.User != nil {
-				pass, authRequired := redisURL.User.Password()
-				if authRequired {
-					if _, err := conn.Do("AUTH", pass); err != nil {
-						conn.Close()
-						return nil, err
-					}
-				}
-			}
-
-			// switch to the right DB
-			_, err = conn.Do("SELECT", strings.TrimLeft(redisURL.Path, "/"))
-			return conn, err
-		},
-	}
-
-	// test the connection
-	conn := rp.Get()
-	defer conn.Close()
-	_, err := conn.Do("PING")
-
-	return rp, err
 }
 
 func newElasticClient(url string, username string, password string) (*elastic.Client, error) {
