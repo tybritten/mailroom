@@ -84,7 +84,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"metadata": {
 			"templating": {
 				"template": {"uuid": "9c22b594-fcab-4b29-9bcb-ce4404894a80", "name": "revive_issue"},
-				"variables": ["name"],
+				"params": {"body": [{"type": "text", "value": "name"}]},
 				"namespace": "tpls",
 				"language": "en_US"
 			},
