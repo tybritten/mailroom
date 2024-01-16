@@ -391,15 +391,30 @@ func buildMsgMetadata(m *flows.MsgOut, t *Template) map[string]any {
 	if m.Templating() != nil && t != nil {
 		tt := t.FindTranslation(m.Locale())
 
-		type templating struct {
-			flows.MsgTemplating
-			Language string `json:"language"`
+		type templateParam struct {
+			Type  string `json:"type"`
+			Value string `json:"value"`
 		}
 
-		metadata["templating"] = templating{
-			MsgTemplating: *m.Templating(),
-			Language:      tt.ExternalLocale(), // i.e. en_US
+		type templating struct {
+			Template  *assets.TemplateReference  `json:"template"`
+			Params    map[string][]templateParam `json:"params"`
+			Namespace string                     `json:"namespace"`
+			Language  string                     `json:"language"`
 		}
+
+		tp := templating{
+			Template:  m.Templating().Template_,
+			Params:    map[string][]templateParam{"body": make([]templateParam, len(m.Templating().Variables_))},
+			Namespace: m.Templating().Namespace_,
+			Language:  tt.ExternalLocale(), // i.e. en_US
+		}
+
+		for i, v := range m.Templating().Variables_ {
+			tp.Params["body"][i] = templateParam{Type: "text", Value: v}
+		}
+
+		metadata["templating"] = tp
 	}
 	if m.Topic() != flows.NilMsgTopic {
 		metadata["topic"] = string(m.Topic())
