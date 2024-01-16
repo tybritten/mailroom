@@ -17,10 +17,10 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.2.1
-	github.com/nyaruka/gocommon v1.50.0
+	github.com/nyaruka/gocommon v1.51.1
 	github.com/nyaruka/goflow v0.198.0
 	github.com/nyaruka/null/v3 v3.0.0
-	github.com/nyaruka/redisx v0.5.0
+	github.com/nyaruka/redisx v0.6.0
 	github.com/nyaruka/rp-indexer/v8 v8.3.1
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -31,7 +31,7 @@ require (
 	github.com/samber/slog-sentry v1.2.2
 	github.com/shopspring/decimal v1.3.1
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b
+	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3
 )
 
 require (
@@ -44,6 +44,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
+	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
