@@ -3,12 +3,14 @@ package runtime
 import (
 	"encoding/csv"
 	"io"
+	"log"
 	"log/slog"
 	"net"
 	"os"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/nyaruka/ezconf"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/goflow/utils"
 	"github.com/pkg/errors"
@@ -134,6 +136,19 @@ func NewDefaultConfig() *Config {
 		UUIDSeed:     0,
 		Version:      "Dev",
 	}
+}
+
+func LoadConfig() *Config {
+	config := NewDefaultConfig()
+	loader := ezconf.NewLoader(config, "mailroom", "Mailroom - handler for RapidPro", []string{"mailroom.toml"})
+	loader.MustLoad()
+
+	// ensure config is valid
+	if err := config.Validate(); err != nil {
+		log.Fatalf("invalid config: %s", err)
+	}
+
+	return config
 }
 
 // Validate validates the config

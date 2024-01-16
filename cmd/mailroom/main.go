@@ -11,7 +11,6 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	_ "github.com/lib/pq"
-	"github.com/nyaruka/ezconf"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/runtime"
@@ -53,15 +52,8 @@ var (
 )
 
 func main() {
-	config := runtime.NewDefaultConfig()
+	config := runtime.LoadConfig()
 	config.Version = version
-	loader := ezconf.NewLoader(config, "mailroom", "Mailroom - handler for RapidPro", []string{"mailroom.toml"})
-	loader.MustLoad()
-
-	// ensure config is valid
-	if err := config.Validate(); err != nil {
-		ulog.Fatalf("invalid config: %s", err)
-	}
 
 	// configure our logger
 	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: config.LogLevel})
