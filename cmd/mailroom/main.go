@@ -55,48 +55,37 @@ var (
 func main() {
 	config := runtime.NewDefaultConfig()
 	config.Version = version
-	loader := ezconf.NewLoader(
-		config,
-		"mailroom", "Mailroom - flow event handler for RapidPro",
-		[]string{"mailroom.toml"},
-	)
+	loader := ezconf.NewLoader(config, "mailroom", "Mailroom - handler for RapidPro", []string{"mailroom.toml"})
 	loader.MustLoad()
 
 	// ensure config is valid
 	if err := config.Validate(); err != nil {
-		slog.Error("invalid config", "error", err)
-		os.Exit(1)
+		ulog.Fatalf("invalid config: %s", err)
 	}
 
 	// configure our logger
 	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: config.LogLevel})
 	slog.SetDefault(slog.New(logHandler))
 
-	log := slog.With("comp", "main")
-	log.Info("starting mailroom", "version", version, "released", date)
-
 	// if we have a DSN entry, try to initialize it
 	if config.SentryDSN != "" {
-		err := sentry.Init(sentry.ClientOptions{
-			Dsn:           config.SentryDSN,
-			EnableTracing: false,
-		})
+		err := sentry.Init(sentry.ClientOptions{Dsn: config.SentryDSN, EnableTracing: false})
 		if err != nil {
 			ulog.Fatalf("error initiating sentry client, error %s, dsn %s", err, config.SentryDSN)
-			os.Exit(1)
 		}
 
 		defer sentry.Flush(2 * time.Second)
 
-		log = slog.New(
+		slog.SetDefault(slog.New(
 			slogmulti.Fanout(
 				logHandler,
 				slogsentry.Option{Level: slog.LevelError}.NewSentryHandler(),
 			),
-		)
-		log = log.With("release", version)
-		slog.SetDefault(log)
+		))
 	}
+
+	log := slog.With("comp", "main")
+	log.Info("starting mailroom", "version", version, "released", date)
 
 	if config.UUIDSeed != 0 {
 		uuids.SetGenerator(uuids.NewSeededGenerator(int64(config.UUIDSeed)))
@@ -107,6 +96,7 @@ func main() {
 	err := mr.Start()
 	if err != nil {
 		log.Error("unable to start server", "error", err)
+		os.Exit(1)
 	}
 
 	// handle our signals
