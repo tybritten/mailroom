@@ -398,20 +398,22 @@ func buildMsgMetadata(m *flows.MsgOut, t *Template) map[string]any {
 
 		type templating struct {
 			Template  *assets.TemplateReference  `json:"template"`
-			Params    map[string][]templateParam `json:"params"`
+			Params    map[string][]templateParam `json:"params,omitempty"`
 			Namespace string                     `json:"namespace"`
 			Language  string                     `json:"language"`
 		}
 
 		tp := templating{
 			Template:  m.Templating().Template_,
-			Params:    map[string][]templateParam{"body": make([]templateParam, len(m.Templating().Variables_))},
 			Namespace: m.Templating().Namespace_,
 			Language:  tt.ExternalLocale(), // i.e. en_US
 		}
 
-		for i, v := range m.Templating().Variables_ {
-			tp.Params["body"][i] = templateParam{Type: "text", Value: v}
+		if len(m.Templating_.Variables_) > 0 {
+			tp.Params = map[string][]templateParam{"body": make([]templateParam, len(m.Templating().Variables_))}
+			for i, v := range m.Templating().Variables_ {
+				tp.Params["body"][i] = templateParam{Type: "text", Value: v}
+			}
 		}
 
 		metadata["templating"] = tp
