@@ -1,3 +1,8 @@
+v9.1.1 (2024-01-16)
+-------------------------
+ * Fix queueing templating with no params
+ * Update to latest ezconf which includes support for slog.Level fields
+
 v9.1.0 (2024-01-16)
 -------------------------
  * Convert templating variables to body component params
