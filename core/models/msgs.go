@@ -137,9 +137,14 @@ type Msg struct {
 	IsResend     bool
 }
 
-func (m *Msg) ID() flows.MsgID               { return m.m.ID }
-func (m *Msg) BroadcastID() BroadcastID      { return m.m.BroadcastID }
-func (m *Msg) UUID() flows.MsgUUID           { return m.m.UUID }
+func (m *Msg) ID() flows.MsgID     { return m.m.ID }
+func (m *Msg) UUID() flows.MsgUUID { return m.m.UUID }
+
+func (m *Msg) BroadcastID() BroadcastID { return m.m.BroadcastID }
+func (m *Msg) FlowID() FlowID           { return m.m.FlowID }
+func (m *Msg) TicketID() TicketID       { return m.m.TicketID }
+func (m *Msg) CreatedByID() UserID      { return m.m.CreatedByID }
+
 func (m *Msg) Text() string                  { return m.m.Text }
 func (m *Msg) QuickReplies() []string        { return m.m.QuickReplies }
 func (m *Msg) Locale() i18n.Locale           { return m.m.Locale }
@@ -160,11 +165,10 @@ func (m *Msg) Metadata() map[string]any      { return m.m.Metadata }
 func (m *Msg) MsgCount() int                 { return m.m.MsgCount }
 func (m *Msg) ChannelID() ChannelID          { return m.m.ChannelID }
 func (m *Msg) OrgID() OrgID                  { return m.m.OrgID }
-func (m *Msg) FlowID() FlowID                { return m.m.FlowID }
-func (m *Msg) OptInID() OptInID              { return m.m.OptInID }
-func (m *Msg) TicketID() TicketID            { return m.m.TicketID }
-func (m *Msg) ContactID() ContactID          { return m.m.ContactID }
-func (m *Msg) ContactURNID() *URNID          { return m.m.ContactURNID }
+
+func (m *Msg) OptInID() OptInID     { return m.m.OptInID }
+func (m *Msg) ContactID() ContactID { return m.m.ContactID }
+func (m *Msg) ContactURNID() *URNID { return m.m.ContactURNID }
 
 func (m *Msg) SetChannel(channel *Channel) {
 	if channel != nil {
