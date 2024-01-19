@@ -42,7 +42,7 @@ const (
 	MsgOriginChat      MsgOrigin = "chat"
 )
 
-type OptIn struct {
+type OptInRef struct {
 	ID   models.OptInID `json:"id"`
 	Name string         `json:"name"`
 }
@@ -67,7 +67,8 @@ type Msg struct {
 	URNAuth              string                `json:"urn_auth,omitempty"`
 	Metadata             map[string]any        `json:"metadata,omitempty"`
 	Flow                 *assets.FlowReference `json:"flow,omitempty"`
-	OptIn                *OptIn                `json:"optin,omitempty"`
+	CreatedByID          models.UserID         `json:"created_by_id,omitempty"`
+	OptIn                *OptInRef             `json:"optin,omitempty"`
 	ResponseToExternalID string                `json:"response_to_external_id,omitempty"`
 	IsResend             bool                  `json:"is_resend,omitempty"`
 
@@ -91,6 +92,7 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		HighPriority: m.HighPriority(),
 		MsgCount:     m.MsgCount(),
 		CreatedOn:    m.CreatedOn(),
+		CreatedByID:  m.CreatedByID(),
 		ContactID:    m.ContactID(),
 		ContactURNID: *m.ContactURNID(),
 		ChannelUUID:  ch.UUID(),
@@ -118,7 +120,7 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		// this is an optin request
 		optIn := oa.OptInByID(m.OptInID())
 		if optIn != nil {
-			msg.OptIn = &OptIn{ID: optIn.ID(), Name: optIn.Name()}
+			msg.OptIn = &OptInRef{ID: optIn.ID(), Name: optIn.Name()}
 		}
 	} else if m.OptInID() != models.NilOptInID {
 		// an optin on a broadcast message means use it for authentication
