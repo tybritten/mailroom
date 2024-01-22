@@ -151,7 +151,6 @@ func TestNewCourierMsg(t *testing.T) {
 		"contact_id": 30000,
 		"contact_urn_id": 30000,
 		"created_on": "2021-11-09T14:03:30Z",
-		"created_by_id": 3,
 		"high_priority": false,
 		"id": 4,
 		"org_id": 1,
@@ -160,6 +159,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"tps_cost": 1,
 		"urn": "tel:+593979123456",
 		"urn_auth": "sesame",
+		"user": {"email": "admin1@nyaruka.com", "name": "Andy Admin"},
 		"uuid": "%s"
 	}`, msg3.UUID()))
 
