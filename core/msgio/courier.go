@@ -47,30 +47,40 @@ type OptInRef struct {
 	Name string         `json:"name"`
 }
 
+type FlowRef struct {
+	UUID assets.FlowUUID `json:"uuid"`
+	Name string          `json:"name"`
+}
+
+type UserRef struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
 // Msg is the format of a message queued to courier
 type Msg struct {
-	ID                   flows.MsgID           `json:"id"`
-	UUID                 flows.MsgUUID         `json:"uuid"`
-	OrgID                models.OrgID          `json:"org_id"`
-	Origin               MsgOrigin             `json:"origin"`
-	Text                 string                `json:"text"`
-	Attachments          []utils.Attachment    `json:"attachments,omitempty"`
-	QuickReplies         []string              `json:"quick_replies,omitempty"`
-	Locale               i18n.Locale           `json:"locale,omitempty"`
-	HighPriority         bool                  `json:"high_priority"`
-	MsgCount             int                   `json:"tps_cost"`
-	CreatedOn            time.Time             `json:"created_on"`
-	ChannelUUID          assets.ChannelUUID    `json:"channel_uuid"`
-	ContactID            models.ContactID      `json:"contact_id"`
-	ContactURNID         models.URNID          `json:"contact_urn_id"`
-	URN                  urns.URN              `json:"urn"`
-	URNAuth              string                `json:"urn_auth,omitempty"`
-	Metadata             map[string]any        `json:"metadata,omitempty"`
-	Flow                 *assets.FlowReference `json:"flow,omitempty"`
-	CreatedByID          models.UserID         `json:"created_by_id,omitempty"`
-	OptIn                *OptInRef             `json:"optin,omitempty"`
-	ResponseToExternalID string                `json:"response_to_external_id,omitempty"`
-	IsResend             bool                  `json:"is_resend,omitempty"`
+	ID                   flows.MsgID        `json:"id"`
+	UUID                 flows.MsgUUID      `json:"uuid"`
+	OrgID                models.OrgID       `json:"org_id"`
+	Origin               MsgOrigin          `json:"origin"`
+	Text                 string             `json:"text"`
+	Attachments          []utils.Attachment `json:"attachments,omitempty"`
+	QuickReplies         []string           `json:"quick_replies,omitempty"`
+	Locale               i18n.Locale        `json:"locale,omitempty"`
+	HighPriority         bool               `json:"high_priority"`
+	MsgCount             int                `json:"tps_cost"`
+	CreatedOn            time.Time          `json:"created_on"`
+	ChannelUUID          assets.ChannelUUID `json:"channel_uuid"`
+	ContactID            models.ContactID   `json:"contact_id"`
+	ContactURNID         models.URNID       `json:"contact_urn_id"`
+	URN                  urns.URN           `json:"urn"`
+	URNAuth              string             `json:"urn_auth,omitempty"`
+	Metadata             map[string]any     `json:"metadata,omitempty"`
+	Flow                 *FlowRef           `json:"flow,omitempty"`
+	User                 *UserRef           `json:"user,omitempty"`
+	OptIn                *OptInRef          `json:"optin,omitempty"`
+	ResponseToExternalID string             `json:"response_to_external_id,omitempty"`
+	IsResend             bool               `json:"is_resend,omitempty"`
 
 	ContactLastSeenOn    *time.Time           `json:"contact_last_seen_on,omitempty"`
 	SessionID            models.SessionID     `json:"session_id,omitempty"`
@@ -92,7 +102,6 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		HighPriority: m.HighPriority(),
 		MsgCount:     m.MsgCount(),
 		CreatedOn:    m.CreatedOn(),
-		CreatedByID:  m.CreatedByID(),
 		ContactID:    m.ContactID(),
 		ContactURNID: *m.ContactURNID(),
 		ChannelUUID:  ch.UUID(),
@@ -106,7 +115,7 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		msg.Origin = MsgOriginFlow
 		flow, _ := oa.FlowByID(m.FlowID())
 		if flow != nil { // always a chance flow no longer exists
-			msg.Flow = flow.Reference()
+			msg.Flow = &FlowRef{UUID: flow.UUID(), Name: flow.Name()}
 		}
 	} else if m.BroadcastID() != models.NilBroadcastID {
 		msg.Origin = MsgOriginBroadcast
@@ -114,6 +123,13 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		msg.Origin = MsgOriginTicket
 	} else {
 		msg.Origin = MsgOriginChat
+	}
+
+	if m.CreatedByID() != models.NilUserID {
+		user := oa.UserByID(m.CreatedByID())
+		if user != nil {
+			msg.User = &UserRef{Email: user.Email(), Name: user.Name()}
+		}
 	}
 
 	if m.Type() == models.MsgTypeOptIn {
