@@ -1,3 +1,8 @@
+v9.1.2 (2024-01-23)
+-------------------------
+ * Queue messages to courier with user email and name instead of just id
+ * Update to latest goflow
+
 v9.1.1 (2024-01-16)
 -------------------------
  * Fix queueing templating with no params
