@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/assets/static"
 	"github.com/pkg/errors"
 )
 
@@ -40,7 +42,9 @@ type TemplateTranslation struct {
 	Locale_         i18n.Locale              `json:"locale"`
 	ExternalLocale_ string                   `json:"external_locale"`
 	Content_        string                   `json:"content"`
-	VariableCount_  int                      `json:"variable_count"`
+
+	RawParams_ map[string][]static.TemplateParam `json:"params"`
+	Params_    map[string][]assets.TemplateParam
 }
 
 func (t *TemplateTranslation) Channel() *assets.ChannelReference { return t.Channel_ }
@@ -48,7 +52,9 @@ func (t *TemplateTranslation) Namespace() string                 { return t.Name
 func (t *TemplateTranslation) Locale() i18n.Locale               { return t.Locale_ }
 func (t *TemplateTranslation) ExternalLocale() string            { return t.ExternalLocale_ }
 func (t *TemplateTranslation) Content() string                   { return t.Content_ }
-func (t *TemplateTranslation) VariableCount() int                { return t.VariableCount_ }
+func (t *TemplateTranslation) Params() map[string][]assets.TemplateParam {
+	return t.Params_
+}
 
 // loads the templates for the passed in org
 func loadTemplates(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Template, error) {
@@ -56,8 +62,36 @@ func loadTemplates(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Templ
 	if err != nil && err != sql.ErrNoRows {
 		return nil, errors.Wrapf(err, "error querying templates for org: %d", orgID)
 	}
+	defer rows.Close()
 
-	return ScanJSONRows(rows, func() assets.Template { return &Template{} })
+	templates := make([]assets.Template, 0, 10)
+	for rows.Next() {
+		template := &Template{}
+		err = dbutil.ScanJSON(rows, &template)
+		if err != nil {
+			return nil, errors.Wrap(err, "error scanning template row")
+		}
+
+		for _, tt := range template.Translations_ {
+
+			prs := make(map[string][]assets.TemplateParam)
+
+			for k, v := range tt.RawParams_ {
+				tprs := make([]assets.TemplateParam, len(v))
+				for i := range v {
+					tprs[i] = assets.TemplateParam(&v[i])
+				}
+				prs[k] = tprs
+			}
+
+			tt.Params_ = prs
+		}
+
+		templateAsset := assets.Template(template)
+
+		templates = append(templates, templateAsset)
+	}
+	return templates, nil
 }
 
 const sqlSelectTemplatesByOrg = `
@@ -70,7 +104,7 @@ SELECT ROW_TO_JSON(r) FROM (SELECT
 			tr.locale as locale,
 			tr.external_locale as external_locale,
 			tr.content as content,
-			tr.variable_count as variable_count,
+			tr.params as params,
 			JSON_BUILD_OBJECT('uuid', c.uuid, 'name', c.name) as channel
 		FROM
 			templates_templatetranslation tr

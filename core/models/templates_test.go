@@ -5,6 +5,7 @@ import (
 
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/assets/static"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
@@ -37,8 +38,13 @@ func TestTemplates(t *testing.T) {
 
 	assert.Equal(t, 1, len(templates[1].Translations()))
 	tt = templates[1].Translations()[0]
+
+	tp1 := static.TemplateParam{Type_: "text"}
+	tp2 := static.TemplateParam{Type_: "text"}
+
 	assert.Equal(t, i18n.Locale("eng-US"), tt.Locale())
 	assert.Equal(t, "en_US", tt.(*models.TemplateTranslation).ExternalLocale())
+	assert.Equal(t, map[string][]assets.TemplateParam{"body": {&tp1, &tp2}}, tt.(*models.TemplateTranslation).Params())
 	assert.Equal(t, "2d40b45c_25cd_4965_9019_f05d0124c5fa", tt.Namespace())
 	assert.Equal(t, testdata.FacebookChannel.UUID, tt.Channel().UUID)
 	assert.Equal(t, "Hi {{1}}, are you still experiencing problems with {{2}}?", tt.Content())
