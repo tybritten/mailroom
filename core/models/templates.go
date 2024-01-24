@@ -3,8 +3,8 @@ package models
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 
-	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/assets/static"
@@ -12,23 +12,21 @@ import (
 )
 
 type Template struct {
-	Name_         string                 `json:"name"          validate:"required"`
-	UUID_         assets.TemplateUUID    `json:"uuid"          validate:"required"`
-	Translations_ []*TemplateTranslation `json:"translations"  validate:"dive"`
+	t struct {
+		Name         string                 `json:"name"          validate:"required"`
+		UUID         assets.TemplateUUID    `json:"uuid"          validate:"required"`
+		Translations []*TemplateTranslation `json:"translations"  validate:"dive"`
+	}
+
+	translations []assets.TemplateTranslation
 }
 
-func (t *Template) Name() string              { return t.Name_ }
-func (t *Template) UUID() assets.TemplateUUID { return t.UUID_ }
-func (t *Template) Translations() []assets.TemplateTranslation {
-	trs := make([]assets.TemplateTranslation, len(t.Translations_))
-	for i := range trs {
-		trs[i] = t.Translations_[i]
-	}
-	return trs
-}
+func (t *Template) UUID() assets.TemplateUUID                  { return t.t.UUID }
+func (t *Template) Name() string                               { return t.t.Name }
+func (t *Template) Translations() []assets.TemplateTranslation { return t.translations }
 
 func (t *Template) FindTranslation(l i18n.Locale) *TemplateTranslation {
-	for _, tt := range t.Translations_ {
+	for _, tt := range t.t.Translations {
 		if tt.Locale() == l {
 			return tt
 		}
@@ -36,24 +34,51 @@ func (t *Template) FindTranslation(l i18n.Locale) *TemplateTranslation {
 	return nil
 }
 
-type TemplateTranslation struct {
-	Channel_        *assets.ChannelReference `json:"channel"`
-	Namespace_      string                   `json:"namespace"`
-	Locale_         i18n.Locale              `json:"locale"`
-	ExternalLocale_ string                   `json:"external_locale"`
-	Content_        string                   `json:"content"`
+func (t *Template) UnmarshalJSON(d []byte) error {
+	if err := json.Unmarshal(d, &t.t); err != nil {
+		return err
+	}
 
-	RawParams_ map[string][]static.TemplateParam `json:"params"`
-	Params_    map[string][]assets.TemplateParam
+	t.translations = make([]assets.TemplateTranslation, len(t.t.Translations))
+	for i := range t.t.Translations {
+		t.translations[i] = t.t.Translations[i]
+	}
+	return nil
 }
 
-func (t *TemplateTranslation) Channel() *assets.ChannelReference { return t.Channel_ }
-func (t *TemplateTranslation) Namespace() string                 { return t.Namespace_ }
-func (t *TemplateTranslation) Locale() i18n.Locale               { return t.Locale_ }
-func (t *TemplateTranslation) ExternalLocale() string            { return t.ExternalLocale_ }
-func (t *TemplateTranslation) Content() string                   { return t.Content_ }
-func (t *TemplateTranslation) Params() map[string][]assets.TemplateParam {
-	return t.Params_
+type TemplateTranslation struct {
+	t struct {
+		Channel        *assets.ChannelReference           `json:"channel"`
+		Namespace      string                             `json:"namespace"`
+		Locale         i18n.Locale                        `json:"locale"`
+		ExternalLocale string                             `json:"external_locale"`
+		Content        string                             `json:"content"`
+		Params         map[string][]*static.TemplateParam `json:"params"`
+	}
+
+	params map[string][]assets.TemplateParam
+}
+
+func (t *TemplateTranslation) Channel() *assets.ChannelReference         { return t.t.Channel }
+func (t *TemplateTranslation) Namespace() string                         { return t.t.Namespace }
+func (t *TemplateTranslation) Locale() i18n.Locale                       { return t.t.Locale }
+func (t *TemplateTranslation) ExternalLocale() string                    { return t.t.ExternalLocale }
+func (t *TemplateTranslation) Content() string                           { return t.t.Content }
+func (t *TemplateTranslation) Params() map[string][]assets.TemplateParam { return t.params }
+
+func (t *TemplateTranslation) UnmarshalJSON(d []byte) error {
+	if err := json.Unmarshal(d, &t.t); err != nil {
+		return err
+	}
+
+	t.params = make(map[string][]assets.TemplateParam, len(t.t.Params))
+	for comp, ps := range t.t.Params {
+		t.params[comp] = make([]assets.TemplateParam, len(ps))
+		for i := range ps {
+			t.params[comp][i] = ps[i]
+		}
+	}
+	return nil
 }
 
 // loads the templates for the passed in org
@@ -62,64 +87,18 @@ func loadTemplates(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Templ
 	if err != nil && err != sql.ErrNoRows {
 		return nil, errors.Wrapf(err, "error querying templates for org: %d", orgID)
 	}
-	defer rows.Close()
-
-	templates := make([]assets.Template, 0, 10)
-	for rows.Next() {
-		template := &Template{}
-		err = dbutil.ScanJSON(rows, &template)
-		if err != nil {
-			return nil, errors.Wrap(err, "error scanning template row")
-		}
-
-		for _, tt := range template.Translations_ {
-
-			prs := make(map[string][]assets.TemplateParam)
-
-			for k, v := range tt.RawParams_ {
-				tprs := make([]assets.TemplateParam, len(v))
-				for i := range v {
-					tprs[i] = assets.TemplateParam(&v[i])
-				}
-				prs[k] = tprs
-			}
-
-			tt.Params_ = prs
-		}
-
-		templateAsset := assets.Template(template)
-
-		templates = append(templates, templateAsset)
-	}
-	return templates, nil
+	return ScanJSONRows(rows, func() assets.Template { return &Template{} })
 }
 
 const sqlSelectTemplatesByOrg = `
-SELECT ROW_TO_JSON(r) FROM (SELECT
-	t.name as name, 
-	t.uuid as uuid,
-	(SELECT ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(tr))) FROM (
-		SELECT
-			tr.namespace as namespace,
-			tr.locale as locale,
-			tr.external_locale as external_locale,
-			tr.content as content,
-			tr.params as params,
-			JSON_BUILD_OBJECT('uuid', c.uuid, 'name', c.name) as channel
-		FROM
-			templates_templatetranslation tr
-			JOIN channels_channel c ON tr.channel_id = c.id
-		WHERE 
-			tr.is_active = TRUE AND
-			tr.status = 'A' AND
-			tr.template_id = t.id AND
-			c.is_active = TRUE
-	) tr) as translations
-FROM 
-	templates_template t
-WHERE 
-	org_id = $1 
-ORDER BY 
-	name ASC
-) r;
-`
+SELECT ROW_TO_JSON(r) FROM (
+     SELECT t.uuid, t.name, (SELECT ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(tr))) FROM (
+         SELECT tr.namespace, tr.locale, tr.external_locale, tr.content, tr.params, JSON_BUILD_OBJECT('uuid', c.uuid, 'name', c.name) as channel
+           FROM templates_templatetranslation tr
+           JOIN channels_channel c ON tr.channel_id = c.id
+          WHERE tr.is_active = TRUE AND tr.status = 'A' AND tr.template_id = t.id AND c.is_active = TRUE
+         ) tr) as translations
+       FROM templates_template t
+      WHERE org_id = $1 
+   ORDER BY name ASC
+) r;`
