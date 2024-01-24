@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/assets/static"
@@ -36,12 +37,14 @@ func (t *Template) FindTranslation(l i18n.Locale) *TemplateTranslation {
 }
 
 type TemplateTranslation struct {
-	Channel_        *assets.ChannelReference          `json:"channel"`
-	Namespace_      string                            `json:"namespace"`
-	Locale_         i18n.Locale                       `json:"locale"`
-	ExternalLocale_ string                            `json:"external_locale"`
-	Params_         map[string][]static.TemplateParam `json:"params"`
-	Content_        string                            `json:"content"`
+	Channel_        *assets.ChannelReference `json:"channel"`
+	Namespace_      string                   `json:"namespace"`
+	Locale_         i18n.Locale              `json:"locale"`
+	ExternalLocale_ string                   `json:"external_locale"`
+	Content_        string                   `json:"content"`
+
+	RawParams_ map[string][]static.TemplateParam `json:"params"`
+	Params_    map[string][]assets.TemplateParam
 }
 
 func (t *TemplateTranslation) Channel() *assets.ChannelReference { return t.Channel_ }
@@ -50,17 +53,7 @@ func (t *TemplateTranslation) Locale() i18n.Locale               { return t.Loca
 func (t *TemplateTranslation) ExternalLocale() string            { return t.ExternalLocale_ }
 func (t *TemplateTranslation) Content() string                   { return t.Content_ }
 func (t *TemplateTranslation) Params() map[string][]assets.TemplateParam {
-	prs := make(map[string][]assets.TemplateParam)
-
-	for k, v := range t.Params_ {
-		tprs := make([]assets.TemplateParam, len(v))
-		for i := range v {
-			tprs[i] = assets.TemplateParam(&v[i])
-		}
-		prs[k] = tprs
-	}
-
-	return prs
+	return t.Params_
 }
 
 // loads the templates for the passed in org
@@ -69,8 +62,36 @@ func loadTemplates(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Templ
 	if err != nil && err != sql.ErrNoRows {
 		return nil, errors.Wrapf(err, "error querying templates for org: %d", orgID)
 	}
+	defer rows.Close()
 
-	return ScanJSONRows(rows, func() assets.Template { return &Template{} })
+	templates := make([]assets.Template, 0, 10)
+	for rows.Next() {
+		template := &Template{}
+		err = dbutil.ScanJSON(rows, &template)
+		if err != nil {
+			return nil, errors.Wrap(err, "error scanning template row")
+		}
+
+		for _, tt := range template.Translations_ {
+
+			prs := make(map[string][]assets.TemplateParam)
+
+			for k, v := range tt.RawParams_ {
+				tprs := make([]assets.TemplateParam, len(v))
+				for i := range v {
+					tprs[i] = assets.TemplateParam(&v[i])
+				}
+				prs[k] = tprs
+			}
+
+			tt.Params_ = prs
+		}
+
+		templateAsset := assets.Template(template)
+
+		templates = append(templates, templateAsset)
+	}
+	return templates, nil
 }
 
 const sqlSelectTemplatesByOrg = `
