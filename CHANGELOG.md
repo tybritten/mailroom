@@ -1,3 +1,8 @@
+v9.1.3 (2024-01-25)
+-------------------------
+ * Revert previous change to include user name and email in messages queued to courier
+ * Update to latest goflow and start loading template translation params
+
 v9.1.2 (2024-01-23)
 -------------------------
  * Queue messages to courier with user email and name instead of just id
