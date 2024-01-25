@@ -52,11 +52,6 @@ type FlowRef struct {
 	Name string          `json:"name"`
 }
 
-type UserRef struct {
-	Email string `json:"email"`
-	Name  string `json:"name"`
-}
-
 // Msg is the format of a message queued to courier
 type Msg struct {
 	ID                   flows.MsgID        `json:"id"`
@@ -77,7 +72,7 @@ type Msg struct {
 	URNAuth              string             `json:"urn_auth,omitempty"`
 	Metadata             map[string]any     `json:"metadata,omitempty"`
 	Flow                 *FlowRef           `json:"flow,omitempty"`
-	User                 *UserRef           `json:"user,omitempty"`
+	UserID               models.UserID      `json:"user_id,omitempty"`
 	OptIn                *OptInRef          `json:"optin,omitempty"`
 	ResponseToExternalID string             `json:"response_to_external_id,omitempty"`
 	IsResend             bool               `json:"is_resend,omitempty"`
@@ -105,6 +100,7 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		ContactID:    m.ContactID(),
 		ContactURNID: *m.ContactURNID(),
 		ChannelUUID:  ch.UUID(),
+		UserID:       m.CreatedByID(),
 		URN:          u.Identity,
 		URNAuth:      string(u.AuthTokens["default"]),
 		Metadata:     m.Metadata(),
@@ -123,13 +119,6 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		msg.Origin = MsgOriginTicket
 	} else {
 		msg.Origin = MsgOriginChat
-	}
-
-	if m.CreatedByID() != models.NilUserID {
-		user := oa.UserByID(m.CreatedByID())
-		if user != nil {
-			msg.User = &UserRef{Email: user.Email(), Name: user.Name()}
-		}
 	}
 
 	if m.Type() == models.MsgTypeOptIn {
