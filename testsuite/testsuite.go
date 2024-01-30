@@ -13,6 +13,7 @@ import (
 	"github.com/nyaruka/gocommon/storage"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
+	"github.com/nyaruka/redisx/assertredis"
 	"github.com/nyaruka/rp-indexer/v8/indexers"
 	"github.com/olivere/elastic/v7"
 )
@@ -117,16 +118,7 @@ func getDB() *sqlx.DB {
 
 // returns a redis pool to our test database
 func getRP() *redis.Pool {
-	return &redis.Pool{
-		Dial: func() (redis.Conn, error) {
-			conn, err := redis.Dial("tcp", "localhost:6379")
-			if err != nil {
-				return nil, err
-			}
-			_, err = conn.Do("SELECT", 0)
-			return conn, err
-		},
-	}
+	return assertredis.TestDB()
 }
 
 // returns a redis connection, Close() should be called on it when done
@@ -197,15 +189,7 @@ func absPath(p string) string {
 
 // resets our redis database
 func resetRedis() {
-	rc, err := redis.Dial("tcp", "localhost:6379")
-	if err != nil {
-		panic(fmt.Sprintf("error connecting to redis db: %s", err.Error()))
-	}
-	rc.Do("SELECT", 0)
-	_, err = rc.Do("FLUSHDB")
-	if err != nil {
-		panic(fmt.Sprintf("error flushing redis db: %s", err.Error()))
-	}
+	assertredis.FlushDB()
 }
 
 // clears our storage for tests
