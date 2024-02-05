@@ -34,15 +34,15 @@ func init() {
 	goflow.RegisterAirtimeServiceFactory(airtimeServiceFactory)
 }
 
-func emailServiceFactory(c *runtime.Config) engine.EmailServiceFactory {
+func emailServiceFactory(cfg *runtime.Config) engine.EmailServiceFactory {
 	var emailRetries = smtpx.NewFixedRetries(time.Second*3, time.Second*6)
 
 	return func(sa flows.SessionAssets) (flows.EmailService, error) {
-		return orgFromAssets(sa).EmailService(c, emailRetries)
+		return orgFromAssets(sa).EmailService(cfg, emailRetries)
 	}
 }
 
-func airtimeServiceFactory(c *runtime.Config) engine.AirtimeServiceFactory {
+func airtimeServiceFactory(cfg *runtime.Config) engine.AirtimeServiceFactory {
 	// give airtime transfers an extra long timeout
 	airtimeHTTPClient := &http.Client{Timeout: time.Duration(120 * time.Second)}
 	airtimeHTTPRetries := httpx.NewFixedRetries(time.Second*5, time.Second*10)
@@ -112,8 +112,8 @@ func (o *Org) ConfigValue(key string, def string) string {
 }
 
 // EmailService returns the email service for this org
-func (o *Org) EmailService(c *runtime.Config, retries *smtpx.RetryConfig) (flows.EmailService, error) {
-	connectionURL := o.ConfigValue(configSMTPServer, c.SMTPServer)
+func (o *Org) EmailService(cfg *runtime.Config, retries *smtpx.RetryConfig) (flows.EmailService, error) {
+	connectionURL := o.ConfigValue(configSMTPServer, cfg.SMTPServer)
 
 	if connectionURL == "" {
 		return nil, errors.New("missing SMTP configuration")

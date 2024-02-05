@@ -45,7 +45,7 @@ type Config struct {
 	WebhooksBackoffJitter        float64 `help:"the amount of jitter to apply to backoff times"`
 	WebhooksHealthyResponseLimit int     `help:"the limit in milliseconds for webhook response to be considered healthy"`
 
-	SMTPServer           string `help:"the smtp configuration for sending emails ex: smtp://user%40password@server:port/?from=foo%40gmail.com"`
+	SMTPServer           string `help:"the default SMTP configuration for sending flow emails, e.g. smtp://user%40password@server:port/?from=foo%40gmail.com"`
 	DisallowedNetworks   string `help:"comma separated list of IP addresses and networks which engine can't make HTTP calls to"`
 	MaxStepsPerSprint    int    `help:"the maximum number of steps allowed per engine sprint"`
 	MaxResumesPerSession int    `help:"the maximum number of resumes allowed per engine session"`
@@ -70,11 +70,10 @@ type Config struct {
 	AWSSecretAccessKey string `help:"the secret access key id to use when authenticating S3"`
 	AWSUseCredChain    bool   `help:"whether to use the AWS credentials chain. Defaults to false."`
 
-	CourierAuthToken  string `help:"the authentication token used for requests to Courier"`
-	LibratoUsername   string `help:"the username that will be used to authenticate to Librato"`
-	LibratoToken      string `help:"the token that will be used to authenticate to Librato"`
-	FCMKey            string `help:"the FCM API key used to notify Android relayers to sync"`
-	MailgunSigningKey string `help:"the signing key used to validate requests from mailgun"`
+	CourierAuthToken string `help:"the authentication token used for requests to Courier"`
+	LibratoUsername  string `help:"the username that will be used to authenticate to Librato"`
+	LibratoToken     string `help:"the token that will be used to authenticate to Librato"`
+	FCMKey           string `help:"the FCM API key used to notify Android relayers to sync"`
 
 	InstanceName string     `help:"the unique name of this instance used for analytics"`
 	LogLevel     slog.Level `help:"the logging level courier should use"`
