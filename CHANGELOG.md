@@ -1,3 +1,8 @@
+v9.1.4 (2024-02-05)
+-------------------------
+ * Remove unused config setting and update some deps
+ * Update to latest goflow
+
 v9.1.3 (2024-01-25)
 -------------------------
  * Revert previous change to include user name and email in messages queued to courier
