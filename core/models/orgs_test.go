@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOrgs(t *testing.T) {
+func TestLoadOrg(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
 	defer testsuite.Reset(testsuite.ResetAll)
@@ -59,6 +59,49 @@ func TestOrgs(t *testing.T) {
 
 	_, err = models.LoadOrg(ctx, rt.Config, rt.DB.DB, 99)
 	assert.EqualError(t, err, "no org with id: 99")
+}
+
+func TestEmailService(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetAll)
+
+	// make org 2 a child of org 1
+	rt.DB.MustExec(`UPDATE orgs_org SET parent_id = $2 WHERE id = $1`, testdata.Org2.ID, testdata.Org1.ID)
+	models.FlushCache()
+
+	org1, err := models.LoadOrg(ctx, rt.Config, rt.DB.DB, testdata.Org1.ID)
+	require.NoError(t, err)
+	org2, err := models.LoadOrg(ctx, rt.Config, rt.DB.DB, testdata.Org2.ID)
+	require.NoError(t, err)
+
+	// no SMTP config by default.. no email service
+	_, err = org1.EmailService(ctx, rt, nil)
+	assert.EqualError(t, err, "missing SMTP configuration")
+
+	rt.Config.SMTPServer = `smtp://foo:bar@example.com?from=foo%40example.com`
+
+	// construct one from the config setting
+	svc, err := org1.EmailService(ctx, rt, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, svc)
+
+	// set explicitly for org 1
+	rt.Config.SMTPServer = ""
+	rt.DB.MustExec(`UPDATE orgs_org SET flow_smtp = 'smtp://zed:123@flows.com?from=foo%40flows.com' WHERE id = $1`, testdata.Org1.ID)
+	models.FlushCache()
+
+	org1, err = models.LoadOrg(ctx, rt.Config, rt.DB.DB, testdata.Org1.ID)
+	require.NoError(t, err)
+
+	svc, err = org1.EmailService(ctx, rt, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, svc)
+
+	// org 2 should inherit its from org 1
+	svc, err = org2.EmailService(ctx, rt, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, svc)
 }
 
 func TestStoreAttachment(t *testing.T) {
