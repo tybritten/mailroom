@@ -62,7 +62,7 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 	}
 
 	// build our flow session
-	fs, err := session.FlowSession(rt.Config, sa, oa.Env())
+	fs, err := session.FlowSession(ctx, rt, sa, oa.Env())
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create session from output")
 	}
@@ -323,7 +323,7 @@ func StartFlowForContacts(
 		log := log.With("contact_uuid", trigger.Contact().UUID())
 		start := time.Now()
 
-		session, sprint, err := goflow.Engine(rt.Config).NewSession(sa, trigger)
+		session, sprint, err := goflow.Engine(ctx, rt).NewSession(sa, trigger)
 		if err != nil {
 			log.Error("error starting flow", "error", err)
 			continue
