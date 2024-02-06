@@ -59,7 +59,6 @@ const (
 	// NilOrgID is the id 0 considered as nil org id
 	NilOrgID = OrgID(0)
 
-	configSMTPServer  = "smtp_server"
 	configDTOneKey    = "dtone_key"
 	configDTOneSecret = "dtone_secret"
 )
@@ -69,6 +68,7 @@ type Org struct {
 	o struct {
 		ID        OrgID         `json:"id"`
 		Suspended bool          `json:"is_suspended"`
+		FlowSMTP  string        `json:"flow_smtp"`
 		Config    null.Map[any] `json:"config"`
 	}
 	env envs.Environment
@@ -79,6 +79,9 @@ func (o *Org) ID() OrgID { return o.o.ID }
 
 // Suspended returns whether the org has been suspended
 func (o *Org) Suspended() bool { return o.o.Suspended }
+
+// FlowSMTP provides custom SMTP settings for flow sessions
+func (o *Org) FlowSMTP() string { return o.o.FlowSMTP }
 
 // Environment returns this org as an engine environment
 func (o *Org) Environment() envs.Environment { return o.env }
@@ -113,12 +116,15 @@ func (o *Org) ConfigValue(key string, def string) string {
 
 // EmailService returns the email service for this org
 func (o *Org) EmailService(cfg *runtime.Config, retries *smtpx.RetryConfig) (flows.EmailService, error) {
-	connectionURL := o.ConfigValue(configSMTPServer, cfg.SMTPServer)
-
-	if connectionURL == "" {
+	smtpURL := o.FlowSMTP()
+	if smtpURL == "" {
+		smtpURL = cfg.SMTPServer
+	}
+	if smtpURL == "" {
 		return nil, errors.New("missing SMTP configuration")
 	}
-	return smtp.NewService(connectionURL, retries)
+
+	return smtp.NewService(smtpURL, retries)
 }
 
 // AirtimeService returns the airtime service for this org if one is configured
@@ -208,6 +214,7 @@ const selectOrgByID = `
 SELECT ROW_TO_JSON(o) FROM (SELECT
 	id,
 	is_suspended,
+	flow_smtp,
 	o.config AS config,
 	(SELECT CASE date_format WHEN 'D' THEN 'DD-MM-YYYY' WHEN 'M' THEN 'MM-DD-YYYY' ELSE 'YYYY-MM-DD' END) AS date_format, 
 	'tt:mm' AS time_format,

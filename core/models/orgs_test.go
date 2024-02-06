@@ -28,6 +28,8 @@ func TestOrgs(t *testing.T) {
 	rt.DB.MustExec("UPDATE channels_channel SET country = 'US' WHERE id IN ($1,$2);", testdata.TwilioChannel.ID, testdata.VonageChannel.ID)
 
 	rt.DB.MustExec(`UPDATE orgs_org SET flow_languages = '{"fra", "eng"}' WHERE id = $1`, testdata.Org1.ID)
+	rt.DB.MustExec(`UPDATE orgs_org SET flow_smtp = 'smtp://foo:bar' WHERE id = $1`, testdata.Org1.ID)
+	rt.DB.MustExec(`UPDATE orgs_org SET is_suspended = TRUE WHERE id = $1`, testdata.Org2.ID)
 	rt.DB.MustExec(`UPDATE orgs_org SET flow_languages = '{}' WHERE id = $1`, testdata.Org2.ID)
 	rt.DB.MustExec(`UPDATE orgs_org SET date_format = 'M' WHERE id = $1`, testdata.Org2.ID)
 
@@ -36,6 +38,7 @@ func TestOrgs(t *testing.T) {
 
 	assert.Equal(t, models.OrgID(1), org.ID())
 	assert.False(t, org.Suspended())
+	assert.Equal(t, "smtp://foo:bar", org.FlowSMTP())
 	assert.Equal(t, envs.DateFormatDayMonthYear, org.Environment().DateFormat())
 	assert.Equal(t, envs.TimeFormatHourMinute, org.Environment().TimeFormat())
 	assert.Equal(t, envs.RedactionPolicyNone, org.Environment().RedactionPolicy())
@@ -47,13 +50,15 @@ func TestOrgs(t *testing.T) {
 
 	org, err = models.LoadOrg(ctx, rt.Config, rt.DB.DB, testdata.Org2.ID)
 	assert.NoError(t, err)
+	assert.True(t, org.Suspended())
+	assert.Equal(t, "", org.FlowSMTP())
 	assert.Equal(t, envs.DateFormatMonthDayYear, org.Environment().DateFormat())
 	assert.Equal(t, []i18n.Language{}, org.Environment().AllowedLanguages())
 	assert.Equal(t, i18n.NilLanguage, org.Environment().DefaultLanguage())
 	assert.Equal(t, i18n.NilLocale, org.Environment().DefaultLocale())
 
 	_, err = models.LoadOrg(ctx, rt.Config, rt.DB.DB, 99)
-	assert.Error(t, err)
+	assert.EqualError(t, err, "no org with id: 99")
 }
 
 func TestStoreAttachment(t *testing.T) {
