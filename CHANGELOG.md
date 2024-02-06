@@ -1,3 +1,7 @@
+v9.1.6 (2024-02-06)
+-------------------------
+ * Email service construction should back down to parent org SMTP settings
+
 v9.1.5 (2024-02-06)
 -------------------------
  * Read SMTP settings from org.flow_smtp instead of org.config
