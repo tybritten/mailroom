@@ -105,13 +105,11 @@ func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa 
 		return errors.Wrapf(err, "error creating outgoing message to %s", event.Msg.URN())
 	}
 
-	// register to have this message committed
+	// commit this message in the transaction
 	scene.AppendToEventPreCommitHook(hooks.CommitMessagesHook, msg)
 
-	// don't send messages for surveyor flows
-	if scene.Session().SessionType() != models.FlowTypeSurveyor {
-		scene.AppendToEventPostCommitHook(hooks.SendMessagesHook, msg)
-	}
+	// and queue it to be sent after the transaction is complete
+	scene.AppendToEventPostCommitHook(hooks.SendMessagesHook, msg)
 
 	return nil
 }

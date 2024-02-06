@@ -36,7 +36,6 @@ var Favorites = &Flow{10000, "9de3663f-c5c5-4c92-9f45-ecbc09abcc85"}
 var PickANumber = &Flow{10001, "5890fe3a-f204-4661-b74d-025be4ee019c"}
 var SingleMessage = &Flow{10004, "a7c11d68-f008-496f-b56d-2d5cf4cf16a5"}
 var IVRFlow = &Flow{10003, "2f81d0ea-4d75-4843-9371-3f7465311cce"}
-var SurveyorFlow = &Flow{10005, "ed8cf8d4-a42c-4ce1-a7e3-44a2918e3cec"}
 var IncomingExtraFlow = &Flow{10006, "376d3de6-7f0e-408c-80d6-b1919738bc80"}
 var ParentTimeoutFlow = &Flow{10007, "81c0f323-7e06-4e0c-a960-19c20f17117c"}
 var CampaignFlow = &Flow{10009, "3a92a964-3a8d-420b-9206-2cd9d884ac30"}

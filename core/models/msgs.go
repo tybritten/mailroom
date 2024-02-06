@@ -411,32 +411,6 @@ func buildMsgMetadata(m *flows.MsgOut, t *Template) map[string]any {
 	return metadata
 }
 
-// NewIncomingSurveyorMsg creates a new incoming message for the passed in text and attachment
-func NewIncomingSurveyorMsg(cfg *runtime.Config, orgID OrgID, channel *Channel, contactID ContactID, in *flows.MsgIn, createdOn time.Time) *Msg {
-	msg := &Msg{}
-
-	msg.SetChannel(channel)
-	msg.SetURN(in.URN())
-
-	m := &msg.m
-	m.UUID = in.UUID()
-	m.Text = in.Text()
-	m.Direction = DirectionIn
-	m.Status = MsgStatusHandled
-	m.Visibility = VisibilityVisible
-	m.MsgType = MsgTypeText
-	m.ContactID = contactID
-	m.OrgID = orgID
-	m.CreatedOn = createdOn
-
-	// add any attachments
-	for _, a := range in.Attachments() {
-		m.Attachments = append(m.Attachments, string(NormalizeAttachment(cfg, a)))
-	}
-
-	return msg
-}
-
 var msgRepetitionsScript = redis.NewScript(3, `
 local key, contact_id, text = KEYS[1], KEYS[2], KEYS[3]
 

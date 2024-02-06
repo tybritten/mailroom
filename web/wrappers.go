@@ -51,7 +51,7 @@ SELECT user_id, org_id
   JOIN orgs_org o ON t.org_id = o.id
   JOIN auth_group g ON t.role_id = g.id
   JOIN auth_user u ON t.user_id = u.id
- WHERE key = $1 AND g.name IN ('Administrators', 'Editors', 'Surveyors') AND t.is_active AND o.is_active AND u.is_active`
+ WHERE key = $1 AND g.name IN ('Administrators', 'Editors') AND t.is_active AND o.is_active AND u.is_active`
 
 // RequireUserToken wraps a handler to require passing of an API token via the authorization header
 func RequireUserToken(handler Handler) Handler {
