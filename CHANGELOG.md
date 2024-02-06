@@ -1,3 +1,7 @@
+v9.1.5 (2024-02-06)
+-------------------------
+ * Read SMTP settings from org.flow_smtp instead of org.config
+
 v9.1.4 (2024-02-05)
 -------------------------
  * Remove unused config setting and update some deps
