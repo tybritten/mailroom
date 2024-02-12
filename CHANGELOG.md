@@ -1,3 +1,7 @@
+v9.1.7 (2024-02-12)
+-------------------------
+ * Use template translations components field
+
 v9.1.6 (2024-02-06)
 -------------------------
  * Email service construction should back down to parent org SMTP settings
