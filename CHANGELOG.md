@@ -1,3 +1,8 @@
+v9.1.8 (2024-02-20)
+-------------------------
+ * Fix use of context with engine service factory methods
+ * Add handler for warning events that logs to sentry
+
 v9.1.7 (2024-02-12)
 -------------------------
  * Use template translations components field
