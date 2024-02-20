@@ -15,30 +15,30 @@ import (
 var eng, simulator flows.Engine
 var engInit, simulatorInit sync.Once
 
-var emailFactory func(context.Context, *runtime.Runtime) engine.EmailServiceFactory
-var classificationFactory func(context.Context, *runtime.Runtime) engine.ClassificationServiceFactory
-var airtimeFactory func(context.Context, *runtime.Runtime) engine.AirtimeServiceFactory
+var emailFactory func(*runtime.Runtime) engine.EmailServiceFactory
+var classificationFactory func(*runtime.Runtime) engine.ClassificationServiceFactory
+var airtimeFactory func(*runtime.Runtime) engine.AirtimeServiceFactory
 
 // RegisterEmailServiceFactory can be used by outside callers to register a email factory
 // for use by the engine
-func RegisterEmailServiceFactory(f func(context.Context, *runtime.Runtime) engine.EmailServiceFactory) {
+func RegisterEmailServiceFactory(f func(*runtime.Runtime) engine.EmailServiceFactory) {
 	emailFactory = f
 }
 
 // RegisterClassificationServiceFactory can be used by outside callers to register a classification factory
 // for use by the engine
-func RegisterClassificationServiceFactory(f func(context.Context, *runtime.Runtime) engine.ClassificationServiceFactory) {
+func RegisterClassificationServiceFactory(f func(*runtime.Runtime) engine.ClassificationServiceFactory) {
 	classificationFactory = f
 }
 
 // RegisterAirtimeServiceFactory can be used by outside callers to register a airtime factory
 // for use by the engine
-func RegisterAirtimeServiceFactory(f func(context.Context, *runtime.Runtime) engine.AirtimeServiceFactory) {
+func RegisterAirtimeServiceFactory(f func(*runtime.Runtime) engine.AirtimeServiceFactory) {
 	airtimeFactory = f
 }
 
 // Engine returns the global engine instance for use with real sessions
-func Engine(ctx context.Context, rt *runtime.Runtime) flows.Engine {
+func Engine(rt *runtime.Runtime) flows.Engine {
 	engInit.Do(func() {
 		webhookHeaders := map[string]string{
 			"User-Agent":      "RapidProMailroom/" + rt.Config.Version,
@@ -49,9 +49,9 @@ func Engine(ctx context.Context, rt *runtime.Runtime) flows.Engine {
 
 		eng = engine.NewBuilder().
 			WithWebhookServiceFactory(webhooks.NewServiceFactory(httpClient, httpRetries, httpAccess, webhookHeaders, rt.Config.WebhooksMaxBodyBytes)).
-			WithClassificationServiceFactory(classificationFactory(ctx, rt)).
-			WithEmailServiceFactory(emailFactory(ctx, rt)).
-			WithAirtimeServiceFactory(airtimeFactory(ctx, rt)).
+			WithClassificationServiceFactory(classificationFactory(rt)).
+			WithEmailServiceFactory(emailFactory(rt)).
+			WithAirtimeServiceFactory(airtimeFactory(rt)).
 			WithMaxStepsPerSprint(rt.Config.MaxStepsPerSprint).
 			WithMaxResumesPerSession(rt.Config.MaxResumesPerSession).
 			WithMaxFieldChars(rt.Config.MaxValueLength).
@@ -74,9 +74,9 @@ func Simulator(ctx context.Context, rt *runtime.Runtime) flows.Engine {
 
 		simulator = engine.NewBuilder().
 			WithWebhookServiceFactory(webhooks.NewServiceFactory(httpClient, nil, httpAccess, webhookHeaders, rt.Config.WebhooksMaxBodyBytes)).
-			WithClassificationServiceFactory(classificationFactory(ctx, rt)). // simulated sessions do real classification
-			WithEmailServiceFactory(simulatorEmailServiceFactory).            // but faked emails
-			WithAirtimeServiceFactory(simulatorAirtimeServiceFactory).        // and faked airtime transfers
+			WithClassificationServiceFactory(classificationFactory(rt)). // simulated sessions do real classification
+			WithEmailServiceFactory(simulatorEmailServiceFactory).       // but faked emails
+			WithAirtimeServiceFactory(simulatorAirtimeServiceFactory).   // and faked airtime transfers
 			WithMaxStepsPerSprint(rt.Config.MaxStepsPerSprint).
 			WithMaxResumesPerSession(rt.Config.MaxResumesPerSession).
 			WithMaxFieldChars(rt.Config.MaxValueLength).

@@ -34,15 +34,18 @@ func init() {
 	goflow.RegisterAirtimeServiceFactory(airtimeServiceFactory)
 }
 
-func emailServiceFactory(ctx context.Context, rt *runtime.Runtime) engine.EmailServiceFactory {
+func emailServiceFactory(rt *runtime.Runtime) engine.EmailServiceFactory {
 	var emailRetries = smtpx.NewFixedRetries(time.Second*3, time.Second*6)
 
 	return func(sa flows.SessionAssets) (flows.EmailService, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+
 		return orgFromAssets(sa).EmailService(ctx, rt, emailRetries)
 	}
 }
 
-func airtimeServiceFactory(ctx context.Context, rt *runtime.Runtime) engine.AirtimeServiceFactory {
+func airtimeServiceFactory(rt *runtime.Runtime) engine.AirtimeServiceFactory {
 	// give airtime transfers an extra long timeout
 	airtimeHTTPClient := &http.Client{Timeout: time.Duration(120 * time.Second)}
 	airtimeHTTPRetries := httpx.NewFixedRetries(time.Second*5, time.Second*10)

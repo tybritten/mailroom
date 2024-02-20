@@ -182,7 +182,7 @@ func (s *Session) Call() *Call {
 
 // FlowSession creates a flow session for the passed in session object. It also populates the runs we know about
 func (s *Session) FlowSession(ctx context.Context, rt *runtime.Runtime, sa flows.SessionAssets, env envs.Environment) (flows.Session, error) {
-	session, err := goflow.Engine(ctx, rt).ReadSession(sa, json.RawMessage(s.s.Output), assets.IgnoreMissing)
+	session, err := goflow.Engine(rt).ReadSession(sa, json.RawMessage(s.s.Output), assets.IgnoreMissing)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to unmarshal session")
 	}

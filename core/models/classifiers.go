@@ -50,7 +50,7 @@ func init() {
 	goflow.RegisterClassificationServiceFactory(classificationServiceFactory)
 }
 
-func classificationServiceFactory(ctx context.Context, rt *runtime.Runtime) engine.ClassificationServiceFactory {
+func classificationServiceFactory(rt *runtime.Runtime) engine.ClassificationServiceFactory {
 	return func(classifier *flows.Classifier) (flows.ClassificationService, error) {
 		return classifier.Asset().(*Classifier).AsService(rt.Config, classifier)
 	}

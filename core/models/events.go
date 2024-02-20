@@ -246,7 +246,7 @@ func ApplyModifiers(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, use
 	// create an environment instance with location support
 	env := flows.NewAssetsEnvironment(oa.Env(), oa.SessionAssets().Locations())
 
-	eng := goflow.Engine(ctx, rt)
+	eng := goflow.Engine(rt)
 
 	eventsByContact := make(map[*flows.Contact][]flows.Event, len(modifiersByContact))
 

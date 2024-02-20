@@ -281,7 +281,7 @@ func (b *BroadcastBatch) createMessage(ctx context.Context, rt *runtime.Runtime,
 			"globals": flows.Context(oa.Env(), oa.SessionAssets().Globals()),
 			"urns":    flows.ContextFunc(oa.Env(), contact.URNs().MapContext),
 		})
-		text, _, _ = goflow.Engine(ctx, rt).Evaluator().Template(oa.Env(), templateCtx, text, nil)
+		text, _, _ = goflow.Engine(rt).Evaluator().Template(oa.Env(), templateCtx, text, nil)
 	}
 
 	// don't create a message if we have no content

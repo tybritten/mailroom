@@ -15,9 +15,9 @@ import (
 )
 
 func TestEngineWebhook(t *testing.T) {
-	ctx, rt := testsuite.Runtime()
+	_, rt := testsuite.Runtime()
 
-	svc, err := goflow.Engine(ctx, rt).Services().Webhook(nil)
+	svc, err := goflow.Engine(rt).Services().Webhook(nil)
 	assert.NoError(t, err)
 
 	defer httpx.SetRequestor(httpx.DefaultRequestor)

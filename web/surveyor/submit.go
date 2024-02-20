@@ -73,7 +73,7 @@ func handleSubmit(ctx context.Context, rt *runtime.Runtime, r *http.Request) (an
 		return nil, 0, errors.Errorf("missing request user")
 	}
 
-	fs, err := goflow.Engine(ctx, rt).ReadSession(oa.SessionAssets(), request.Session, assets.IgnoreMissing)
+	fs, err := goflow.Engine(rt).ReadSession(oa.SessionAssets(), request.Session, assets.IgnoreMissing)
 	if err != nil {
 		return nil, 0, errors.Wrapf(err, "error reading session")
 	}
@@ -125,7 +125,7 @@ func handleSubmit(ctx context.Context, rt *runtime.Runtime, r *http.Request) (an
 
 	// run through each contact modifier, applying it to our contact
 	for _, m := range mods {
-		modifiers.Apply(goflow.Engine(ctx, rt), oa.Env(), oa.SessionAssets(), flowContact, m, appender)
+		modifiers.Apply(goflow.Engine(rt), oa.Env(), oa.SessionAssets(), flowContact, m, appender)
 	}
 
 	// set this updated contact on our session
