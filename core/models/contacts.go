@@ -452,7 +452,7 @@ type contactEnvelope struct {
 	Language i18n.Language     `json:"language"`
 	Status   ContactStatus     `json:"status"`
 	Fields   map[assets.FieldUUID]struct {
-		Text     types.XText       `json:"text"`
+		Text     *types.XText      `json:"text"`
 		Datetime *types.XDateTime  `json:"datetime,omitempty"`
 		Number   *types.XNumber    `json:"number,omitempty"`
 		State    envs.LocationPath `json:"state,omitempty"`

@@ -7,10 +7,10 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/goflow/excellent"
 	"github.com/nyaruka/goflow/excellent/types"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
+	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
 	"github.com/pkg/errors"
@@ -237,7 +237,7 @@ func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime
 
 	// run through all our contacts to create our messages
 	for _, c := range contacts {
-		msg, err := b.createMessage(rt, oa, c)
+		msg, err := b.createMessage(ctx, rt, oa, c)
 		if err != nil {
 			return nil, errors.Wrap(err, "error creating broadcast message")
 		}
@@ -256,7 +256,7 @@ func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime
 }
 
 // creates an outgoing message for the given contact - can return nil if resultant message has no content and thus is a noop
-func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Contact) (*Msg, error) {
+func (b *BroadcastBatch) createMessage(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, c *Contact) (*Msg, error) {
 	contact, err := c.FlowContact(oa)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating flow contact for broadcast message")
@@ -281,7 +281,7 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 			"globals": flows.Context(oa.Env(), oa.SessionAssets().Globals()),
 			"urns":    flows.ContextFunc(oa.Env(), contact.URNs().MapContext),
 		})
-		text, _ = excellent.EvaluateTemplate(oa.Env(), templateCtx, text, nil)
+		text, _, _ = goflow.Engine(ctx, rt).Evaluator().Template(oa.Env(), templateCtx, text, nil)
 	}
 
 	// don't create a message if we have no content
