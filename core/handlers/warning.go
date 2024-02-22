@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"log/slog"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
@@ -20,9 +21,9 @@ func handleWarning(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *mo
 
 	run, _ := scene.Session().FindStep(e.StepUUID())
 	flow, _ := oa.FlowByUUID(run.FlowReference().UUID)
-	if flow != nil {
+	if flow != nil && strings.Contains(event.Text, "webhook recreated from extra") {
 		// so that we can track these in sentry
-		slog.Error("warning event", "session", scene.SessionID(), "flow", flow.UUID(), "text", event.Text)
+		slog.Error("webhook recreated from extra usage", "session", scene.SessionID(), "flow", flow.UUID(), "text", event.Text)
 	}
 
 	return nil
