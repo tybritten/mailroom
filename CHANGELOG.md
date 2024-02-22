@@ -1,3 +1,7 @@
+v9.1.9 (2024-02-22)
+-------------------------
+ * Limit warning events that we log to sentry
+
 v9.1.8 (2024-02-20)
 -------------------------
  * Fix use of context with engine service factory methods
