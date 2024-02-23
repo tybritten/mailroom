@@ -1,3 +1,8 @@
+v9.1.10 (2024-02-23)
+-------------------------
+ * Update deps
+ * Cleanup leftover surveyor code
+
 v9.1.9 (2024-02-22)
 -------------------------
  * Limit warning events that we log to sentry
