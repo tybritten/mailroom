@@ -34,15 +34,18 @@ func init() {
 	goflow.RegisterAirtimeServiceFactory(airtimeServiceFactory)
 }
 
-func emailServiceFactory(cfg *runtime.Config) engine.EmailServiceFactory {
+func emailServiceFactory(rt *runtime.Runtime) engine.EmailServiceFactory {
 	var emailRetries = smtpx.NewFixedRetries(time.Second*3, time.Second*6)
 
 	return func(sa flows.SessionAssets) (flows.EmailService, error) {
-		return orgFromAssets(sa).EmailService(cfg, emailRetries)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+
+		return orgFromAssets(sa).EmailService(ctx, rt, emailRetries)
 	}
 }
 
-func airtimeServiceFactory(cfg *runtime.Config) engine.AirtimeServiceFactory {
+func airtimeServiceFactory(rt *runtime.Runtime) engine.AirtimeServiceFactory {
 	// give airtime transfers an extra long timeout
 	airtimeHTTPClient := &http.Client{Timeout: time.Duration(120 * time.Second)}
 	airtimeHTTPRetries := httpx.NewFixedRetries(time.Second*5, time.Second*10)
@@ -59,7 +62,6 @@ const (
 	// NilOrgID is the id 0 considered as nil org id
 	NilOrgID = OrgID(0)
 
-	configSMTPServer  = "smtp_server"
 	configDTOneKey    = "dtone_key"
 	configDTOneSecret = "dtone_secret"
 )
@@ -68,7 +70,9 @@ const (
 type Org struct {
 	o struct {
 		ID        OrgID         `json:"id"`
+		ParentID  OrgID         `json:"parent_id"`
 		Suspended bool          `json:"is_suspended"`
+		FlowSMTP  null.String   `json:"flow_smtp"`
 		Config    null.Map[any] `json:"config"`
 	}
 	env envs.Environment
@@ -79,6 +83,9 @@ func (o *Org) ID() OrgID { return o.o.ID }
 
 // Suspended returns whether the org has been suspended
 func (o *Org) Suspended() bool { return o.o.Suspended }
+
+// FlowSMTP provides custom SMTP settings for flow sessions
+func (o *Org) FlowSMTP() string { return string(o.o.FlowSMTP) }
 
 // Environment returns this org as an engine environment
 func (o *Org) Environment() envs.Environment { return o.env }
@@ -112,13 +119,29 @@ func (o *Org) ConfigValue(key string, def string) string {
 }
 
 // EmailService returns the email service for this org
-func (o *Org) EmailService(cfg *runtime.Config, retries *smtpx.RetryConfig) (flows.EmailService, error) {
-	connectionURL := o.ConfigValue(configSMTPServer, cfg.SMTPServer)
+func (o *Org) EmailService(ctx context.Context, rt *runtime.Runtime, retries *smtpx.RetryConfig) (flows.EmailService, error) {
+	// first look for custom SMTP on this org
+	smtpURL := o.FlowSMTP()
 
-	if connectionURL == "" {
+	// secondly look on parent org if there is one
+	if smtpURL == "" && o.o.ParentID != NilOrgID {
+		parent, err := GetOrgAssets(ctx, rt, o.o.ParentID)
+		if err != nil {
+			return nil, errors.Wrap(err, "error loading parent org")
+		}
+		smtpURL = parent.Org().FlowSMTP()
+	}
+
+	// finally use config default
+	if smtpURL == "" {
+		smtpURL = rt.Config.SMTPServer
+	}
+
+	if smtpURL == "" {
 		return nil, errors.New("missing SMTP configuration")
 	}
-	return smtp.NewService(connectionURL, retries)
+
+	return smtp.NewService(smtpURL, retries)
 }
 
 // AirtimeService returns the airtime service for this org if one is configured
@@ -207,7 +230,9 @@ func LoadOrg(ctx context.Context, cfg *runtime.Config, db *sql.DB, orgID OrgID) 
 const selectOrgByID = `
 SELECT ROW_TO_JSON(o) FROM (SELECT
 	id,
+	parent_id,
 	is_suspended,
+	flow_smtp,
 	o.config AS config,
 	(SELECT CASE date_format WHEN 'D' THEN 'DD-MM-YYYY' WHEN 'M' THEN 'MM-DD-YYYY' ELSE 'YYYY-MM-DD' END) AS date_format, 
 	'tt:mm' AS time_format,

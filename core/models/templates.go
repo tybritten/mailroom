@@ -48,35 +48,31 @@ func (t *Template) UnmarshalJSON(d []byte) error {
 
 type TemplateTranslation struct {
 	t struct {
-		Channel        *assets.ChannelReference           `json:"channel"`
-		Namespace      string                             `json:"namespace"`
-		Locale         i18n.Locale                        `json:"locale"`
-		ExternalLocale string                             `json:"external_locale"`
-		Content        string                             `json:"content"`
-		Params         map[string][]*static.TemplateParam `json:"params"`
+		Channel        *assets.ChannelReference             `json:"channel"`
+		Namespace      string                               `json:"namespace"`
+		Locale         i18n.Locale                          `json:"locale"`
+		ExternalLocale string                               `json:"external_locale"`
+		Components     map[string]*static.TemplateComponent `json:"components"`
 	}
 
-	params map[string][]assets.TemplateParam
+	components map[string]assets.TemplateComponent
 }
 
-func (t *TemplateTranslation) Channel() *assets.ChannelReference         { return t.t.Channel }
-func (t *TemplateTranslation) Namespace() string                         { return t.t.Namespace }
-func (t *TemplateTranslation) Locale() i18n.Locale                       { return t.t.Locale }
-func (t *TemplateTranslation) ExternalLocale() string                    { return t.t.ExternalLocale }
-func (t *TemplateTranslation) Content() string                           { return t.t.Content }
-func (t *TemplateTranslation) Params() map[string][]assets.TemplateParam { return t.params }
+func (t *TemplateTranslation) Channel() *assets.ChannelReference { return t.t.Channel }
+func (t *TemplateTranslation) Namespace() string                 { return t.t.Namespace }
+func (t *TemplateTranslation) Locale() i18n.Locale               { return t.t.Locale }
+func (t *TemplateTranslation) ExternalLocale() string            { return t.t.ExternalLocale }
+
+func (t *TemplateTranslation) Components() map[string]assets.TemplateComponent { return t.components }
 
 func (t *TemplateTranslation) UnmarshalJSON(d []byte) error {
 	if err := json.Unmarshal(d, &t.t); err != nil {
 		return err
 	}
 
-	t.params = make(map[string][]assets.TemplateParam, len(t.t.Params))
-	for comp, ps := range t.t.Params {
-		t.params[comp] = make([]assets.TemplateParam, len(ps))
-		for i := range ps {
-			t.params[comp][i] = ps[i]
-		}
+	t.components = make(map[string]assets.TemplateComponent, len(t.t.Components))
+	for comp, compData := range t.t.Components {
+		t.components[comp] = compData
 	}
 	return nil
 }
@@ -93,7 +89,7 @@ func loadTemplates(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Templ
 const sqlSelectTemplatesByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
      SELECT t.uuid, t.name, (SELECT ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(tr))) FROM (
-         SELECT tr.namespace, tr.locale, tr.external_locale, tr.content, tr.params, JSON_BUILD_OBJECT('uuid', c.uuid, 'name', c.name) as channel
+         SELECT tr.namespace, tr.locale, tr.external_locale, tr.content, tr.components, JSON_BUILD_OBJECT('uuid', c.uuid, 'name', c.name) as channel
            FROM templates_templatetranslation tr
            JOIN channels_channel c ON tr.channel_id = c.id
           WHERE tr.is_active = TRUE AND tr.status = 'A' AND tr.template_id = t.id AND c.is_active = TRUE

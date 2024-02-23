@@ -1,3 +1,24 @@
+v9.1.9 (2024-02-22)
+-------------------------
+ * Limit warning events that we log to sentry
+
+v9.1.8 (2024-02-20)
+-------------------------
+ * Fix use of context with engine service factory methods
+ * Add handler for warning events that logs to sentry
+
+v9.1.7 (2024-02-12)
+-------------------------
+ * Use template translations components field
+
+v9.1.6 (2024-02-06)
+-------------------------
+ * Email service construction should back down to parent org SMTP settings
+
+v9.1.5 (2024-02-06)
+-------------------------
+ * Read SMTP settings from org.flow_smtp instead of org.config
+
 v9.1.4 (2024-02-05)
 -------------------------
  * Remove unused config setting and update some deps
