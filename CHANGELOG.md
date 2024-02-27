@@ -1,3 +1,8 @@
+v9.1.11 (2024-02-27)
+-------------------------
+ * Update to latest goflow
+ * Fix template loading SQL
+
 v9.1.10 (2024-02-23)
 -------------------------
  * Update deps
