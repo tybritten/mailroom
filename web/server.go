@@ -9,20 +9,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
 )
 
 const (
-	// OrgIDKey is our context key for org id
-	OrgIDKey = "org_id"
-
-	// UserIDKey is our context key for user id
-	UserIDKey = "user_id"
-
 	// max body bytes we'll read from a incoming request
 	maxRequestBytes int64 = 1048576 * 50 // 50MB
 )

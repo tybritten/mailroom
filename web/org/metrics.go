@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/go-chi/chi"
 	"github.com/golang/protobuf/proto"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
@@ -242,7 +241,7 @@ func handleMetrics(ctx context.Context, rt *runtime.Runtime, r *http.Request, ra
 		return nil
 	}
 
-	orgUUID := uuids.UUID(chi.URLParam(r, "uuid"))
+	orgUUID := uuids.UUID(r.PathValue("uuid"))
 	org, err := models.LookupOrgByUUIDAndToken(ctx, rt.DB, orgUUID, "Prometheus", token)
 	if err != nil {
 		return errors.Wrapf(err, "error looking up org for token")

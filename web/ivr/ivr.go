@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/go-chi/chi"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
@@ -31,7 +30,7 @@ type ivrHandlerFn func(ctx context.Context, rt *runtime.Runtime, oa *models.OrgA
 
 func newIVRHandler(handler ivrHandlerFn, logType models.ChannelLogType) web.Handler {
 	return func(ctx context.Context, rt *runtime.Runtime, r *http.Request, w http.ResponseWriter) error {
-		channelUUID := assets.ChannelUUID(chi.URLParam(r, "uuid"))
+		channelUUID := assets.ChannelUUID(r.PathValue("uuid"))
 
 		// load the org id for this UUID (we could load the entire channel here but we want to take the same paths through everything else)
 		orgID, err := models.OrgIDForChannelUUID(ctx, rt.DB, channelUUID)
