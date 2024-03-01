@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/goflow/flows/translation"
 	"github.com/nyaruka/mailroom/core/models"
