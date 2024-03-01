@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
-	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/pkg/errors"
 )
@@ -42,52 +40,6 @@ func MarshaledResponse(handler MarshaledHandler) Handler {
 		}
 
 		return WriteMarshalled(w, status, value)
-	}
-}
-
-var sqlLookupAPIToken = `
-SELECT user_id, org_id
-  FROM api_apitoken t
-  JOIN orgs_org o ON t.org_id = o.id
-  JOIN auth_group g ON t.role_id = g.id
-  JOIN auth_user u ON t.user_id = u.id
- WHERE key = $1 AND g.name IN ('Administrators', 'Editors') AND t.is_active AND o.is_active AND u.is_active`
-
-// RequireUserToken wraps a handler to require passing of an API token via the authorization header
-func RequireUserToken(handler Handler) Handler {
-	return func(ctx context.Context, rt *runtime.Runtime, r *http.Request, w http.ResponseWriter) error {
-		token := r.Header.Get("authorization")
-
-		if !strings.HasPrefix(token, "Token ") {
-			return WriteMarshalled(w, http.StatusUnauthorized, NewErrorResponse(errors.New("missing authorization token")))
-		}
-
-		token = token[6:] // pull out the actual token
-
-		// try to look it up
-		rows, err := rt.DB.QueryContext(ctx, sqlLookupAPIToken, token)
-		if err != nil {
-			return errors.Wrap(err, "error querying API token")
-		}
-
-		defer rows.Close()
-
-		if !rows.Next() {
-			return WriteMarshalled(w, http.StatusUnauthorized, NewErrorResponse(errors.New("invalid authorization token")))
-		}
-
-		var userID int64
-		var orgID models.OrgID
-		err = rows.Scan(&userID, &orgID)
-		if err != nil {
-			return errors.Wrap(err, "error scanning auth row")
-		}
-
-		// we are authenticated set our user id ang org id on our context and continue
-		ctx = context.WithValue(ctx, UserIDKey, userID)
-		ctx = context.WithValue(ctx, OrgIDKey, orgID)
-
-		return handler(ctx, rt, r, w)
 	}
 }
 

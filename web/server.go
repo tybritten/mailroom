@@ -17,12 +17,6 @@ import (
 )
 
 const (
-	// OrgIDKey is our context key for org id
-	OrgIDKey = "org_id"
-
-	// UserIDKey is our context key for user id
-	UserIDKey = "user_id"
-
 	// max body bytes we'll read from a incoming request
 	maxRequestBytes int64 = 1048576 * 50 // 50MB
 )
