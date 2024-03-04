@@ -1,3 +1,7 @@
+v9.1.13 (2024-03-04)
+-------------------------
+ * Update to latest goflow which adds spec version 13.3
+
 v9.1.12 (2024-03-04)
 -------------------------
  * Update to chi v5 and go 1.22
