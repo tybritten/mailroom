@@ -15,7 +15,7 @@ import (
 )
 
 func TestSpecVersion(t *testing.T) {
-	assert.Equal(t, semver.MustParse("13.2.0"), goflow.SpecVersion())
+	assert.Equal(t, semver.MustParse("13.3.0"), goflow.SpecVersion())
 }
 
 func TestReadFlow(t *testing.T) {
@@ -54,13 +54,113 @@ func TestCloneDefinition(t *testing.T) {
 func TestMigrateDefinition(t *testing.T) {
 	_, rt := testsuite.Runtime()
 
+	original := []byte(`{
+		"uuid": "502c3ee4-3249-4dee-8e71-c62070667d52", 
+		"name": "New", 
+		"spec_version": "13.0.0", 
+		"type": "messaging", 
+		"language": 
+		"base", 
+		"nodes": [
+			{
+				"uuid": "d26486b1-193d-4512-85f0-c6db696f1e1c",
+				"actions": [
+					{
+						"uuid": "82a1de5f-af1a-45ef-8511-4d60c160e486",
+						"type": "send_msg",
+						"text": "Hello @webhook"
+					}
+				],
+				"exits": [
+					{
+						"uuid": "fdd370e0-ffa9-48b3-8148-b9241d74fc72"
+					}
+				]
+			}
+		]
+	}`)
+
 	// 13.0 > 13.1
-	migrated, err := goflow.MigrateDefinition(rt.Config, []byte(`{"uuid": "502c3ee4-3249-4dee-8e71-c62070667d52", "name": "New", "spec_version": "13.0.0", "type": "messaging", "language": "base", "nodes": []}`), semver.MustParse("13.1.0"))
+	migrated, err := goflow.MigrateDefinition(rt.Config, original, semver.MustParse("13.1.0"))
 	assert.NoError(t, err)
-	test.AssertEqualJSON(t, []byte(`{"uuid": "502c3ee4-3249-4dee-8e71-c62070667d52", "name": "New", "spec_version": "13.1.0", "type": "messaging", "language": "base", "nodes": []}`), migrated)
+	test.AssertEqualJSON(t, []byte(`{
+		"uuid": "502c3ee4-3249-4dee-8e71-c62070667d52", 
+		"name": "New", 
+		"spec_version": "13.1.0", 
+		"type": "messaging", 
+		"language": "base", 
+		"nodes": [
+			{
+				"uuid": "d26486b1-193d-4512-85f0-c6db696f1e1c",
+				"actions": [
+					{
+						"uuid": "82a1de5f-af1a-45ef-8511-4d60c160e486",
+						"type": "send_msg",
+						"text": "Hello @webhook"
+					}
+				],
+				"exits": [
+					{
+						"uuid": "fdd370e0-ffa9-48b3-8148-b9241d74fc72"
+					}
+				]
+			}
+		]
+	}`), migrated)
 
 	// 13.1 > 13.2
 	migrated, err = goflow.MigrateDefinition(rt.Config, migrated, semver.MustParse("13.2.0"))
 	assert.NoError(t, err)
-	test.AssertEqualJSON(t, []byte(`{"uuid": "502c3ee4-3249-4dee-8e71-c62070667d52", "name": "New", "spec_version": "13.2.0", "type": "messaging", "language": "und", "nodes": []}`), migrated)
+	test.AssertEqualJSON(t, []byte(`{
+		"uuid": "502c3ee4-3249-4dee-8e71-c62070667d52", 
+		"name": "New", 
+		"spec_version": "13.2.0", 
+		"type": "messaging", 
+		"language": "und", 
+		"nodes": [
+			{
+				"uuid": "d26486b1-193d-4512-85f0-c6db696f1e1c",
+				"actions": [
+					{
+						"uuid": "82a1de5f-af1a-45ef-8511-4d60c160e486",
+						"type": "send_msg",
+						"text": "Hello @webhook"
+					}
+				],
+				"exits": [
+					{
+						"uuid": "fdd370e0-ffa9-48b3-8148-b9241d74fc72"
+					}
+				]
+			}
+		]
+	}`), migrated)
+
+	// 13.2 > 13.3
+	migrated, err = goflow.MigrateDefinition(rt.Config, migrated, semver.MustParse("13.3.0"))
+	assert.NoError(t, err)
+	test.AssertEqualJSON(t, []byte(`{
+		"uuid": "502c3ee4-3249-4dee-8e71-c62070667d52", 
+		"name": "New", 
+		"spec_version": "13.3.0", 
+		"type": "messaging", 
+		"language": "und", 
+		"nodes": [
+			{
+				"uuid": "d26486b1-193d-4512-85f0-c6db696f1e1c",
+				"actions": [
+					{
+						"uuid": "82a1de5f-af1a-45ef-8511-4d60c160e486",
+						"type": "send_msg",
+						"text": "Hello @webhook.json"
+					}
+				],
+				"exits": [
+					{
+						"uuid": "fdd370e0-ffa9-48b3-8148-b9241d74fc72"
+					}
+				]
+			}
+		]
+	}`), migrated)
 }
