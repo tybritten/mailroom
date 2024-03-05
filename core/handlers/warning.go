@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"log/slog"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
@@ -11,6 +10,14 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 )
+
+var warningsLogs = map[string]string{
+	"deprecated context value accessed: legacy_extra":                                                "", // currently too many to do anything about
+	"deprecated context value accessed: webhook recreated from extra":                                "webhook recreated from extra usage",
+	"deprecated context value accessed: result.values: use value instead":                            "result.values usage",
+	"deprecated context value accessed: result.categories: use category instead":                     "result.categories usage",
+	"deprecated context value accessed: result.categories_localized: use category_localized instead": "result.categories_localized usage",
+}
 
 func init() {
 	models.RegisterEventHandler(events.TypeWarning, handleWarning)
@@ -21,9 +28,11 @@ func handleWarning(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *mo
 
 	run, _ := scene.Session().FindStep(e.StepUUID())
 	flow, _ := oa.FlowByUUID(run.FlowReference().UUID)
-	if flow != nil && strings.Contains(event.Text, "webhook recreated from extra") {
-		// so that we can track these in sentry
-		slog.Error("webhook recreated from extra usage", "session", scene.SessionID(), "flow", flow.UUID(), "text", event.Text)
+	if flow != nil {
+		logMsg := warningsLogs[event.Text]
+		if logMsg != "" {
+			slog.Error(logMsg, "session", scene.SessionID(), "flow", flow.UUID(), "text", event.Text)
+		}
 	}
 
 	return nil
