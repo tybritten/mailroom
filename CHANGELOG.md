@@ -1,3 +1,8 @@
+v9.1.16 (2024-03-05)
+-------------------------
+ * Tweak logging of warning events
+ * Update to latest goflow and flow spec 13.4
+
 v9.1.15 (2024-03-05)
 -------------------------
  * Update to latest goflow that lets us hide deprecated values from context explorer
