@@ -349,7 +349,7 @@
             "flow": {
                 "uuid": "8f107d42-7416-4cf2-9a51-9490361ad517",
                 "name": "Invalid Flow",
-                "spec_version": "13.3.0",
+                "spec_version": "13.4.0",
                 "language": "base",
                 "type": "messaging",
                 "revision": 1,
