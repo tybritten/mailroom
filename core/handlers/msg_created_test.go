@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/actions"
@@ -38,9 +37,10 @@ func TestMsgCreated(t *testing.T) {
 
 	templateAction := actions.NewSendMsg(handlers.NewActionUUID(), "Template time", nil, nil, false)
 	templateAction.Templating = &actions.Templating{
-		UUID:      uuids.UUID("db297d56-ec8c-4231-bbe8-030369777ae1"),
-		Template:  &assets.TemplateReference{UUID: assets.TemplateUUID("9c22b594-fcab-4b29-9bcb-ce4404894a80"), Name: "revive_issue"},
-		Variables: []string{"@contact.name", "tooth"},
+		Template: &assets.TemplateReference{UUID: assets.TemplateUUID("9c22b594-fcab-4b29-9bcb-ce4404894a80"), Name: "revive_issue"},
+		Components: []*actions.TemplatingComponent{
+			{UUID: "cb369738-480f-49bb-aa5e-c0866bc1e5c9", Name: "body", Params: []string{"@contact.name", "tooth"}},
+		},
 	}
 
 	tcs := []handlers.TestCase{
