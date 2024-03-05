@@ -18,7 +18,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.53.0
-	github.com/nyaruka/goflow v0.204.1
+	github.com/nyaruka/goflow v0.205.0
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.6.4
 	github.com/nyaruka/rp-indexer/v8 v8.3.1

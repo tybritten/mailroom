@@ -70,10 +70,10 @@ func newSimulationResponse(session flows.Session, sprint flows.Sprint) *simulati
 	if session != nil {
 		context = session.CurrentContext()
 
-		// include object defaults which are not marshaled by default
+		// include object defaults which are not marshaled by default, but not deprecated values
 		if context != nil {
 			tools.ContextWalkObjects(context, func(o *types.XObject) {
-				o.SetMarshalDefault(true)
+				o.SetMarshalOptions(true, false)
 			})
 		}
 	}
