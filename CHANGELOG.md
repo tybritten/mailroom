@@ -1,3 +1,7 @@
+v9.1.15 (2024-03-05)
+-------------------------
+ * Update to latest goflow that lets us hide deprecated values from context explorer
+
 v9.1.14 (2024-03-04)
 -------------------------
  * Update goflow
