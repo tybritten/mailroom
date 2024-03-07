@@ -5,7 +5,6 @@ import (
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
@@ -121,12 +120,21 @@ INSERT INTO contacts_contactgroup_contacts(contact_id, contactgroup_id)
                                     VALUES(:contact_id, :group_id)
 ON CONFLICT DO NOTHING`
 
-// ContactIDsForGroupIDs returns the unique contacts that are in the passed in groups
-func ContactIDsForGroupIDs(ctx context.Context, tx DBorTx, groupIDs []GroupID) ([]ContactID, error) {
-	// now add all the ids for our groups
-	rows, err := tx.QueryContext(ctx, `SELECT DISTINCT(contact_id) FROM contacts_contactgroup_contacts WHERE contactgroup_id = ANY($1)`, pq.Array(groupIDs))
+// GetGroupContactCount returns the total number of contacts that are in given group
+func GetGroupContactCount(ctx context.Context, db *sql.DB, groupID GroupID) (int, error) {
+	var count int
+	err := db.QueryRowContext(ctx, `SELECT SUM(count) FROM contacts_contactgroupcount WHERE group_id = $1 GROUP BY group_id`, groupID).Scan(&count)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error selecting contacts for groups")
+		return 0, errors.Wrap(err, "error getting group contact count")
+	}
+	return count, nil
+}
+
+// GetGroupContactIDs returns the ids of the contacts that are in given group
+func GetGroupContactIDs(ctx context.Context, tx DBorTx, groupID GroupID) ([]ContactID, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT contact_id FROM contacts_contactgroup_contacts WHERE contactgroup_id = $1`, groupID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error selecting contact ids for group")
 	}
 
 	contactIDs := make([]ContactID, 0, 10)

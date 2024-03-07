@@ -87,7 +87,7 @@ func handleStartPreview(ctx context.Context, rt *runtime.Runtime, r *previewRequ
 		return &previewResponse{Query: "", Total: 0}, http.StatusOK, nil
 	}
 
-	parsedQuery, total, err := search.GetContactTotal(ctx, rt, oa, query)
+	parsedQuery, total, err := search.GetContactTotal(ctx, rt, oa, nil, query)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "error querying preview")
 	}

@@ -1,0 +1,100 @@
+[
+    {
+        "label": "error if fields not provided",
+        "method": "POST",
+        "path": "/mr/contact/export_preview",
+        "body": {},
+        "status": 400,
+        "response": {
+            "error": "request failed validation: field 'org_id' is required, field 'group_id' is required"
+        }
+    },
+    {
+        "label": "error if group doesn't exist",
+        "method": "POST",
+        "path": "/mr/contact/export_preview",
+        "body": {
+            "org_id": 1,
+            "group_id": 1234567,
+            "query": ""
+        },
+        "status": 400,
+        "response": {
+            "error": "no such group"
+        }
+    },
+    {
+        "label": "system group without query",
+        "method": "POST",
+        "path": "/mr/contact/export_preview",
+        "body": {
+            "org_id": 1,
+            "group_id": 1,
+            "query": ""
+        },
+        "status": 200,
+        "response": {
+            "total": 124
+        }
+    },
+    {
+        "label": "user group without query",
+        "method": "POST",
+        "path": "/mr/contact/export_preview",
+        "body": {
+            "org_id": 1,
+            "group_id": 10000,
+            "query": ""
+        },
+        "status": 200,
+        "response": {
+            "total": 121
+        }
+    },
+    {
+        "label": "system group with query",
+        "method": "POST",
+        "path": "/mr/contact/export_preview",
+        "body": {
+            "org_id": 1,
+            "group_id": 1,
+            "query": "name = BOB OR cathy"
+        },
+        "status": 200,
+        "response": {
+            "total": 2
+        }
+    },
+    {
+        "label": "user group with query",
+        "method": "POST",
+        "path": "/mr/contact/export_preview",
+        "body": {
+            "org_id": 1,
+            "group_id": 10000,
+            "query": "cathy"
+        },
+        "status": 200,
+        "response": {
+            "total": 1
+        }
+    },
+    {
+        "label": "invalid query",
+        "method": "POST",
+        "path": "/mr/contact/export_preview",
+        "body": {
+            "org_id": 1,
+            "group_id": 10000,
+            "query": "gender ="
+        },
+        "status": 400,
+        "response": {
+            "error": "mismatched input '<EOF>' expecting {TEXT, STRING}",
+            "code": "unexpected_token",
+            "extra": {
+                "token": "<EOF>"
+            }
+        }
+    }
+]

@@ -18,21 +18,30 @@ func TestGetContactTotal(t *testing.T) {
 	require.NoError(t, err)
 
 	tcs := []struct {
+		group         *testdata.Group
 		query         string
 		expectedTotal int64
 		expectedError string
 	}{
-		{query: "george OR bob", expectedTotal: 2},
-		{query: "george", expectedTotal: 1},
-		{query: "age >= 30", expectedTotal: 1},
+		{group: nil, query: "cathy OR bob", expectedTotal: 2},
+		{group: testdata.DoctorsGroup, query: "cathy OR bob", expectedTotal: 1},
+		{group: nil, query: "george", expectedTotal: 1},
+		{group: testdata.ActiveGroup, query: "george", expectedTotal: 1},
+		{group: nil, query: "age >= 30", expectedTotal: 1},
 		{
+			group:         nil,
 			query:         "goats > 2", // no such contact field
 			expectedError: "error parsing query: goats > 2: can't resolve 'goats' to attribute, scheme or field",
 		},
 	}
 
 	for i, tc := range tcs {
-		_, total, err := search.GetContactTotal(ctx, rt, oa, tc.query)
+		var group *models.Group
+		if tc.group != nil {
+			group = oa.GroupByID(tc.group.ID)
+		}
+
+		_, total, err := search.GetContactTotal(ctx, rt, oa, group, tc.query)
 
 		if tc.expectedError != "" {
 			assert.EqualError(t, err, tc.expectedError)

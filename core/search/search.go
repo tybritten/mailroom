@@ -68,7 +68,7 @@ func BuildElasticQuery(oa *models.OrgAssets, group *models.Group, status models.
 }
 
 // GetContactTotal returns the total count of matching contacts for the given query
-func GetContactTotal(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, query string) (*contactql.ContactQuery, int64, error) {
+func GetContactTotal(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, group *models.Group, query string) (*contactql.ContactQuery, int64, error) {
 	env := oa.Env()
 	var parsed *contactql.ContactQuery
 	var err error
@@ -84,7 +84,7 @@ func GetContactTotal(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAss
 		}
 	}
 
-	eq := BuildElasticQuery(oa, nil, models.NilContactStatus, nil, parsed)
+	eq := BuildElasticQuery(oa, group, models.NilContactStatus, nil, parsed)
 
 	count, err := rt.ES.Count(rt.Config.ElasticContactsIndex).Routing(strconv.FormatInt(int64(oa.OrgID()), 10)).Query(eq).Do(ctx)
 	if err != nil {
