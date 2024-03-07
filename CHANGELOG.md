@@ -1,3 +1,7 @@
+v9.1.17 (2024-03-07)
+-------------------------
+ * Add export preview endpoint
+
 v9.1.16 (2024-03-05)
 -------------------------
  * Tweak logging of warning events
