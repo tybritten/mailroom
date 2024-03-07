@@ -67,7 +67,7 @@ func TestSmartGroups(t *testing.T) {
 		assert.Equal(t, count, len(tc.expectedContactIDs), "%d: contact count mismatch", i)
 
 		// assert the current group membership
-		contactIDs, err := models.ContactIDsForGroupIDs(ctx, rt.DB, []models.GroupID{testdata.DoctorsGroup.ID})
+		contactIDs, err := models.GetGroupContactIDs(ctx, rt.DB, testdata.DoctorsGroup.ID)
 		assert.NoError(t, err)
 		assert.Equal(t, tc.expectedContactIDs, contactIDs)
 

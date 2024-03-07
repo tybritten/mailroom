@@ -40,7 +40,7 @@ func PopulateSmartGroup(ctx context.Context, rt *runtime.Runtime, es *elastic.Cl
 	}
 
 	// get current set of contacts in our group
-	ids, err := models.ContactIDsForGroupIDs(ctx, rt.DB, []models.GroupID{groupID})
+	ids, err := models.GetGroupContactIDs(ctx, rt.DB, groupID)
 	if err != nil {
 		return 0, errors.Wrapf(err, "unable to look up contact ids for group: %d", groupID)
 	}
