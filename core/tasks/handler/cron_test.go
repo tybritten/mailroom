@@ -50,7 +50,7 @@ func TestRetryMsgs(t *testing.T) {
 	assert.Equal(t, map[string]any{"retried": 1}, res)
 
 	// should have one message requeued
-	task, _ := queue.PopNextTask(rc, queue.HandlerQueue)
+	task, _ := queue.Pop(rc, queue.HandlerQueue)
 	assert.NotNil(t, task)
 	err = tasks.Perform(ctx, rt, task)
 	assert.NoError(t, err)
@@ -59,6 +59,6 @@ func TestRetryMsgs(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) from msgs_msg WHERE text = 'pending' AND status = 'H'`).Returns(1)
 
 	// only one message was queued
-	task, _ = queue.PopNextTask(rc, queue.HandlerQueue)
+	task, _ = queue.Pop(rc, queue.HandlerQueue)
 	assert.Nil(t, task)
 }

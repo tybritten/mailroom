@@ -51,12 +51,12 @@ func FlushTasks(t *testing.T, rt *runtime.Runtime) map[string]int {
 
 	for {
 		// look for a task on the handler queue
-		task, err = queue.PopNextTask(rc, queue.HandlerQueue)
+		task, err = queue.Pop(rc, queue.HandlerQueue)
 		require.NoError(t, err)
 
 		if task == nil {
 			// look for a task on the batch queue
-			task, err = queue.PopNextTask(rc, queue.BatchQueue)
+			task, err = queue.Pop(rc, queue.BatchQueue)
 			require.NoError(t, err)
 		}
 

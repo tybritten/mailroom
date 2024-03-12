@@ -37,7 +37,7 @@ func TestTimeouts(t *testing.T) {
 	assert.Equal(t, map[string]any{"dupes": 0, "queued": 1}, res)
 
 	// should have created one task
-	task, err := queue.PopNextTask(rc, queue.HandlerQueue)
+	task, err := queue.Pop(rc, queue.HandlerQueue)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 
@@ -50,7 +50,7 @@ func TestTimeouts(t *testing.T) {
 	assert.Equal(t, testdata.Cathy.ID, eventTask.ContactID)
 
 	// no other
-	task, err = queue.PopNextTask(rc, queue.HandlerQueue)
+	task, err = queue.Pop(rc, queue.HandlerQueue)
 	assert.NoError(t, err)
 	assert.Nil(t, task)
 }

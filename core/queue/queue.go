@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/pkg/errors"
 )
 
-// Task is a utility struct for encoding a task
+// Task is a wrapper for encoding a task
 type Task struct {
 	Type       string          `json:"type"`
 	OrgID      int             `json:"org_id"`
@@ -65,30 +67,27 @@ func Size(rc redis.Conn, queue string) (int, error) {
 	return size, nil
 }
 
-// AddTask adds the passed in task to our queue for execution
-func AddTask(rc redis.Conn, queue string, taskType string, orgID int, task any, priority Priority) error {
-	score := strconv.FormatFloat(float64(time.Now().UnixNano()/int64(time.Microsecond))/float64(1000000)+float64(priority), 'f', 6, 64)
+// Push adds the passed in task to our queue for execution
+func Push(rc redis.Conn, queue string, taskType string, orgID int, task any, priority Priority) error {
+	score := score(priority)
 
 	taskBody, err := json.Marshal(task)
 	if err != nil {
 		return err
 	}
 
-	payload := &Task{
-		Type:     taskType,
-		OrgID:    orgID,
-		Task:     taskBody,
-		QueuedOn: time.Now(),
-	}
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
+	wrapper := &Task{Type: taskType, OrgID: orgID, Task: taskBody, QueuedOn: dates.Now()}
+	marshaled := jsonx.MustMarshal(wrapper)
 
-	rc.Send("zadd", fmt.Sprintf(queuePattern, queue, orgID), score, jsonPayload)
+	rc.Send("zadd", fmt.Sprintf(queuePattern, queue, orgID), score, marshaled)
 	rc.Send("zincrby", fmt.Sprintf(activePattern, queue), 0, orgID)
 	_, err = rc.Do("")
 	return err
+}
+
+func score(priority Priority) string {
+	s := float64(dates.Now().UnixMicro())/float64(1000000) + float64(priority)
+	return strconv.FormatFloat(s, 'f', 6, 64)
 }
 
 var popTask = redis.NewScript(1, `-- KEYS: [QueueName]
@@ -123,8 +122,8 @@ var popTask = redis.NewScript(1, `-- KEYS: [QueueName]
 	end
 `)
 
-// PopNextTask pops the next task off our queue
-func PopNextTask(rc redis.Conn, queue string) (*Task, error) {
+// Pop pops the next task off our queue
+func Pop(rc redis.Conn, queue string) (*Task, error) {
 	task := Task{}
 	for {
 		values, err := redis.Strings(popTask.Do(rc, queue))
@@ -145,7 +144,7 @@ func PopNextTask(rc redis.Conn, queue string) (*Task, error) {
 	}
 }
 
-var markComplete = redis.NewScript(2, `-- KEYS: [QueueName] [TaskGroup]
+var markDone = redis.NewScript(2, `-- KEYS: [QueueName] [TaskGroup]
 	-- decrement our active
 	local active = tonumber(redis.call("zincrby", KEYS[1] .. ":active", -1, KEYS[2]))
 
@@ -155,9 +154,9 @@ var markComplete = redis.NewScript(2, `-- KEYS: [QueueName] [TaskGroup]
 	end
 `)
 
-// MarkTaskComplete marks the passed in task as complete. Callers must call this in order
+// Done marks the passed in task as complete. Callers must call this in order
 // to maintain fair workers across orgs
-func MarkTaskComplete(rc redis.Conn, queue string, orgID int) error {
-	_, err := markComplete.Do(rc, queue, strconv.FormatInt(int64(orgID), 10))
+func Done(rc redis.Conn, queue string, orgID int) error {
+	_, err := markDone.Do(rc, queue, strconv.FormatInt(int64(orgID), 10))
 	return err
 }

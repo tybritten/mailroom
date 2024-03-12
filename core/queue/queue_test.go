@@ -1,79 +1,70 @@
 package queue_test
 
 import (
-	"encoding/json"
 	"testing"
+	"time"
 
-	"github.com/gomodule/redigo/redis"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/mailroom/core/queue"
+	"github.com/nyaruka/mailroom/testsuite"
+	"github.com/nyaruka/redisx/assertredis"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestQueues(t *testing.T) {
-	rc, err := redis.Dial("tcp", "localhost:6379")
-	assert.NoError(t, err)
+	_, rt := testsuite.Runtime()
+	rc := rt.RP.Get()
+	defer rc.Close()
 
-	defer rc.Do("del", "test:active", "test:1", "test:2", "test:3")
+	dates.SetNowSource(dates.NewSequentialNowSource(time.Date(2022, 1, 1, 12, 1, 2, 123456789, time.UTC)))
+	defer dates.SetNowSource(dates.DefaultNowSource)
 
-	popPriority := queue.Priority(-1)
-	markCompletePriority := queue.Priority(-2)
+	defer testsuite.Reset(testsuite.ResetRedis)
 
-	tcs := []struct {
-		Queue     string
-		TaskGroup int
-		TaskType  string
-		Task      string
-		Priority  queue.Priority
-		Size      int
-	}{
-		{"test", 1, "campaign", "task1", queue.DefaultPriority, 1},
-		{"test", 1, "campaign", "task1", popPriority, 0},
-		{"test", 1, "campaign", "", popPriority, 0},
-		{"test", 1, "campaign", "task1", queue.DefaultPriority, 1},
-		{"test", 1, "campaign", "task2", queue.DefaultPriority, 2},
-		{"test", 2, "campaign", "task3", queue.DefaultPriority, 3},
-		{"test", 2, "campaign", "task4", queue.DefaultPriority, 4},
-		{"test", 1, "campaign", "task5", queue.DefaultPriority, 5},
-		{"test", 2, "campaign", "task6", queue.DefaultPriority, 6},
-		{"test", 1, "campaign", "task1", popPriority, 5},
-		{"test", 2, "campaign", "task3", popPriority, 4},
-		{"test", 1, "campaign", "task2", popPriority, 3},
-		{"test", 2, "campaign", "task4", popPriority, 2},
-		{"test", 2, "campaign", "", markCompletePriority, 2},
-		{"test", 2, "campaign", "task6", popPriority, 1},
-		{"test", 1, "campaign", "task5", popPriority, 0},
-		{"test", 1, "campaign", "", popPriority, 0},
-	}
-
-	for i, tc := range tcs {
-		if tc.Priority == popPriority {
-			task, err := queue.PopNextTask(rc, "test")
-
-			if task == nil {
-				if tc.Task != "" {
-					assert.Fail(t, "%d: did not receive task, expected %s", i, tc.Task)
-				}
-				continue
-			} else if tc.Task == "" && task != nil {
-				assert.Fail(t, "%d: received task %s when expecting none", i, tc.Task)
-				continue
-			}
-
-			assert.NoError(t, err)
-			assert.Equal(t, task.OrgID, tc.TaskGroup, "%d: groups mismatch", i)
-			assert.Equal(t, task.Type, tc.TaskType, "%d: types mismatch", i)
-
-			var value string
-			assert.NoError(t, json.Unmarshal(task.Task, &value), "%d: error unmarshalling", i)
-			assert.Equal(t, value, tc.Task, "%d: task mismatch", i)
-		} else if tc.Priority == markCompletePriority {
-			assert.NoError(t, queue.MarkTaskComplete(rc, tc.Queue, tc.TaskGroup))
+	assertPop := func(expected string) {
+		task, err := queue.Pop(rc, "test")
+		require.NoError(t, err)
+		if expected != "" {
+			assert.Equal(t, expected, string(task.Task))
 		} else {
-			assert.NoError(t, queue.AddTask(rc, tc.Queue, tc.TaskType, tc.TaskGroup, tc.Task, tc.Priority))
+			assert.Nil(t, task)
 		}
-
-		size, err := queue.Size(rc, tc.Queue)
-		assert.NoError(t, err)
-		assert.Equal(t, tc.Size, size, "%d: mismatch", i)
 	}
+
+	queue.Push(rc, "test", "type1", 1, "task1", queue.DefaultPriority)
+	queue.Push(rc, "test", "type1", 1, "task2", queue.HighPriority)
+	queue.Push(rc, "test", "type1", 2, "task3", queue.LowPriority)
+	queue.Push(rc, "test", "type2", 1, "task4", queue.DefaultPriority)
+	queue.Push(rc, "test", "type2", 2, "task5", queue.DefaultPriority)
+
+	// nobody processing any tasks so no workers assigned in active set
+	assertredis.ZGetAll(t, rt.RP, "test:active", map[string]float64{"1": 0, "2": 0})
+
+	assertredis.ZGetAll(t, rt.RP, "test:1", map[string]float64{
+		`{"type":"type1","org_id":1,"task":"task2","queued_on":"2022-01-01T12:01:05.123456789Z"}`: 1631038464.123456,
+		`{"type":"type1","org_id":1,"task":"task1","queued_on":"2022-01-01T12:01:03.123456789Z"}`: 1641038462.123456,
+		`{"type":"type2","org_id":1,"task":"task4","queued_on":"2022-01-01T12:01:09.123456789Z"}`: 1641038468.123456,
+	})
+	assertredis.ZGetAll(t, rt.RP, "test:2", map[string]float64{
+		`{"type":"type1","org_id":2,"task":"task3","queued_on":"2022-01-01T12:01:07.123456789Z"}`: 1651038466.123456,
+		`{"type":"type2","org_id":2,"task":"task5","queued_on":"2022-01-01T12:01:11.123456789Z"}`: 1641038470.123456,
+	})
+
+	assertPop(`"task2"`) // because it's highest priority for owner 1
+	assertredis.ZGetAll(t, rt.RP, "test:active", map[string]float64{"1": 1, "2": 0})
+	assertPop(`"task5"`) // because it's highest priority for owner 2
+	assertredis.ZGetAll(t, rt.RP, "test:active", map[string]float64{"1": 1, "2": 1})
+	assertPop(`"task1"`)
+	assertredis.ZGetAll(t, rt.RP, "test:active", map[string]float64{"1": 2, "2": 1})
+
+	// mark task2 and task1 (owner 1) as complete
+	queue.Done(rc, "test", 1)
+	queue.Done(rc, "test", 1)
+
+	assertredis.ZGetAll(t, rt.RP, "test:active", map[string]float64{"1": 0, "2": 1})
+
+	assertPop(`"task4"`)
+	assertPop(`"task3"`)
+	assertPop("") // no more tasks
 }
