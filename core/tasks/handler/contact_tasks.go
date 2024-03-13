@@ -458,7 +458,7 @@ func handleMsgEvent(ctx context.Context, rt *runtime.Runtime, event *MsgEvent) e
 		}
 		sessions[0].SetIncomingMsg(event.MsgID, event.MsgExternalID)
 
-		return markMsgHandled(ctx, tx, contact, msgIn, flow, attachments, ticket, logUUIDs)
+		return markMsgHandled(ctx, tx, msgIn, flow, attachments, ticket, logUUIDs)
 	}
 
 	// we found a trigger and their session is nil or doesn't ignore keywords
@@ -475,7 +475,7 @@ func handleMsgEvent(ctx context.Context, rt *runtime.Runtime, event *MsgEvent) e
 			// if this is an IVR flow, we need to trigger that start (which happens in a different queue)
 			if flow.FlowType() == models.FlowTypeVoice {
 				ivrMsgHook := func(ctx context.Context, tx *sqlx.Tx) error {
-					return markMsgHandled(ctx, tx, contact, msgIn, flow, attachments, ticket, logUUIDs)
+					return markMsgHandled(ctx, tx, msgIn, flow, attachments, ticket, logUUIDs)
 				}
 				err = TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{modelContact.ID()}, ivrMsgHook)
 				if err != nil {
@@ -624,11 +624,11 @@ func handleAsInbox(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsset
 		return errors.Wrap(err, "error handling inbox message events")
 	}
 
-	return markMsgHandled(ctx, rt.DB, contact, msg, nil, attachments, ticket, logUUIDs)
+	return markMsgHandled(ctx, rt.DB, msg, nil, attachments, ticket, logUUIDs)
 }
 
 // utility to mark as message as handled and update any open contact tickets
-func markMsgHandled(ctx context.Context, db models.DBorTx, contact *flows.Contact, msg *flows.MsgIn, flow *models.Flow, attachments []utils.Attachment, ticket *models.Ticket, logUUIDs []models.ChannelLogUUID) error {
+func markMsgHandled(ctx context.Context, db models.DBorTx, msg *flows.MsgIn, flow *models.Flow, attachments []utils.Attachment, ticket *models.Ticket, logUUIDs []models.ChannelLogUUID) error {
 	flowID := models.NilFlowID
 	if flow != nil {
 		flowID = flow.ID()
