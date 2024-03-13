@@ -32,6 +32,14 @@ func TestQueues(t *testing.T) {
 		}
 	}
 
+	assertSize := func(expecting int) {
+		size, err := queue.Size(rc, "test")
+		assert.NoError(t, err)
+		assert.Equal(t, expecting, size)
+	}
+
+	assertSize(0)
+
 	queue.Push(rc, "test", "type1", 1, "task1", queue.DefaultPriority)
 	queue.Push(rc, "test", "type1", 1, "task2", queue.HighPriority)
 	queue.Push(rc, "test", "type1", 2, "task3", queue.LowPriority)
@@ -51,12 +59,16 @@ func TestQueues(t *testing.T) {
 		`{"type":"type2","org_id":2,"task":"task5","queued_on":"2022-01-01T12:01:11.123456789Z"}`: 1641038470.123456,
 	})
 
+	assertSize(5)
+
 	assertPop(`"task2"`) // because it's highest priority for owner 1
 	assertredis.ZGetAll(t, rt.RP, "test:active", map[string]float64{"1": 1, "2": 0})
 	assertPop(`"task5"`) // because it's highest priority for owner 2
 	assertredis.ZGetAll(t, rt.RP, "test:active", map[string]float64{"1": 1, "2": 1})
 	assertPop(`"task1"`)
 	assertredis.ZGetAll(t, rt.RP, "test:active", map[string]float64{"1": 2, "2": 1})
+
+	assertSize(2)
 
 	// mark task2 and task1 (owner 1) as complete
 	queue.Done(rc, "test", 1)
@@ -67,6 +79,8 @@ func TestQueues(t *testing.T) {
 	assertPop(`"task4"`)
 	assertPop(`"task3"`)
 	assertPop("") // no more tasks
+
+	assertSize(0)
 
 	assertredis.ZGetAll(t, rt.RP, "test:active", map[string]float64{})
 
