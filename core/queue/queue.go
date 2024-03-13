@@ -50,7 +50,7 @@ const (
 // Size returns the number of tasks for the passed in queue
 func Size(rc redis.Conn, queue string) (int, error) {
 	// get all the active queues
-	queues, err := redis.Ints(rc.Do("zrange", fmt.Sprintf(activePattern, queue), 0, -1))
+	queues, err := redis.Ints(rc.Do("ZRANGE", fmt.Sprintf(activePattern, queue), 0, -1))
 	if err != nil {
 		return 0, errors.Wrapf(err, "error getting active queues for: %s", queue)
 	}
@@ -58,7 +58,7 @@ func Size(rc redis.Conn, queue string) (int, error) {
 	// add up each
 	size := 0
 	for _, q := range queues {
-		count, err := redis.Int(rc.Do("zcard", fmt.Sprintf(queuePattern, queue, q)))
+		count, err := redis.Int(rc.Do("ZCARD", fmt.Sprintf(queuePattern, queue, q)))
 		if err != nil {
 			return 0, errors.Wrapf(err, "error getting size of: %d", q)
 		}
@@ -80,8 +80,8 @@ func Push(rc redis.Conn, queue string, taskType string, orgID int, task any, pri
 	wrapper := &Task{Type: taskType, OrgID: orgID, Task: taskBody, QueuedOn: dates.Now()}
 	marshaled := jsonx.MustMarshal(wrapper)
 
-	rc.Send("zadd", fmt.Sprintf(queuePattern, queue, orgID), score, marshaled)
-	rc.Send("zincrby", fmt.Sprintf(activePattern, queue), 0, orgID)
+	rc.Send("ZADD", fmt.Sprintf(queuePattern, queue, orgID), score, marshaled)
+	rc.Send("ZINCRBY", fmt.Sprintf(activePattern, queue), 0, orgID)
 	_, err = rc.Do("")
 	return err
 }
@@ -99,7 +99,7 @@ var popScript = redis.NewScript(1, popLua)
 func Pop(rc redis.Conn, queue string) (*Task, error) {
 	task := Task{}
 	for {
-		values, err := redis.Strings(popScript.Do(rc, queue))
+		values, err := redis.Strings(popScript.Do(rc, fmt.Sprintf(activePattern, queue), queue))
 		if err != nil {
 			return nil, err
 		}
@@ -119,11 +119,11 @@ func Pop(rc redis.Conn, queue string) (*Task, error) {
 
 //go:embed lua/done.lua
 var doneLua string
-var doneScript = redis.NewScript(2, doneLua)
+var doneScript = redis.NewScript(1, doneLua)
 
 // Done marks the passed in task as complete. Callers must call this in order
 // to maintain fair workers across orgs
 func Done(rc redis.Conn, queue string, orgID int) error {
-	_, err := doneScript.Do(rc, queue, strconv.FormatInt(int64(orgID), 10))
+	_, err := doneScript.Do(rc, fmt.Sprintf(activePattern, queue), strconv.FormatInt(int64(orgID), 10))
 	return err
 }

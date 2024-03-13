@@ -1,31 +1,29 @@
--- KEYS: [QueueName]
+local activeSetKey = KEYS[1]
+local queueBase = ARGV[1]
 
 -- first get what is the active queue
-local result = redis.call("zrange", KEYS[1] .. ":active", 0, 0, "WITHSCORES")
+local result = redis.call("ZRANGE", activeSetKey, 0, 0)
 
 -- nothing? return nothing
-local group = result[1]
-if not group then
+local ownerID = result[1]
+if not ownerID then
     return {"empty", ""}
 end
 
-local queue = KEYS[1] .. ":" .. group
+local queueKey = queueBase .. ":" .. ownerID
 
 -- pop off our queue
-local result = redis.call("zrangebyscore", queue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
+local result = redis.call("ZPOPMIN", queueKey)
 
 -- found a result?
 if result[1] then
-    -- then remove it from the queue
-    redis.call('zremrangebyrank', queue, 0, 0)
+    -- and add a worker to this owner
+    redis.call("ZINCRBY", activeSetKey, 1, ownerID)
 
-    -- and add a worker to this queue
-    redis.call("zincrby", KEYS[1] .. ":active", 1, group)
-
-    return {group, result[1]}
+    return {ownerID, result[1]}
 else
-    -- no result found, remove this group from active queues
-    redis.call("zrem", KEYS[1] .. ":active", group)
+    -- no result found, remove this owner from active queues
+    redis.call("ZREM", activeSetKey, ownerID)
 
     return {"retry", ""}
 end
