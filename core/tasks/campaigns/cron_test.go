@@ -122,7 +122,7 @@ func TestQueueAndFireEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	// work on that task
-	err = typedTask.Perform(ctx, rt, models.OrgID(task.OrgID))
+	err = typedTask.Perform(ctx, rt, models.OrgID(task.OwnerID))
 	assert.NoError(t, err)
 
 	// should now have a flow run for that contact and flow
@@ -150,7 +150,7 @@ func TestQueueAndFireEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	// work on that task
-	err = typedTask.Perform(ctx, rt, models.OrgID(task.OrgID))
+	err = typedTask.Perform(ctx, rt, models.OrgID(task.OwnerID))
 	assert.NoError(t, err)
 
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM flows_flowrun WHERE contact_id = $1 AND flow_id = $2 AND status = 'W'`, testdata.George.ID, testdata.Favorites.ID).Returns(1)
@@ -188,7 +188,7 @@ func TestIVRCampaigns(t *testing.T) {
 	require.NoError(t, err)
 
 	// work on that task
-	err = typedTask.Perform(ctx, rt, models.OrgID(task.OrgID))
+	err = typedTask.Perform(ctx, rt, models.OrgID(task.OwnerID))
 	assert.NoError(t, err)
 
 	// should now have a flow start created

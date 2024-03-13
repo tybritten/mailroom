@@ -15,7 +15,7 @@ import (
 // Task is a wrapper for encoding a task
 type Task struct {
 	Type       string          `json:"type"`
-	OrgID      int             `json:"org_id"`
+	OwnerID    int             `json:"-"`
 	Task       json.RawMessage `json:"task"`
 	QueuedOn   time.Time       `json:"queued_on"`
 	ErrorCount int             `json:"error_count,omitempty"`
@@ -47,7 +47,7 @@ const (
 )
 
 // Push adds the passed in task to our queue for execution
-func Push(rc redis.Conn, queue string, taskType string, orgID int, task any, priority Priority) error {
+func Push(rc redis.Conn, queue string, taskType string, ownerID int, task any, priority Priority) error {
 	score := score(priority)
 
 	taskBody, err := json.Marshal(task)
@@ -55,11 +55,11 @@ func Push(rc redis.Conn, queue string, taskType string, orgID int, task any, pri
 		return err
 	}
 
-	wrapper := &Task{Type: taskType, OrgID: orgID, Task: taskBody, QueuedOn: dates.Now()}
+	wrapper := &Task{Type: taskType, OwnerID: ownerID, Task: taskBody, QueuedOn: dates.Now()}
 	marshaled := jsonx.MustMarshal(wrapper)
 
-	rc.Send("ZADD", fmt.Sprintf(queuePattern, queue, orgID), score, marshaled)
-	rc.Send("ZINCRBY", fmt.Sprintf(activePattern, queue), 0, orgID)
+	rc.Send("ZADD", fmt.Sprintf(queuePattern, queue, ownerID), score, marshaled)
+	rc.Send("ZINCRBY", fmt.Sprintf(activePattern, queue), 0, ownerID) // ensure exists in active set
 	_, err = rc.Do("")
 	return err
 }
@@ -75,7 +75,7 @@ var popScript = redis.NewScript(1, popLua)
 
 // Pop pops the next task off our queue
 func Pop(rc redis.Conn, queue string) (*Task, error) {
-	task := Task{}
+	task := &Task{}
 	for {
 		values, err := redis.Strings(popScript.Do(rc, fmt.Sprintf(activePattern, queue), queue))
 		if err != nil {
@@ -90,8 +90,19 @@ func Pop(rc redis.Conn, queue string) (*Task, error) {
 			continue
 		}
 
-		err = json.Unmarshal([]byte(values[1]), &task)
-		return &task, err
+		err = json.Unmarshal([]byte(values[1]), task)
+		if err != nil {
+			return nil, err
+		}
+
+		ownerID, err := strconv.Atoi(values[0])
+		if err != nil {
+			return nil, err
+		}
+
+		task.OwnerID = ownerID
+
+		return task, err
 	}
 }
 
@@ -101,8 +112,8 @@ var doneScript = redis.NewScript(1, doneLua)
 
 // Done marks the passed in task as complete. Callers must call this in order
 // to maintain fair workers across orgs
-func Done(rc redis.Conn, queue string, orgID int) error {
-	_, err := doneScript.Do(rc, fmt.Sprintf(activePattern, queue), strconv.FormatInt(int64(orgID), 10))
+func Done(rc redis.Conn, queue string, ownerID int) error {
+	_, err := doneScript.Do(rc, fmt.Sprintf(activePattern, queue), strconv.FormatInt(int64(ownerID), 10))
 	return err
 }
 

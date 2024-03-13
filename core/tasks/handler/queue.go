@@ -27,7 +27,7 @@ func QueueTicketEvent(rc redis.Conn, contactID models.ContactID, evt *models.Tic
 	case models.TicketEventTypeClosed:
 		task = &queue.Task{
 			Type:     TicketClosedEventType,
-			OrgID:    int(evt.OrgID()),
+			OwnerID:  int(evt.OrgID()),
 			Task:     eventJSON,
 			QueuedOn: dates.Now(),
 		}
@@ -46,7 +46,7 @@ func queueHandleTask(rc redis.Conn, contactID models.ContactID, task *queue.Task
 	}
 
 	// first push the event on our contact queue
-	contactQ := fmt.Sprintf("c:%d:%d", task.OrgID, contactID)
+	contactQ := fmt.Sprintf("c:%d:%d", task.OwnerID, contactID)
 	if front {
 		_, err = redis.Int64(rc.Do("lpush", contactQ, string(taskJSON)))
 
@@ -58,7 +58,7 @@ func queueHandleTask(rc redis.Conn, contactID models.ContactID, task *queue.Task
 	}
 
 	// then add a handle task for that contact on our global handler queue to
-	err = tasks.Queue(rc, queue.HandlerQueue, models.OrgID(task.OrgID), &HandleContactEventTask{ContactID: contactID}, queue.DefaultPriority)
+	err = tasks.Queue(rc, queue.HandlerQueue, models.OrgID(task.OwnerID), &HandleContactEventTask{ContactID: contactID}, queue.DefaultPriority)
 	if err != nil {
 		return errors.Wrapf(err, "error adding handle event task")
 	}

@@ -156,7 +156,7 @@ func (w *Worker) Stop() {
 }
 
 func (w *Worker) handleTask(task *queue.Task) {
-	log := slog.With("queue", w.foreman.queue, "worker_id", w.id, "task_type", task.Type, "org_id", task.OrgID)
+	log := slog.With("queue", w.foreman.queue, "worker_id", w.id, "task_type", task.Type, "org_id", task.OwnerID)
 
 	defer func() {
 		// catch any panics and recover
@@ -168,7 +168,7 @@ func (w *Worker) handleTask(task *queue.Task) {
 
 		// mark our task as complete
 		rc := w.foreman.rt.RP.Get()
-		err := queue.Done(rc, w.foreman.queue, task.OrgID)
+		err := queue.Done(rc, w.foreman.queue, task.OwnerID)
 		if err != nil {
 			log.Error("unable to mark task as complete", "error", err)
 		}
