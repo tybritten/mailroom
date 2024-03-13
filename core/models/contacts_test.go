@@ -624,13 +624,15 @@ func TestLoadContactURNs(t *testing.T) {
 
 func TestLockContacts(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
+	rc := rt.RP.Get()
+	defer rc.Close()
 
 	defer testsuite.Reset(testsuite.ResetRedis)
 
 	// grab lock for contact 102
 	models.LockContacts(ctx, rt, testdata.Org1.ID, []models.ContactID{102}, time.Second)
 
-	assertredis.Exists(t, rt.RP, "lock:c:1:102")
+	assertredis.Exists(t, rc, "lock:c:1:102")
 
 	// try to get locks for 101, 102, 103
 	locks, skipped, err := models.LockContacts(ctx, rt, testdata.Org1.ID, []models.ContactID{101, 102, 103}, time.Second)
@@ -638,16 +640,16 @@ func TestLockContacts(t *testing.T) {
 	assert.ElementsMatch(t, []models.ContactID{101, 103}, maps.Keys(locks))
 	assert.Equal(t, []models.ContactID{102}, skipped) // because it's already locked
 
-	assertredis.Exists(t, rt.RP, "lock:c:1:101")
-	assertredis.Exists(t, rt.RP, "lock:c:1:102")
-	assertredis.Exists(t, rt.RP, "lock:c:1:103")
+	assertredis.Exists(t, rc, "lock:c:1:101")
+	assertredis.Exists(t, rc, "lock:c:1:102")
+	assertredis.Exists(t, rc, "lock:c:1:103")
 
 	err = models.UnlockContacts(rt, testdata.Org1.ID, locks)
 	assert.NoError(t, err)
 
-	assertredis.NotExists(t, rt.RP, "lock:c:1:101")
-	assertredis.Exists(t, rt.RP, "lock:c:1:102")
-	assertredis.NotExists(t, rt.RP, "lock:c:1:103")
+	assertredis.NotExists(t, rc, "lock:c:1:101")
+	assertredis.Exists(t, rc, "lock:c:1:102")
+	assertredis.NotExists(t, rc, "lock:c:1:103")
 
 	// lock contacts 103, 104, 105 so only 101 is unlocked
 	models.LockContacts(ctx, rt, testdata.Org1.ID, []models.ContactID{103}, time.Second)
@@ -665,5 +667,5 @@ func TestLockContacts(t *testing.T) {
 	assert.Less(t, time.Since(start), time.Second*3)
 
 	// since we errored, any locks we grabbed before the error, should have been released
-	assertredis.NotExists(t, rt.RP, "lock:c:1:101")
+	assertredis.NotExists(t, rc, "lock:c:1:101")
 }

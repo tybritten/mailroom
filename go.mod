@@ -20,7 +20,7 @@ require (
 	github.com/nyaruka/gocommon v1.53.0
 	github.com/nyaruka/goflow v0.206.1
 	github.com/nyaruka/null/v3 v3.0.0
-	github.com/nyaruka/redisx v0.7.0
+	github.com/nyaruka/redisx v0.8.0
 	github.com/nyaruka/rp-indexer/v8 v8.3.1
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/patrickmn/go-cache v2.1.0+incompatible

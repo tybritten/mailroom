@@ -61,7 +61,7 @@ func TestFireCampaignEvents(t *testing.T) {
 
 		// and left in redis marker
 		for _, fid := range fireIDs {
-			assertredis.SIsMember(t, rt.RP, fmt.Sprintf("campaign_event:%s", time.Now().Format("2006-01-02")), fmt.Sprintf("%d", fid), true)
+			assertredis.SIsMember(t, rc, fmt.Sprintf("campaign_event:%s", time.Now().Format("2006-01-02")), fmt.Sprintf("%d", fid), true)
 		}
 	}
 

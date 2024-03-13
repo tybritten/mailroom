@@ -15,6 +15,8 @@ import (
 
 func TestCron(t *testing.T) {
 	_, rt := testsuite.Runtime()
+	rc := rt.RP.Get()
+	defer rc.Close()
 
 	defer testsuite.Reset(testsuite.ResetRedis)
 
@@ -70,11 +72,11 @@ func TestCron(t *testing.T) {
 	quit = make(chan bool)
 	running = false
 
-	assertredis.Exists(t, rt.RP, "cron_stats:last_start")
-	assertredis.Exists(t, rt.RP, "cron_stats:last_time")
-	assertredis.HGet(t, rt.RP, "cron_stats:last_result", "test1", `{"fired":4}`)
-	assertredis.HGet(t, rt.RP, "cron_stats:call_count", "test1", "4")
-	assertredis.Exists(t, rt.RP, "cron_stats:total_time")
+	assertredis.Exists(t, rc, "cron_stats:last_start")
+	assertredis.Exists(t, rc, "cron_stats:last_time")
+	assertredis.HGet(t, rc, "cron_stats:last_result", "test1", `{"fired":4}`)
+	assertredis.HGet(t, rc, "cron_stats:call_count", "test1", "4")
+	assertredis.Exists(t, rc, "cron_stats:total_time")
 
 	align()
 
