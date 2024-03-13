@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("retry_msgs", false, NewRetryPendingCron())
+	tasks.RegisterCron("retry_msgs", NewRetryPendingCron())
 }
 
 type RetryPendingCron struct {
@@ -31,6 +31,10 @@ func NewRetryPendingCron() *RetryPendingCron {
 
 func (c *RetryPendingCron) Next(last time.Time) time.Time {
 	return tasks.CronNext(last, time.Minute*5)
+}
+
+func (c *RetryPendingCron) AllInstances() bool {
+	return false
 }
 
 // looks for any pending msgs older than five minutes and queues them to be handled again

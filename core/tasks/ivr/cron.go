@@ -13,13 +13,17 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("retry_ivr_calls", false, &RetryCron{})
+	tasks.RegisterCron("retry_ivr_calls", &RetryCron{})
 }
 
 type RetryCron struct{}
 
 func (c *RetryCron) Next(last time.Time) time.Time {
 	return tasks.CronNext(last, time.Minute)
+}
+
+func (c *RetryCron) AllInstances() bool {
+	return false
 }
 
 // RetryCalls looks for calls that need to be retried and retries them

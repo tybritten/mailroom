@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("analytics", true, &analyticsCron{})
+	tasks.RegisterCron("analytics", &analyticsCron{})
 }
 
 // calculates a bunch of stats every minute and both logs them and sends them to librato
@@ -25,6 +25,10 @@ type analyticsCron struct {
 
 func (c *analyticsCron) Next(last time.Time) time.Time {
 	return tasks.CronNext(last, time.Minute)
+}
+
+func (c *analyticsCron) AllInstances() bool {
+	return true
 }
 
 func (c *analyticsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {

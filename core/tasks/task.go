@@ -7,25 +7,20 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/goflow/utils"
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queue"
 	"github.com/pkg/errors"
 )
 
-// alias the task queues to limit direct depenencies on mailroom package
-// TODO refactor so mailroom imports tasks, not other way around
-var HandlerQueue = mailroom.HandlerQueue
-var BatchQueue = mailroom.BatchQueue
+var HandlerQueue = queue.NewFair("handler")
+var BatchQueue = queue.NewFair("batch")
 
 var registeredTypes = map[string](func() Task){}
 
 // RegisterType registers a new type of task
 func RegisterType(name string, initFunc func() Task) {
 	registeredTypes[name] = initFunc
-
-	mailroom.AddTaskFunction(name, Perform)
 }
 
 // Task is the common interface for all task types
