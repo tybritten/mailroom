@@ -1,3 +1,8 @@
+v9.1.18 (2024-03-13)
+-------------------------
+ * Update to latest redisx
+ * Refactor queue package and move from core to utils
+
 v9.1.17 (2024-03-07)
 -------------------------
  * Add export preview endpoint
