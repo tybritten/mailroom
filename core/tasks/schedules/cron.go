@@ -139,7 +139,7 @@ func (c *schedulesCron) Run(ctx context.Context, rt *runtime.Runtime) (map[strin
 
 		// add our task if we have one
 		if task != nil {
-			err = tasks.Queue(rc, queue.BatchQueue, s.OrgID(), task, queue.HighPriority)
+			err = tasks.Queue(rc, tasks.BatchQueue, s.OrgID(), task, queue.HighPriority)
 			if err != nil {
 				log.Error(fmt.Sprintf("error queueing %s task from schedule", task.Type()), "error", err)
 			}

@@ -59,7 +59,7 @@ func TestSendBroadcastTask(t *testing.T) {
 		groups             []*assets.GroupReference
 		contacts           []*flows.ContactReference
 		urns               []urns.URN
-		queue              string
+		queue              *queue.Fair
 		expectedBatchCount int
 		expectedMsgCount   int
 		expectedMsgText    string
@@ -70,7 +70,7 @@ func TestSendBroadcastTask(t *testing.T) {
 			groups:             []*assets.GroupReference{doctors},
 			contacts:           nil,
 			urns:               nil,
-			queue:              queue.BatchQueue,
+			queue:              tasks.BatchQueue,
 			expectedBatchCount: 2,
 			expectedMsgCount:   121,
 			expectedMsgText:    "hello world",
@@ -81,7 +81,7 @@ func TestSendBroadcastTask(t *testing.T) {
 			groups:             []*assets.GroupReference{doctors},
 			contacts:           georgeOnly,
 			urns:               nil,
-			queue:              queue.BatchQueue,
+			queue:              tasks.BatchQueue,
 			expectedBatchCount: 2,
 			expectedMsgCount:   122,
 			expectedMsgText:    "hello world",
@@ -92,7 +92,7 @@ func TestSendBroadcastTask(t *testing.T) {
 			groups:             nil,
 			contacts:           georgeOnly,
 			urns:               nil,
-			queue:              queue.HandlerQueue,
+			queue:              tasks.HandlerQueue,
 			expectedBatchCount: 1,
 			expectedMsgCount:   1,
 			expectedMsgText:    "hello world",
@@ -103,7 +103,7 @@ func TestSendBroadcastTask(t *testing.T) {
 			groups:             []*assets.GroupReference{doctors},
 			contacts:           []*flows.ContactReference{cathy},
 			urns:               nil,
-			queue:              queue.BatchQueue,
+			queue:              tasks.BatchQueue,
 			expectedBatchCount: 2,
 			expectedMsgCount:   121,
 			expectedMsgText:    "hello world",
@@ -114,7 +114,7 @@ func TestSendBroadcastTask(t *testing.T) {
 			groups:             nil,
 			contacts:           []*flows.ContactReference{cathy},
 			urns:               nil,
-			queue:              queue.HandlerQueue,
+			queue:              tasks.HandlerQueue,
 			expectedBatchCount: 1,
 			expectedMsgCount:   1,
 			expectedMsgText:    "hello world",
@@ -125,7 +125,7 @@ func TestSendBroadcastTask(t *testing.T) {
 			groups:             nil,
 			contacts:           []*flows.ContactReference{cathy},
 			urns:               []urns.URN{urns.URN("tel:+12065551212")},
-			queue:              queue.HandlerQueue,
+			queue:              tasks.HandlerQueue,
 			expectedBatchCount: 1,
 			expectedMsgCount:   1,
 			expectedMsgText:    "hello world",
@@ -136,7 +136,7 @@ func TestSendBroadcastTask(t *testing.T) {
 			groups:             nil,
 			contacts:           []*flows.ContactReference{cathy},
 			urns:               []urns.URN{urns.URN("tel:+250700000001")},
-			queue:              queue.HandlerQueue,
+			queue:              tasks.HandlerQueue,
 			expectedBatchCount: 1,
 			expectedMsgCount:   2,
 			expectedMsgText:    "hello world",
@@ -147,7 +147,7 @@ func TestSendBroadcastTask(t *testing.T) {
 			groups:             nil,
 			contacts:           nil,
 			urns:               []urns.URN{urns.URN("tel:+250700000001")},
-			queue:              queue.HandlerQueue,
+			queue:              tasks.HandlerQueue,
 			expectedBatchCount: 1,
 			expectedMsgCount:   1,
 			expectedMsgText:    "hello world",
@@ -210,7 +210,7 @@ func TestBroadcastTask(t *testing.T) {
 		contactIDs       []models.ContactID
 		URNs             []urns.URN
 		createdByID      models.UserID
-		queue            string
+		queue            *queue.Fair
 		expectedBatches  int
 		expectedMsgCount int
 		expectedMsgText  string
@@ -230,7 +230,7 @@ func TestBroadcastTask(t *testing.T) {
 			cathyOnly,
 			nil,
 			testdata.Admin.ID,
-			queue.BatchQueue,
+			tasks.BatchQueue,
 			2,
 			121,
 			"hello world",
@@ -250,7 +250,7 @@ func TestBroadcastTask(t *testing.T) {
 			cathyOnly,
 			nil,
 			testdata.Agent.ID,
-			queue.HandlerQueue,
+			tasks.HandlerQueue,
 			1,
 			1,
 			"hi Cathy from Nyaruka goflow URN: tel:+12065551212 Gender: F",
@@ -275,7 +275,7 @@ func TestBroadcastTask(t *testing.T) {
 		var task *queue.Task
 		count := 0
 		for {
-			task, err = queue.Pop(rc, tc.queue)
+			task, err = tc.queue.Pop(rc)
 			assert.NoError(t, err)
 			if task == nil {
 				break

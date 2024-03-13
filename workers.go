@@ -16,18 +16,18 @@ import (
 type Foreman struct {
 	rt               *runtime.Runtime
 	wg               *sync.WaitGroup
-	queue            string
+	queue            *queue.Fair
 	workers          []*Worker
 	availableWorkers chan *Worker
 	quit             chan bool
 }
 
 // NewForeman creates a new Foreman for the passed in server with the number of max workers
-func NewForeman(rt *runtime.Runtime, wg *sync.WaitGroup, queue string, maxWorkers int) *Foreman {
+func NewForeman(rt *runtime.Runtime, wg *sync.WaitGroup, q *queue.Fair, maxWorkers int) *Foreman {
 	foreman := &Foreman{
 		rt:               rt,
 		wg:               wg,
-		queue:            queue,
+		queue:            q,
 		workers:          make([]*Worker, maxWorkers),
 		availableWorkers: make(chan *Worker, maxWorkers),
 		quit:             make(chan bool),
@@ -80,7 +80,7 @@ func (f *Foreman) Assign() {
 		case worker := <-f.availableWorkers:
 			// see if we have a task to work on
 			rc := f.rt.RP.Get()
-			task, err := queue.Pop(rc, f.queue)
+			task, err := f.queue.Pop(rc)
 			rc.Close()
 
 			if err == nil && task != nil {
@@ -168,7 +168,7 @@ func (w *Worker) handleTask(task *queue.Task) {
 
 		// mark our task as complete
 		rc := w.foreman.rt.RP.Get()
-		err := queue.Done(rc, w.foreman.queue, task.OwnerID)
+		err := w.foreman.queue.Done(rc, task.OwnerID)
 		if err != nil {
 			log.Error("unable to mark task as complete", "error", err)
 		}

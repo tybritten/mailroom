@@ -33,12 +33,12 @@ func (h *startBroadcastsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx
 				return errors.Wrapf(err, "error creating broadcast")
 			}
 
-			taskQ := queue.HandlerQueue
+			taskQ := tasks.HandlerQueue
 			priority := queue.DefaultPriority
 
 			// if we are starting groups, queue to our batch queue instead, but with high priority
 			if len(bcast.GroupIDs) > 0 {
-				taskQ = queue.BatchQueue
+				taskQ = tasks.BatchQueue
 				priority = queue.HighPriority
 			}
 

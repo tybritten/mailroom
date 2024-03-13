@@ -9,11 +9,11 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	_ "github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/expirations"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/nyaruka/mailroom/utils/queue"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -81,7 +81,7 @@ func TestExpirations(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowrun WHERE id = $1;`, r7ID).Columns(map[string]any{"status": "W"})
 
 	// should have created two expiration tasks
-	task, err := queue.Pop(rc, queue.HandlerQueue)
+	task, err := tasks.HandlerQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 
@@ -90,7 +90,7 @@ func TestExpirations(t *testing.T) {
 	jsonx.MustUnmarshal(task.Task, eventTask)
 	assert.Equal(t, testdata.George.ID, eventTask.ContactID)
 
-	task, err = queue.Pop(rc, queue.HandlerQueue)
+	task, err = tasks.HandlerQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 
@@ -100,7 +100,7 @@ func TestExpirations(t *testing.T) {
 	assert.Equal(t, blake.ID, eventTask.ContactID)
 
 	// no other tasks
-	task, err = queue.Pop(rc, queue.HandlerQueue)
+	task, err = tasks.HandlerQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.Nil(t, task)
 }

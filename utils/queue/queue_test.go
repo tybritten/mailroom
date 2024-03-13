@@ -22,8 +22,10 @@ func TestQueues(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetRedis)
 
+	q := queue.NewFair("test")
+
 	assertPop := func(expectedOwnerID int, expectedBody string) {
-		task, err := queue.Pop(rc, "test")
+		task, err := q.Pop(rc)
 		require.NoError(t, err)
 		if expectedBody != "" {
 			assert.Equal(t, expectedOwnerID, task.OwnerID)
@@ -34,18 +36,18 @@ func TestQueues(t *testing.T) {
 	}
 
 	assertSize := func(expecting int) {
-		size, err := queue.Size(rc, "test")
+		size, err := q.Size(rc)
 		assert.NoError(t, err)
 		assert.Equal(t, expecting, size)
 	}
 
 	assertSize(0)
 
-	queue.Push(rc, "test", "type1", 1, "task1", queue.DefaultPriority)
-	queue.Push(rc, "test", "type1", 1, "task2", queue.HighPriority)
-	queue.Push(rc, "test", "type1", 2, "task3", queue.LowPriority)
-	queue.Push(rc, "test", "type2", 1, "task4", queue.DefaultPriority)
-	queue.Push(rc, "test", "type2", 2, "task5", queue.DefaultPriority)
+	q.Push(rc, "type1", 1, "task1", queue.DefaultPriority)
+	q.Push(rc, "type1", 1, "task2", queue.HighPriority)
+	q.Push(rc, "type1", 2, "task3", queue.LowPriority)
+	q.Push(rc, "type2", 1, "task4", queue.DefaultPriority)
+	q.Push(rc, "type2", 2, "task5", queue.DefaultPriority)
 
 	// nobody processing any tasks so no workers assigned in active set
 	assertredis.ZGetAll(t, rc, "test:active", map[string]float64{"1": 0, "2": 0})
@@ -72,8 +74,8 @@ func TestQueues(t *testing.T) {
 	assertSize(2)
 
 	// mark task2 and task1 (owner 1) as complete
-	queue.Done(rc, "test", 1)
-	queue.Done(rc, "test", 1)
+	q.Done(rc, 1)
+	q.Done(rc, 1)
 
 	assertredis.ZGetAll(t, rc, "test:active", map[string]float64{"1": 0, "2": 1})
 
@@ -86,8 +88,8 @@ func TestQueues(t *testing.T) {
 	assertredis.ZGetAll(t, rc, "test:active", map[string]float64{})
 
 	//  if we somehow get into a state where an owner is in the active set but doesn't have queued tasks, pop will retry
-	queue.Push(rc, "test", "type1", 1, "task6", queue.DefaultPriority)
-	queue.Push(rc, "test", "type1", 2, "task7", queue.DefaultPriority)
+	q.Push(rc, "type1", 1, "task6", queue.DefaultPriority)
+	q.Push(rc, "type1", 2, "task7", queue.DefaultPriority)
 
 	rc.Do("ZREMRANGEBYRANK", "test:1", 0, 1)
 
@@ -95,9 +97,9 @@ func TestQueues(t *testing.T) {
 	assertPop(0, "")
 
 	// if we somehow call done too many times, we never get negative workers
-	queue.Push(rc, "test", "type1", 1, "task8", queue.DefaultPriority)
-	queue.Done(rc, "test", 1)
-	queue.Done(rc, "test", 1)
+	q.Push(rc, "type1", 1, "task8", queue.DefaultPriority)
+	q.Done(rc, 1)
+	q.Done(rc, 1)
 
 	assertredis.ZGetAll(t, rc, "test:active", map[string]float64{"1": 0})
 }

@@ -756,7 +756,7 @@ func TriggerIVRFlow(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 	// queue this to our ivr starter, it will take care of creating the calls then calling back in
 	rc := rt.RP.Get()
 	defer rc.Close()
-	err = tasks.Queue(rc, queue.BatchQueue, orgID, task, queue.HighPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, orgID, task, queue.HighPriority)
 	if err != nil {
 		return errors.Wrapf(err, "error queuing ivr flow start")
 	}

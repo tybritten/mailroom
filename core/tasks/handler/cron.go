@@ -45,7 +45,7 @@ func (c *RetryPendingCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 	defer rc.Close()
 
 	// check the size of our handle queue
-	handlerSize, err := queue.Size(rc, queue.HandlerQueue)
+	handlerSize, err := tasks.HandlerQueue.Size(rc)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error finding size of handler queue")
 	}

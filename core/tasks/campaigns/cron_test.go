@@ -19,7 +19,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/nyaruka/mailroom/utils/queue"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -114,7 +113,7 @@ func TestQueueAndFireEvent(t *testing.T) {
 	assert.NoError(t, err)
 
 	// then actually work on the event
-	task, err := queue.Pop(rc, queue.BatchQueue)
+	task, err := tasks.BatchQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 
@@ -142,7 +141,7 @@ func TestQueueAndFireEvent(t *testing.T) {
 	assert.NoError(t, err)
 
 	// then actually work on the event
-	task, err = queue.Pop(rc, queue.BatchQueue)
+	task, err = tasks.BatchQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 
@@ -180,7 +179,7 @@ func TestIVRCampaigns(t *testing.T) {
 	assert.NoError(t, err)
 
 	// then actually work on the event
-	task, err := queue.Pop(rc, queue.BatchQueue)
+	task, err := tasks.BatchQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 
@@ -200,7 +199,7 @@ func TestIVRCampaigns(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) from campaigns_eventfire WHERE event_id = $1 AND fired IS NOT NULL;`, testdata.RemindersEvent1.ID).Returns(2)
 
 	// pop our next task, should be the start
-	task, err = queue.Pop(rc, queue.BatchQueue)
+	task, err = tasks.BatchQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 

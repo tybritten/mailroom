@@ -58,7 +58,7 @@ func queueHandleTask(rc redis.Conn, contactID models.ContactID, task *queue.Task
 	}
 
 	// then add a handle task for that contact on our global handler queue to
-	err = tasks.Queue(rc, queue.HandlerQueue, models.OrgID(task.OwnerID), &HandleContactEventTask{ContactID: contactID}, queue.DefaultPriority)
+	err = tasks.Queue(rc, tasks.HandlerQueue, models.OrgID(task.OwnerID), &HandleContactEventTask{ContactID: contactID}, queue.DefaultPriority)
 	if err != nil {
 		return errors.Wrapf(err, "error adding handle event task")
 	}

@@ -8,7 +8,6 @@ import (
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queue"
 )
 
 func init() {
@@ -39,13 +38,13 @@ func (c *analyticsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[strin
 	defer rc.Close()
 
 	// calculate size of batch queue
-	batchSize, err := queue.Size(rc, queue.BatchQueue)
+	batchSize, err := tasks.BatchQueue.Size(rc)
 	if err != nil {
 		slog.Error("error calculating batch queue size", "error", err)
 	}
 
 	// and size of handler queue
-	handlerSize, err := queue.Size(rc, queue.HandlerQueue)
+	handlerSize, err := tasks.HandlerQueue.Size(rc)
 	if err != nil {
 		slog.Error("error calculating handler queue size", "error", err)
 	}

@@ -115,7 +115,7 @@ func (c *QueueEventsCron) queueFiresTask(rp *redis.Pool, orgID models.OrgID, tas
 	rc := rp.Get()
 	defer rc.Close()
 
-	err := tasks.Queue(rc, queue.BatchQueue, orgID, task, queue.DefaultPriority)
+	err := tasks.Queue(rc, tasks.BatchQueue, orgID, task, queue.DefaultPriority)
 	if err != nil {
 		return errors.Wrap(err, "error queuing task")
 	}

@@ -85,9 +85,9 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, bcast *mod
 	}
 
 	// two or fewer contacts? queue to our handler queue for sending
-	q := queue.BatchQueue
+	q := tasks.BatchQueue
 	if len(contactIDs) <= 2 {
-		q = queue.HandlerQueue
+		q = tasks.HandlerQueue
 	}
 
 	rc := rt.RP.Get()
