@@ -11,44 +11,13 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/storage"
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/cron"
-	"github.com/nyaruka/mailroom/utils/queue"
 	"github.com/nyaruka/mailroom/web"
 	"github.com/nyaruka/redisx"
 	"github.com/olivere/elastic/v7"
 	"github.com/pkg/errors"
 )
-
-var HandlerQueue = queue.NewFair("handler")
-var BatchQueue = queue.NewFair("batch")
-
-// InitFunction is a function that will be called when mailroom starts
-type InitFunction func(*runtime.Runtime, *sync.WaitGroup, chan bool) error
-
-var initFunctions = make([]InitFunction, 0)
-
-func addInitFunction(initFunc InitFunction) {
-	initFunctions = append(initFunctions, initFunc)
-}
-
-// RegisterCron registers a new cron function to run every interval
-func RegisterCron(name string, allInstances bool, fn cron.Function, next func(time.Time) time.Time) {
-	addInitFunction(func(rt *runtime.Runtime, wg *sync.WaitGroup, quit chan bool) error {
-		cron.Start(rt, wg, name, allInstances, fn, next, time.Minute*5, quit)
-		return nil
-	})
-}
-
-// TaskFunction is the function that will be called for a type of task
-type TaskFunction func(ctx context.Context, rt *runtime.Runtime, task *queue.Task) error
-
-var taskFunctions = make(map[string]TaskFunction)
-
-// AddTaskFunction adds an task function that will be called for a type of task
-func AddTaskFunction(taskType string, taskFunc TaskFunction) {
-	taskFunctions[taskType] = taskFunc
-}
 
 // Mailroom is a service for handling RapidPro events
 type Mailroom struct {
@@ -73,8 +42,8 @@ func NewMailroom(config *runtime.Config) *Mailroom {
 		wg:   &sync.WaitGroup{},
 	}
 	mr.ctx, mr.cancel = context.WithCancel(context.Background())
-	mr.batchForeman = NewForeman(mr.rt, mr.wg, queue.NewFair("batch"), config.BatchWorkers)
-	mr.handlerForeman = NewForeman(mr.rt, mr.wg, queue.NewFair("handler"), config.HandlerWorkers)
+	mr.batchForeman = NewForeman(mr.rt, mr.wg, tasks.BatchQueue, config.BatchWorkers)
+	mr.handlerForeman = NewForeman(mr.rt, mr.wg, tasks.HandlerQueue, config.HandlerWorkers)
 
 	return mr
 }
@@ -169,10 +138,6 @@ func (mr *Mailroom) Start() error {
 		log.Warn("fcm not configured, no android syncing")
 	}
 
-	for _, initFunc := range initFunctions {
-		initFunc(mr.rt, mr.wg, mr.quit)
-	}
-
 	// if we have a librato token, configure it
 	if c.LibratoToken != "" {
 		analytics.RegisterBackend(analytics.NewLibrato(c.LibratoUsername, c.LibratoToken, c.InstanceName, time.Second, mr.wg))
@@ -187,6 +152,8 @@ func (mr *Mailroom) Start() error {
 	// start our web server
 	mr.webserver = web.NewServer(mr.ctx, mr.rt, mr.wg)
 	mr.webserver.Start()
+
+	tasks.StartCrons(mr.rt, mr.wg, mr.quit)
 
 	log.Info("mailroom started", "domain", c.Domain)
 

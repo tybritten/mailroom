@@ -16,13 +16,17 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("fire_schedules", false, &schedulesCron{})
+	tasks.RegisterCron("fire_schedules", &schedulesCron{})
 }
 
 type schedulesCron struct{}
 
 func (c *schedulesCron) Next(last time.Time) time.Time {
 	return tasks.CronNext(last, time.Minute)
+}
+
+func (c *schedulesCron) AllInstances() bool {
+	return false
 }
 
 // checkSchedules looks up any expired schedules and fires them, setting the next fire as needed

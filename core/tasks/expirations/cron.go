@@ -20,8 +20,8 @@ const (
 )
 
 func init() {
-	tasks.RegisterCron("run_expirations", false, NewExpirationsCron())
-	tasks.RegisterCron("expire_ivr_calls", false, &VoiceExpirationsCron{})
+	tasks.RegisterCron("run_expirations", NewExpirationsCron())
+	tasks.RegisterCron("expire_ivr_calls", &VoiceExpirationsCron{})
 }
 
 type ExpirationsCron struct {
@@ -36,6 +36,10 @@ func NewExpirationsCron() *ExpirationsCron {
 
 func (c *ExpirationsCron) Next(last time.Time) time.Time {
 	return tasks.CronNext(last, time.Minute)
+}
+
+func (c *ExpirationsCron) AllInstances() bool {
+	return false
 }
 
 // handles waiting messaging sessions whose waits have expired, resuming those that can be resumed,
@@ -139,6 +143,10 @@ type VoiceExpirationsCron struct{}
 
 func (c *VoiceExpirationsCron) Next(last time.Time) time.Time {
 	return tasks.CronNext(last, time.Minute)
+}
+
+func (c *VoiceExpirationsCron) AllInstances() bool {
+	return false
 }
 
 // looks for voice sessions that should be expired and ends them

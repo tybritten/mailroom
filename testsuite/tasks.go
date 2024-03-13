@@ -1,12 +1,12 @@
 package testsuite
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/gocommon/jsonx"
-	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
@@ -67,7 +67,7 @@ func FlushTasks(t *testing.T, rt *runtime.Runtime) map[string]int {
 
 		counts[task.Type]++
 
-		err = mailroom.PerformTask(rt, task)
+		err = tasks.Perform(context.Background(), rt, task)
 		assert.NoError(t, err)
 	}
 	return counts

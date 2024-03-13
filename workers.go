@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queue"
-	"github.com/pkg/errors"
 )
 
 // Foreman takes care of managing our set of workers and assigns msgs for each to send
@@ -178,7 +178,7 @@ func (w *Worker) handleTask(task *queue.Task) {
 	log.Debug("starting handling of task")
 	start := time.Now()
 
-	if err := PerformTask(w.foreman.rt, task); err != nil {
+	if err := tasks.Perform(context.Background(), w.foreman.rt, task); err != nil {
 		log.Error("error running task", "task", string(task.Task), "error", err)
 	}
 
@@ -189,13 +189,4 @@ func (w *Worker) handleTask(task *queue.Task) {
 	if elapsed > time.Minute {
 		log.Warn("long running task", "task", string(task.Task), "elapsed", elapsed)
 	}
-}
-
-func PerformTask(rt *runtime.Runtime, t *queue.Task) error {
-	taskFunc, found := taskFunctions[t.Type]
-	if !found {
-		return errors.Errorf("unable to find handler for task type %s", t.Type)
-	}
-
-	return taskFunc(context.Background(), rt, t)
 }

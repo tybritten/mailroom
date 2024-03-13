@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("sessions_timeouts", false, newTimeoutsCron())
+	tasks.RegisterCron("sessions_timeouts", newTimeoutsCron())
 }
 
 type timeoutsCron struct {
@@ -29,6 +29,10 @@ func newTimeoutsCron() tasks.Cron {
 
 func (c *timeoutsCron) Next(last time.Time) time.Time {
 	return tasks.CronNext(last, time.Minute)
+}
+
+func (c *timeoutsCron) AllInstances() bool {
+	return false
 }
 
 // timeoutRuns looks for any runs that have timed out and schedules for them to continue
