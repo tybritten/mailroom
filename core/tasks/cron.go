@@ -17,7 +17,8 @@ type Cron interface {
 	// Run performs the task
 	Run(context.Context, *runtime.Runtime) (map[string]any, error)
 
-	// AllInstances returns whether cron execution is synced per instance
+	// AllInstances returns whether cron runs on all instances - i.e. locking is instance specific. This is for crons
+	// like analytics which report instance specific stats. Other crons are synchronized across all instances.
 	AllInstances() bool
 }
 
