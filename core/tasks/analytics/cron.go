@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/analytics"
-	"github.com/nyaruka/mailroom/core/queue"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
+	"github.com/nyaruka/mailroom/utils/queue"
 )
 
 func init() {

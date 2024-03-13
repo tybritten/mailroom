@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nyaruka/mailroom/core/queue"
 	"github.com/nyaruka/mailroom/runtime"
+	"github.com/nyaruka/mailroom/utils/queue"
 	"github.com/pkg/errors"
 )
 
