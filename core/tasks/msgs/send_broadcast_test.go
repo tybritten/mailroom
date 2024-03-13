@@ -275,7 +275,7 @@ func TestBroadcastTask(t *testing.T) {
 		var task *queue.Task
 		count := 0
 		for {
-			task, err = queue.PopNextTask(rc, tc.queue)
+			task, err = queue.Pop(rc, tc.queue)
 			assert.NoError(t, err)
 			if task == nil {
 				break

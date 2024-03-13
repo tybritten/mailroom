@@ -114,7 +114,7 @@ func TestQueueAndFireEvent(t *testing.T) {
 	assert.NoError(t, err)
 
 	// then actually work on the event
-	task, err := queue.PopNextTask(rc, queue.BatchQueue)
+	task, err := queue.Pop(rc, queue.BatchQueue)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 
@@ -142,7 +142,7 @@ func TestQueueAndFireEvent(t *testing.T) {
 	assert.NoError(t, err)
 
 	// then actually work on the event
-	task, err = queue.PopNextTask(rc, queue.BatchQueue)
+	task, err = queue.Pop(rc, queue.BatchQueue)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 
@@ -180,7 +180,7 @@ func TestIVRCampaigns(t *testing.T) {
 	assert.NoError(t, err)
 
 	// then actually work on the event
-	task, err := queue.PopNextTask(rc, queue.BatchQueue)
+	task, err := queue.Pop(rc, queue.BatchQueue)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 
@@ -200,7 +200,7 @@ func TestIVRCampaigns(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) from campaigns_eventfire WHERE event_id = $1 AND fired IS NOT NULL;`, testdata.RemindersEvent1.ID).Returns(2)
 
 	// pop our next task, should be the start
-	task, err = queue.PopNextTask(rc, queue.BatchQueue)
+	task, err = queue.Pop(rc, queue.BatchQueue)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 
