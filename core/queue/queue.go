@@ -10,7 +10,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/jsonx"
-	"github.com/pkg/errors"
 )
 
 // Task is a wrapper for encoding a task
@@ -46,27 +45,6 @@ const (
 	// HandlerQueue is our queue for message handling or other tasks related to just one contact
 	HandlerQueue = "handler"
 )
-
-// Size returns the number of tasks for the passed in queue
-func Size(rc redis.Conn, queue string) (int, error) {
-	// get all the active queues
-	queues, err := redis.Ints(rc.Do("ZRANGE", fmt.Sprintf(activePattern, queue), 0, -1))
-	if err != nil {
-		return 0, errors.Wrapf(err, "error getting active queues for: %s", queue)
-	}
-
-	// add up each
-	size := 0
-	for _, q := range queues {
-		count, err := redis.Int(rc.Do("ZCARD", fmt.Sprintf(queuePattern, queue, q)))
-		if err != nil {
-			return 0, errors.Wrapf(err, "error getting size of: %d", q)
-		}
-		size += count
-	}
-
-	return size, nil
-}
 
 // Push adds the passed in task to our queue for execution
 func Push(rc redis.Conn, queue string, taskType string, orgID int, task any, priority Priority) error {
@@ -126,4 +104,13 @@ var doneScript = redis.NewScript(1, doneLua)
 func Done(rc redis.Conn, queue string, orgID int) error {
 	_, err := doneScript.Do(rc, fmt.Sprintf(activePattern, queue), strconv.FormatInt(int64(orgID), 10))
 	return err
+}
+
+//go:embed lua/size.lua
+var sizeLua string
+var sizeScript = redis.NewScript(1, sizeLua)
+
+// Size returns the total number of tasks for the passed in queue across all owners
+func Size(rc redis.Conn, queue string) (int, error) {
+	return redis.Int(sizeScript.Do(rc, fmt.Sprintf(activePattern, queue), queue))
 }
