@@ -67,4 +67,23 @@ func TestQueues(t *testing.T) {
 	assertPop(`"task4"`)
 	assertPop(`"task3"`)
 	assertPop("") // no more tasks
+
+	assertredis.ZGetAll(t, rt.RP, "test:active", map[string]float64{})
+
+	//  if we somehow get into a state where an owner is in the active set but doesn't have queued tasks, pop will retry
+	queue.Push(rc, "test", "type1", 1, "task6", queue.DefaultPriority)
+	queue.Push(rc, "test", "type1", 2, "task7", queue.DefaultPriority)
+
+	rc.Do("ZREMRANGEBYRANK", "test:1", 0, 1)
+
+	assertPop(`"task7"`)
+	assertPop("")
+
+	// if we somehow call done too many times, we never get negative workers
+	queue.Push(rc, "test", "type1", 1, "task8", queue.DefaultPriority)
+	queue.Done(rc, "test", 1)
+	queue.Done(rc, "test", 1)
+
+	assertredis.ZGetAll(t, rt.RP, "test:active", map[string]float64{"1": 0})
+
 }
