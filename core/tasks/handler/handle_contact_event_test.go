@@ -278,7 +278,7 @@ func TestMsgEvents(t *testing.T) {
 	}
 
 	makeMsgTask := func(org *testdata.Org, channel *testdata.Channel, contact *testdata.Contact, text string) *queue.Task {
-		return &queue.Task{Type: handler.MsgEventType, OrgID: int(org.ID), Task: jsonx.MustMarshal(&handler.MsgEvent{
+		return &queue.Task{Type: handler.MsgEventType, OwnerID: int(org.ID), Task: jsonx.MustMarshal(&handler.MsgEvent{
 			ContactID: contact.ID,
 			OrgID:     org.ID,
 			ChannelID: channel.ID,
@@ -526,9 +526,9 @@ func TestChannelEvents(t *testing.T) {
 		require.NoError(t, err)
 
 		task := &queue.Task{
-			Type:  string(tc.EventType),
-			OrgID: int(testdata.Org1.ID),
-			Task:  jsonx.MustMarshal(event),
+			Type:    string(tc.EventType),
+			OwnerID: int(testdata.Org1.ID),
+			Task:    jsonx.MustMarshal(event),
 		}
 
 		err = handler.QueueHandleTask(rc, tc.ContactID, task)
@@ -610,9 +610,9 @@ func TestStopEvent(t *testing.T) {
 	eventJSON, err := json.Marshal(event)
 	require.NoError(t, err)
 	task := &queue.Task{
-		Type:  string(models.EventTypeStopContact),
-		OrgID: int(testdata.Org1.ID),
-		Task:  eventJSON,
+		Type:    string(models.EventTypeStopContact),
+		OwnerID: int(testdata.Org1.ID),
+		Task:    eventJSON,
 	}
 
 	err = handler.QueueHandleTask(rc, testdata.Cathy.ID, task)
@@ -706,8 +706,8 @@ func TestTimedEvents(t *testing.T) {
 
 		if tc.EventType == handler.MsgEventType {
 			task = &queue.Task{
-				Type:  tc.EventType,
-				OrgID: int(tc.Org.ID),
+				Type:    tc.EventType,
+				OwnerID: int(tc.Org.ID),
 				Task: jsonx.MustMarshal(&handler.MsgEvent{
 					ContactID: tc.Contact.ID,
 					OrgID:     tc.Org.ID,

@@ -90,7 +90,7 @@ func (c *RetryPendingCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 
 		task := &queue.Task{
 			Type:     MsgEventType,
-			OrgID:    int(orgID),
+			OwnerID:  int(orgID),
 			Task:     json.RawMessage(eventJSON),
 			QueuedOn: time.Now(),
 		}

@@ -45,7 +45,7 @@ func Perform(ctx context.Context, rt *runtime.Runtime, task *queue.Task) error {
 	ctx, cancel := context.WithTimeout(ctx, typedTask.Timeout())
 	defer cancel()
 
-	return typedTask.Perform(ctx, rt, models.OrgID(task.OrgID))
+	return typedTask.Perform(ctx, rt, models.OrgID(task.OwnerID))
 }
 
 // Queue adds the given task to the named queue

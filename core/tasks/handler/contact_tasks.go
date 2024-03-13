@@ -701,7 +701,7 @@ func newTimedTask(eventType string, orgID models.OrgID, contactID models.Contact
 
 	task := &queue.Task{
 		Type:     eventType,
-		OrgID:    int(orgID),
+		OwnerID:  int(orgID),
 		Task:     eventJSON,
 		QueuedOn: time.Now(),
 	}
