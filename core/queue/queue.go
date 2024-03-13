@@ -1,6 +1,7 @@
 package queue
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -90,43 +91,15 @@ func score(priority Priority) string {
 	return strconv.FormatFloat(s, 'f', 6, 64)
 }
 
-var popTask = redis.NewScript(1, `-- KEYS: [QueueName]
-    -- first get what is the active queue
-	local result = redis.call("zrange", KEYS[1] .. ":active", 0, 0, "WITHSCORES")
-
-	-- nothing? return nothing
-	local group = result[1]
-	if not group then
-		return {"empty", ""}
-	end
-
-	local queue = KEYS[1] .. ":" .. group
-
-	-- pop off our queue
-	local result = redis.call("zrangebyscore", queue, 0, "+inf", "WITHSCORES", "LIMIT", 0, 1)
-
-	-- found a result?
-	if result[1] then
-		-- then remove it from the queue
-		redis.call('zremrangebyrank', queue, 0, 0)
-
-		-- and add a worker to this queue
-		redis.call("zincrby", KEYS[1] .. ":active", 1, group)
-
-		return {group, result[1]}
-	else
-		-- no result found, remove this group from active queues
-		redis.call("zrem", KEYS[1] .. ":active", group)
-
-		return {"retry", ""}
-	end
-`)
+//go:embed lua/pop.lua
+var popLua string
+var popScript = redis.NewScript(1, popLua)
 
 // Pop pops the next task off our queue
 func Pop(rc redis.Conn, queue string) (*Task, error) {
 	task := Task{}
 	for {
-		values, err := redis.Strings(popTask.Do(rc, queue))
+		values, err := redis.Strings(popScript.Do(rc, queue))
 		if err != nil {
 			return nil, err
 		}
@@ -144,19 +117,13 @@ func Pop(rc redis.Conn, queue string) (*Task, error) {
 	}
 }
 
-var markDone = redis.NewScript(2, `-- KEYS: [QueueName] [TaskGroup]
-	-- decrement our active
-	local active = tonumber(redis.call("zincrby", KEYS[1] .. ":active", -1, KEYS[2]))
-
-	-- reset to zero if we somehow go below
-	if active < 0 then
-		redis.call("zadd", KEYS[1] .. ":active", 0, KEYS[2])
-	end
-`)
+//go:embed lua/done.lua
+var doneLua string
+var doneScript = redis.NewScript(2, doneLua)
 
 // Done marks the passed in task as complete. Callers must call this in order
 // to maintain fair workers across orgs
 func Done(rc redis.Conn, queue string, orgID int) error {
-	_, err := markDone.Do(rc, queue, strconv.FormatInt(int64(orgID), 10))
+	_, err := doneScript.Do(rc, queue, strconv.FormatInt(int64(orgID), 10))
 	return err
 }
