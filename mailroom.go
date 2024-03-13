@@ -20,6 +20,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+var HandlerQueue = queue.NewFair("handler")
+var BatchQueue = queue.NewFair("batch")
+
 // InitFunction is a function that will be called when mailroom starts
 type InitFunction func(*runtime.Runtime, *sync.WaitGroup, chan bool) error
 
@@ -70,8 +73,8 @@ func NewMailroom(config *runtime.Config) *Mailroom {
 		wg:   &sync.WaitGroup{},
 	}
 	mr.ctx, mr.cancel = context.WithCancel(context.Background())
-	mr.batchForeman = NewForeman(mr.rt, mr.wg, queue.BatchQueue, config.BatchWorkers)
-	mr.handlerForeman = NewForeman(mr.rt, mr.wg, queue.HandlerQueue, config.HandlerWorkers)
+	mr.batchForeman = NewForeman(mr.rt, mr.wg, queue.NewFair("batch"), config.BatchWorkers)
+	mr.handlerForeman = NewForeman(mr.rt, mr.wg, queue.NewFair("handler"), config.HandlerWorkers)
 
 	return mr
 }

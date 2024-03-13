@@ -66,7 +66,7 @@ func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastReque
 
 	rc := rt.RP.Get()
 	defer rc.Close()
-	err = tasks.Queue(rc, queue.BatchQueue, bcast.OrgID, task, queue.HighPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, bcast.OrgID, task, queue.HighPriority)
 	if err != nil {
 		slog.Error("error queueing broadcast task", "error", err)
 	}

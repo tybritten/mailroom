@@ -27,12 +27,12 @@ func (h *startStartHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sql
 		for _, e := range es {
 			start := e.(*models.FlowStart)
 
-			taskQ := queue.HandlerQueue
+			taskQ := tasks.HandlerQueue
 			priority := queue.DefaultPriority
 
 			// if we are starting groups, queue to our batch queue instead, but with high priority
 			if len(start.GroupIDs) > 0 || start.Query != "" {
-				taskQ = queue.BatchQueue
+				taskQ = tasks.BatchQueue
 				priority = queue.HighPriority
 			}
 

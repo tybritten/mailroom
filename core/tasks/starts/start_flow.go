@@ -116,9 +116,9 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, start *mod
 	idBatches := models.ChunkSlice(contactIDs, startBatchSize)
 
 	// by default we start in the batch queue unless we have two or fewer contacts
-	q := queue.BatchQueue
+	q := tasks.BatchQueue
 	if len(contactIDs) <= 2 {
-		q = queue.HandlerQueue
+		q = tasks.HandlerQueue
 	}
 
 	// if this is a big multi batch blast, give it low priority

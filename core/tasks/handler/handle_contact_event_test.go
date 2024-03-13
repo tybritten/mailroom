@@ -308,7 +308,7 @@ func TestMsgEvents(t *testing.T) {
 		err := handler.QueueHandleTask(rc, tc.contact.ID, task)
 		assert.NoError(t, err, "%d: error adding task", i)
 
-		task, err = queue.Pop(rc, queue.HandlerQueue)
+		task, err = tasks.HandlerQueue.Pop(rc)
 		assert.NoError(t, err, "%d: error popping next task", i)
 
 		err = tasks.Perform(ctx, rt, task)
@@ -346,7 +346,7 @@ func TestMsgEvents(t *testing.T) {
 	orgTasks := testsuite.CurrentTasks(t, rt)
 	assert.Equal(t, 1, len(orgTasks[testdata.Org1.ID]))
 
-	task, err := queue.Pop(rc, queue.BatchQueue)
+	task, err := tasks.BatchQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.NotNil(t, task)
 	assert.Equal(t, "start_ivr_flow_batch", task.Type)
@@ -368,14 +368,14 @@ func TestMsgEvents(t *testing.T) {
 
 	// should get requeued three times automatically
 	for i := 0; i < 3; i++ {
-		task, _ = queue.Pop(rc, queue.HandlerQueue)
+		task, _ = tasks.HandlerQueue.Pop(rc)
 		assert.NotNil(t, task)
 		err := tasks.Perform(ctx, rt, task)
 		assert.NoError(t, err)
 	}
 
 	// on third error, no new task
-	task, err = queue.Pop(rc, queue.HandlerQueue)
+	task, err = tasks.HandlerQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.Nil(t, task)
 
@@ -386,7 +386,7 @@ func TestMsgEvents(t *testing.T) {
 	// try to resume now
 	task = makeMsgTask(testdata.Org2, testdata.Org2Channel, testdata.Org2Contact, "red")
 	handler.QueueHandleTask(rc, testdata.Org2Contact.ID, task)
-	task, _ = queue.Pop(rc, queue.HandlerQueue)
+	task, _ = tasks.HandlerQueue.Pop(rc)
 	assert.NotNil(t, task)
 	err = tasks.Perform(ctx, rt, task)
 	assert.NoError(t, err)
@@ -401,7 +401,7 @@ func TestMsgEvents(t *testing.T) {
 	// trigger should also not start a new session
 	task = makeMsgTask(testdata.Org2, testdata.Org2Channel, testdata.Org2Contact, "start")
 	handler.QueueHandleTask(rc, testdata.Org2Contact.ID, task)
-	task, _ = queue.Pop(rc, queue.HandlerQueue)
+	task, _ = tasks.HandlerQueue.Pop(rc)
 	err = tasks.Perform(ctx, rt, task)
 	assert.NoError(t, err)
 
@@ -534,7 +534,7 @@ func TestChannelEvents(t *testing.T) {
 		err = handler.QueueHandleTask(rc, tc.ContactID, task)
 		assert.NoError(t, err, "%d: error adding task", i)
 
-		task, err = queue.Pop(rc, queue.HandlerQueue)
+		task, err = tasks.HandlerQueue.Pop(rc)
 		assert.NoError(t, err, "%d: error popping next task", i)
 
 		err = tasks.Perform(ctx, rt, task)
@@ -583,7 +583,7 @@ func TestTicketEvents(t *testing.T) {
 	err := handler.QueueTicketEvent(rc, testdata.Cathy.ID, event)
 	require.NoError(t, err)
 
-	task, err := queue.Pop(rc, queue.HandlerQueue)
+	task, err := tasks.HandlerQueue.Pop(rc)
 	require.NoError(t, err)
 
 	err = tasks.Perform(ctx, rt, task)
@@ -618,7 +618,7 @@ func TestStopEvent(t *testing.T) {
 	err = handler.QueueHandleTask(rc, testdata.Cathy.ID, task)
 	assert.NoError(t, err, "error adding task")
 
-	task, err = queue.Pop(rc, queue.HandlerQueue)
+	task, err = tasks.HandlerQueue.Pop(rc)
 	assert.NoError(t, err, "error popping next task")
 
 	err = tasks.Perform(ctx, rt, task)
@@ -745,7 +745,7 @@ func TestTimedEvents(t *testing.T) {
 		err := handler.QueueHandleTask(rc, tc.Contact.ID, task)
 		assert.NoError(t, err, "%d: error adding task", i)
 
-		task, err = queue.Pop(rc, queue.HandlerQueue)
+		task, err = tasks.HandlerQueue.Pop(rc)
 		assert.NoError(t, err, "%d: error popping next task", i)
 
 		err = tasks.Perform(ctx, rt, task)
@@ -793,7 +793,7 @@ func TestTimedEvents(t *testing.T) {
 	err = handler.QueueHandleTask(rc, testdata.Cathy.ID, task)
 	assert.NoError(t, err)
 
-	task, err = queue.Pop(rc, queue.HandlerQueue)
+	task, err = tasks.HandlerQueue.Pop(rc)
 	assert.NoError(t, err)
 
 	err = tasks.Perform(ctx, rt, task)

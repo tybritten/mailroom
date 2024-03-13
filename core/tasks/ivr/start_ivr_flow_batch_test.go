@@ -39,7 +39,7 @@ func TestIVR(t *testing.T) {
 
 	service.callError = errors.Errorf("unable to create call")
 
-	err := tasks.Queue(rc, queue.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queue.DefaultPriority)
+	err := tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queue.DefaultPriority)
 	require.NoError(t, err)
 
 	testsuite.FlushTasks(t, rt)
@@ -51,7 +51,7 @@ func TestIVR(t *testing.T) {
 	service.callError = nil
 	service.callID = ivr.CallID("call1")
 
-	err = tasks.Queue(rc, queue.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queue.DefaultPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queue.DefaultPriority)
 	require.NoError(t, err)
 
 	testsuite.FlushTasks(t, rt)
@@ -62,7 +62,7 @@ func TestIVR(t *testing.T) {
 	service.callError = nil
 	service.callID = ivr.CallID("call1")
 
-	err = tasks.Queue(rc, queue.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queue.DefaultPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queue.DefaultPriority)
 	require.NoError(t, err)
 
 	testsuite.FlushTasks(t, rt)

@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/nyaruka/mailroom/utils/queue"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,7 +49,7 @@ func TestRetryMsgs(t *testing.T) {
 	assert.Equal(t, map[string]any{"retried": 1}, res)
 
 	// should have one message requeued
-	task, _ := queue.Pop(rc, queue.HandlerQueue)
+	task, _ := tasks.HandlerQueue.Pop(rc)
 	assert.NotNil(t, task)
 	err = tasks.Perform(ctx, rt, task)
 	assert.NoError(t, err)
@@ -59,6 +58,6 @@ func TestRetryMsgs(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) from msgs_msg WHERE text = 'pending' AND status = 'H'`).Returns(1)
 
 	// only one message was queued
-	task, _ = queue.Pop(rc, queue.HandlerQueue)
+	task, _ = tasks.HandlerQueue.Pop(rc)
 	assert.Nil(t, task)
 }

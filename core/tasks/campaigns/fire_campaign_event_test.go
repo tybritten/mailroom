@@ -54,7 +54,7 @@ func TestFireCampaignEvents(t *testing.T) {
 			CampaignName: campaign.Name,
 		}
 
-		err := tasks.Queue(rc, queue.BatchQueue, testdata.Org1.ID, task, queue.DefaultPriority)
+		err := tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, task, queue.DefaultPriority)
 		assert.NoError(t, err)
 
 		testsuite.FlushTasks(t, rt)

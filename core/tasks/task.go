@@ -14,6 +14,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+// alias the task queues to limit direct depenencies on mailroom package
+// TODO refactor so mailroom imports tasks, not other way around
+var HandlerQueue = mailroom.HandlerQueue
+var BatchQueue = mailroom.BatchQueue
+
 var registeredTypes = map[string](func() Task){}
 
 // RegisterType registers a new type of task
@@ -48,9 +53,9 @@ func Perform(ctx context.Context, rt *runtime.Runtime, task *queue.Task) error {
 	return typedTask.Perform(ctx, rt, models.OrgID(task.OwnerID))
 }
 
-// Queue adds the given task to the named queue
-func Queue(rc redis.Conn, qname string, orgID models.OrgID, task Task, priority queue.Priority) error {
-	return queue.Push(rc, qname, task.Type(), int(orgID), task, priority)
+// Queue adds the given task to the given queue
+func Queue(rc redis.Conn, q *queue.Fair, orgID models.OrgID, task Task, priority queue.Priority) error {
+	return q.Push(rc, task.Type(), int(orgID), task, priority)
 }
 
 //------------------------------------------------------------------------------------------

@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queue"
 	"github.com/stretchr/testify/assert"
@@ -51,12 +52,12 @@ func FlushTasks(t *testing.T, rt *runtime.Runtime) map[string]int {
 
 	for {
 		// look for a task on the handler queue
-		task, err = queue.Pop(rc, queue.HandlerQueue)
+		task, err = tasks.HandlerQueue.Pop(rc)
 		require.NoError(t, err)
 
 		if task == nil {
 			// look for a task on the batch queue
-			task, err = queue.Pop(rc, queue.BatchQueue)
+			task, err = tasks.BatchQueue.Pop(rc)
 			require.NoError(t, err)
 		}
 

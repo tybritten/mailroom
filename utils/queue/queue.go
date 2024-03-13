@@ -35,20 +35,17 @@ const (
 	LowPriority = Priority(+10000000)
 )
 
-const (
-	queuePattern  = "%s:%d"
-	activePattern = "%s:active"
+type Fair struct {
+	keyBase string
+}
 
-	// BatchQueue is our queue for batch tasks, most things that operate on more than one cotact at a time
-	BatchQueue = "batch"
-
-	// HandlerQueue is our queue for message handling or other tasks related to just one contact
-	HandlerQueue = "handler"
-)
+func NewFair(keyBase string) *Fair {
+	return &Fair{keyBase: keyBase}
+}
 
 // Push adds the passed in task to our queue for execution
-func Push(rc redis.Conn, queue string, taskType string, ownerID int, task any, priority Priority) error {
-	score := score(priority)
+func (q *Fair) Push(rc redis.Conn, taskType string, ownerID int, task any, priority Priority) error {
+	score := q.score(priority)
 
 	taskBody, err := json.Marshal(task)
 	if err != nil {
@@ -58,13 +55,21 @@ func Push(rc redis.Conn, queue string, taskType string, ownerID int, task any, p
 	wrapper := &Task{Type: taskType, OwnerID: ownerID, Task: taskBody, QueuedOn: dates.Now()}
 	marshaled := jsonx.MustMarshal(wrapper)
 
-	rc.Send("ZADD", fmt.Sprintf(queuePattern, queue, ownerID), score, marshaled)
-	rc.Send("ZINCRBY", fmt.Sprintf(activePattern, queue), 0, ownerID) // ensure exists in active set
+	rc.Send("ZADD", q.queueKey(ownerID), score, marshaled)
+	rc.Send("ZINCRBY", q.activeKey(), 0, ownerID) // ensure exists in active set
 	_, err = rc.Do("")
 	return err
 }
 
-func score(priority Priority) string {
+func (q *Fair) activeKey() string {
+	return fmt.Sprintf("%s:active", q.keyBase)
+}
+
+func (q *Fair) queueKey(ownerID int) string {
+	return fmt.Sprintf("%s:%d", q.keyBase, ownerID)
+}
+
+func (q *Fair) score(priority Priority) string {
 	s := float64(dates.Now().UnixMicro())/float64(1000000) + float64(priority)
 	return strconv.FormatFloat(s, 'f', 6, 64)
 }
@@ -74,10 +79,10 @@ var popLua string
 var popScript = redis.NewScript(1, popLua)
 
 // Pop pops the next task off our queue
-func Pop(rc redis.Conn, queue string) (*Task, error) {
+func (q *Fair) Pop(rc redis.Conn) (*Task, error) {
 	task := &Task{}
 	for {
-		values, err := redis.Strings(popScript.Do(rc, fmt.Sprintf(activePattern, queue), queue))
+		values, err := redis.Strings(popScript.Do(rc, q.activeKey(), q.keyBase))
 		if err != nil {
 			return nil, err
 		}
@@ -112,8 +117,8 @@ var doneScript = redis.NewScript(1, doneLua)
 
 // Done marks the passed in task as complete. Callers must call this in order
 // to maintain fair workers across orgs
-func Done(rc redis.Conn, queue string, ownerID int) error {
-	_, err := doneScript.Do(rc, fmt.Sprintf(activePattern, queue), strconv.FormatInt(int64(ownerID), 10))
+func (q *Fair) Done(rc redis.Conn, ownerID int) error {
+	_, err := doneScript.Do(rc, q.activeKey(), strconv.FormatInt(int64(ownerID), 10))
 	return err
 }
 
@@ -122,6 +127,6 @@ var sizeLua string
 var sizeScript = redis.NewScript(1, sizeLua)
 
 // Size returns the total number of tasks for the passed in queue across all owners
-func Size(rc redis.Conn, queue string) (int, error) {
-	return redis.Int(sizeScript.Do(rc, fmt.Sprintf(activePattern, queue), queue))
+func (q *Fair) Size(rc redis.Conn) (int, error) {
+	return redis.Int(sizeScript.Do(rc, q.activeKey(), q.keyBase))
 }
