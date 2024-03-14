@@ -23,7 +23,7 @@ func (t *testTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID model
 	return nil
 }
 
-func TestFoo(t *testing.T) {
+func TestForemanAndWorkers(t *testing.T) {
 	_, rt := testsuite.Runtime()
 	wg := &sync.WaitGroup{}
 	q := queue.NewFair("test")
