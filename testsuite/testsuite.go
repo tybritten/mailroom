@@ -179,10 +179,10 @@ func absPath(p string) string {
 	// start in working directory and go up until we are in a directory containing go.mod
 	dir, _ := os.Getwd()
 	for dir != "/" {
-		dir = path.Dir(dir)
 		if _, err := os.Stat(path.Join(dir, "go.mod")); err == nil {
 			break
 		}
+		dir = path.Dir(dir)
 	}
 	return path.Join(dir, p)
 }
