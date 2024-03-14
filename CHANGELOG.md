@@ -1,3 +1,8 @@
+v9.1.19 (2024-03-14)
+-------------------------
+ * Update to latest goflow
+ * Refactor queues
+
 v9.1.18 (2024-03-13)
 -------------------------
  * Update to latest redisx
