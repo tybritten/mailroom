@@ -23,6 +23,7 @@ func TestQueues(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetRedis)
 
 	q := queue.NewFair("test")
+	assert.Equal(t, "test", q.String())
 
 	assertPop := func(expectedOwnerID int, expectedBody string) {
 		task, err := q.Pop(rc)

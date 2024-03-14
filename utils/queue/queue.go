@@ -43,6 +43,10 @@ func NewFair(keyBase string) *Fair {
 	return &Fair{keyBase: keyBase}
 }
 
+func (q *Fair) String() string {
+	return q.keyBase
+}
+
 // Push adds the passed in task to our queue for execution
 func (q *Fair) Push(rc redis.Conn, taskType string, ownerID int, task any, priority Priority) error {
 	score := q.score(priority)
