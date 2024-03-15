@@ -1,3 +1,8 @@
+v9.1.20 (2024-03-15)
+-------------------------
+ * Update to latest goflow
+ * Fix printing queue names in logs
+
 v9.1.19 (2024-03-14)
 -------------------------
  * Update to latest goflow
