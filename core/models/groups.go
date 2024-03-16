@@ -124,7 +124,7 @@ ON CONFLICT DO NOTHING`
 func GetGroupContactCount(ctx context.Context, db *sql.DB, groupID GroupID) (int, error) {
 	var count int
 	err := db.QueryRowContext(ctx, `SELECT SUM(count) FROM contacts_contactgroupcount WHERE group_id = $1 GROUP BY group_id`, groupID).Scan(&count)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return 0, errors.Wrap(err, "error getting group contact count")
 	}
 	return count, nil
