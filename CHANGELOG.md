@@ -1,3 +1,7 @@
+v9.1.21 (2024-03-18)
+-------------------------
+ * Fix getting group count for export preview
+
 v9.1.20 (2024-03-15)
 -------------------------
  * Update to latest goflow
