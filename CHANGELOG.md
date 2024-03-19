@@ -1,3 +1,7 @@
+v9.1.22 (2024-03-19)
+-------------------------
+ * Read template translation components from temporary comps_as_dict field
+
 v9.1.21 (2024-03-18)
 -------------------------
  * Fix getting group count for export preview
