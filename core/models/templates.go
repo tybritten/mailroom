@@ -89,7 +89,7 @@ func loadTemplates(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Templ
 const sqlSelectTemplatesByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
      SELECT t.uuid, t.name, (SELECT ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(tr))) FROM (
-         SELECT tr.namespace, tr.locale, tr.external_locale, tr.components, JSON_BUILD_OBJECT('uuid', c.uuid, 'name', c.name) as channel
+         SELECT tr.namespace, tr.locale, tr.external_locale, tr.comps_as_dict AS components, JSON_BUILD_OBJECT('uuid', c.uuid, 'name', c.name) as channel
            FROM templates_templatetranslation tr
            JOIN channels_channel c ON tr.channel_id = c.id
           WHERE tr.is_active = TRUE AND tr.status = 'A' AND tr.template_id = t.id AND c.is_active = TRUE
