@@ -1,3 +1,7 @@
+v9.1.24 (2024-03-20)
+-------------------------
+ * Update to latest goflow
+
 v9.1.23 (2024-03-20)
 -------------------------
  * Read template components from components list field
