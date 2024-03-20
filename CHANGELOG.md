@@ -1,3 +1,7 @@
+v9.1.23 (2024-03-20)
+-------------------------
+ * Read template components from components list field
+
 v9.1.22 (2024-03-19)
 -------------------------
  * Read template translation components from temporary comps_as_dict field
