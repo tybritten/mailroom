@@ -8,7 +8,7 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/pkg/errors"
 )
 
@@ -28,12 +28,12 @@ func (h *startStartHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sql
 			start := e.(*models.FlowStart)
 
 			taskQ := tasks.HandlerQueue
-			priority := queue.DefaultPriority
+			priority := queues.DefaultPriority
 
 			// if we are starting groups, queue to our batch queue instead, but with high priority
 			if len(start.GroupIDs) > 0 || start.Query != "" {
 				taskQ = tasks.BatchQueue
-				priority = queue.HighPriority
+				priority = queues.HighPriority
 			}
 
 			err := tasks.Queue(rc, taskQ, oa.OrgID(), &starts.StartFlowTask{FlowStart: start}, priority)

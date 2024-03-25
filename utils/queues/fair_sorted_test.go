@@ -1,4 +1,4 @@
-package queue_test
+package queues_test
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/mailroom/testsuite"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/nyaruka/redisx/assertredis"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +22,7 @@ func TestQueues(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetRedis)
 
-	q := queue.NewFair("test")
+	q := queues.NewFairSorted("test")
 	assert.Equal(t, "test", q.String())
 
 	assertPop := func(expectedOwnerID int, expectedBody string) {
@@ -44,11 +44,11 @@ func TestQueues(t *testing.T) {
 
 	assertSize(0)
 
-	q.Push(rc, "type1", 1, "task1", queue.DefaultPriority)
-	q.Push(rc, "type1", 1, "task2", queue.HighPriority)
-	q.Push(rc, "type1", 2, "task3", queue.LowPriority)
-	q.Push(rc, "type2", 1, "task4", queue.DefaultPriority)
-	q.Push(rc, "type2", 2, "task5", queue.DefaultPriority)
+	q.Push(rc, "type1", 1, "task1", queues.DefaultPriority)
+	q.Push(rc, "type1", 1, "task2", queues.HighPriority)
+	q.Push(rc, "type1", 2, "task3", queues.LowPriority)
+	q.Push(rc, "type2", 1, "task4", queues.DefaultPriority)
+	q.Push(rc, "type2", 2, "task5", queues.DefaultPriority)
 
 	// nobody processing any tasks so no workers assigned in active set
 	assertredis.ZGetAll(t, rc, "test:active", map[string]float64{"1": 0, "2": 0})
@@ -89,8 +89,8 @@ func TestQueues(t *testing.T) {
 	assertredis.ZGetAll(t, rc, "test:active", map[string]float64{})
 
 	//  if we somehow get into a state where an owner is in the active set but doesn't have queued tasks, pop will retry
-	q.Push(rc, "type1", 1, "task6", queue.DefaultPriority)
-	q.Push(rc, "type1", 2, "task7", queue.DefaultPriority)
+	q.Push(rc, "type1", 1, "task6", queues.DefaultPriority)
+	q.Push(rc, "type1", 2, "task7", queues.DefaultPriority)
 
 	rc.Do("ZREMRANGEBYRANK", "test:1", 0, 1)
 
@@ -98,7 +98,7 @@ func TestQueues(t *testing.T) {
 	assertPop(0, "")
 
 	// if we somehow call done too many times, we never get negative workers
-	q.Push(rc, "type1", 1, "task8", queue.DefaultPriority)
+	q.Push(rc, "type1", 1, "task8", queues.DefaultPriority)
 	q.Done(rc, 1)
 	q.Done(rc, 1)
 

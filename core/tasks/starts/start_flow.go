@@ -12,7 +12,7 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/ivr"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/pkg/errors"
 )
 
@@ -122,9 +122,9 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, start *mod
 	}
 
 	// if this is a big multi batch blast, give it low priority
-	priority := queue.DefaultPriority
+	priority := queues.DefaultPriority
 	if len(idBatches) > 1 {
-		priority = queue.LowPriority
+		priority = queues.LowPriority
 	}
 
 	rc := rt.RP.Get()

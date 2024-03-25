@@ -9,21 +9,21 @@ import (
 
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 )
 
 // Foreman takes care of managing our set of workers and assigns msgs for each to send
 type Foreman struct {
 	rt               *runtime.Runtime
 	wg               *sync.WaitGroup
-	queue            *queue.Fair
+	queue            *queues.FairSorted
 	workers          []*Worker
 	availableWorkers chan *Worker
 	quit             chan bool
 }
 
 // NewForeman creates a new Foreman for the passed in server with the number of max workers
-func NewForeman(rt *runtime.Runtime, wg *sync.WaitGroup, q *queue.Fair, maxWorkers int) *Foreman {
+func NewForeman(rt *runtime.Runtime, wg *sync.WaitGroup, q *queues.FairSorted, maxWorkers int) *Foreman {
 	foreman := &Foreman{
 		rt:               rt,
 		wg:               wg,
@@ -109,7 +109,7 @@ func (f *Foreman) Assign() {
 type Worker struct {
 	id      int
 	foreman *Foreman
-	job     chan *queue.Task
+	job     chan *queues.Task
 }
 
 // NewWorker creates a new worker responsible for working on events
@@ -117,7 +117,7 @@ func NewWorker(foreman *Foreman, id int) *Worker {
 	worker := &Worker{
 		id:      id,
 		foreman: foreman,
-		job:     make(chan *queue.Task, 1),
+		job:     make(chan *queues.Task, 1),
 	}
 	return worker
 }
@@ -155,7 +155,7 @@ func (w *Worker) Stop() {
 	close(w.job)
 }
 
-func (w *Worker) handleTask(task *queue.Task) {
+func (w *Worker) handleTask(task *queues.Task) {
 	log := slog.With("queue", w.foreman.queue, "worker_id", w.id, "task_type", task.Type, "org_id", task.OwnerID)
 
 	defer func() {

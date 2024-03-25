@@ -17,7 +17,7 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/msgs"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -59,7 +59,7 @@ func TestSendBroadcastTask(t *testing.T) {
 		groups             []*assets.GroupReference
 		contacts           []*flows.ContactReference
 		urns               []urns.URN
-		queue              *queue.Fair
+		queue              *queues.FairSorted
 		expectedBatchCount int
 		expectedMsgCount   int
 		expectedMsgText    string
@@ -165,7 +165,7 @@ func TestSendBroadcastTask(t *testing.T) {
 		bcast, err := models.NewBroadcastFromEvent(ctx, rt.DB, oa, event)
 		assert.NoError(t, err)
 
-		err = tasks.Queue(rc, tc.queue, testdata.Org1.ID, &msgs.SendBroadcastTask{Broadcast: bcast}, queue.DefaultPriority)
+		err = tasks.Queue(rc, tc.queue, testdata.Org1.ID, &msgs.SendBroadcastTask{Broadcast: bcast}, queues.DefaultPriority)
 		assert.NoError(t, err)
 
 		taskCounts := testsuite.FlushTasks(t, rt)
@@ -210,7 +210,7 @@ func TestBroadcastTask(t *testing.T) {
 		contactIDs       []models.ContactID
 		URNs             []urns.URN
 		createdByID      models.UserID
-		queue            *queue.Fair
+		queue            *queues.FairSorted
 		expectedBatches  int
 		expectedMsgCount int
 		expectedMsgText  string
@@ -272,7 +272,7 @@ func TestBroadcastTask(t *testing.T) {
 		assert.NoError(t, err)
 
 		// pop all our tasks and execute them
-		var task *queue.Task
+		var task *queues.Task
 		count := 0
 		for {
 			task, err = tc.queue.Pop(rc)

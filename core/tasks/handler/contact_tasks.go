@@ -24,7 +24,7 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/ivr"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/nyaruka/null/v3"
 	"github.com/pkg/errors"
 )
@@ -687,7 +687,7 @@ type MsgDeletedEvent struct {
 }
 
 // creates a new event task for the passed in timeout event
-func newTimedTask(eventType string, orgID models.OrgID, contactID models.ContactID, sessionID models.SessionID, eventTime time.Time) *queue.Task {
+func newTimedTask(eventType string, orgID models.OrgID, contactID models.ContactID, sessionID models.SessionID, eventTime time.Time) *queues.Task {
 	event := &TimedEvent{
 		OrgID:     orgID,
 		ContactID: contactID,
@@ -699,7 +699,7 @@ func newTimedTask(eventType string, orgID models.OrgID, contactID models.Contact
 		panic(err)
 	}
 
-	task := &queue.Task{
+	task := &queues.Task{
 		Type:     eventType,
 		OwnerID:  int(orgID),
 		Task:     eventJSON,
@@ -710,12 +710,12 @@ func newTimedTask(eventType string, orgID models.OrgID, contactID models.Contact
 }
 
 // NewTimeoutTask creates a new event task for the passed in timeout event
-func NewTimeoutTask(orgID models.OrgID, contactID models.ContactID, sessionID models.SessionID, time time.Time) *queue.Task {
+func NewTimeoutTask(orgID models.OrgID, contactID models.ContactID, sessionID models.SessionID, time time.Time) *queues.Task {
 	return newTimedTask(TimeoutEventType, orgID, contactID, sessionID, time)
 }
 
 // NewExpirationTask creates a new event task for the passed in expiration event
-func NewExpirationTask(orgID models.OrgID, contactID models.ContactID, sessionID models.SessionID, time time.Time) *queue.Task {
+func NewExpirationTask(orgID models.OrgID, contactID models.ContactID, sessionID models.SessionID, time time.Time) *queues.Task {
 	return newTimedTask(ExpirationEventType, orgID, contactID, sessionID, time)
 }
 
@@ -756,7 +756,7 @@ func TriggerIVRFlow(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 	// queue this to our ivr starter, it will take care of creating the calls then calling back in
 	rc := rt.RP.Get()
 	defer rc.Close()
-	err = tasks.Queue(rc, tasks.BatchQueue, orgID, task, queue.HighPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, orgID, task, queues.HighPriority)
 	if err != nil {
 		return errors.Wrapf(err, "error queuing ivr flow start")
 	}

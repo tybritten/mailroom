@@ -1,4 +1,4 @@
-package queue
+package queues
 
 import (
 	_ "embed"
@@ -35,20 +35,20 @@ const (
 	LowPriority = Priority(+10000000)
 )
 
-type Fair struct {
+type FairSorted struct {
 	keyBase string
 }
 
-func NewFair(keyBase string) *Fair {
-	return &Fair{keyBase: keyBase}
+func NewFairSorted(keyBase string) *FairSorted {
+	return &FairSorted{keyBase: keyBase}
 }
 
-func (q *Fair) String() string {
+func (q *FairSorted) String() string {
 	return q.keyBase
 }
 
 // Push adds the passed in task to our queue for execution
-func (q *Fair) Push(rc redis.Conn, taskType string, ownerID int, task any, priority Priority) error {
+func (q *FairSorted) Push(rc redis.Conn, taskType string, ownerID int, task any, priority Priority) error {
 	score := q.score(priority)
 
 	taskBody, err := json.Marshal(task)
@@ -65,25 +65,25 @@ func (q *Fair) Push(rc redis.Conn, taskType string, ownerID int, task any, prior
 	return err
 }
 
-func (q *Fair) activeKey() string {
+func (q *FairSorted) activeKey() string {
 	return fmt.Sprintf("%s:active", q.keyBase)
 }
 
-func (q *Fair) queueKey(ownerID int) string {
+func (q *FairSorted) queueKey(ownerID int) string {
 	return fmt.Sprintf("%s:%d", q.keyBase, ownerID)
 }
 
-func (q *Fair) score(priority Priority) string {
+func (q *FairSorted) score(priority Priority) string {
 	s := float64(dates.Now().UnixMicro())/float64(1000000) + float64(priority)
 	return strconv.FormatFloat(s, 'f', 6, 64)
 }
 
-//go:embed lua/pop.lua
+//go:embed lua/fair_sorted_pop.lua
 var popLua string
 var popScript = redis.NewScript(1, popLua)
 
 // Pop pops the next task off our queue
-func (q *Fair) Pop(rc redis.Conn) (*Task, error) {
+func (q *FairSorted) Pop(rc redis.Conn) (*Task, error) {
 	task := &Task{}
 	for {
 		values, err := redis.Strings(popScript.Do(rc, q.activeKey(), q.keyBase))
@@ -115,22 +115,22 @@ func (q *Fair) Pop(rc redis.Conn) (*Task, error) {
 	}
 }
 
-//go:embed lua/done.lua
+//go:embed lua/fair_sorted_done.lua
 var doneLua string
 var doneScript = redis.NewScript(1, doneLua)
 
 // Done marks the passed in task as complete. Callers must call this in order
 // to maintain fair workers across orgs
-func (q *Fair) Done(rc redis.Conn, ownerID int) error {
+func (q *FairSorted) Done(rc redis.Conn, ownerID int) error {
 	_, err := doneScript.Do(rc, q.activeKey(), strconv.FormatInt(int64(ownerID), 10))
 	return err
 }
 
-//go:embed lua/size.lua
+//go:embed lua/fair_sorted_size.lua
 var sizeLua string
 var sizeScript = redis.NewScript(1, sizeLua)
 
 // Size returns the total number of tasks for the passed in queue across all owners
-func (q *Fair) Size(rc redis.Conn) (int, error) {
+func (q *FairSorted) Size(rc redis.Conn) (int, error) {
 	return redis.Int(sizeScript.Do(rc, q.activeKey(), q.keyBase))
 }

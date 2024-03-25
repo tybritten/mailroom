@@ -11,7 +11,7 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/testsuite"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 )
 
 type testTask struct{}
@@ -26,7 +26,7 @@ func (t *testTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID model
 func TestForemanAndWorkers(t *testing.T) {
 	_, rt := testsuite.Runtime()
 	wg := &sync.WaitGroup{}
-	q := queue.NewFair("test")
+	q := queues.NewFairSorted("test")
 
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -34,15 +34,15 @@ func TestForemanAndWorkers(t *testing.T) {
 	tasks.RegisterType("test", func() tasks.Task { return &testTask{} })
 
 	// queue up tasks of unknown type to ensure it doesn't break further processing
-	q.Push(rc, "spam", 1, "argh", queue.DefaultPriority)
-	q.Push(rc, "spam", 2, "argh", queue.DefaultPriority)
+	q.Push(rc, "spam", 1, "argh", queues.DefaultPriority)
+	q.Push(rc, "spam", 2, "argh", queues.DefaultPriority)
 
 	// queue up 5 tasks for two orgs
 	for range 5 {
-		q.Push(rc, "test", 1, &testTask{}, queue.DefaultPriority)
+		q.Push(rc, "test", 1, &testTask{}, queues.DefaultPriority)
 	}
 	for range 5 {
-		q.Push(rc, "test", 2, &testTask{}, queue.DefaultPriority)
+		q.Push(rc, "test", 2, &testTask{}, queues.DefaultPriority)
 	}
 
 	fm := mailroom.NewForeman(rt, wg, q, 2)

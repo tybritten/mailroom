@@ -18,7 +18,7 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -277,8 +277,8 @@ func TestMsgEvents(t *testing.T) {
 		},
 	}
 
-	makeMsgTask := func(org *testdata.Org, channel *testdata.Channel, contact *testdata.Contact, text string) *queue.Task {
-		return &queue.Task{Type: handler.MsgEventType, OwnerID: int(org.ID), Task: jsonx.MustMarshal(&handler.MsgEvent{
+	makeMsgTask := func(org *testdata.Org, channel *testdata.Channel, contact *testdata.Contact, text string) *queues.Task {
+		return &queues.Task{Type: handler.MsgEventType, OwnerID: int(org.ID), Task: jsonx.MustMarshal(&handler.MsgEvent{
 			ContactID: contact.ID,
 			OrgID:     org.ID,
 			ChannelID: channel.ID,
@@ -525,7 +525,7 @@ func TestChannelEvents(t *testing.T) {
 		err := event.Insert(ctx, rt.DB)
 		require.NoError(t, err)
 
-		task := &queue.Task{
+		task := &queues.Task{
 			Type:    string(tc.EventType),
 			OwnerID: int(testdata.Org1.ID),
 			Task:    jsonx.MustMarshal(event),
@@ -609,7 +609,7 @@ func TestStopEvent(t *testing.T) {
 	event := &handler.StopEvent{OrgID: testdata.Org1.ID, ContactID: testdata.Cathy.ID}
 	eventJSON, err := json.Marshal(event)
 	require.NoError(t, err)
-	task := &queue.Task{
+	task := &queues.Task{
 		Type:    string(models.EventTypeStopContact),
 		OwnerID: int(testdata.Org1.ID),
 		Task:    eventJSON,
@@ -702,10 +702,10 @@ func TestTimedEvents(t *testing.T) {
 	for i, tc := range tcs {
 		time.Sleep(50 * time.Millisecond)
 
-		var task *queue.Task
+		var task *queues.Task
 
 		if tc.EventType == handler.MsgEventType {
-			task = &queue.Task{
+			task = &queues.Task{
 				Type:    tc.EventType,
 				OwnerID: int(tc.Org.ID),
 				Task: jsonx.MustMarshal(&handler.MsgEvent{

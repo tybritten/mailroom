@@ -10,12 +10,12 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func CurrentTasks(t *testing.T, rt *runtime.Runtime) map[models.OrgID][]*queue.Task {
+func CurrentTasks(t *testing.T, rt *runtime.Runtime) map[models.OrgID][]*queues.Task {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
@@ -23,15 +23,15 @@ func CurrentTasks(t *testing.T, rt *runtime.Runtime) map[models.OrgID][]*queue.T
 	active, err := redis.Ints(rc.Do("ZRANGE", "batch:active", 0, -1))
 	require.NoError(t, err)
 
-	tasks := make(map[models.OrgID][]*queue.Task)
+	tasks := make(map[models.OrgID][]*queues.Task)
 	for _, orgID := range active {
 		orgTasksEncoded, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("batch:%d", orgID), 0, -1))
 		require.NoError(t, err)
 
-		orgTasks := make([]*queue.Task, len(orgTasksEncoded))
+		orgTasks := make([]*queues.Task, len(orgTasksEncoded))
 
 		for i := range orgTasksEncoded {
-			task := &queue.Task{}
+			task := &queues.Task{}
 			jsonx.MustUnmarshal([]byte(orgTasksEncoded[i]), task)
 			orgTasks[i] = task
 		}
@@ -46,7 +46,7 @@ func FlushTasks(t *testing.T, rt *runtime.Runtime) map[string]int {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	var task *queue.Task
+	var task *queues.Task
 	var err error
 	counts := make(map[string]int)
 

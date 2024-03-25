@@ -13,7 +13,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/pkg/errors"
 )
 
@@ -51,7 +51,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 	if len(locks) == 0 {
 		rc := rt.RP.Get()
 		defer rc.Close()
-		err = tasks.Queue(rc, tasks.HandlerQueue, orgID, &HandleContactEventTask{ContactID: t.ContactID}, queue.DefaultPriority)
+		err = tasks.Queue(rc, tasks.HandlerQueue, orgID, &HandleContactEventTask{ContactID: t.ContactID}, queues.DefaultPriority)
 		if err != nil {
 			return errors.Wrapf(err, "error re-adding contact task after failing to get lock")
 		}
@@ -82,7 +82,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 		start := time.Now()
 
 		// decode our event, this is a normal task at its top level
-		contactEvent := &queue.Task{}
+		contactEvent := &queues.Task{}
 		jsonx.MustUnmarshal([]byte(event), contactEvent)
 
 		// hand off to the appropriate handler

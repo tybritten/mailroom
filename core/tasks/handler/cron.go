@@ -10,7 +10,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
 )
@@ -92,7 +92,7 @@ func (c *RetryPendingCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 			continue
 		}
 
-		task := &queue.Task{
+		task := &queues.Task{
 			Type:     MsgEventType,
 			OwnerID:  int(orgID),
 			Task:     json.RawMessage(eventJSON),

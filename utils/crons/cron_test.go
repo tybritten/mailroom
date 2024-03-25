@@ -1,4 +1,4 @@
-package cron_test
+package crons_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/testsuite"
-	"github.com/nyaruka/mailroom/utils/cron"
+	"github.com/nyaruka/mailroom/utils/crons"
 	"github.com/nyaruka/redisx/assertredis"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,7 +25,7 @@ func TestCron(t *testing.T) {
 		time.Sleep(untilNextSecond)                                                               // wait until after second boundary
 	}
 
-	createCronFunc := func(running *bool, fired *int, delays map[int]time.Duration, defaultDelay time.Duration) cron.Function {
+	createCronFunc := func(running *bool, fired *int, delays map[int]time.Duration, defaultDelay time.Duration) crons.Function {
 		return func(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 			if *running {
 				assert.Fail(t, "more than 1 thread is trying to run our cron job")
@@ -56,7 +56,7 @@ func TestCron(t *testing.T) {
 	}
 
 	// start a job that takes ~100 ms and runs every 250ms
-	cron.Start(rt, wg, "test1", false, createCronFunc(&running, &fired, map[int]time.Duration{}, time.Millisecond*100), next, time.Minute, quit)
+	crons.Start(rt, wg, "test1", false, createCronFunc(&running, &fired, map[int]time.Duration{}, time.Millisecond*100), next, time.Minute, quit)
 
 	// wait a bit, should only have fired three times (initial time + three repeats)
 	time.Sleep(time.Millisecond * 875) // time for 3 delays between tasks plus half of another delay
@@ -81,7 +81,7 @@ func TestCron(t *testing.T) {
 	align()
 
 	// simulate the job taking 400ms to run on the second fire, thus skipping the third fire
-	cron.Start(rt, wg, "test2", false, createCronFunc(&running, &fired, map[int]time.Duration{1: time.Millisecond * 400}, time.Millisecond*100), next, time.Minute, quit)
+	crons.Start(rt, wg, "test2", false, createCronFunc(&running, &fired, map[int]time.Duration{1: time.Millisecond * 400}, time.Millisecond*100), next, time.Minute, quit)
 
 	time.Sleep(time.Millisecond * 875)
 	assert.Equal(t, 3, fired)
@@ -105,8 +105,8 @@ func TestCron(t *testing.T) {
 
 	align()
 
-	cron.Start(&rt1, wg, "test3", false, createCronFunc(&running, &fired1, map[int]time.Duration{}, time.Millisecond*100), next, time.Minute, quit)
-	cron.Start(&rt2, wg, "test3", false, createCronFunc(&running, &fired2, map[int]time.Duration{}, time.Millisecond*100), next, time.Minute, quit)
+	crons.Start(&rt1, wg, "test3", false, createCronFunc(&running, &fired1, map[int]time.Duration{}, time.Millisecond*100), next, time.Minute, quit)
+	crons.Start(&rt2, wg, "test3", false, createCronFunc(&running, &fired2, map[int]time.Duration{}, time.Millisecond*100), next, time.Minute, quit)
 
 	// same number of fires as if only a single instance was running it...
 	time.Sleep(time.Millisecond * 875)
@@ -123,8 +123,8 @@ func TestCron(t *testing.T) {
 	align()
 
 	// unless we start the cron with allInstances = true
-	cron.Start(&rt1, wg, "test4", true, createCronFunc(&running1, &fired1, map[int]time.Duration{}, time.Millisecond*100), next, time.Minute, quit)
-	cron.Start(&rt2, wg, "test4", true, createCronFunc(&running2, &fired2, map[int]time.Duration{}, time.Millisecond*100), next, time.Minute, quit)
+	crons.Start(&rt1, wg, "test4", true, createCronFunc(&running1, &fired1, map[int]time.Duration{}, time.Millisecond*100), next, time.Minute, quit)
+	crons.Start(&rt2, wg, "test4", true, createCronFunc(&running2, &fired2, map[int]time.Duration{}, time.Millisecond*100), next, time.Minute, quit)
 
 	// now both instances fire 4 times
 	time.Sleep(time.Millisecond * 875)

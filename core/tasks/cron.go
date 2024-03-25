@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/cron"
+	"github.com/nyaruka/mailroom/utils/crons"
 )
 
 // Cron is a task to be repeated on a schedule
@@ -32,7 +32,7 @@ func RegisterCron(name string, c Cron) {
 // StartCrons starts all registered cron jobs
 func StartCrons(rt *runtime.Runtime, wg *sync.WaitGroup, quit chan bool) {
 	for name, c := range registeredCrons {
-		cron.Start(rt, wg, name, c.AllInstances(), c.Run, c.Next, time.Minute*5, quit)
+		crons.Start(rt, wg, name, c.AllInstances(), c.Run, c.Next, time.Minute*5, quit)
 	}
 }
 
