@@ -11,7 +11,7 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,7 +38,7 @@ func TestStartFlowTask(t *testing.T) {
 		query                    string
 		excludeInAFlow           bool
 		excludeStartedPreviously bool
-		queue                    *queue.Fair
+		queue                    *queues.FairSorted
 		expectedContactCount     int
 		expectedBatchCount       int
 		expectedTotalCount       int
@@ -229,7 +229,7 @@ func TestStartFlowTask(t *testing.T) {
 		err := models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start})
 		assert.NoError(t, err)
 
-		err = tasks.Queue(rc, tc.queue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queue.DefaultPriority)
+		err = tasks.Queue(rc, tc.queue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
 		assert.NoError(t, err)
 
 		taskCounts := testsuite.FlushTasks(t, rt)

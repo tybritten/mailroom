@@ -12,7 +12,7 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/campaigns"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/nyaruka/redisx"
 	"github.com/nyaruka/redisx/assertredis"
 	"github.com/stretchr/testify/assert"
@@ -54,7 +54,7 @@ func TestFireCampaignEvents(t *testing.T) {
 			CampaignName: campaign.Name,
 		}
 
-		err := tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, task, queue.DefaultPriority)
+		err := tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, task, queues.DefaultPriority)
 		assert.NoError(t, err)
 
 		testsuite.FlushTasks(t, rt)

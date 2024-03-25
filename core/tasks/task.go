@@ -9,12 +9,12 @@ import (
 	"github.com/nyaruka/goflow/utils"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/pkg/errors"
 )
 
-var HandlerQueue = queue.NewFair("handler")
-var BatchQueue = queue.NewFair("batch")
+var HandlerQueue = queues.NewFairSorted("handler")
+var BatchQueue = queues.NewFairSorted("batch")
 
 var registeredTypes = map[string](func() Task){}
 
@@ -35,7 +35,7 @@ type Task interface {
 }
 
 // Performs a raw task popped from a queue
-func Perform(ctx context.Context, rt *runtime.Runtime, task *queue.Task) error {
+func Perform(ctx context.Context, rt *runtime.Runtime, task *queues.Task) error {
 	// decode our task body
 	typedTask, err := ReadTask(task.Type, task.Task)
 	if err != nil {
@@ -49,7 +49,7 @@ func Perform(ctx context.Context, rt *runtime.Runtime, task *queue.Task) error {
 }
 
 // Queue adds the given task to the given queue
-func Queue(rc redis.Conn, q *queue.Fair, orgID models.OrgID, task Task, priority queue.Priority) error {
+func Queue(rc redis.Conn, q *queues.FairSorted, orgID models.OrgID, task Task, priority queues.Priority) error {
 	return q.Push(rc, task.Type(), int(orgID), task, priority)
 }
 

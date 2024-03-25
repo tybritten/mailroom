@@ -9,23 +9,23 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
-	"github.com/nyaruka/mailroom/utils/queue"
+	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/pkg/errors"
 )
 
 // QueueHandleTask queues a single task for the given contact
-func QueueHandleTask(rc redis.Conn, contactID models.ContactID, task *queue.Task) error {
+func QueueHandleTask(rc redis.Conn, contactID models.ContactID, task *queues.Task) error {
 	return queueHandleTask(rc, contactID, task, false)
 }
 
 // QueueTicketEvent queues a ticket event to be handled
 func QueueTicketEvent(rc redis.Conn, contactID models.ContactID, evt *models.TicketEvent) error {
 	eventJSON := jsonx.MustMarshal(evt)
-	var task *queue.Task
+	var task *queues.Task
 
 	switch evt.EventType() {
 	case models.TicketEventTypeClosed:
-		task = &queue.Task{
+		task = &queues.Task{
 			Type:     TicketClosedEventType,
 			OwnerID:  int(evt.OrgID()),
 			Task:     eventJSON,
@@ -38,7 +38,7 @@ func QueueTicketEvent(rc redis.Conn, contactID models.ContactID, evt *models.Tic
 
 // queueHandleTask queues a single task for the passed in contact. `front` specifies whether the task
 // should be inserted in front of all other tasks for that contact
-func queueHandleTask(rc redis.Conn, contactID models.ContactID, task *queue.Task, front bool) error {
+func queueHandleTask(rc redis.Conn, contactID models.ContactID, task *queues.Task, front bool) error {
 	// marshal our task
 	taskJSON, err := json.Marshal(task)
 	if err != nil {
@@ -58,7 +58,7 @@ func queueHandleTask(rc redis.Conn, contactID models.ContactID, task *queue.Task
 	}
 
 	// then add a handle task for that contact on our global handler queue to
-	err = tasks.Queue(rc, tasks.HandlerQueue, models.OrgID(task.OwnerID), &HandleContactEventTask{ContactID: contactID}, queue.DefaultPriority)
+	err = tasks.Queue(rc, tasks.HandlerQueue, models.OrgID(task.OwnerID), &HandleContactEventTask{ContactID: contactID}, queues.DefaultPriority)
 	if err != nil {
 		return errors.Wrapf(err, "error adding handle event task")
 	}
