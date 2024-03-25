@@ -79,14 +79,14 @@ func (q *FairSorted) score(priority Priority) string {
 }
 
 //go:embed lua/fair_sorted_pop.lua
-var popLua string
-var popScript = redis.NewScript(1, popLua)
+var luaFSPop string
+var scriptFSPop = redis.NewScript(1, luaFSPop)
 
 // Pop pops the next task off our queue
 func (q *FairSorted) Pop(rc redis.Conn) (*Task, error) {
 	task := &Task{}
 	for {
-		values, err := redis.Strings(popScript.Do(rc, q.activeKey(), q.keyBase))
+		values, err := redis.Strings(scriptFSPop.Do(rc, q.activeKey(), q.keyBase))
 		if err != nil {
 			return nil, err
 		}
@@ -116,21 +116,21 @@ func (q *FairSorted) Pop(rc redis.Conn) (*Task, error) {
 }
 
 //go:embed lua/fair_sorted_done.lua
-var doneLua string
-var doneScript = redis.NewScript(1, doneLua)
+var luaFSDone string
+var scriptFSDone = redis.NewScript(1, luaFSDone)
 
 // Done marks the passed in task as complete. Callers must call this in order
 // to maintain fair workers across orgs
 func (q *FairSorted) Done(rc redis.Conn, ownerID int) error {
-	_, err := doneScript.Do(rc, q.activeKey(), strconv.FormatInt(int64(ownerID), 10))
+	_, err := scriptFSDone.Do(rc, q.activeKey(), strconv.FormatInt(int64(ownerID), 10))
 	return err
 }
 
 //go:embed lua/fair_sorted_size.lua
-var sizeLua string
-var sizeScript = redis.NewScript(1, sizeLua)
+var luaFSSize string
+var scriptFSSize = redis.NewScript(1, luaFSSize)
 
 // Size returns the total number of tasks for the passed in queue across all owners
 func (q *FairSorted) Size(rc redis.Conn) (int, error) {
-	return redis.Int(sizeScript.Do(rc, q.activeKey(), q.keyBase))
+	return redis.Int(scriptFSSize.Do(rc, q.activeKey(), q.keyBase))
 }
