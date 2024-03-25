@@ -89,7 +89,7 @@ func handleTimedEvent(ctx context.Context, rt *runtime.Runtime, eventType string
 			return nil
 		}
 
-		if expiresOn != nil && !expiresOn.Equal(event.Time) {
+		if !expiresOn.Equal(event.Time) {
 			log.Info("ignoring expiration, has been updated", "event_expiration", event.Time, "run_expiration", expiresOn)
 			return nil
 		}
