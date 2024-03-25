@@ -76,14 +76,14 @@ func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc *
 		if err != nil {
 			slog.Error("error getting org assets", "error", err)
 		} else {
-			queued = append(queued, tryToQueueForOrg(ctx, rt, db, fc, oa, orgSends)...)
+			queued = append(queued, tryToQueueForOrg(rt, fc, oa, orgSends)...)
 		}
 	}
 
 	return queued
 }
 
-func tryToQueueForOrg(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc *fcm.Client, oa *models.OrgAssets, sends []Send) []*models.Msg {
+func tryToQueueForOrg(rt *runtime.Runtime, fc *fcm.Client, oa *models.OrgAssets, sends []Send) []*models.Msg {
 	// sends by courier, organized by contact+channel
 	courierSends := make(map[contactAndChannel][]Send, 100)
 
