@@ -44,13 +44,7 @@ func (t *MsgEventTask) Type() string {
 	return TypeMsgEvent
 }
 
-func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error {
-	oa, err := models.GetOrgAssets(ctx, rt, orgID)
-	if err != nil {
-		return errors.Wrap(err, "error loading org")
-	}
-
-	// load the channel for this message
+func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
 	channel := oa.ChannelByID(t.ChannelID)
 
 	// fetch the attachments on the message (i.e. ask courier to fetch them)

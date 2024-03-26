@@ -32,12 +32,7 @@ func (t *TicketClosedTask) Type() string {
 	return TypeTicketClosed
 }
 
-func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error {
-	oa, err := models.GetOrgAssets(ctx, rt, orgID)
-	if err != nil {
-		return errors.Wrapf(err, "error loading org")
-	}
-
+func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
 	// load our ticket
 	tickets, err := models.LoadTickets(ctx, rt.DB, []models.TicketID{t.TicketID})
 	if err != nil {

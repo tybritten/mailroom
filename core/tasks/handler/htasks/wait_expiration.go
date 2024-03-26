@@ -34,14 +34,9 @@ func (t *WaitExpirationTask) Type() string {
 	return TypeWaitExpiration
 }
 
-func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error {
+func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
 	start := time.Now()
 	log := slog.With("event_type", t.Type(), "contact_id", contactID, "session_id", t.SessionID)
-
-	oa, err := models.GetOrgAssets(ctx, rt, orgID)
-	if err != nil {
-		return errors.Wrapf(err, "error loading org")
-	}
 
 	// load our contact
 	modelContact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, contactID)

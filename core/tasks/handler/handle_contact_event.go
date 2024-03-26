@@ -43,6 +43,11 @@ func (t *HandleContactEventTask) Timeout() time.Duration {
 // Perform is called when an event comes in for a contact. To make sure we don't get into a situation of being off by one,
 // this task ingests and handles all the events for a contact, one by one.
 func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
+	oa, err := models.GetOrgAssets(ctx, rt, orgID)
+	if err != nil {
+		return errors.Wrap(err, "error loading org assets")
+	}
+
 	// try to get the lock for this contact, waiting up to 10 seconds
 	locks, _, err := models.LockContacts(ctx, rt, orgID, []models.ContactID{t.ContactID}, time.Second*10)
 	if err != nil {
@@ -92,7 +97,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 			return errors.Wrapf(err, "error reading handler task")
 		}
 
-		err = htask.Perform(ctx, rt, orgID, t.ContactID)
+		err = htask.Perform(ctx, rt, oa, t.ContactID)
 
 		// log our processing time to librato
 		analytics.Gauge(fmt.Sprintf("mr.%s_elapsed", taskPayload.Type), float64(time.Since(start))/float64(time.Second))

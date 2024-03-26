@@ -129,7 +129,7 @@ func handleIncoming(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	}
 
 	// try to handle this event
-	session, err := htasks.HandleChannelEvent(ctx, rt, models.EventTypeIncomingCall, event, call)
+	session, err := htasks.HandleChannelEvent(ctx, rt, oa, models.EventTypeIncomingCall, event, call)
 	if err != nil {
 		slog.Error("error handling incoming call", "error", err, "http_request", r)
 		return call, svc.WriteErrorResponse(w, errors.Wrapf(err, "error handling incoming call"))

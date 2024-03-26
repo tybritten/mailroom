@@ -23,7 +23,7 @@ func (t *MsgDeletedTask) Type() string {
 	return TypeMsgDeleted
 }
 
-func (t *MsgDeletedTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error {
-	err := models.UpdateMessageDeletedBySender(ctx, rt.DB.DB, orgID, t.MsgID)
+func (t *MsgDeletedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
+	err := models.UpdateMessageDeletedBySender(ctx, rt.DB.DB, oa.OrgID(), t.MsgID)
 	return errors.Wrap(err, "error deleting message")
 }

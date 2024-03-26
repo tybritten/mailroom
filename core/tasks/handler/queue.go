@@ -19,7 +19,7 @@ import (
 // Task is the interface for all handler tasks - tasks which operate on a single contact
 type Task interface {
 	Type() string
-	Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error
+	Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error
 }
 
 var registeredTypes = map[string]func() Task{}
