@@ -22,13 +22,13 @@ func (t *StopContactTask) Type() string {
 	return string(models.EventTypeStopContact)
 }
 
-func (t *StopContactTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error {
+func (t *StopContactTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
 	tx, err := rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "unable to start transaction for stopping contact")
 	}
 
-	err = models.StopContact(ctx, tx, orgID, contactID)
+	err = models.StopContact(ctx, tx, oa.OrgID(), contactID)
 	if err != nil {
 		tx.Rollback()
 		return err

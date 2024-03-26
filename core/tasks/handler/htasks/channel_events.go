@@ -39,8 +39,8 @@ func (t *NewConversationTask) Type() string {
 	return string(models.EventTypeNewConversation)
 }
 
-func (t *NewConversationTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error {
-	_, err := HandleChannelEvent(ctx, rt, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
+func (t *NewConversationTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
+	_, err := HandleChannelEvent(ctx, rt, oa, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
 	return err
 }
 
@@ -52,8 +52,8 @@ func (t *ReferralTask) Type() string {
 	return string(models.EventTypeReferral)
 }
 
-func (t *ReferralTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error {
-	_, err := HandleChannelEvent(ctx, rt, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
+func (t *ReferralTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
+	_, err := HandleChannelEvent(ctx, rt, oa, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
 	return err
 }
 
@@ -65,8 +65,8 @@ func (t *MissedCallTask) Type() string {
 	return string(models.EventTypeMissedCall)
 }
 
-func (t *MissedCallTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error {
-	_, err := HandleChannelEvent(ctx, rt, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
+func (t *MissedCallTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
+	_, err := HandleChannelEvent(ctx, rt, oa, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
 	return err
 }
 
@@ -78,8 +78,8 @@ func (t *WelcomeMessageTask) Type() string {
 	return string(models.EventTypeWelcomeMessage)
 }
 
-func (t *WelcomeMessageTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error {
-	_, err := HandleChannelEvent(ctx, rt, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
+func (t *WelcomeMessageTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
+	_, err := HandleChannelEvent(ctx, rt, oa, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
 	return err
 }
 
@@ -91,8 +91,8 @@ func (t *OptInTask) Type() string {
 	return string(models.EventTypeOptIn)
 }
 
-func (t *OptInTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error {
-	_, err := HandleChannelEvent(ctx, rt, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
+func (t *OptInTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
+	_, err := HandleChannelEvent(ctx, rt, oa, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
 	return err
 }
 
@@ -104,19 +104,13 @@ func (t *OptOutTask) Type() string {
 	return string(models.EventTypeOptOut)
 }
 
-func (t *OptOutTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, contactID models.ContactID) error {
-	_, err := HandleChannelEvent(ctx, rt, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
+func (t *OptOutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
+	_, err := HandleChannelEvent(ctx, rt, oa, models.ChannelEventType(t.Type()), t.ChannelEvent, nil)
 	return err
 }
 
 // HandleChannelEvent is called for channel events
-func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, eventType models.ChannelEventType, event *models.ChannelEvent, call *models.Call) (*models.Session, error) {
-	oa, err := models.GetOrgAssets(ctx, rt, event.OrgID())
-	if err != nil {
-		return nil, errors.Wrapf(err, "error loading org")
-	}
-
-	// load the channel for this event
+func HandleChannelEvent(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, eventType models.ChannelEventType, event *models.ChannelEvent, call *models.Call) (*models.Session, error) {
 	channel := oa.ChannelByID(event.ChannelID())
 	if channel == nil {
 		slog.Info("ignoring event, couldn't find channel", "channel_id", event.ChannelID)
