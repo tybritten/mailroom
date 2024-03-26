@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -10,7 +9,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
 )
@@ -71,7 +69,7 @@ func (c *RetryPendingCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 	for rows.Next() {
 		var orgID models.OrgID
 		var contactID models.ContactID
-		var eventJSON string
+		var eventJSON []byte
 		var msgID models.MsgID
 
 		err = rows.Scan(&orgID, &contactID, &msgID, &eventJSON)
@@ -92,15 +90,13 @@ func (c *RetryPendingCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 			continue
 		}
 
-		task := &queues.Task{
-			Type:     MsgEventType,
-			OwnerID:  int(orgID),
-			Task:     json.RawMessage(eventJSON),
-			QueuedOn: time.Now(),
+		task, err := readTask("msg_event", eventJSON) // TODO find a better way to do this
+		if err != nil {
+			return nil, errors.Wrapf(err, "error reading msg data as task")
 		}
 
 		// queue this event up for handling
-		err = QueueHandleTask(rc, contactID, task)
+		err = QueueTask(rc, orgID, contactID, task)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error queuing retry for task")
 		}
