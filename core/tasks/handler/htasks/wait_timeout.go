@@ -35,8 +35,7 @@ func (t *WaitTimeoutTask) Type() string {
 }
 
 func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
-	start := time.Now()
-	log := slog.With("event_type", t.Type(), "contact_id", contactID, "session_id", t.SessionID)
+	log := slog.With("contact_id", contactID, "session_id", t.SessionID)
 
 	// load our contact
 	modelContact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, contactID)
@@ -65,7 +64,7 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	}
 
 	if session.WaitTimeoutOn() == nil {
-		log.Info("ignoring session timeout, has no timeout set", "session_id", session.ID())
+		log.Info("ignoring session timeout, has no timeout set")
 		return nil
 	}
 
@@ -84,13 +83,12 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		// on the session
 		var eerr *engine.Error
 		if errors.As(err, &eerr) && eerr.Code() == engine.ErrorResumeRejectedByWait && resume.Type() == resumes.TypeWaitTimeout {
-			log.Info("clearing session timeout which is no longer set in flow", "session_id", session.ID())
+			log.Info("clearing session timeout which is no longer set in flow")
 			return errors.Wrap(session.ClearWaitTimeout(ctx, rt.DB), "error clearing session timeout")
 		}
 
 		return errors.Wrap(err, "error resuming flow for timeout")
 	}
 
-	log.Info("handled timed event", "elapsed", time.Since(start))
 	return nil
 }
