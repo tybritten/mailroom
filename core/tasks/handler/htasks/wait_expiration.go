@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/goflow/flows/engine"
 	"github.com/nyaruka/goflow/flows/resumes"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/runner"
@@ -35,8 +34,7 @@ func (t *WaitExpirationTask) Type() string {
 }
 
 func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
-	start := time.Now()
-	log := slog.With("event_type", t.Type(), "contact_id", contactID, "session_id", t.SessionID)
+	log := slog.With("contact_id", contactID, "session_id", t.SessionID)
 
 	// load our contact
 	modelContact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, contactID)
@@ -84,17 +82,8 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 
 	_, err = runner.ResumeFlow(ctx, rt, oa, session, modelContact, resume, nil)
 	if err != nil {
-		// if we errored, and it's the wait rejecting the timeout event, it's because it no longer exists on the flow, so clear it
-		// on the session
-		var eerr *engine.Error
-		if errors.As(err, &eerr) && eerr.Code() == engine.ErrorResumeRejectedByWait && resume.Type() == resumes.TypeWaitTimeout {
-			log.Info("clearing session timeout which is no longer set in flow", "session_id", session.ID())
-			return errors.Wrap(session.ClearWaitTimeout(ctx, rt.DB), "error clearing session timeout")
-		}
-
-		return errors.Wrap(err, "error resuming flow for timeout")
+		return errors.Wrap(err, "error resuming flow for expiration")
 	}
 
-	log.Info("handled timed event", "elapsed", time.Since(start))
 	return nil
 }

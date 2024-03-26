@@ -73,7 +73,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 	for {
 		// pop the next event off this contacts queue
 		rc := rt.RP.Get()
-		event, err := redis.String(rc.Do("lpop", contactQ))
+		event, err := redis.Bytes(rc.Do("LPOP", contactQ))
 		rc.Close()
 
 		// out of tasks? that's ok, exit
@@ -86,8 +86,6 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 			return errors.Wrapf(err, "error popping handler task")
 		}
 
-		start := time.Now()
-
 		// decode our event, this is a normal task at its top level
 		taskPayload := &payload{}
 		jsonx.MustUnmarshal([]byte(event), taskPayload)
@@ -96,6 +94,9 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 		if err != nil {
 			return errors.Wrapf(err, "error reading handler task")
 		}
+
+		start := time.Now()
+		log := slog.With("org_id", orgID, "contact_id", t.ContactID, "type", taskPayload.Type)
 
 		err = htask.Perform(ctx, rt, oa, t.ContactID)
 
@@ -107,8 +108,6 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 
 		// if we get an error processing an event, requeue it for later and return our error
 		if err != nil {
-			log := slog.With("org_id", orgID, "contact_id", t.ContactID, "event", event)
-
 			if qerr := dbutil.AsQueryError(err); qerr != nil {
 				query, params := qerr.Query()
 				log = log.With("sql", query, "sql_params", params)
@@ -119,7 +118,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 				rc := rt.RP.Get()
 				retryErr := queueTask(rc, orgID, t.ContactID, htask, true, taskPayload.ErrorCount)
 				if retryErr != nil {
-					slog.Error("error requeuing errored contact event", "error", retryErr)
+					log.Error("error requeuing errored contact event", "error", retryErr)
 				}
 				rc.Close()
 
@@ -129,6 +128,8 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 			log.Error("error handling contact event, permanent failure", "error", err)
 			return nil
 		}
+
+		log.Debug("handler task completed", "elapsed", time.Since(start))
 	}
 }
 
