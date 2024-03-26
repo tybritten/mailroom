@@ -14,7 +14,7 @@ import (
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/mailroom/core/ivr"
 	"github.com/nyaruka/mailroom/core/models"
-	"github.com/nyaruka/mailroom/core/tasks/handler"
+	"github.com/nyaruka/mailroom/core/tasks/handler/htasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
 	"github.com/pkg/errors"
@@ -129,7 +129,7 @@ func handleIncoming(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	}
 
 	// try to handle this event
-	session, err := handler.HandleChannelEvent(ctx, rt, models.EventTypeIncomingCall, event, call)
+	session, err := htasks.HandleChannelEvent(ctx, rt, models.EventTypeIncomingCall, event, call)
 	if err != nil {
 		slog.Error("error handling incoming call", "error", err, "http_request", r)
 		return call, svc.WriteErrorResponse(w, errors.Wrapf(err, "error handling incoming call"))
