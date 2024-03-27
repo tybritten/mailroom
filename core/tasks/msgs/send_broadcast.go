@@ -39,9 +39,13 @@ func (t *SendBroadcastTask) Timeout() time.Duration {
 	return time.Minute * 60
 }
 
+func (t *SendBroadcastTask) WithAssets() models.Refresh {
+	return models.RefreshNone
+}
+
 // Perform handles sending the broadcast by creating batches of broadcast sends for all the unique contacts
-func (t *SendBroadcastTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
-	if err := createBroadcastBatches(ctx, rt, t.Broadcast); err != nil {
+func (t *SendBroadcastTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
+	if err := createBroadcastBatches(ctx, rt, oa, t.Broadcast); err != nil {
 		if t.Broadcast.ID != models.NilBroadcastID {
 			models.MarkBroadcastFailed(ctx, rt.DB, t.Broadcast.ID)
 		}
@@ -56,12 +60,7 @@ func (t *SendBroadcastTask) Perform(ctx context.Context, rt *runtime.Runtime, or
 	return nil
 }
 
-func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, bcast *models.Broadcast) error {
-	oa, err := models.GetOrgAssets(ctx, rt, bcast.OrgID)
-	if err != nil {
-		return errors.Wrapf(err, "error getting org assets")
-	}
-
+func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, bcast *models.Broadcast) error {
 	contactIDs, err := search.ResolveRecipients(ctx, rt, oa, nil, &search.Recipients{
 		ContactIDs:      bcast.ContactIDs,
 		GroupIDs:        bcast.GroupIDs,

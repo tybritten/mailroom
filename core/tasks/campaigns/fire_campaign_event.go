@@ -49,6 +49,10 @@ func (t *FireCampaignEventTask) Timeout() time.Duration {
 	return time.Minute*5 + time.Minute*time.Duration(len(t.FireIDs))
 }
 
+func (t *FireCampaignEventTask) WithAssets() models.Refresh {
+	return models.RefreshNone
+}
+
 // Perform handles firing campaign events
 //   - loads the org assets for that event
 //   - locks on the contact
@@ -56,7 +60,7 @@ func (t *FireCampaignEventTask) Timeout() time.Duration {
 //   - creates the trigger for that event
 //   - runs the flow that is to be started through our engine
 //   - saves the flow run and session resulting from our run
-func (t *FireCampaignEventTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
+func (t *FireCampaignEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	db := rt.DB
 	rp := rt.RP
 	log := slog.With("comp", "campaign_worker", "event_id", t.EventID)
@@ -86,7 +90,7 @@ func (t *FireCampaignEventTask) Perform(ctx context.Context, rt *runtime.Runtime
 
 	campaign := triggers.NewCampaignReference(triggers.CampaignUUID(t.CampaignUUID), t.CampaignName)
 
-	handled, err := FireCampaignEvents(ctx, rt, orgID, fires, t.FlowUUID, campaign, triggers.CampaignEventUUID(t.EventUUID))
+	handled, err := FireCampaignEvents(ctx, rt, oa, fires, t.FlowUUID, campaign, triggers.CampaignEventUUID(t.EventUUID))
 
 	handledSet := make(map[*models.EventFire]bool, len(handled))
 	for _, f := range handled {
@@ -114,14 +118,8 @@ func (t *FireCampaignEventTask) Perform(ctx context.Context, rt *runtime.Runtime
 }
 
 // FireCampaignEvents tries to handle the given event fires, returning those that were handled (i.e. skipped, fired or deleted)
-func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, fires []*models.EventFire, flowUUID assets.FlowUUID, campaign *triggers.CampaignReference, eventUUID triggers.CampaignEventUUID) ([]*models.EventFire, error) {
+func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, fires []*models.EventFire, flowUUID assets.FlowUUID, campaign *triggers.CampaignReference, eventUUID triggers.CampaignEventUUID) ([]*models.EventFire, error) {
 	start := time.Now()
-
-	// create our org assets
-	oa, err := models.GetOrgAssets(ctx, rt, orgID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error creating assets for org: %d", orgID)
-	}
 
 	// get the capmaign event object
 	dbEvent := oa.CampaignEventByID(fires[0].EventID)

@@ -122,7 +122,7 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 }
 
 // StartFlowBatch starts the flow for the passed in org, contacts and flow
-func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, batch *models.FlowStartBatch) ([]*models.Session, error) {
+func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, batch *models.FlowStartBatch) ([]*models.Session, error) {
 	start := time.Now()
 
 	// if this is our last start, no matter what try to set the start as complete as a last step
@@ -133,12 +133,6 @@ func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, batch *models.Flow
 				slog.Error("error marking start as complete", "error", err, "start_id", batch.StartID)
 			}
 		}()
-	}
-
-	// create our org assets
-	oa, err := models.GetOrgAssets(ctx, rt, batch.OrgID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error creating assets for org: %d", batch.OrgID)
 	}
 
 	// try to load our flow

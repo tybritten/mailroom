@@ -105,9 +105,9 @@ type ContactImportBatch struct {
 }
 
 // Import does the actual import of this batch
-func (b *ContactImportBatch) Import(ctx context.Context, rt *runtime.Runtime, orgID OrgID, userID UserID) error {
+func (b *ContactImportBatch) Import(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, userID UserID) error {
 	// if any error occurs this batch should be marked as failed
-	if err := b.tryImport(ctx, rt, orgID, userID); err != nil {
+	if err := b.tryImport(ctx, rt, oa, userID); err != nil {
 		b.markFailed(ctx, rt.DB)
 		return err
 	}
@@ -125,15 +125,9 @@ type importContact struct {
 	errors      []string
 }
 
-func (b *ContactImportBatch) tryImport(ctx context.Context, rt *runtime.Runtime, orgID OrgID, userID UserID) error {
+func (b *ContactImportBatch) tryImport(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, userID UserID) error {
 	if err := b.markProcessing(ctx, rt.DB); err != nil {
 		return errors.Wrap(err, "error marking as processing")
-	}
-
-	// grab our org assets
-	oa, err := GetOrgAssetsWithRefresh(ctx, rt, orgID, RefreshFields|RefreshGroups)
-	if err != nil {
-		return errors.Wrap(err, "error loading org assets")
 	}
 
 	// unmarshal this batch's specs
@@ -162,7 +156,7 @@ func (b *ContactImportBatch) tryImport(ctx context.Context, rt *runtime.Runtime,
 	}
 
 	// and apply in bulk
-	_, err = ApplyModifiers(ctx, rt, oa, userID, modifiersByContact)
+	_, err := ApplyModifiers(ctx, rt, oa, userID, modifiersByContact)
 	if err != nil {
 		return errors.Wrap(err, "error applying modifiers")
 	}

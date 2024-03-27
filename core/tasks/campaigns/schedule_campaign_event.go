@@ -35,8 +35,12 @@ func (t *ScheduleCampaignEventTask) Timeout() time.Duration {
 	return time.Hour
 }
 
+func (t *ScheduleCampaignEventTask) WithAssets() models.Refresh {
+	return models.RefreshCampaigns
+}
+
 // Perform creates the actual event fires to schedule the given campaign event
-func (t *ScheduleCampaignEventTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
+func (t *ScheduleCampaignEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	locker := redisx.NewLocker(fmt.Sprintf(scheduleLockKey, t.CampaignEventID), time.Hour)
 	lock, err := locker.Grab(rt.RP, time.Minute*5)
 	if err != nil {
@@ -44,7 +48,7 @@ func (t *ScheduleCampaignEventTask) Perform(ctx context.Context, rt *runtime.Run
 	}
 	defer locker.Release(rt.RP, lock)
 
-	err = models.ScheduleCampaignEvent(ctx, rt, orgID, t.CampaignEventID)
+	err = models.ScheduleCampaignEvent(ctx, rt, oa, t.CampaignEventID)
 	if err != nil {
 		return errors.Wrapf(err, "error scheduling campaign event %d", t.CampaignEventID)
 	}

@@ -15,6 +15,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func QueueBatchTask(t *testing.T, rt *runtime.Runtime, orgID models.OrgID, task tasks.Task) {
+	rc := rt.RP.Get()
+	defer rc.Close()
+
+	err := tasks.Queue(rc, tasks.BatchQueue, orgID, task, queues.DefaultPriority)
+	require.NoError(t, err)
+}
+
 func CurrentTasks(t *testing.T, rt *runtime.Runtime) map[models.OrgID][]*queues.Task {
 	rc := rt.RP.Get()
 	defer rc.Close()

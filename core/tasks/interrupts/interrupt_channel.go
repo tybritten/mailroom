@@ -27,12 +27,17 @@ func (t *InterruptChannelTask) Type() string {
 	return TypeInterruptChannel
 }
 
+func (t *InterruptChannelTask) WithAssets() models.Refresh {
+	return models.RefreshNone
+}
+
 // Perform implements tasks.Task
-func (t *InterruptChannelTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
+func (t *InterruptChannelTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	db := rt.DB
 	rc := rt.RP.Get()
 	defer rc.Close()
 
+	// load channel from db instead of assets because it may already be released
 	channels, err := models.GetChannelsByID(ctx, db.DB, []models.ChannelID{t.ChannelID})
 	if err != nil {
 		return errors.Wrapf(err, "error getting channels")
@@ -49,7 +54,7 @@ func (t *InterruptChannelTask) Perform(ctx context.Context, rt *runtime.Runtime,
 		return errors.Wrapf(err, "error clearing courier queues")
 	}
 
-	err = models.FailChannelMessages(ctx, rt.DB.DB, orgID, t.ChannelID, models.MsgFailedChannelRemoved)
+	err = models.FailChannelMessages(ctx, rt.DB.DB, oa.OrgID(), t.ChannelID, models.MsgFailedChannelRemoved)
 	if err != nil {
 		return errors.Wrapf(err, "error failing channel messages")
 	}

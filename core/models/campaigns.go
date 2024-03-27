@@ -573,12 +573,7 @@ func AddCampaignEventsForGroupAddition(ctx context.Context, tx DBorTx, oa *OrgAs
 }
 
 // ScheduleCampaignEvent calculates event fires for a new campaign event
-func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, orgID OrgID, eventID CampaignEventID) error {
-	oa, err := GetOrgAssetsWithRefresh(ctx, rt, orgID, RefreshCampaigns)
-	if err != nil {
-		return errors.Wrapf(err, "unable to load org: %d", orgID)
-	}
-
+func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, eventID CampaignEventID) error {
 	event := oa.CampaignEventByID(eventID)
 	if event == nil {
 		return errors.Errorf("can't find campaign event with id %d", eventID)

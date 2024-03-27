@@ -16,9 +16,10 @@ import (
 
 type testTask struct{}
 
-func (t *testTask) Type() string           { return "test" }
-func (t *testTask) Timeout() time.Duration { return 5 * time.Second }
-func (t *testTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
+func (t *testTask) Type() string               { return "test" }
+func (t *testTask) Timeout() time.Duration     { return 5 * time.Second }
+func (t *testTask) WithAssets() models.Refresh { return models.RefreshNone }
+func (t *testTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	time.Sleep(100 * time.Millisecond)
 	return nil
 }

@@ -38,8 +38,12 @@ func (t *PopulateDynamicGroupTask) Timeout() time.Duration {
 	return time.Hour
 }
 
+func (t *PopulateDynamicGroupTask) WithAssets() models.Refresh {
+	return models.RefreshGroups
+}
+
 // Perform figures out the membership for a query based group then repopulates it
-func (t *PopulateDynamicGroupTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
+func (t *PopulateDynamicGroupTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	locker := redisx.NewLocker(fmt.Sprintf(populateLockKey, t.GroupID), time.Hour)
 	lock, err := locker.Grab(rt.RP, time.Minute*5)
 	if err != nil {
@@ -49,12 +53,7 @@ func (t *PopulateDynamicGroupTask) Perform(ctx context.Context, rt *runtime.Runt
 
 	start := time.Now()
 
-	slog.Info("starting population of smart group", "group_id", t.GroupID, "org_id", orgID, "query", t.Query)
-
-	oa, err := models.GetOrgAssets(ctx, rt, orgID)
-	if err != nil {
-		return errors.Wrapf(err, "unable to load org when populating group: %d", t.GroupID)
-	}
+	slog.Info("starting population of smart group", "group_id", t.GroupID, "org_id", oa.OrgID(), "query", t.Query)
 
 	count, err := search.PopulateSmartGroup(ctx, rt, rt.ES, oa, t.GroupID, t.Query)
 	if err != nil {

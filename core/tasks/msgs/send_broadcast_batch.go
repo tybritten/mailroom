@@ -32,7 +32,11 @@ func (t *SendBroadcastBatchTask) Timeout() time.Duration {
 	return time.Minute * 60
 }
 
-func (t *SendBroadcastBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
+func (t *SendBroadcastBatchTask) WithAssets() models.Refresh {
+	return models.RefreshNone
+}
+
+func (t *SendBroadcastBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	// always set our broadcast as sent if it is our last
 	defer func() {
 		if t.BroadcastBatch.IsLast && t.BroadcastBatch.BroadcastID != models.NilBroadcastID {
@@ -42,11 +46,6 @@ func (t *SendBroadcastBatchTask) Perform(ctx context.Context, rt *runtime.Runtim
 			}
 		}
 	}()
-
-	oa, err := models.GetOrgAssets(ctx, rt, t.BroadcastBatch.OrgID)
-	if err != nil {
-		return errors.Wrapf(err, "error getting org assets")
-	}
 
 	// create this batch of messages
 	msgs, err := t.BroadcastBatch.CreateMessages(ctx, rt, oa)

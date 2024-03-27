@@ -18,6 +18,8 @@ func TestInterrupts(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
+	oa := testdata.Org1.Load(rt)
+
 	insertSession := func(org *testdata.Org, contact *testdata.Contact, flow *testdata.Flow, connectionID models.CallID) models.SessionID {
 		sessionID := testdata.InsertWaitingSession(rt, org, contact, models.FlowTypeMessaging, flow, connectionID, time.Now(), time.Now(), false, nil)
 
@@ -84,7 +86,7 @@ func TestInterrupts(t *testing.T) {
 		}
 
 		// execute it
-		err := task.Perform(ctx, rt, testdata.Org1.ID)
+		err := task.Perform(ctx, rt, oa)
 		assert.NoError(t, err)
 
 		// check session statuses are as expected
