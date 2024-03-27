@@ -33,18 +33,16 @@ func (t *StartIVRFlowBatchTask) Timeout() time.Duration {
 	return time.Minute * 5
 }
 
-func (t *StartIVRFlowBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
-	return handleFlowStartBatch(ctx, rt, t.FlowStartBatch)
+func (t *StartIVRFlowBatchTask) WithAssets() models.Refresh {
+	return models.RefreshNone
+}
+
+func (t *StartIVRFlowBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
+	return handleFlowStartBatch(ctx, rt, oa, t.FlowStartBatch)
 }
 
 // starts a batch of contacts in an IVR flow
-func handleFlowStartBatch(ctx context.Context, rt *runtime.Runtime, batch *models.FlowStartBatch) error {
-	// load our org assets
-	oa, err := models.GetOrgAssets(ctx, rt, batch.OrgID)
-	if err != nil {
-		return errors.Wrapf(err, "error loading org assets for org: %d", batch.OrgID)
-	}
-
+func handleFlowStartBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, batch *models.FlowStartBatch) error {
 	// ok, we can initiate calls for the remaining contacts
 	contacts, err := models.LoadContacts(ctx, rt.ReadonlyDB, oa, batch.ContactIDs)
 	if err != nil {

@@ -103,6 +103,8 @@ func TestQueueAndFireEvent(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 
+	oa := testdata.Org1.Load(rt)
+
 	// create due fires for Cathy and George
 	f1ID := testdata.InsertEventFire(rt, testdata.Cathy, testdata.RemindersEvent1, time.Now().Add(-time.Minute))
 	f2ID := testdata.InsertEventFire(rt, testdata.George, testdata.RemindersEvent1, time.Now().Add(-time.Minute))
@@ -121,7 +123,7 @@ func TestQueueAndFireEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	// work on that task
-	err = typedTask.Perform(ctx, rt, models.OrgID(task.OwnerID))
+	err = typedTask.Perform(ctx, rt, oa)
 	assert.NoError(t, err)
 
 	// should now have a flow run for that contact and flow
@@ -149,7 +151,7 @@ func TestQueueAndFireEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	// work on that task
-	err = typedTask.Perform(ctx, rt, models.OrgID(task.OwnerID))
+	err = typedTask.Perform(ctx, rt, oa)
 	assert.NoError(t, err)
 
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM flows_flowrun WHERE contact_id = $1 AND flow_id = $2 AND status = 'W'`, testdata.George.ID, testdata.Favorites.ID).Returns(1)
@@ -166,6 +168,8 @@ func TestIVRCampaigns(t *testing.T) {
 	defer rc.Close()
 
 	defer testsuite.Reset(testsuite.ResetAll)
+
+	oa := testdata.Org1.Load(rt)
 
 	// turn a campaign event into an IVR flow event
 	rt.DB.MustExec(`UPDATE campaigns_campaignevent SET flow_id = $1 WHERE id = $2`, testdata.IVRFlow.ID, testdata.RemindersEvent1.ID)
@@ -187,7 +191,7 @@ func TestIVRCampaigns(t *testing.T) {
 	require.NoError(t, err)
 
 	// work on that task
-	err = typedTask.Perform(ctx, rt, models.OrgID(task.OwnerID))
+	err = typedTask.Perform(ctx, rt, oa)
 	assert.NoError(t, err)
 
 	// should now have a flow start created

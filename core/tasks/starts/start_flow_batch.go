@@ -31,9 +31,13 @@ func (t *StartFlowBatchTask) Timeout() time.Duration {
 	return time.Minute * 15
 }
 
-func (t *StartFlowBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
+func (t *StartFlowBatchTask) WithAssets() models.Refresh {
+	return models.RefreshNone
+}
+
+func (t *StartFlowBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	// start these contacts in our flow
-	_, err := runner.StartFlowBatch(ctx, rt, t.FlowStartBatch)
+	_, err := runner.StartFlowBatch(ctx, rt, oa, t.FlowStartBatch)
 	if err != nil {
 		return errors.Wrap(err, "error starting flow batch")
 	}

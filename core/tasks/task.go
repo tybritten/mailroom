@@ -30,8 +30,10 @@ type Task interface {
 	// Timeout is the maximum amount of time the task can run for
 	Timeout() time.Duration
 
+	WithAssets() models.Refresh
+
 	// Perform performs the task
-	Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error
+	Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error
 }
 
 // Performs a raw task popped from a queue
@@ -42,10 +44,15 @@ func Perform(ctx context.Context, rt *runtime.Runtime, task *queues.Task) error 
 		return errors.Wrapf(err, "error reading task of type %s", task.Type)
 	}
 
+	oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, models.OrgID(task.OwnerID), typedTask.WithAssets())
+	if err != nil {
+		return errors.Wrap(err, "error loading org assets")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, typedTask.Timeout())
 	defer cancel()
 
-	return typedTask.Perform(ctx, rt, models.OrgID(task.OwnerID))
+	return typedTask.Perform(ctx, rt, oa)
 }
 
 // Queue adds the given task to the given queue

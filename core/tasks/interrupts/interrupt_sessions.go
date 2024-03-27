@@ -33,7 +33,11 @@ func (t *InterruptSessionsTask) Timeout() time.Duration {
 	return time.Hour
 }
 
-func (t *InterruptSessionsTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
+func (t *InterruptSessionsTask) WithAssets() models.Refresh {
+	return models.RefreshNone
+}
+
+func (t *InterruptSessionsTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	db := rt.DB
 
 	if len(t.ContactIDs) > 0 {

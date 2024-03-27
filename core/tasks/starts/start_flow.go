@@ -40,8 +40,12 @@ func (t *StartFlowTask) Timeout() time.Duration {
 	return time.Minute * 60
 }
 
-func (t *StartFlowTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
-	if err := createFlowStartBatches(ctx, rt, t.FlowStart); err != nil {
+func (t *StartFlowTask) WithAssets() models.Refresh {
+	return models.RefreshNone
+}
+
+func (t *StartFlowTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
+	if err := createFlowStartBatches(ctx, rt, oa, t.FlowStart); err != nil {
 		models.MarkStartFailed(ctx, rt.DB, t.FlowStart.ID)
 
 		// if error is user created query error.. don't escalate error to sentry
@@ -55,12 +59,7 @@ func (t *StartFlowTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID 
 }
 
 // creates batches of flow starts for all the unique contacts
-func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, start *models.FlowStart) error {
-	oa, err := models.GetOrgAssets(ctx, rt, start.OrgID)
-	if err != nil {
-		return errors.Wrap(err, "error loading org assets")
-	}
-
+func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, start *models.FlowStart) error {
 	flow, err := oa.FlowByID(start.FlowID)
 	if err != nil {
 		return errors.Wrap(err, "error loading flow")

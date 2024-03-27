@@ -33,8 +33,12 @@ func (t *ImportContactBatchTask) Timeout() time.Duration {
 	return time.Minute * 10
 }
 
+func (t *ImportContactBatchTask) WithAssets() models.Refresh {
+	return models.RefreshFields | models.RefreshGroups
+}
+
 // Perform figures out the membership for a query based group then repopulates it
-func (t *ImportContactBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
+func (t *ImportContactBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	batch, err := models.LoadContactImportBatch(ctx, rt.DB, t.ContactImportBatchID)
 	if err != nil {
 		return errors.Wrap(err, "error loading contact import batch")
@@ -45,7 +49,7 @@ func (t *ImportContactBatchTask) Perform(ctx context.Context, rt *runtime.Runtim
 		return errors.Wrap(err, "error loading contact import")
 	}
 
-	batchErr := batch.Import(ctx, rt, orgID, imp.CreatedByID)
+	batchErr := batch.Import(ctx, rt, oa, imp.CreatedByID)
 
 	// decrement the redis key that holds remaining batches to see if the overall import is now finished
 	rc := rt.RP.Get()

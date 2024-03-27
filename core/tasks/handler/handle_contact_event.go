@@ -40,16 +40,15 @@ func (t *HandleContactEventTask) Timeout() time.Duration {
 	return time.Minute * 5
 }
 
+func (t *HandleContactEventTask) WithAssets() models.Refresh {
+	return models.RefreshNone
+}
+
 // Perform is called when an event comes in for a contact. To make sure we don't get into a situation of being off by one,
 // this task ingests and handles all the events for a contact, one by one.
-func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
-	oa, err := models.GetOrgAssets(ctx, rt, orgID)
-	if err != nil {
-		return errors.Wrap(err, "error loading org assets")
-	}
-
+func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	// try to get the lock for this contact, waiting up to 10 seconds
-	locks, _, err := models.LockContacts(ctx, rt, orgID, []models.ContactID{t.ContactID}, time.Second*10)
+	locks, _, err := models.LockContacts(ctx, rt, oa.OrgID(), []models.ContactID{t.ContactID}, time.Second*10)
 	if err != nil {
 		return errors.Wrapf(err, "error acquiring lock for contact %d", t.ContactID)
 	}
@@ -58,18 +57,18 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 	if len(locks) == 0 {
 		rc := rt.RP.Get()
 		defer rc.Close()
-		err = tasks.Queue(rc, tasks.HandlerQueue, orgID, &HandleContactEventTask{ContactID: t.ContactID}, queues.DefaultPriority)
+		err = tasks.Queue(rc, tasks.HandlerQueue, oa.OrgID(), &HandleContactEventTask{ContactID: t.ContactID}, queues.DefaultPriority)
 		if err != nil {
 			return errors.Wrapf(err, "error re-adding contact task after failing to get lock")
 		}
-		slog.Info("failed to get lock for contact, requeued and skipping", "org_id", orgID, "contact_id", t.ContactID)
+		slog.Info("failed to get lock for contact, requeued and skipping", "org_id", oa.OrgID(), "contact_id", t.ContactID)
 		return nil
 	}
 
-	defer models.UnlockContacts(rt, orgID, locks)
+	defer models.UnlockContacts(rt, oa.OrgID(), locks)
 
 	// read all the events for this contact, one by one
-	contactQ := fmt.Sprintf("c:%d:%d", orgID, t.ContactID)
+	contactQ := fmt.Sprintf("c:%d:%d", oa.OrgID(), t.ContactID)
 	for {
 		// pop the next event off this contacts queue
 		rc := rt.RP.Get()
@@ -96,7 +95,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 		}
 
 		start := time.Now()
-		log := slog.With("org_id", orgID, "contact_id", t.ContactID, "type", taskPayload.Type)
+		log := slog.With("org_id", oa.OrgID(), "contact_id", t.ContactID, "type", taskPayload.Type)
 
 		err = htask.Perform(ctx, rt, oa, t.ContactID)
 
@@ -116,7 +115,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 			taskPayload.ErrorCount++
 			if taskPayload.ErrorCount < 3 {
 				rc := rt.RP.Get()
-				retryErr := queueTask(rc, orgID, t.ContactID, htask, true, taskPayload.ErrorCount)
+				retryErr := queueTask(rc, oa.OrgID(), t.ContactID, htask, true, taskPayload.ErrorCount)
 				if retryErr != nil {
 					log.Error("error requeuing errored contact event", "error", retryErr)
 				}

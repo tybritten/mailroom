@@ -268,7 +268,7 @@ func TestBroadcastTask(t *testing.T) {
 
 		bcast := models.NewBroadcast(oa.OrgID(), tc.translations, tc.templateState, tc.baseLanguage, optInID, tc.URNs, tc.contactIDs, tc.groupIDs, "", tc.createdByID)
 
-		err = (&msgs.SendBroadcastTask{Broadcast: bcast}).Perform(ctx, rt, testdata.Org1.ID)
+		err = (&msgs.SendBroadcastTask{Broadcast: bcast}).Perform(ctx, rt, oa)
 		assert.NoError(t, err)
 
 		// pop all our tasks and execute them
@@ -287,7 +287,7 @@ func TestBroadcastTask(t *testing.T) {
 			err = json.Unmarshal(task.Task, taskObj)
 			assert.NoError(t, err)
 
-			err = taskObj.Perform(ctx, rt, testdata.Org1.ID)
+			err = taskObj.Perform(ctx, rt, oa)
 			assert.NoError(t, err)
 		}
 
