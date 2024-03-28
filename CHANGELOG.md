@@ -1,3 +1,8 @@
+v9.1.27 (2024-03-28)
+-------------------------
+ * Consolidate channel event tasks into one task type
+ * Rework batch tasks to take org assets and specify what asset refresh they need for that
+
 v9.1.26 (2024-03-26)
 -------------------------
  * Rework handler tasks
