@@ -237,7 +237,7 @@ func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime
 
 	// run through all our contacts to create our messages
 	for _, c := range contacts {
-		msg, err := b.createMessage(ctx, rt, oa, c)
+		msg, err := b.createMessage(rt, oa, c)
 		if err != nil {
 			return nil, errors.Wrap(err, "error creating broadcast message")
 		}
@@ -256,7 +256,7 @@ func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime
 }
 
 // creates an outgoing message for the given contact - can return nil if resultant message has no content and thus is a noop
-func (b *BroadcastBatch) createMessage(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, c *Contact) (*Msg, error) {
+func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Contact) (*Msg, error) {
 	contact, err := c.FlowContact(oa)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating flow contact for broadcast message")
