@@ -1,3 +1,7 @@
+v9.1.28 (2024-03-28)
+-------------------------
+ * Merge stop_contact event handling into channel_event handler
+
 v9.1.27 (2024-03-28)
 -------------------------
  * Consolidate channel event tasks into one task type
