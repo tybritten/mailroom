@@ -32,6 +32,7 @@ func init() {
 	handler.RegisterTaskType("welcome_message", func() handler.Task { return &ChannelEventTask{} })
 	handler.RegisterTaskType("optin", func() handler.Task { return &ChannelEventTask{} })
 	handler.RegisterTaskType("optout", func() handler.Task { return &ChannelEventTask{} })
+	handler.RegisterTaskType("stop_contact", func() handler.Task { return &ChannelEventTask{} })
 
 	// rapidpro still sends this with event_type as task type
 	handler.RegisterTaskType("mo_miss", func() handler.Task { return &ChannelEventTask{} })
@@ -44,9 +45,8 @@ type ChannelEventTask struct {
 	URNID      models.URNID            `json:"urn_id"`
 	OptInID    models.OptInID          `json:"optin_id"`
 	Extra      null.Map[any]           `json:"extra"`
-	OccurredOn time.Time               `json:"occurred_on"`
-	CreatedOn  time.Time               `json:"created_on"`
 	NewContact bool                    `json:"new_contact"`
+	CreatedOn  time.Time               `json:"created_on"`
 }
 
 func (t *ChannelEventTask) Type() string {
@@ -85,6 +85,13 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 		return nil, nil
 	}
 
+	if t.EventType == models.EventTypeStopContact {
+		err = models.StopContact(ctx, rt.DB, oa.OrgID(), contactID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error stopping contact")
+		}
+	}
+
 	if models.ContactSeenEvents[t.EventType] {
 		// in the case of an incoming call this event isn't in the db and doesn't have created on
 		lastSeenOn := t.CreatedOn
@@ -110,6 +117,13 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 		return nil, errors.Wrapf(err, "error creating flow contact")
 	}
 
+	if t.NewContact {
+		err = models.CalculateDynamicGroups(ctx, rt.DB, oa, []*flows.Contact{contact})
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to initialize new contact")
+		}
+	}
+
 	// do we have associated trigger?
 	var trigger *models.Trigger
 
@@ -127,22 +141,14 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 		trigger = models.FindMatchingOptInTrigger(oa, channel)
 	case models.EventTypeOptOut:
 		trigger = models.FindMatchingOptOutTrigger(oa, channel)
-	case models.EventTypeWelcomeMessage:
+	case models.EventTypeWelcomeMessage, models.EventTypeStopContact:
 		trigger = nil
 	default:
 		return nil, errors.Errorf("unknown channel event type: %s", t.EventType)
 	}
 
-	if t.NewContact {
-		err = models.CalculateDynamicGroups(ctx, rt.DB, oa, []*flows.Contact{contact})
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to initialize new contact")
-		}
-	}
-
-	// no trigger, noop, move on
+	// no trigger then nothing more to do
 	if trigger == nil {
-		slog.Info("ignoring channel event, no trigger found", "channel_id", t.ChannelID, "event_type", t.EventType, "extra", t.Extra)
 		return nil, nil
 	}
 

@@ -269,7 +269,7 @@ func TestMsgEvents(t *testing.T) {
 		},
 	}
 
-	makeMsgTask := func(org *testdata.Org, channel *testdata.Channel, contact *testdata.Contact, text string) handler.Task {
+	makeMsgTask := func(channel *testdata.Channel, contact *testdata.Contact, text string) handler.Task {
 		return &htasks.MsgEventTask{
 			ChannelID: channel.ID,
 			MsgID:     dbMsg.ID,
@@ -293,7 +293,7 @@ func TestMsgEvents(t *testing.T) {
 			tc.preHook()
 		}
 
-		err := handler.QueueTask(rc, tc.org.ID, tc.contact.ID, makeMsgTask(tc.org, tc.channel, tc.contact, tc.text))
+		err := handler.QueueTask(rc, tc.org.ID, tc.contact.ID, makeMsgTask(tc.channel, tc.contact, tc.text))
 		assert.NoError(t, err, "%d: error adding task", i)
 
 		task, err := tasks.HandlerQueue.Pop(rc)
@@ -351,7 +351,7 @@ func TestMsgEvents(t *testing.T) {
 
 	// force an error by marking our run for fred as complete (our session is still active so this will blow up)
 	rt.DB.MustExec(`UPDATE flows_flowrun SET status = 'C', exited_on = NOW() WHERE contact_id = $1`, testdata.Org2Contact.ID)
-	handler.QueueTask(rc, testdata.Org2.ID, testdata.Org2Contact.ID, makeMsgTask(testdata.Org2, testdata.Org2Channel, testdata.Org2Contact, "red"))
+	handler.QueueTask(rc, testdata.Org2.ID, testdata.Org2Contact.ID, makeMsgTask(testdata.Org2Channel, testdata.Org2Contact, "red"))
 
 	// should get requeued three times automatically
 	for i := 0; i < 3; i++ {
@@ -371,7 +371,7 @@ func TestMsgEvents(t *testing.T) {
 	models.FlushCache()
 
 	// try to resume now
-	handler.QueueTask(rc, testdata.Org2.ID, testdata.Org2Contact.ID, makeMsgTask(testdata.Org2, testdata.Org2Channel, testdata.Org2Contact, "red"))
+	handler.QueueTask(rc, testdata.Org2.ID, testdata.Org2Contact.ID, makeMsgTask(testdata.Org2Channel, testdata.Org2Contact, "red"))
 	task, _ = tasks.HandlerQueue.Pop(rc)
 	assert.NotNil(t, task)
 	err = tasks.Perform(ctx, rt, task)
@@ -385,7 +385,7 @@ func TestMsgEvents(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) from flows_flowsession where contact_id = $1 and status = 'F'`, testdata.Org2Contact.ID).Returns(2)
 
 	// trigger should also not start a new session
-	handler.QueueTask(rc, testdata.Org2.ID, testdata.Org2Contact.ID, makeMsgTask(testdata.Org2, testdata.Org2Channel, testdata.Org2Contact, "start"))
+	handler.QueueTask(rc, testdata.Org2.ID, testdata.Org2Contact.ID, makeMsgTask(testdata.Org2Channel, testdata.Org2Contact, "start"))
 	task, _ = tasks.HandlerQueue.Pop(rc)
 	err = tasks.Perform(ctx, rt, task)
 	assert.NoError(t, err)
