@@ -24,17 +24,6 @@ const TypeChannelEvent = "channel_event"
 
 func init() {
 	handler.RegisterTaskType(TypeChannelEvent, func() handler.Task { return &ChannelEventTask{} })
-
-	// courier still sends these with event_type as task type
-	handler.RegisterTaskType("new_conversation", func() handler.Task { return &ChannelEventTask{} })
-	handler.RegisterTaskType("referral", func() handler.Task { return &ChannelEventTask{} })
-	handler.RegisterTaskType("welcome_message", func() handler.Task { return &ChannelEventTask{} })
-	handler.RegisterTaskType("optin", func() handler.Task { return &ChannelEventTask{} })
-	handler.RegisterTaskType("optout", func() handler.Task { return &ChannelEventTask{} })
-	handler.RegisterTaskType("stop_contact", func() handler.Task { return &ChannelEventTask{} })
-
-	// rapidpro still sends this with event_type as task type
-	handler.RegisterTaskType("mo_miss", func() handler.Task { return &ChannelEventTask{} })
 }
 
 type ChannelEventTask struct {
