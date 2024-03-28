@@ -108,14 +108,10 @@ func handleIncoming(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 		return nil, svc.WriteErrorResponse(w, errors.Wrapf(err, "unable to load urn"))
 	}
 
-	// urn ID
 	urnID := models.GetURNID(urn)
 	if urnID == models.NilURNID {
 		return nil, svc.WriteErrorResponse(w, errors.Wrapf(err, "unable to get id for URN"))
 	}
-
-	// we first create an incoming call channel event and see if that matches
-	event := models.NewChannelEvent(models.EventTypeIncomingCall, oa.OrgID(), ch.ID(), contact.ID(), urnID, models.NilOptInID, nil, false)
 
 	externalID, err := svc.CallIDForRequest(r)
 	if err != nil {
@@ -128,8 +124,16 @@ func handleIncoming(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 		return nil, svc.WriteErrorResponse(w, errors.Wrapf(err, "error creating call"))
 	}
 
-	// try to handle this event
-	session, err := htasks.HandleChannelEvent(ctx, rt, oa, models.EventTypeIncomingCall, event, call)
+	// create an incoming call "task" and handle it to see if we have a trigger
+	task := &htasks.ChannelEventTask{
+		EventType:  models.EventTypeIncomingCall,
+		ChannelID:  ch.ID(),
+		URNID:      urnID,
+		Extra:      nil,
+		OccurredOn: time.Now(),
+		CreatedOn:  time.Now(),
+	}
+	session, err := task.Handle(ctx, rt, oa, contact.ID(), call)
 	if err != nil {
 		slog.Error("error handling incoming call", "error", err, "http_request", r)
 		return call, svc.WriteErrorResponse(w, errors.Wrapf(err, "error handling incoming call"))

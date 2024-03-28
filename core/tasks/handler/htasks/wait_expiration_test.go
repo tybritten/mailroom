@@ -86,8 +86,6 @@ func TestTimedEvents(t *testing.T) {
 
 		if tc.EventType == htasks.TypeMsgEvent {
 			htask = &htasks.MsgEventTask{
-				ContactID: tc.Contact.ID,
-				OrgID:     tc.Org.ID,
 				ChannelID: tc.Channel.ID,
 				MsgID:     models.MsgID(1),
 				MsgUUID:   flows.MsgUUID(uuids.New()),

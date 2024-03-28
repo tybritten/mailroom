@@ -1,7 +1,6 @@
 package models
 
 import (
-	"context"
 	"encoding/json"
 	"time"
 
@@ -79,38 +78,4 @@ func (e *ChannelEvent) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON is our custom marshaller so that our inner struct get output
 func (e *ChannelEvent) UnmarshalJSON(b []byte) error {
 	return json.Unmarshal(b, &e.e)
-}
-
-const sqlInsertChannelEvent = `
-INSERT INTO channels_channelevent(event_type, extra, occurred_on, created_on, channel_id, contact_id, contact_urn_id, optin_id, org_id)
-	 VALUES(:event_type, :extra, :occurred_on, NOW(), :channel_id, :contact_id, :contact_urn_id, :optin_id, :org_id)
-  RETURNING id, created_on`
-
-// Insert inserts this channel event to our DB. The ID of the channel event will be
-// set if no error is returned
-func (e *ChannelEvent) Insert(ctx context.Context, db DBorTx) error {
-	return BulkQuery(ctx, "insert channel event", db, sqlInsertChannelEvent, []any{&e.e})
-}
-
-// NewChannelEvent creates a new channel event for the passed in parameters, returning it
-func NewChannelEvent(eventType ChannelEventType, orgID OrgID, channelID ChannelID, contactID ContactID, urnID URNID, optInID OptInID, extra map[string]any, isNewContact bool) *ChannelEvent {
-	event := &ChannelEvent{}
-	e := &event.e
-
-	e.EventType = eventType
-	e.OrgID = orgID
-	e.ChannelID = channelID
-	e.ContactID = contactID
-	e.URNID = urnID
-	e.OptInID = optInID
-	e.NewContact = isNewContact
-	e.OccurredOn = time.Now()
-
-	if extra == nil {
-		e.Extra = null.Map[any]{}
-	} else {
-		e.Extra = null.Map[any](extra)
-	}
-
-	return event
 }
