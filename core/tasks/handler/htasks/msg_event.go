@@ -27,8 +27,6 @@ func init() {
 }
 
 type MsgEventTask struct {
-	ContactID     models.ContactID `json:"contact_id"`
-	OrgID         models.OrgID     `json:"org_id"`
 	ChannelID     models.ChannelID `json:"channel_id"`
 	MsgID         models.MsgID     `json:"msg_id"`
 	MsgUUID       flows.MsgUUID    `json:"msg_uuid"`

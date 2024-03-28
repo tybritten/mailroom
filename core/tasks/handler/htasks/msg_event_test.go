@@ -271,8 +271,6 @@ func TestMsgEvents(t *testing.T) {
 
 	makeMsgTask := func(org *testdata.Org, channel *testdata.Channel, contact *testdata.Contact, text string) handler.Task {
 		return &htasks.MsgEventTask{
-			ContactID: contact.ID,
-			OrgID:     org.ID,
 			ChannelID: channel.ID,
 			MsgID:     dbMsg.ID,
 			MsgUUID:   dbMsg.FlowMsg.UUID(),
