@@ -126,12 +126,11 @@ func handleIncoming(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 
 	// create an incoming call "task" and handle it to see if we have a trigger
 	task := &htasks.ChannelEventTask{
-		EventType:  models.EventTypeIncomingCall,
-		ChannelID:  ch.ID(),
-		URNID:      urnID,
-		Extra:      nil,
-		OccurredOn: time.Now(),
-		CreatedOn:  time.Now(),
+		EventType: models.EventTypeIncomingCall,
+		ChannelID: ch.ID(),
+		URNID:     urnID,
+		Extra:     nil,
+		CreatedOn: time.Now(),
 	}
 	session, err := task.Handle(ctx, rt, oa, contact.ID(), call)
 	if err != nil {
