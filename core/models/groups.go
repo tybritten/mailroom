@@ -27,8 +27,9 @@ const (
 type GroupType string
 
 const (
-	GroupTypeManual = GroupType("M")
-	GroupTypeSmart  = GroupType("Q")
+	GroupTypeManual    = GroupType("M")
+	GroupTypeSmart     = GroupType("Q")
+	GroupTypeDBStopped = GroupType("S")
 )
 
 // Group is our mailroom type for contact groups

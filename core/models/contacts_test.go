@@ -451,20 +451,24 @@ func TestGetContactIDsFromReferences(t *testing.T) {
 	assert.ElementsMatch(t, []models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, ids)
 }
 
-func TestStopContact(t *testing.T) {
+func TestContactStop(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
 	defer testsuite.Reset(testsuite.ResetAll)
 
-	// stop kathy
-	err := models.StopContact(ctx, rt.DB, testdata.Org1.ID, testdata.Cathy.ID)
+	oa := testdata.Org1.Load(rt)
+	contact, _, _ := testdata.Cathy.Load(rt, oa)
+
+	err := contact.Stop(ctx, rt.DB, oa)
 	assert.NoError(t, err)
+	assert.Equal(t, models.ContactStatusStopped, contact.Status())
+	if assert.Len(t, contact.Groups(), 1) {
+		assert.Equal(t, "Stopped", contact.Groups()[0].Name())
+	}
 
-	// verify she's only in the stopped group
+	// verify that matches the database state
+	assertdb.Query(t, rt.DB, `SELECT status FROM contacts_contact WHERE id = $1`, testdata.Cathy.ID).Returns("S")
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactgroup_contacts WHERE contact_id = $1`, testdata.Cathy.ID).Returns(1)
-
-	// verify she's stopped
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contact WHERE id = $1 AND status = 'S' AND is_active = TRUE`, testdata.Cathy.ID).Returns(1)
 }
 
 func TestUpdateContactLastSeenAndModifiedOn(t *testing.T) {

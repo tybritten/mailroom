@@ -132,7 +132,7 @@ func handleIncoming(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 		Extra:     nil,
 		CreatedOn: time.Now(),
 	}
-	session, err := task.Handle(ctx, rt, oa, contact.ID(), call)
+	session, err := task.Handle(ctx, rt, oa, contact, call)
 	if err != nil {
 		slog.Error("error handling incoming call", "error", err, "http_request", r)
 		return call, svc.WriteErrorResponse(w, errors.Wrapf(err, "error handling incoming call"))

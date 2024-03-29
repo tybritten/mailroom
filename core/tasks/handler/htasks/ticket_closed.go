@@ -2,7 +2,6 @@ package htasks
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 
 	"github.com/nyaruka/goflow/flows"
@@ -32,7 +31,11 @@ func (t *TicketClosedTask) Type() string {
 	return TypeTicketClosed
 }
 
-func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
+func (t *TicketClosedTask) UseReadOnly() bool {
+	return false
+}
+
+func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
 	// load our ticket
 	tickets, err := models.LoadTickets(ctx, rt.DB, []models.TicketID{t.TicketID})
 	if err != nil {
@@ -43,25 +46,14 @@ func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa 
 		return nil
 	}
 
-	modelTicket := tickets[0]
-
-	// load our contact
-	modelContact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, modelTicket.ContactID())
-	if err != nil {
-		if err == sql.ErrNoRows { // if contact no longer exists, ignore event
-			return nil
-		}
-		return errors.Wrapf(err, "error loading contact")
-	}
-
 	// build our flow contact
-	contact, err := modelContact.FlowContact(oa)
+	flowContact, err := contact.FlowContact(oa)
 	if err != nil {
 		return errors.Wrapf(err, "error creating flow contact")
 	}
 
 	// do we have associated trigger?
-	trigger := models.FindMatchingTicketClosedTrigger(oa, contact)
+	trigger := models.FindMatchingTicketClosedTrigger(oa, flowContact)
 
 	// no trigger, noop, move on
 	if trigger == nil {
@@ -80,7 +72,7 @@ func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa 
 
 	// if this is an IVR flow, we need to trigger that start (which happens in a different queue)
 	if flow.FlowType() == models.FlowTypeVoice {
-		err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{modelContact.ID()}, nil)
+		err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{contact.ID()}, nil)
 		if err != nil {
 			return errors.Wrapf(err, "error while triggering ivr flow")
 		}
@@ -91,11 +83,11 @@ func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa 
 	ticket := tickets[0].FlowTicket(oa)
 
 	// build our flow trigger
-	flowTrigger := triggers.NewBuilder(oa.Env(), flow.Reference(), contact).
+	flowTrigger := triggers.NewBuilder(oa.Env(), flow.Reference(), flowContact).
 		Ticket(ticket, triggers.TicketEventTypeClosed).
 		Build()
 
-	_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{modelContact}, []flows.Trigger{flowTrigger}, nil, flow.FlowType().Interrupts())
+	_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{contact}, []flows.Trigger{flowTrigger}, nil, flow.FlowType().Interrupts())
 	if err != nil {
 		return errors.Wrapf(err, "error starting flow for contact")
 	}

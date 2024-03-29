@@ -2,7 +2,6 @@ package htasks
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 	"time"
 
@@ -34,26 +33,21 @@ func (t *WaitTimeoutTask) Type() string {
 	return TypeWaitTimeout
 }
 
-func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
-	log := slog.With("contact_id", contactID, "session_id", t.SessionID)
+func (t *WaitTimeoutTask) UseReadOnly() bool {
+	return true
+}
 
-	// load our contact
-	modelContact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, contactID)
-	if err != nil {
-		if err == sql.ErrNoRows { // if contact no longer exists, ignore event
-			return nil
-		}
-		return errors.Wrapf(err, "error loading contact")
-	}
+func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
+	log := slog.With("contact_id", contact.ID(), "session_id", t.SessionID)
 
 	// build our flow contact
-	contact, err := modelContact.FlowContact(oa)
+	flowContact, err := contact.FlowContact(oa)
 	if err != nil {
 		return errors.Wrapf(err, "error creating flow contact")
 	}
 
 	// look for a waiting session for this contact
-	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, contact)
+	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, flowContact)
 	if err != nil {
 		return errors.Wrapf(err, "error loading waiting session for contact")
 	}
@@ -75,9 +69,9 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		return nil
 	}
 
-	resume := resumes.NewWaitTimeout(oa.Env(), contact)
+	resume := resumes.NewWaitTimeout(oa.Env(), flowContact)
 
-	_, err = runner.ResumeFlow(ctx, rt, oa, session, modelContact, resume, nil)
+	_, err = runner.ResumeFlow(ctx, rt, oa, session, contact, resume, nil)
 	if err != nil {
 		// if we errored, and it's the wait rejecting the timeout event, it's because it no longer exists on the flow, so clear it
 		// on the session
