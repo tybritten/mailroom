@@ -9,17 +9,27 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
+	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
+	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func QueueBatchTask(t *testing.T, rt *runtime.Runtime, orgID models.OrgID, task tasks.Task) {
+func QueueBatchTask(t *testing.T, rt *runtime.Runtime, org *testdata.Org, task tasks.Task) {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	err := tasks.Queue(rc, tasks.BatchQueue, orgID, task, queues.DefaultPriority)
+	err := tasks.Queue(rc, tasks.BatchQueue, org.ID, task, queues.DefaultPriority)
+	require.NoError(t, err)
+}
+
+func QueueHandlerTask(t *testing.T, rt *runtime.Runtime, org *testdata.Org, contact *testdata.Contact, htask handler.Task) {
+	rc := rt.RP.Get()
+	defer rc.Close()
+
+	err := handler.QueueTask(rc, org.ID, contact.ID, htask)
 	require.NoError(t, err)
 }
 

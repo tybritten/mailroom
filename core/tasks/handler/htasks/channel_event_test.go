@@ -44,6 +44,10 @@ func TestChannelEvents(t *testing.T) {
 	// add a URN for cathy so we can test twitter URNs
 	testdata.InsertContactURN(rt, testdata.Org1, testdata.Bob, urns.URN("twitterid:123456"), 10, nil)
 
+	// create a deleted contact
+	del := testdata.InsertContact(rt, testdata.Org1, "", "Del", "eng", models.ContactStatusActive)
+	rt.DB.MustExec(`UPDATE contacts_contact SET is_active = false WHERE id = $1`, del.ID)
+
 	tcs := []struct {
 		contact             *testdata.Contact
 		task                handler.Task
@@ -179,6 +183,20 @@ func TestChannelEvents(t *testing.T) {
 			expectedTriggerType: "",
 			expectedResponse:    "",
 			updatesLastSeen:     true,
+		},
+		{ // 9: a task against a deleted contact
+			contact: del,
+			task: &htasks.ChannelEventTask{
+				EventType:  models.EventTypeNewConversation,
+				ChannelID:  testdata.VonageChannel.ID,
+				URNID:      del.URNID,
+				Extra:      null.Map[any]{},
+				CreatedOn:  time.Now(),
+				NewContact: false,
+			},
+			expectedTriggerType: "",
+			expectedResponse:    "",
+			updatesLastSeen:     false,
 		},
 	}
 
