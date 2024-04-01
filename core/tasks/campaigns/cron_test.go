@@ -79,7 +79,7 @@ func TestQueueEventFires(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"fires": 114, "dupes": 4, "tasks": 2}, res)
 
-	queuedTasks := testsuite.CurrentTasks(t, rt)
+	queuedTasks := testsuite.CurrentTasks(t, rt, "batch")
 	org1Tasks := queuedTasks[testdata.Org1.ID]
 
 	assert.Equal(t, 2, len(org1Tasks))
@@ -211,7 +211,7 @@ func TestIVRCampaigns(t *testing.T) {
 }
 
 func assertFireTasks(t *testing.T, rt *runtime.Runtime, org *testdata.Org, expected [][]models.FireID) {
-	allTasks := testsuite.CurrentTasks(t, rt)
+	allTasks := testsuite.CurrentTasks(t, rt, "batch")
 	actual := make([][]models.FireID, len(allTasks[org.ID]))
 
 	for i, task := range allTasks[org.ID] {
