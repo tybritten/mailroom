@@ -7,7 +7,6 @@ import (
 	"github.com/nyaruka/goflow/contactql"
 	"github.com/nyaruka/goflow/envs"
 	"github.com/nyaruka/mailroom/web"
-
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )

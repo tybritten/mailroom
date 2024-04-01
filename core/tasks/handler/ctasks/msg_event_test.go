@@ -331,7 +331,7 @@ func TestMsgEvents(t *testing.T) {
 	}
 
 	// should have one remaining IVR task to handle for Bob
-	orgTasks := testsuite.CurrentTasks(t, rt)
+	orgTasks := testsuite.CurrentTasks(t, rt, "batch")
 	assert.Equal(t, 1, len(orgTasks[testdata.Org1.ID]))
 
 	task, err := tasks.BatchQueue.Pop(rc)
