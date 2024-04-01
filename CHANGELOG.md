@@ -1,3 +1,8 @@
+v9.1.29 (2024-04-01)
+-------------------------
+ * Consolidate code in handler tasks for loading the contact
+ * Drop support for handler tasks using event_type as task type
+
 v9.1.28 (2024-03-28)
 -------------------------
  * Merge stop_contact event handling into channel_event handler
