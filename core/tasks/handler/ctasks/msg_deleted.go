@@ -1,4 +1,4 @@
-package htasks
+package ctasks
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 const TypeMsgDeleted = "msg_deleted"
 
 func init() {
-	handler.RegisterTaskType(TypeMsgDeleted, func() handler.Task { return &MsgDeletedTask{} })
+	handler.RegisterContactTask(TypeMsgDeleted, func() handler.Task { return &MsgDeletedTask{} })
 }
 
 type MsgDeletedTask struct {

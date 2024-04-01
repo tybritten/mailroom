@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Task is the interface for all handler tasks - tasks which operate on a single contact
+// Task is the interface for all contact tasks - tasks which operate on a single contact in real time
 type Task interface {
 	Type() string
 	UseReadOnly() bool
@@ -25,7 +25,7 @@ type Task interface {
 
 var registeredTypes = map[string]func() Task{}
 
-func RegisterTaskType(name string, initFunc func() Task) {
+func RegisterContactTask(name string, initFunc func() Task) {
 	registeredTypes[name] = initFunc
 }
 

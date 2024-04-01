@@ -8,7 +8,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
-	"github.com/nyaruka/mailroom/core/tasks/handler/htasks"
+	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
@@ -73,7 +73,7 @@ func (c *timeoutsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string
 		}
 
 		// ok, queue this task
-		err = handler.QueueTask(rc, timeout.OrgID, timeout.ContactID, htasks.NewWaitTimeout(timeout.SessionID, timeout.TimeoutOn))
+		err = handler.QueueTask(rc, timeout.OrgID, timeout.ContactID, ctasks.NewWaitTimeout(timeout.SessionID, timeout.TimeoutOn))
 		if err != nil {
 			return nil, errors.Wrapf(err, "error adding new handle task")
 		}

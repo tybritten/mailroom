@@ -1,4 +1,4 @@
-package htasks_test
+package ctasks_test
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
-	"github.com/nyaruka/mailroom/core/tasks/handler/htasks"
+	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/stretchr/testify/assert"
@@ -36,43 +36,43 @@ func TestTimedEvents(t *testing.T) {
 		Org       *testdata.Org
 	}{
 		// 0: start the flow
-		{htasks.TypeMsgEvent, testdata.Cathy, "start", "What is your favorite color?", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, testdata.Cathy, "start", "What is your favorite color?", testdata.FacebookChannel, testdata.Org1},
 
 		// 1: this expiration does nothing because the times don't match
-		{htasks.TypeWaitExpiration, testdata.Cathy, "bad", "", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeWaitExpiration, testdata.Cathy, "bad", "", testdata.FacebookChannel, testdata.Org1},
 
 		// 2: this checks that the flow wasn't expired
-		{htasks.TypeMsgEvent, testdata.Cathy, "red", "Good choice, I like Red too! What is your favorite beer?", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, testdata.Cathy, "red", "Good choice, I like Red too! What is your favorite beer?", testdata.FacebookChannel, testdata.Org1},
 
 		// 3: this expiration will actually take
-		{htasks.TypeWaitExpiration, testdata.Cathy, "good", "", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeWaitExpiration, testdata.Cathy, "good", "", testdata.FacebookChannel, testdata.Org1},
 
 		// 4: we won't get a response as we will be out of the flow
-		{htasks.TypeMsgEvent, testdata.Cathy, "mutzig", "", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, testdata.Cathy, "mutzig", "", testdata.FacebookChannel, testdata.Org1},
 
 		// 5: start the parent expiration flow
-		{htasks.TypeMsgEvent, testdata.Cathy, "parent", "Child", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, testdata.Cathy, "parent", "Child", testdata.FacebookChannel, testdata.Org1},
 
 		// 6: respond, should bring us out
-		{htasks.TypeMsgEvent, testdata.Cathy, "hi", "Completed", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, testdata.Cathy, "hi", "Completed", testdata.FacebookChannel, testdata.Org1},
 
 		// 7: expiring our child should be a no op
-		{htasks.TypeWaitExpiration, testdata.Cathy, "child", "", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeWaitExpiration, testdata.Cathy, "child", "", testdata.FacebookChannel, testdata.Org1},
 
 		// 8: respond one last time, should be done
-		{htasks.TypeMsgEvent, testdata.Cathy, "done", "Ended", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, testdata.Cathy, "done", "Ended", testdata.FacebookChannel, testdata.Org1},
 
 		// 9: start our favorite flow again
-		{htasks.TypeMsgEvent, testdata.Cathy, "start", "What is your favorite color?", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, testdata.Cathy, "start", "What is your favorite color?", testdata.FacebookChannel, testdata.Org1},
 
 		// 10: timeout on the color question
-		{htasks.TypeWaitTimeout, testdata.Cathy, "", "Sorry you can't participate right now, I'll try again later.", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeWaitTimeout, testdata.Cathy, "", "Sorry you can't participate right now, I'll try again later.", testdata.FacebookChannel, testdata.Org1},
 
 		// 11: start the pick a number flow
-		{htasks.TypeMsgEvent, testdata.Cathy, "pick", "Pick a number between 1-10.", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, testdata.Cathy, "pick", "Pick a number between 1-10.", testdata.FacebookChannel, testdata.Org1},
 
 		// 12: try to resume with timeout even tho flow doesn't have one set
-		{htasks.TypeWaitTimeout, testdata.Cathy, "", "", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeWaitTimeout, testdata.Cathy, "", "", testdata.FacebookChannel, testdata.Org1},
 	}
 
 	last := time.Now()
@@ -82,10 +82,10 @@ func TestTimedEvents(t *testing.T) {
 	for i, tc := range tcs {
 		time.Sleep(50 * time.Millisecond)
 
-		var htask handler.Task
+		var ctask handler.Task
 
-		if tc.EventType == htasks.TypeMsgEvent {
-			htask = &htasks.MsgEventTask{
+		if tc.EventType == ctasks.TypeMsgEvent {
+			ctask = &ctasks.MsgEventTask{
 				ChannelID: tc.Channel.ID,
 				MsgID:     models.MsgID(1),
 				MsgUUID:   flows.MsgUUID(uuids.New()),
@@ -93,7 +93,7 @@ func TestTimedEvents(t *testing.T) {
 				URNID:     tc.Contact.URNID,
 				Text:      tc.Message,
 			}
-		} else if tc.EventType == htasks.TypeWaitExpiration {
+		} else if tc.EventType == ctasks.TypeWaitExpiration {
 			var expiration time.Time
 
 			if tc.Message == "bad" {
@@ -105,18 +105,18 @@ func TestTimedEvents(t *testing.T) {
 				expiration = time.Now().Add(time.Hour * 24)
 			}
 
-			htask = htasks.NewWaitExpiration(sessionID, expiration)
+			ctask = ctasks.NewWaitExpiration(sessionID, expiration)
 
-		} else if tc.EventType == htasks.TypeWaitTimeout {
+		} else if tc.EventType == ctasks.TypeWaitTimeout {
 			timeoutOn := time.Now().Round(time.Millisecond) // so that there's no difference between this and what we read from the db
 
 			// usually courier will set timeout_on after sending the last message
 			rt.DB.MustExec(`UPDATE flows_flowsession SET timeout_on = $2 WHERE id = $1`, sessionID, timeoutOn)
 
-			htask = htasks.NewWaitTimeout(sessionID, timeoutOn)
+			ctask = ctasks.NewWaitTimeout(sessionID, timeoutOn)
 		}
 
-		err := handler.QueueTask(rc, tc.Org.ID, tc.Contact.ID, htask)
+		err := handler.QueueTask(rc, tc.Org.ID, tc.Contact.ID, ctask)
 		assert.NoError(t, err, "%d: error adding task", i)
 
 		task, err := tasks.HandlerQueue.Pop(rc)
@@ -162,7 +162,7 @@ func TestTimedEvents(t *testing.T) {
 	rt.DB.MustExec(`ALTER TABLE flows_flowsession ENABLE TRIGGER temba_flowsession_status_change`)
 
 	// try to expire the run
-	err = handler.QueueTask(rc, testdata.Org1.ID, testdata.Cathy.ID, htasks.NewWaitExpiration(sessionID, expiration))
+	err = handler.QueueTask(rc, testdata.Org1.ID, testdata.Cathy.ID, ctasks.NewWaitExpiration(sessionID, expiration))
 	assert.NoError(t, err)
 
 	task, err := tasks.HandlerQueue.Pop(rc)

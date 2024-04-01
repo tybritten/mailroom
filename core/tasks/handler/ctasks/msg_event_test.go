@@ -1,4 +1,4 @@
-package htasks_test
+package ctasks_test
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
-	"github.com/nyaruka/mailroom/core/tasks/handler/htasks"
+	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/stretchr/testify/assert"
@@ -270,7 +270,7 @@ func TestMsgEvents(t *testing.T) {
 	}
 
 	makeMsgTask := func(channel *testdata.Channel, contact *testdata.Contact, text string) handler.Task {
-		return &htasks.MsgEventTask{
+		return &ctasks.MsgEventTask{
 			ChannelID: channel.ID,
 			MsgID:     dbMsg.ID,
 			MsgUUID:   dbMsg.FlowMsg.UUID(),

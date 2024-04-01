@@ -10,7 +10,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
-	"github.com/nyaruka/mailroom/core/tasks/handler/htasks"
+	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 	"github.com/pkg/errors"
@@ -99,7 +99,7 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 		}
 
 		// ok, queue this task
-		err = handler.QueueTask(rc, expiredWait.OrgID, expiredWait.ContactID, htasks.NewWaitExpiration(expiredWait.SessionID, expiredWait.WaitExpiresOn))
+		err = handler.QueueTask(rc, expiredWait.OrgID, expiredWait.ContactID, ctasks.NewWaitExpiration(expiredWait.SessionID, expiredWait.WaitExpiresOn))
 		if err != nil {
 			return nil, errors.Wrapf(err, "error adding new expiration task")
 		}

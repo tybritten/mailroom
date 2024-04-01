@@ -1,4 +1,4 @@
-package htasks
+package ctasks
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 const TypeWaitTimeout = "timeout_event"
 
 func init() {
-	handler.RegisterTaskType(TypeWaitTimeout, func() handler.Task { return &WaitTimeoutTask{} })
+	handler.RegisterContactTask(TypeWaitTimeout, func() handler.Task { return &WaitTimeoutTask{} })
 }
 
 type WaitTimeoutTask struct {

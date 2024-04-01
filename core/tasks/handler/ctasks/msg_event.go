@@ -1,4 +1,4 @@
-package htasks
+package ctasks
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 const TypeMsgEvent = "msg_event"
 
 func init() {
-	handler.RegisterTaskType(TypeMsgEvent, func() handler.Task { return &MsgEventTask{} })
+	handler.RegisterContactTask(TypeMsgEvent, func() handler.Task { return &MsgEventTask{} })
 }
 
 type MsgEventTask struct {

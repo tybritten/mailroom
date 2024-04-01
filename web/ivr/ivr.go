@@ -14,7 +14,7 @@ import (
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/mailroom/core/ivr"
 	"github.com/nyaruka/mailroom/core/models"
-	"github.com/nyaruka/mailroom/core/tasks/handler/htasks"
+	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
 	"github.com/pkg/errors"
@@ -125,7 +125,7 @@ func handleIncoming(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	}
 
 	// create an incoming call "task" and handle it to see if we have a trigger
-	task := &htasks.ChannelEventTask{
+	task := &ctasks.ChannelEventTask{
 		EventType: models.EventTypeIncomingCall,
 		ChannelID: ch.ID(),
 		URNID:     urnID,

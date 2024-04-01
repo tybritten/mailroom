@@ -1,4 +1,4 @@
-package htasks_test
+package ctasks_test
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
-	"github.com/nyaruka/mailroom/core/tasks/handler/htasks"
+	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/nyaruka/null/v3"
@@ -57,7 +57,7 @@ func TestChannelEvents(t *testing.T) {
 	}{
 		{ // 0: new conversation on Facebook
 			contact: testdata.Cathy,
-			task: &htasks.ChannelEventTask{
+			task: &ctasks.ChannelEventTask{
 				EventType:  models.EventTypeNewConversation,
 				ChannelID:  testdata.FacebookChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -71,7 +71,7 @@ func TestChannelEvents(t *testing.T) {
 		},
 		{ // 1: new conversation on Vonage (no trigger)
 			contact: testdata.Cathy,
-			task: &htasks.ChannelEventTask{
+			task: &ctasks.ChannelEventTask{
 				EventType:  models.EventTypeNewConversation,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -85,7 +85,7 @@ func TestChannelEvents(t *testing.T) {
 		},
 		{ // 2: welcome message on Vonage
 			contact: testdata.Cathy,
-			task: &htasks.ChannelEventTask{
+			task: &ctasks.ChannelEventTask{
 				EventType:  models.EventTypeWelcomeMessage,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -99,7 +99,7 @@ func TestChannelEvents(t *testing.T) {
 		},
 		{ // 3: referral on Facebook
 			contact: testdata.Cathy,
-			task: &htasks.ChannelEventTask{
+			task: &ctasks.ChannelEventTask{
 				EventType:  models.EventTypeReferral,
 				ChannelID:  testdata.FacebookChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -113,7 +113,7 @@ func TestChannelEvents(t *testing.T) {
 		},
 		{ // 4: referral on Facebook
 			contact: testdata.Cathy,
-			task: &htasks.ChannelEventTask{
+			task: &ctasks.ChannelEventTask{
 				EventType:  models.EventTypeReferral,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -127,7 +127,7 @@ func TestChannelEvents(t *testing.T) {
 		},
 		{ // 5: optin on Vonage
 			contact: testdata.Cathy,
-			task: &htasks.ChannelEventTask{
+			task: &ctasks.ChannelEventTask{
 				EventType:  models.EventTypeOptIn,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -142,7 +142,7 @@ func TestChannelEvents(t *testing.T) {
 		},
 		{ // 6: optout on Vonage
 			contact: testdata.Cathy,
-			task: &htasks.ChannelEventTask{
+			task: &ctasks.ChannelEventTask{
 				EventType:  models.EventTypeOptOut,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -157,7 +157,7 @@ func TestChannelEvents(t *testing.T) {
 		},
 		{ // 7: missed call trigger queued by RP
 			contact: testdata.Cathy,
-			task: &htasks.ChannelEventTask{
+			task: &ctasks.ChannelEventTask{
 				EventType:  models.EventTypeMissedCall,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -172,7 +172,7 @@ func TestChannelEvents(t *testing.T) {
 		},
 		{ // 8: stop contact
 			contact: testdata.Cathy,
-			task: &htasks.ChannelEventTask{
+			task: &ctasks.ChannelEventTask{
 				EventType:  models.EventTypeStopContact,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -186,7 +186,7 @@ func TestChannelEvents(t *testing.T) {
 		},
 		{ // 9: a task against a deleted contact
 			contact: del,
-			task: &htasks.ChannelEventTask{
+			task: &ctasks.ChannelEventTask{
 				EventType:  models.EventTypeNewConversation,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      del.URNID,
@@ -236,7 +236,7 @@ func TestChannelEvents(t *testing.T) {
 			var lastSeen time.Time
 			err = rt.DB.Get(&lastSeen, `SELECT last_seen_on FROM contacts_contact WHERE id = $1`, tc.contact.ID)
 			assert.NoError(t, err)
-			assert.WithinDuration(t, lastSeen, tc.task.(*htasks.ChannelEventTask).CreatedOn, time.Microsecond, "%d: expected last seen to be updated", i)
+			assert.WithinDuration(t, lastSeen, tc.task.(*ctasks.ChannelEventTask).CreatedOn, time.Microsecond, "%d: expected last seen to be updated", i)
 		}
 	}
 

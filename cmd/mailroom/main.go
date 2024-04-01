@@ -24,7 +24,7 @@ import (
 	_ "github.com/nyaruka/mailroom/core/tasks/contacts"
 	_ "github.com/nyaruka/mailroom/core/tasks/expirations"
 	_ "github.com/nyaruka/mailroom/core/tasks/handler"
-	_ "github.com/nyaruka/mailroom/core/tasks/handler/htasks"
+	_ "github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	_ "github.com/nyaruka/mailroom/core/tasks/incidents"
 	_ "github.com/nyaruka/mailroom/core/tasks/interrupts"
 	_ "github.com/nyaruka/mailroom/core/tasks/ivr"

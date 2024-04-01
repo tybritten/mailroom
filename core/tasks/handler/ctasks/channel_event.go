@@ -1,4 +1,4 @@
-package htasks
+package ctasks
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 const TypeChannelEvent = "channel_event"
 
 func init() {
-	handler.RegisterTaskType(TypeChannelEvent, func() handler.Task { return &ChannelEventTask{} })
+	handler.RegisterContactTask(TypeChannelEvent, func() handler.Task { return &ChannelEventTask{} })
 }
 
 type ChannelEventTask struct {

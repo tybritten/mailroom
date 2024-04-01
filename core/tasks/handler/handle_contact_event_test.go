@@ -7,7 +7,7 @@ import (
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	_ "github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
-	"github.com/nyaruka/mailroom/core/tasks/handler/htasks"
+	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/nyaruka/null/v3"
@@ -19,7 +19,7 @@ func TestHandleContactEvent(t *testing.T) {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	testsuite.QueueHandlerTask(t, rt, testdata.Org1, testdata.Cathy, &htasks.ChannelEventTask{
+	testsuite.QueueContactTask(t, rt, testdata.Org1, testdata.Cathy, &ctasks.ChannelEventTask{
 		EventType:  models.EventTypeNewConversation,
 		ChannelID:  testdata.FacebookChannel.ID,
 		URNID:      testdata.Cathy.URNID,
@@ -27,7 +27,7 @@ func TestHandleContactEvent(t *testing.T) {
 		CreatedOn:  time.Now(),
 		NewContact: false,
 	})
-	testsuite.QueueHandlerTask(t, rt, testdata.Org1, testdata.Cathy, &htasks.ChannelEventTask{
+	testsuite.QueueContactTask(t, rt, testdata.Org1, testdata.Cathy, &ctasks.ChannelEventTask{
 		EventType:  models.EventTypeStopContact,
 		ChannelID:  testdata.FacebookChannel.ID,
 		URNID:      testdata.Cathy.URNID,

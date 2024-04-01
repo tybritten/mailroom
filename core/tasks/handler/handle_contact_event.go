@@ -90,7 +90,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 		taskPayload := &payload{}
 		jsonx.MustUnmarshal([]byte(event), taskPayload)
 
-		htask, err := readTask(taskPayload.Type, taskPayload.Task)
+		ctask, err := readTask(taskPayload.Type, taskPayload.Task)
 		if err != nil {
 			return errors.Wrapf(err, "error reading handler task")
 		}
@@ -98,7 +98,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 		start := time.Now()
 		log := slog.With("org_id", oa.OrgID(), "contact_id", t.ContactID, "type", taskPayload.Type)
 
-		err = performHandlerTask(ctx, rt, oa, t.ContactID, htask)
+		err = performHandlerTask(ctx, rt, oa, t.ContactID, ctask)
 
 		// log our processing time to librato
 		analytics.Gauge(fmt.Sprintf("mr.%s_elapsed", taskPayload.Type), float64(time.Since(start))/float64(time.Second))
@@ -116,7 +116,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 			taskPayload.ErrorCount++
 			if taskPayload.ErrorCount < 3 {
 				rc := rt.RP.Get()
-				retryErr := queueTask(rc, oa.OrgID(), t.ContactID, htask, true, taskPayload.ErrorCount)
+				retryErr := queueTask(rc, oa.OrgID(), t.ContactID, ctask, true, taskPayload.ErrorCount)
 				if retryErr != nil {
 					log.Error("error requeuing errored contact event", "error", retryErr)
 				}

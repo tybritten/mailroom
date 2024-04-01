@@ -25,11 +25,11 @@ func QueueBatchTask(t *testing.T, rt *runtime.Runtime, org *testdata.Org, task t
 	require.NoError(t, err)
 }
 
-func QueueHandlerTask(t *testing.T, rt *runtime.Runtime, org *testdata.Org, contact *testdata.Contact, htask handler.Task) {
+func QueueContactTask(t *testing.T, rt *runtime.Runtime, org *testdata.Org, contact *testdata.Contact, ctask handler.Task) {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	err := handler.QueueTask(rc, org.ID, contact.ID, htask)
+	err := handler.QueueTask(rc, org.ID, contact.ID, ctask)
 	require.NoError(t, err)
 }
 

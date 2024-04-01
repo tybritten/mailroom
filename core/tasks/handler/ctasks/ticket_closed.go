@@ -1,4 +1,4 @@
-package htasks
+package ctasks
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 const TypeTicketClosed = "ticket_closed"
 
 func init() {
-	handler.RegisterTaskType(TypeTicketClosed, func() handler.Task { return &TicketClosedTask{} })
+	handler.RegisterContactTask(TypeTicketClosed, func() handler.Task { return &TicketClosedTask{} })
 }
 
 type TicketClosedTask struct {

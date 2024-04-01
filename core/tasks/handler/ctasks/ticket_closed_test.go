@@ -1,4 +1,4 @@
-package htasks_test
+package ctasks_test
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
-	"github.com/nyaruka/mailroom/core/tasks/handler/htasks"
+	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/stretchr/testify/require"
@@ -29,7 +29,7 @@ func TestTicketClosed(t *testing.T) {
 
 	models.NewTicketClosedEvent(modelTicket, testdata.Admin.ID)
 
-	err := handler.QueueTask(rc, testdata.Org1.ID, testdata.Cathy.ID, htasks.NewTicketClosed(modelTicket.ID()))
+	err := handler.QueueTask(rc, testdata.Org1.ID, testdata.Cathy.ID, ctasks.NewTicketClosed(modelTicket.ID()))
 	require.NoError(t, err)
 
 	task, err := tasks.HandlerQueue.Pop(rc)

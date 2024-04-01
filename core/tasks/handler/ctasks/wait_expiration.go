@@ -1,4 +1,4 @@
-package htasks
+package ctasks
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 const TypeWaitExpiration = "expiration_event"
 
 func init() {
-	handler.RegisterTaskType(TypeWaitExpiration, func() handler.Task { return &WaitExpirationTask{} })
+	handler.RegisterContactTask(TypeWaitExpiration, func() handler.Task { return &WaitExpirationTask{} })
 }
 
 type WaitExpirationTask struct {
