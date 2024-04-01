@@ -24,6 +24,22 @@ func TestSend(t *testing.T) {
 	testsuite.AssertCourierQueues(t, map[string][]int{"msgs:74729f45-7f29-4868-9dc4-90e491e3c7d8|10/1": {1, 1, 1}})
 }
 
+func TestHandle(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetData)
+
+	cathyIn1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "hello", models.MsgStatusHandled)
+	cathyIn2 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "hello", models.MsgStatusPending)
+	cathyOut := testdata.InsertOutgoingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "how can we help", nil, models.MsgStatusSent, false)
+
+	testsuite.RunWebTests(t, ctx, rt, "testdata/handle.json", map[string]string{
+		"cathy_msgin1_id": fmt.Sprintf("%d", cathyIn1.ID),
+		"cathy_msgin2_id": fmt.Sprintf("%d", cathyIn2.ID),
+		"cathy_msgout_id": fmt.Sprintf("%d", cathyOut.ID),
+	})
+}
+
 func TestResend(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 

@@ -461,7 +461,7 @@ func TestMarkMessages(t *testing.T) {
 	require.NoError(t, err)
 	msg4 := msgs[0]
 
-	assert.Equal(t, flows.MsgID(3000000000), msg4.ID())
+	assert.Equal(t, models.MsgID(3000000000), msg4.ID())
 
 	err = models.MarkMessagesForRequeuing(ctx, rt.DB, []*models.Msg{msg4})
 	assert.NoError(t, err)

@@ -92,7 +92,7 @@ var unsendableToFailedReason = map[flows.UnsendableReason]MsgFailedReason{
 // Msg is our type for mailroom messages
 type Msg struct {
 	m struct {
-		ID    flows.MsgID   `db:"id"`
+		ID    MsgID         `db:"id"`
 		UUID  flows.MsgUUID `db:"uuid"`
 		OrgID OrgID         `db:"org_id"`
 
@@ -137,7 +137,7 @@ type Msg struct {
 	IsResend     bool
 }
 
-func (m *Msg) ID() flows.MsgID     { return m.m.ID }
+func (m *Msg) ID() MsgID           { return m.m.ID }
 func (m *Msg) UUID() flows.MsgUUID { return m.m.UUID }
 
 func (m *Msg) BroadcastID() BroadcastID { return m.m.BroadcastID }

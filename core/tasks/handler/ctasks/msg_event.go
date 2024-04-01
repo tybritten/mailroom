@@ -27,10 +27,10 @@ func init() {
 }
 
 type MsgEventTask struct {
-	ChannelID     models.ChannelID `json:"channel_id"`
 	MsgID         models.MsgID     `json:"msg_id"`
 	MsgUUID       flows.MsgUUID    `json:"msg_uuid"`
 	MsgExternalID null.String      `json:"msg_external_id"`
+	ChannelID     models.ChannelID `json:"channel_id"`
 	URN           urns.URN         `json:"urn"`
 	URNID         models.URNID     `json:"urn_id"`
 	Text          string           `json:"text"`

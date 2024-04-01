@@ -54,7 +54,7 @@ type FlowRef struct {
 
 // Msg is the format of a message queued to courier
 type Msg struct {
-	ID                   flows.MsgID        `json:"id"`
+	ID                   models.MsgID       `json:"id"`
 	UUID                 flows.MsgUUID      `json:"uuid"`
 	OrgID                models.OrgID       `json:"org_id"`
 	Origin               MsgOrigin          `json:"origin"`
