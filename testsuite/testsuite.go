@@ -237,6 +237,7 @@ DELETE FROM triggers_trigger_groups WHERE trigger_id >= 30000;
 DELETE FROM triggers_trigger_exclude_groups WHERE trigger_id >= 30000;
 DELETE FROM triggers_trigger WHERE id >= 30000;
 DELETE FROM channels_channelcount;
+DELETE FROM channels_channelevent;
 DELETE FROM msgs_msg;
 DELETE FROM flows_flowrun;
 DELETE FROM flows_flowpathcount;
@@ -271,6 +272,7 @@ DELETE FROM contacts_contactgroup WHERE id >= 30000;
 
 ALTER SEQUENCE flows_flow_id_seq RESTART WITH 30000;
 ALTER SEQUENCE tickets_ticket_id_seq RESTART WITH 1;
+ALTER SEQUENCE channels_channelevent_id_seq RESTART WITH 1;
 ALTER SEQUENCE msgs_msg_id_seq RESTART WITH 1;
 ALTER SEQUENCE msgs_broadcast_id_seq RESTART WITH 1;
 ALTER SEQUENCE flows_flowrun_id_seq RESTART WITH 1;

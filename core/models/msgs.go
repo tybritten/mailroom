@@ -204,6 +204,25 @@ func (m *Msg) Attachments() []utils.Attachment {
 	return attachments
 }
 
+// NewIncomingAndroid creates a new incoming message from an Android relayer sync.
+func NewIncomingAndroid(orgID OrgID, channelID ChannelID, contactID ContactID, urnID URNID, text string, receivedOn time.Time) *Msg {
+	msg := &Msg{}
+	m := &msg.m
+	m.UUID = flows.MsgUUID(uuids.New())
+	m.OrgID = orgID
+	m.ChannelID = channelID
+	m.ContactID = contactID
+	m.ContactURNID = &urnID
+	m.Text = text
+	m.Direction = DirectionIn
+	m.Status = MsgStatusPending
+	m.Visibility = VisibilityVisible
+	m.MsgType = MsgTypeText
+	m.SentOn = &receivedOn
+	m.CreatedOn = dates.Now()
+	return msg
+}
+
 // NewIncomingIVR creates a new incoming IVR message for the passed in text and attachment
 func NewIncomingIVR(cfg *runtime.Config, orgID OrgID, call *Call, in *flows.MsgIn, createdOn time.Time) *Msg {
 	msg := &Msg{}
