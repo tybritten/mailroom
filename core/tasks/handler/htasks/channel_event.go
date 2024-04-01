@@ -2,7 +2,6 @@ package htasks
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"log/slog"
 	"time"
@@ -41,66 +40,61 @@ func (t *ChannelEventTask) Type() string {
 	return TypeChannelEvent
 }
 
-func (t *ChannelEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID) error {
-	_, err := t.handle(ctx, rt, oa, contactID, nil)
+func (t *ChannelEventTask) UseReadOnly() bool {
+	return !t.NewContact
+}
+
+func (t *ChannelEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
+	_, err := t.handle(ctx, rt, oa, contact, nil)
 	return err
 }
 
 // Handle let's us reuse this task's code for handling incoming calls.. which we need to perform inline in the IVR web
 // handler rather than as a queued task.
-func (t *ChannelEventTask) Handle(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID, call *models.Call) (*models.Session, error) {
-	return t.handle(ctx, rt, oa, contactID, call)
+func (t *ChannelEventTask) Handle(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact, call *models.Call) (*models.Session, error) {
+	return t.handle(ctx, rt, oa, contact, call)
 }
 
-func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID, call *models.Call) (*models.Session, error) {
+func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact, call *models.Call) (*models.Session, error) {
+	// if contact is blocked, ignore event
+	if contact.Status() == models.ContactStatusBlocked {
+		return nil, nil
+	}
+
 	channel := oa.ChannelByID(t.ChannelID)
 	if channel == nil {
 		slog.Info("ignoring event, couldn't find channel", "channel_id", t.ChannelID)
 		return nil, nil
 	}
 
-	// load our contact
-	modelContact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, contactID)
-	if err != nil {
-		if err == sql.ErrNoRows { // if contact no longer exists, ignore event
-			return nil, nil
-		}
-		return nil, errors.Wrapf(err, "error loading contact")
-	}
-
-	// if contact is blocked, ignore event
-	if modelContact.Status() == models.ContactStatusBlocked {
-		return nil, nil
-	}
-
 	if t.EventType == models.EventTypeStopContact {
-		err = models.StopContact(ctx, rt.DB, oa.OrgID(), contactID)
+		err := contact.Stop(ctx, rt.DB, oa)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error stopping contact")
 		}
 	}
 
 	if models.ContactSeenEvents[t.EventType] {
-		err = modelContact.UpdateLastSeenOn(ctx, rt.DB, t.CreatedOn)
+		err := contact.UpdateLastSeenOn(ctx, rt.DB, t.CreatedOn)
 		if err != nil {
 			return nil, errors.Wrap(err, "error updating contact last_seen_on")
 		}
 	}
 
 	// make sure this URN is our highest priority (this is usually a noop)
-	err = modelContact.UpdatePreferredURN(ctx, rt.DB, oa, t.URNID, channel)
+	err := contact.UpdatePreferredURN(ctx, rt.DB, oa, t.URNID, channel)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error changing primary URN")
 	}
 
 	// build our flow contact
-	contact, err := modelContact.FlowContact(oa)
+	flowContact, err := contact.FlowContact(oa)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error creating flow contact")
 	}
 
 	if t.NewContact {
-		err = models.CalculateDynamicGroups(ctx, rt.DB, oa, []*flows.Contact{contact})
+		err = models.CalculateDynamicGroups(ctx, rt.DB, oa, []*flows.Contact{flowContact})
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to initialize new contact")
 		}
@@ -118,7 +112,7 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 	case models.EventTypeMissedCall:
 		trigger = models.FindMatchingMissedCallTrigger(oa, channel)
 	case models.EventTypeIncomingCall:
-		trigger = models.FindMatchingIncomingCallTrigger(oa, channel, contact)
+		trigger = models.FindMatchingIncomingCallTrigger(oa, channel, flowContact)
 	case models.EventTypeOptIn:
 		trigger = models.FindMatchingOptInTrigger(oa, channel)
 	case models.EventTypeOptOut:
@@ -146,7 +140,7 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 
 	// if this is an IVR flow and we don't have a call, trigger that asynchronously
 	if flow.FlowType() == models.FlowTypeVoice && call == nil {
-		err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{modelContact.ID()}, nil)
+		err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{contact.ID()}, nil)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error while triggering ivr flow")
 		}
@@ -175,11 +169,11 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 	}
 
 	// build our flow trigger
-	tb := triggers.NewBuilder(oa.Env(), flow.Reference(), contact)
+	tb := triggers.NewBuilder(oa.Env(), flow.Reference(), flowContact)
 	var trig flows.Trigger
 
 	if t.EventType == models.EventTypeIncomingCall {
-		urn := modelContact.URNForID(t.URNID)
+		urn := contact.URNForID(t.URNID)
 		trig = tb.Channel(channel.Reference(), triggers.ChannelEventTypeIncomingCall).WithCall(urn).Build()
 	} else if t.EventType == models.EventTypeOptIn && flowOptIn != nil {
 		trig = tb.OptIn(flowOptIn, triggers.OptInEventTypeStarted).Build()
@@ -201,7 +195,7 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 		}
 	}
 
-	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{modelContact}, []flows.Trigger{trig}, hook, flow.FlowType().Interrupts())
+	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{contact}, []flows.Trigger{trig}, hook, flow.FlowType().Interrupts())
 	if err != nil {
 		return nil, errors.Wrapf(err, "error starting flow for contact")
 	}

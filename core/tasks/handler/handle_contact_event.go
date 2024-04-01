@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"time"
@@ -97,7 +98,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 		start := time.Now()
 		log := slog.With("org_id", oa.OrgID(), "contact_id", t.ContactID, "type", taskPayload.Type)
 
-		err = htask.Perform(ctx, rt, oa, t.ContactID)
+		err = performHandlerTask(ctx, rt, oa, t.ContactID, htask)
 
 		// log our processing time to librato
 		analytics.Gauge(fmt.Sprintf("mr.%s_elapsed", taskPayload.Type), float64(time.Since(start))/float64(time.Second))
@@ -130,6 +131,23 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 
 		log.Debug("handler task completed", "elapsed", time.Since(start))
 	}
+}
+
+func performHandlerTask(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contactID models.ContactID, task Task) error {
+	var db models.Queryer = rt.DB
+	if task.UseReadOnly() {
+		db = rt.ReadonlyDB
+	}
+
+	contact, err := models.LoadContact(ctx, db, oa, contactID)
+	if err != nil {
+		if err == sql.ErrNoRows { // if contact no longer exists, ignore event, whatever it was gonna do is about to be deleted too
+			return nil
+		}
+		return errors.Wrapf(err, "error loading contact")
+	}
+
+	return task.Perform(ctx, rt, oa, contact)
 }
 
 type DBHook func(ctx context.Context, tx *sqlx.Tx) error

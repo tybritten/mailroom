@@ -52,10 +52,10 @@ const NilContactStatus ContactStatus = ""
 
 // possible contact statuses
 const (
-	ContactStatusActive   = "A"
-	ContactStatusBlocked  = "B"
-	ContactStatusStopped  = "S"
-	ContactStatusArchived = "V"
+	ContactStatusActive   ContactStatus = "A"
+	ContactStatusBlocked  ContactStatus = "B"
+	ContactStatusStopped  ContactStatus = "S"
+	ContactStatusArchived ContactStatus = "V"
 )
 
 var contactToModelStatus = map[flows.ContactStatus]ContactStatus{
@@ -75,6 +75,7 @@ var contactToFlowStatus = map[ContactStatus]flows.ContactStatus{
 // Contact is our mailroom struct that represents a contact
 type Contact struct {
 	id            ContactID
+	orgID         OrgID
 	uuid          flows.ContactUUID
 	name          string
 	language      i18n.Language
@@ -114,12 +115,60 @@ func (c *Contact) URNForID(urnID URNID) urns.URN {
 	return urns.NilURN
 }
 
+const sqlDeleteAllContactGroups = `
+DELETE FROM contacts_contactgroup_contacts
+      WHERE contact_id = $2 AND contactgroup_id = ANY(
+		  SELECT id from contacts_contactgroup WHERE org_id = $1 and group_type IN ('M', 'Q')
+	  )`
+
+// Stop stops this contact, removing them from all groups and setting their state to stopped.
+func (c *Contact) Stop(ctx context.Context, db DBorTx, oa *OrgAssets) error {
+	// delete the contact from all groups
+	_, err := db.ExecContext(ctx, sqlDeleteAllContactGroups, c.orgID, c.id)
+	if err != nil {
+		return errors.Wrapf(err, "error removing stopped contact from groups")
+	}
+
+	// remove all unfired campaign event fires
+	_, err = db.ExecContext(ctx, `DELETE FROM campaigns_eventfire WHERE contact_id = $1 AND fired IS NULL`, c.id)
+	if err != nil {
+		return errors.Wrapf(err, "error deleting unfired event fires")
+	}
+
+	// remove the contact from any triggers
+	// TODO: this could leave a trigger with no contacts or groups
+	_, err = db.ExecContext(ctx, `DELETE FROM triggers_trigger_contacts WHERE contact_id = $1`, c.id)
+	if err != nil {
+		return errors.Wrapf(err, "error removing contact from triggers")
+	}
+
+	// mark as stopped
+	_, err = db.ExecContext(ctx, `UPDATE contacts_contact SET status = 'S', modified_on = NOW() WHERE id = $1`, c.id)
+	if err != nil {
+		return errors.Wrapf(err, "error marking contact as stopped")
+	}
+
+	// they are only in the stopped group
+	newGroups := make([]*Group, 0, 1)
+	for _, g := range oa.groups {
+		if g.(*Group).Type() == GroupTypeDBStopped {
+			newGroups = append(newGroups, g.(*Group))
+			break
+		}
+	}
+
+	c.groups = newGroups
+	c.status = ContactStatusStopped
+	return nil
+}
+
 // Unstop sets the status to stopped for this contact
 func (c *Contact) Unstop(ctx context.Context, db DBorTx) error {
 	_, err := db.ExecContext(ctx, `UPDATE contacts_contact SET status = 'A', modified_on = NOW() WHERE id = $1`, c.id)
 	if err != nil {
 		return errors.Wrapf(err, "error unstopping contact")
 	}
+
 	c.status = ContactStatusActive
 	return nil
 }
@@ -271,7 +320,8 @@ func LoadContacts(ctx context.Context, db Queryer, oa *OrgAssets, ids []ContactI
 		}
 
 		contact := &Contact{
-			id:            ContactID(e.ID),
+			id:            e.ID,
+			orgID:         e.OrgID,
 			uuid:          e.UUID,
 			name:          e.Name,
 			language:      e.Language,
@@ -447,6 +497,7 @@ func (u *ContactURN) AsURN(oa *OrgAssets) (urns.URN, error) {
 // contactEnvelope is our JSON structure for a contact as read from the database
 type contactEnvelope struct {
 	ID       ContactID         `json:"id"`
+	OrgID    OrgID             `json:"org_id"`
 	UUID     flows.ContactUUID `json:"uuid"`
 	Name     string            `json:"name"`
 	Language i18n.Language     `json:"language"`
@@ -1020,56 +1071,6 @@ func CalculateDynamicGroups(ctx context.Context, db DBorTx, oa *OrgAssets, conta
 
 	return nil
 }
-
-// StopContact stops the contact with the passed in id, removing them from all groups and setting
-// their state to stopped.
-func StopContact(ctx context.Context, db DBorTx, orgID OrgID, contactID ContactID) error {
-	// delete the contact from all groups
-	_, err := db.ExecContext(ctx, sqlDeleteAllContactGroups, orgID, contactID)
-	if err != nil {
-		return errors.Wrapf(err, "error removing stopped contact from groups")
-	}
-
-	// remove all unfired campaign event fires
-	_, err = db.ExecContext(ctx, sqlDeleteUnfiredEvents, contactID)
-	if err != nil {
-		return errors.Wrapf(err, "error deleting unfired event fires")
-	}
-
-	// remove the contact from any triggers
-	// TODO: this could leave a trigger with no contacts or groups
-	_, err = db.ExecContext(ctx, sqlDeleteAllContactTriggers, contactID)
-	if err != nil {
-		return errors.Wrapf(err, "error removing contact from triggers")
-	}
-
-	// mark as stopped
-	_, err = db.ExecContext(ctx, sqlMarkContactStopped, contactID)
-	if err != nil {
-		return errors.Wrapf(err, "error marking contact as stopped")
-	}
-
-	return nil
-}
-
-const sqlDeleteAllContactGroups = `
-DELETE FROM contacts_contactgroup_contacts
-      WHERE contact_id = $2 AND contactgroup_id = ANY(
-		  SELECT id from contacts_contactgroup WHERE org_id = $1 and group_type IN ('M', 'Q')
-	  )`
-
-const sqlDeleteAllContactTriggers = `
-DELETE FROM triggers_trigger_contacts
-      WHERE contact_id = $1`
-
-const sqlDeleteUnfiredEvents = `
-DELETE FROM campaigns_eventfire
-      WHERE contact_id = $1 AND fired IS NULL`
-
-const sqlMarkContactStopped = `
-UPDATE contacts_contact
-   SET status = 'S', modified_on = NOW()
- WHERE id = $1`
 
 const sqlSelectURNsByID = `
 SELECT id, org_id, contact_id, identity, priority, scheme, path, display, auth_tokens, channel_id 
