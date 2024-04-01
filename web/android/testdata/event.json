@@ -33,13 +33,36 @@
             "org_id": 1,
             "channel_id": 10000,
             "urn": "tel:+16055741111",
-            "event_type": "mo_miss",
+            "event_type": "mo_call",
             "extra": {},
             "occurred_on": "2024-04-01T12:00:00Z"
         },
         "status": 200,
         "response": {
             "id": 1
+        },
+        "db_assertions": [
+            {
+                "query": "SELECT count(*) FROM channels_channelevent WHERE event_type = 'mo_call' and contact_id = 10000",
+                "count": 1
+            }
+        ]
+    },
+    {
+        "label": "event created in database and queued for handling",
+        "method": "POST",
+        "path": "/mr/android/event",
+        "body": {
+            "org_id": 1,
+            "channel_id": 10000,
+            "urn": "tel:+16055741111",
+            "event_type": "mo_miss",
+            "extra": {},
+            "occurred_on": "2024-04-01T12:00:00Z"
+        },
+        "status": 200,
+        "response": {
+            "id": 2
         },
         "db_assertions": [
             {
