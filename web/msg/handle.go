@@ -16,8 +16,8 @@ func init() {
 	web.RegisterRoute(http.MethodPost, "/mr/msg/handle", web.RequireAuthToken(web.JSONPayload(handleHandle)))
 }
 
-// Queues the given incoming messages for handling. This is only use for Android messages and recovering from failures
-// where we might want to manually retry handling of a message.
+// Queues the given incoming messages for handling. This is only used for recovering from failures where we might need
+// to manually retry handling of a message.
 //
 //	{
 //	  "org_id": 1,

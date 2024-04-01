@@ -8,6 +8,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSend(t *testing.T) {
@@ -27,7 +28,7 @@ func TestSend(t *testing.T) {
 func TestHandle(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
-	defer testsuite.Reset(testsuite.ResetData)
+	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 
 	cathyIn1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "hello", models.MsgStatusHandled)
 	cathyIn2 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "hello", models.MsgStatusPending)
@@ -38,6 +39,10 @@ func TestHandle(t *testing.T) {
 		"cathy_msgin2_id": fmt.Sprintf("%d", cathyIn2.ID),
 		"cathy_msgout_id": fmt.Sprintf("%d", cathyOut.ID),
 	})
+
+	orgTasks := testsuite.CurrentTasks(t, rt, "handler")[testdata.Org1.ID]
+	assert.Len(t, orgTasks, 1)
+	assert.Equal(t, "handle_contact_event", orgTasks[0].Type)
 }
 
 func TestResend(t *testing.T) {
