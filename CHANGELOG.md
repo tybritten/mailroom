@@ -1,3 +1,8 @@
+v9.1.30 (2024-04-01)
+-------------------------
+ * Add endpoints to support Android relayer syncing
+ * Add endpoint to retry handling of an incoming message
+
 v9.1.29 (2024-04-01)
 -------------------------
  * Consolidate code in handler tasks for loading the contact
