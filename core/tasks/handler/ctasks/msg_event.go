@@ -34,7 +34,7 @@ type MsgEventTask struct {
 	URN           urns.URN         `json:"urn"`
 	URNID         models.URNID     `json:"urn_id"`
 	Text          string           `json:"text"`
-	Attachments   []string         `json:"attachments"`
+	Attachments   []string         `json:"attachments,omitempty"`
 	NewContact    bool             `json:"new_contact"`
 }
 
