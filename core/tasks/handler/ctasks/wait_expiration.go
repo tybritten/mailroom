@@ -37,6 +37,11 @@ func (t *WaitExpirationTask) UseReadOnly() bool {
 }
 
 func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
+	// if contact is deleted, nothing to do
+	if contact == nil {
+		return nil
+	}
+
 	log := slog.With("contact_id", contact.ID(), "session_id", t.SessionID)
 
 	// build our flow contact

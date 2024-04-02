@@ -50,6 +50,10 @@ func TestMsgEvents(t *testing.T) {
 
 	models.FlushCache()
 
+	// create a deleted contact
+	del := testdata.InsertContact(rt, testdata.Org1, "", "Del", "eng", models.ContactStatusActive)
+	rt.DB.MustExec(`UPDATE contacts_contact SET is_active = false WHERE id = $1`, del.ID)
+
 	// insert a dummy message into the database that will get the updates from handling each message event which pretends to be it
 	dbMsg := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "", models.MsgStatusPending)
 
@@ -266,6 +270,13 @@ func TestMsgEvents(t *testing.T) {
 			text:          "start",
 			expectedReply: "What is your favorite color?",
 			expectedFlow:  testdata.Org2Favorites,
+		},
+		// 20: deleted contact
+		{
+			org:     testdata.Org1,
+			channel: testdata.TwilioChannel,
+			contact: del,
+			text:    "start",
 		},
 	}
 

@@ -36,6 +36,11 @@ func (t *TicketClosedTask) UseReadOnly() bool {
 }
 
 func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
+	// if contact is deleted, nothing to do
+	if contact == nil {
+		return nil
+	}
+
 	// load our ticket
 	tickets, err := models.LoadTickets(ctx, rt.DB, []models.TicketID{t.TicketID})
 	if err != nil {

@@ -48,6 +48,9 @@ func TestChannelEvents(t *testing.T) {
 	del := testdata.InsertContact(rt, testdata.Org1, "", "Del", "eng", models.ContactStatusActive)
 	rt.DB.MustExec(`UPDATE contacts_contact SET is_active = false WHERE id = $1`, del.ID)
 
+	// insert a dummy event into the database that will get the updates from handling each event which pretends to be it
+	eventID := testdata.InsertChannelEvent(rt, testdata.Org1, models.EventTypeMissedCall, testdata.TwilioChannel, testdata.Cathy, models.EventStatusPending)
+
 	tcs := []struct {
 		contact             *testdata.Contact
 		task                handler.Task
@@ -58,6 +61,7 @@ func TestChannelEvents(t *testing.T) {
 		{ // 0: new conversation on Facebook
 			contact: testdata.Cathy,
 			task: &ctasks.ChannelEventTask{
+				EventID:    eventID,
 				EventType:  models.EventTypeNewConversation,
 				ChannelID:  testdata.FacebookChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -72,6 +76,7 @@ func TestChannelEvents(t *testing.T) {
 		{ // 1: new conversation on Vonage (no trigger)
 			contact: testdata.Cathy,
 			task: &ctasks.ChannelEventTask{
+				EventID:    eventID,
 				EventType:  models.EventTypeNewConversation,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -86,6 +91,7 @@ func TestChannelEvents(t *testing.T) {
 		{ // 2: welcome message on Vonage
 			contact: testdata.Cathy,
 			task: &ctasks.ChannelEventTask{
+				EventID:    eventID,
 				EventType:  models.EventTypeWelcomeMessage,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -100,6 +106,7 @@ func TestChannelEvents(t *testing.T) {
 		{ // 3: referral on Facebook
 			contact: testdata.Cathy,
 			task: &ctasks.ChannelEventTask{
+				EventID:    eventID,
 				EventType:  models.EventTypeReferral,
 				ChannelID:  testdata.FacebookChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -114,6 +121,7 @@ func TestChannelEvents(t *testing.T) {
 		{ // 4: referral on Facebook
 			contact: testdata.Cathy,
 			task: &ctasks.ChannelEventTask{
+				EventID:    eventID,
 				EventType:  models.EventTypeReferral,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -128,6 +136,7 @@ func TestChannelEvents(t *testing.T) {
 		{ // 5: optin on Vonage
 			contact: testdata.Cathy,
 			task: &ctasks.ChannelEventTask{
+				EventID:    eventID,
 				EventType:  models.EventTypeOptIn,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -143,6 +152,7 @@ func TestChannelEvents(t *testing.T) {
 		{ // 6: optout on Vonage
 			contact: testdata.Cathy,
 			task: &ctasks.ChannelEventTask{
+				EventID:    eventID,
 				EventType:  models.EventTypeOptOut,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -158,6 +168,7 @@ func TestChannelEvents(t *testing.T) {
 		{ // 7: missed call trigger queued by RP
 			contact: testdata.Cathy,
 			task: &ctasks.ChannelEventTask{
+				EventID:    eventID,
 				EventType:  models.EventTypeMissedCall,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -173,6 +184,7 @@ func TestChannelEvents(t *testing.T) {
 		{ // 8: stop contact
 			contact: testdata.Cathy,
 			task: &ctasks.ChannelEventTask{
+				EventID:    eventID,
 				EventType:  models.EventTypeStopContact,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      testdata.Cathy.URNID,
@@ -187,6 +199,7 @@ func TestChannelEvents(t *testing.T) {
 		{ // 9: a task against a deleted contact
 			contact: del,
 			task: &ctasks.ChannelEventTask{
+				EventID:    eventID,
 				EventType:  models.EventTypeNewConversation,
 				ChannelID:  testdata.VonageChannel.ID,
 				URNID:      del.URNID,
@@ -206,6 +219,9 @@ func TestChannelEvents(t *testing.T) {
 		start := time.Now()
 		time.Sleep(time.Millisecond * 5)
 
+		// reset our dummy db event into an unhandled state
+		rt.DB.MustExec(`UPDATE channels_channelevent SET status = 'P' WHERE id = $1`, eventID)
+
 		err := handler.QueueTask(rc, testdata.Org1.ID, tc.contact.ID, tc.task)
 		assert.NoError(t, err, "%d: error adding task", i)
 
@@ -214,6 +230,9 @@ func TestChannelEvents(t *testing.T) {
 
 		err = tasks.Perform(ctx, rt, task)
 		assert.NoError(t, err, "%d: error when handling event", i)
+
+		// check that event is marked as handled
+		assertdb.Query(t, rt.DB, `SELECT status FROM channels_channelevent WHERE id = $1`, eventID).Columns(map[string]any{"status": "H"}, "%d: event state mismatch", i)
 
 		// if we are meant to trigger a new session...
 		if tc.expectedTriggerType != "" {
@@ -238,6 +257,7 @@ func TestChannelEvents(t *testing.T) {
 			assert.NoError(t, err)
 			assert.WithinDuration(t, lastSeen, tc.task.(*ctasks.ChannelEventTask).CreatedOn, time.Microsecond, "%d: expected last seen to be updated", i)
 		}
+
 	}
 
 	// last event was a stop_contact so check that cathy is stopped
