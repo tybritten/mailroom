@@ -7,11 +7,14 @@ import (
 	"github.com/nyaruka/null/v3"
 )
 
-type ChannelEventType string
 type ChannelEventID int64
+type ChannelEventType string
+type ChannelEventStatus string
 
-// channel event types
 const (
+	NilChannelEventID ChannelEventID = 0
+
+	// channel event types
 	EventTypeNewConversation ChannelEventType = "new_conversation"
 	EventTypeWelcomeMessage  ChannelEventType = "welcome_message"
 	EventTypeReferral        ChannelEventType = "referral"
@@ -20,6 +23,10 @@ const (
 	EventTypeStopContact     ChannelEventType = "stop_contact"
 	EventTypeOptIn           ChannelEventType = "optin"
 	EventTypeOptOut          ChannelEventType = "optout"
+
+	// channel event statuses
+	EventStatusPending ChannelEventStatus = "P" // event created but not yet handled
+	EventStatusHandled ChannelEventStatus = "H" // event handled
 )
 
 // ContactSeenEvents are those which count as the contact having been seen
