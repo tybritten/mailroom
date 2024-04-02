@@ -34,6 +34,7 @@ import (
 	_ "github.com/nyaruka/mailroom/core/tasks/timeouts"
 	_ "github.com/nyaruka/mailroom/services/ivr/twiml"
 	_ "github.com/nyaruka/mailroom/services/ivr/vonage"
+	_ "github.com/nyaruka/mailroom/web/android"
 	_ "github.com/nyaruka/mailroom/web/contact"
 	_ "github.com/nyaruka/mailroom/web/docs"
 	_ "github.com/nyaruka/mailroom/web/flow"
