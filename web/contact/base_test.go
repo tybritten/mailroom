@@ -92,19 +92,6 @@ func TestModify(t *testing.T) {
 	testsuite.RunWebTests(t, ctx, rt, "testdata/modify.json", nil)
 }
 
-func TestResolve(t *testing.T) {
-	ctx, rt := testsuite.Runtime()
-
-	defer testsuite.Reset(testsuite.ResetAll)
-
-	// detach Cathy's tel URN
-	rt.DB.MustExec(`UPDATE contacts_contacturn SET contact_id = NULL WHERE contact_id = $1`, testdata.Cathy.ID)
-
-	rt.DB.MustExec(`ALTER SEQUENCE contacts_contact_id_seq RESTART WITH 30000`)
-
-	testsuite.RunWebTests(t, ctx, rt, "testdata/resolve.json", nil)
-}
-
 func TestInterrupt(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
