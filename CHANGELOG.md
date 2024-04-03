@@ -1,3 +1,8 @@
+v9.1.32 (2024-04-03)
+-------------------------
+ * Update channel event status when handling
+ * Remove no longer used contact/resolve endpoint
+
 v9.1.31 (2024-04-02)
 -------------------------
  * Fix import
