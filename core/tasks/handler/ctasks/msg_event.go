@@ -173,7 +173,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 		// load our flow
 		flow, err = oa.FlowByID(trigger.FlowID())
 		if err != nil && err != models.ErrNotFound {
-			return errors.Wrapf(err, "error loading flow for trigger")
+			return errors.Wrap(err, "error loading flow for trigger")
 		}
 
 		// trigger flow is still active, start it

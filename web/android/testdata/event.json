@@ -43,7 +43,7 @@
         },
         "db_assertions": [
             {
-                "query": "SELECT count(*) FROM channels_channelevent WHERE event_type = 'mo_call' and contact_id = 10000",
+                "query": "SELECT count(*) FROM channels_channelevent WHERE event_type = 'mo_call' AND contact_id = 10000 AND status = 'H'",
                 "count": 1
             }
         ]
@@ -66,7 +66,7 @@
         },
         "db_assertions": [
             {
-                "query": "SELECT count(*) FROM channels_channelevent WHERE event_type = 'mo_miss' and contact_id = 10000",
+                "query": "SELECT count(*) FROM channels_channelevent WHERE event_type = 'mo_miss' AND contact_id = 10000 AND status = 'P'",
                 "count": 1
             }
         ]

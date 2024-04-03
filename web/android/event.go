@@ -49,12 +49,20 @@ func handleEvent(ctx context.Context, rt *runtime.Runtime, r *eventRequest) (any
 		return nil, 0, errors.Wrap(err, "error resolving contact")
 	}
 
-	e := models.NewChannelEvent(r.EventType, r.OrgID, r.ChannelID, cu.contactID, cu.urnID, r.Extra, r.OccurredOn)
+	// only missed call events from Android relayers need handling, rest are just historical records
+	needsHandling := r.EventType == models.EventTypeMissedCall
+
+	status := models.EventStatusHandled
+	if needsHandling {
+		status = models.EventStatusPending
+	}
+
+	e := models.NewChannelEvent(r.OrgID, r.EventType, r.ChannelID, cu.contactID, cu.urnID, status, r.Extra, r.OccurredOn)
 	if err := e.Insert(ctx, rt.DB); err != nil {
 		return nil, 0, errors.Wrap(err, "error inserting event")
 	}
 
-	if r.EventType == models.EventTypeMissedCall {
+	if needsHandling {
 		rc := rt.RP.Get()
 		defer rc.Close()
 

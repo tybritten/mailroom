@@ -3,7 +3,6 @@ package ctasks
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -46,7 +45,11 @@ func (t *ChannelEventTask) UseReadOnly() bool {
 
 func (t *ChannelEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
 	_, err := t.handle(ctx, rt, oa, contact, nil)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return models.MarkChannelEventHandled(ctx, rt.DB, t.EventID)
 }
 
 // Handle let's us reuse this task's code for handling incoming calls.. which we need to perform inline in the IVR web
@@ -56,14 +59,10 @@ func (t *ChannelEventTask) Handle(ctx context.Context, rt *runtime.Runtime, oa *
 }
 
 func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact, call *models.Call) (*models.Session, error) {
-	// if contact is blocked, ignore event
-	if contact.Status() == models.ContactStatusBlocked {
-		return nil, nil
-	}
-
 	channel := oa.ChannelByID(t.ChannelID)
-	if channel == nil {
-		slog.Info("ignoring event, couldn't find channel", "channel_id", t.ChannelID)
+
+	// if contact is blocked or channel no longer exists, nothing to do
+	if contact.Status() == models.ContactStatusBlocked || channel == nil {
 		return nil, nil
 	}
 
@@ -102,6 +101,7 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 
 	// do we have associated trigger?
 	var trigger *models.Trigger
+	var flow *models.Flow
 
 	switch t.EventType {
 	case models.EventTypeNewConversation:
@@ -123,19 +123,16 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 		return nil, errors.Errorf("unknown channel event type: %s", t.EventType)
 	}
 
-	// no trigger then nothing more to do
-	if trigger == nil {
-		return nil, nil
+	if trigger != nil {
+		flow, err = oa.FlowByID(trigger.FlowID())
+		if err != nil && err != models.ErrNotFound {
+			return nil, errors.Wrap(err, "error loading flow for trigger")
+		}
 	}
 
-	// load our flow
-	flow, err := oa.FlowByID(trigger.FlowID())
-	if err == models.ErrNotFound {
+	// no trigger or flow gone, nothing to do
+	if flow == nil {
 		return nil, nil
-	}
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "error loading flow for trigger")
 	}
 
 	// if this is an IVR flow and we don't have a call, trigger that asynchronously
