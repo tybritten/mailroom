@@ -71,8 +71,8 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 		}
 	}
 
-	// if contact is deleted or blocked, or channel no longer exists, ignore this message but mark it as handled
-	if contact == nil || contact.Status() == models.ContactStatusBlocked || channel == nil {
+	// if contact is blocked, or channel no longer exists, ignore this message but mark it as handled
+	if contact.Status() == models.ContactStatusBlocked || channel == nil {
 		err := models.MarkMessageHandled(ctx, rt.DB, t.MsgID, models.MsgStatusHandled, models.VisibilityArchived, models.NilFlowID, models.NilTicketID, attachments, logUUIDs)
 		if err != nil {
 			return errors.Wrapf(err, "error updating message for deleted contact")

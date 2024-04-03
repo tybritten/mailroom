@@ -45,8 +45,8 @@ func TestChannelEvents(t *testing.T) {
 	testdata.InsertContactURN(rt, testdata.Org1, testdata.Bob, urns.URN("twitterid:123456"), 10, nil)
 
 	// create a deleted contact
-	del := testdata.InsertContact(rt, testdata.Org1, "", "Del", "eng", models.ContactStatusActive)
-	rt.DB.MustExec(`UPDATE contacts_contact SET is_active = false WHERE id = $1`, del.ID)
+	deleted := testdata.InsertContact(rt, testdata.Org1, "", "Del", "eng", models.ContactStatusActive)
+	rt.DB.MustExec(`UPDATE contacts_contact SET is_active = false WHERE id = $1`, deleted.ID)
 
 	// insert a dummy event into the database that will get the updates from handling each event which pretends to be it
 	eventID := testdata.InsertChannelEvent(rt, testdata.Org1, models.EventTypeMissedCall, testdata.TwilioChannel, testdata.Cathy, models.EventStatusPending)
@@ -197,12 +197,12 @@ func TestChannelEvents(t *testing.T) {
 			updatesLastSeen:     true,
 		},
 		{ // 9: a task against a deleted contact
-			contact: del,
+			contact: deleted,
 			task: &ctasks.ChannelEventTask{
 				EventID:    eventID,
 				EventType:  models.EventTypeNewConversation,
 				ChannelID:  testdata.VonageChannel.ID,
-				URNID:      del.URNID,
+				URNID:      deleted.URNID,
 				Extra:      null.Map[any]{},
 				CreatedOn:  time.Now(),
 				NewContact: false,
@@ -232,7 +232,9 @@ func TestChannelEvents(t *testing.T) {
 		assert.NoError(t, err, "%d: error when handling event", i)
 
 		// check that event is marked as handled
-		assertdb.Query(t, rt.DB, `SELECT status FROM channels_channelevent WHERE id = $1`, eventID).Columns(map[string]any{"status": "H"}, "%d: event state mismatch", i)
+		if tc.contact != deleted {
+			assertdb.Query(t, rt.DB, `SELECT status FROM channels_channelevent WHERE id = $1`, eventID).Columns(map[string]any{"status": "H"}, "%d: event state mismatch", i)
+		}
 
 		// if we are meant to trigger a new session...
 		if tc.expectedTriggerType != "" {

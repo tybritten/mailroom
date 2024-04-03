@@ -51,8 +51,8 @@ func TestMsgEvents(t *testing.T) {
 	models.FlushCache()
 
 	// create a deleted contact
-	del := testdata.InsertContact(rt, testdata.Org1, "", "Del", "eng", models.ContactStatusActive)
-	rt.DB.MustExec(`UPDATE contacts_contact SET is_active = false WHERE id = $1`, del.ID)
+	deleted := testdata.InsertContact(rt, testdata.Org1, "", "Del", "eng", models.ContactStatusActive)
+	rt.DB.MustExec(`UPDATE contacts_contact SET is_active = false WHERE id = $1`, deleted.ID)
 
 	// insert a dummy message into the database that will get the updates from handling each message event which pretends to be it
 	dbMsg := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "", models.MsgStatusPending)
@@ -275,7 +275,7 @@ func TestMsgEvents(t *testing.T) {
 		{
 			org:     testdata.Org1,
 			channel: testdata.TwilioChannel,
-			contact: del,
+			contact: deleted,
 			text:    "start",
 		},
 	}
@@ -319,8 +319,10 @@ func TestMsgEvents(t *testing.T) {
 		}
 
 		// check that message is marked as handled
-		assertdb.Query(t, rt.DB, `SELECT status, msg_type, flow_id FROM msgs_msg WHERE id = $1`, dbMsg.ID).
-			Columns(map[string]any{"status": "H", "msg_type": "T", "flow_id": expectedFlowID}, "%d: msg state mismatch", i)
+		if tc.contact != deleted {
+			assertdb.Query(t, rt.DB, `SELECT status, msg_type, flow_id FROM msgs_msg WHERE id = $1`, dbMsg.ID).
+				Columns(map[string]any{"status": "H", "msg_type": "T", "flow_id": expectedFlowID}, "%d: msg state mismatch", i)
+		}
 
 		// if we are meant to have a reply, check it
 		if tc.expectedReply != "" {

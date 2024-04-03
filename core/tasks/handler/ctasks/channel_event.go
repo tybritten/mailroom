@@ -61,8 +61,8 @@ func (t *ChannelEventTask) Handle(ctx context.Context, rt *runtime.Runtime, oa *
 func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact, call *models.Call) (*models.Session, error) {
 	channel := oa.ChannelByID(t.ChannelID)
 
-	// if contact is deleted or blocked or channel no longer exists, nothing to do
-	if contact == nil || contact.Status() == models.ContactStatusBlocked || channel == nil {
+	// if contact is blocked or channel no longer exists, nothing to do
+	if contact.Status() == models.ContactStatusBlocked || channel == nil {
 		return nil, nil
 	}
 

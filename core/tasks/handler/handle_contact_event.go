@@ -140,11 +140,13 @@ func performHandlerTask(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 	}
 
 	contact, err := models.LoadContact(ctx, db, oa, contactID)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil {
+		if err == sql.ErrNoRows { // if contact no longer exists, ignore event, whatever it was gonna do is about to be deleted too
+			return nil
+		}
 		return errors.Wrapf(err, "error loading contact")
 	}
 
-	// call task with potentially nil contact because it might have work to do even with deleted contact
 	return task.Perform(ctx, rt, oa, contact)
 }
 
