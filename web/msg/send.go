@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/goflow/utils"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/msgio"
@@ -57,9 +56,9 @@ func handleSend(ctx context.Context, rt *runtime.Runtime, r *sendRequest) (any, 
 	var msg *models.Msg
 
 	if r.TicketID != models.NilTicketID {
-		msg, err = models.NewOutgoingTicketMsg(rt, oa.Org(), ch, contact, out, dates.Now(), r.TicketID, r.UserID)
+		msg, err = models.NewOutgoingTicketMsg(rt, oa.Org(), ch, contact, out, r.TicketID, r.UserID)
 	} else {
-		msg, err = models.NewOutgoingChatMsg(rt, oa.Org(), ch, contact, out, dates.Now(), r.UserID)
+		msg, err = models.NewOutgoingChatMsg(rt, oa.Org(), ch, contact, out, r.UserID)
 	}
 
 	if err != nil {
