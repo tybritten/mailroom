@@ -1,3 +1,8 @@
+v9.1.33 (2024-04-08)
+-------------------------
+ * Make Msg.created_on always be db insertion time and stop writing queued_on which isn't meaningful
+ * Resolve external ID for template translations
+
 v9.1.32 (2024-04-03)
 -------------------------
  * Update channel event status when handling
