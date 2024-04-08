@@ -410,11 +410,13 @@ func buildMsgMetadata(m *flows.MsgOut, t *Template) map[string]any {
 
 		type templating struct {
 			flows.MsgTemplating
-			Language string `json:"language"`
+			ExternalID string `json:"external_id"`
+			Language   string `json:"language"`
 		}
 
 		metadata["templating"] = templating{
 			MsgTemplating: *m.Templating(),
+			ExternalID:    tt.ExternalID(),
 			Language:      tt.ExternalLocale(), // i.e. en_US
 		}
 	}

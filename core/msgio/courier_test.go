@@ -92,6 +92,7 @@ func TestNewCourierMsg(t *testing.T) {
 				"template": {"uuid": "9c22b594-fcab-4b29-9bcb-ce4404894a80", "name": "revive_issue"},
 				"components": [{"type": "body", "name": "body", "params": [{"type": "text", "value": "name"}]}],
 				"namespace": "tpls",
+				"external_id": "eng1",
 				"language": "en_US"
 			},
 			"topic": "purchase"
