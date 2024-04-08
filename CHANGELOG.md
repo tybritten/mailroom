@@ -1,3 +1,7 @@
+v9.1.34 (2024-04-08)
+-------------------------
+ * Revert changes to make Msg.created_on be db time because for contact history ordering we need it be event time
+
 v9.1.33 (2024-04-08)
 -------------------------
  * Make Msg.created_on always be db insertion time and stop writing queued_on which isn't meaningful
