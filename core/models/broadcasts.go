@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"time"
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/i18n"
@@ -292,7 +291,7 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 	// create our outgoing message
 	out, ch := NewMsgOut(oa, contact, text, attachments, quickReplies, locale)
 
-	msg, err := NewOutgoingBroadcastMsg(rt, oa.Org(), ch, contact, out, time.Now(), b)
+	msg, err := NewOutgoingBroadcastMsg(rt, oa.Org(), ch, contact, out, b)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error creating outgoing message")
 	}

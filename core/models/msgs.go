@@ -124,7 +124,6 @@ type Msg struct {
 		ContactURNID *URNID        `db:"contact_urn_id"`
 
 		SentOn       *time.Time      `db:"sent_on"`
-		QueuedOn     time.Time       `db:"queued_on"`
 		ErrorCount   int             `db:"error_count"`
 		NextAttempt  *time.Time      `db:"next_attempt"`
 		FailedReason MsgFailedReason `db:"failed_reason"`
@@ -152,7 +151,6 @@ func (m *Msg) HighPriority() bool            { return m.m.HighPriority }
 func (m *Msg) CreatedOn() time.Time          { return m.m.CreatedOn }
 func (m *Msg) ModifiedOn() time.Time         { return m.m.ModifiedOn }
 func (m *Msg) SentOn() *time.Time            { return m.m.SentOn }
-func (m *Msg) QueuedOn() time.Time           { return m.m.QueuedOn }
 func (m *Msg) Direction() MsgDirection       { return m.m.Direction }
 func (m *Msg) Status() MsgStatus             { return m.m.Status }
 func (m *Msg) Visibility() MsgVisibility     { return m.m.Visibility }
@@ -219,12 +217,11 @@ func NewIncomingAndroid(orgID OrgID, channelID ChannelID, contactID ContactID, u
 	m.Visibility = VisibilityVisible
 	m.MsgType = MsgTypeText
 	m.SentOn = &receivedOn
-	m.CreatedOn = dates.Now()
 	return msg
 }
 
 // NewIncomingIVR creates a new incoming IVR message for the passed in text and attachment
-func NewIncomingIVR(cfg *runtime.Config, orgID OrgID, call *Call, in *flows.MsgIn, createdOn time.Time) *Msg {
+func NewIncomingIVR(cfg *runtime.Config, orgID OrgID, call *Call, in *flows.MsgIn) *Msg {
 	msg := &Msg{}
 	m := &msg.m
 
@@ -240,9 +237,7 @@ func NewIncomingIVR(cfg *runtime.Config, orgID OrgID, call *Call, in *flows.MsgI
 	urnID := call.ContactURNID()
 	m.ContactURNID = &urnID
 	m.ChannelID = call.ChannelID()
-
 	m.OrgID = orgID
-	m.CreatedOn = createdOn
 
 	// add any attachments
 	for _, a := range in.Attachments() {
@@ -253,28 +248,29 @@ func NewIncomingIVR(cfg *runtime.Config, orgID OrgID, call *Call, in *flows.MsgI
 }
 
 // NewOutgoingIVR creates a new IVR message for the passed in text with the optional attachment
-func NewOutgoingIVR(cfg *runtime.Config, orgID OrgID, call *Call, out *flows.MsgOut, createdOn time.Time) *Msg {
+func NewOutgoingIVR(cfg *runtime.Config, orgID OrgID, call *Call, out *flows.MsgOut) *Msg {
 	msg := &Msg{}
 	m := &msg.m
 
-	msg.SetURN(out.URN())
 	m.UUID = out.UUID()
+	m.OrgID = orgID
 	m.Text = out.Text()
 	m.Locale = out.Locale()
 	m.HighPriority = false
 	m.Direction = DirectionOut
-	m.Status = MsgStatusWired
 	m.Visibility = VisibilityVisible
 	m.MsgType = MsgTypeVoice
+
+	msg.SetURN(out.URN())
 	m.ContactID = call.ContactID()
 
 	urnID := call.ContactURNID()
 	m.ContactURNID = &urnID
 	m.ChannelID = call.ChannelID()
 
-	m.OrgID = orgID
-	m.CreatedOn = createdOn
-	m.SentOn = &createdOn
+	now := dates.Now()
+	m.Status = MsgStatusWired
+	m.SentOn = &now
 
 	// if we have attachments, add them
 	for _, a := range out.Attachments() {
@@ -285,7 +281,7 @@ func NewOutgoingIVR(cfg *runtime.Config, orgID OrgID, call *Call, out *flows.Msg
 }
 
 // NewOutgoingOptInMsg creates an outgoing optin message
-func NewOutgoingOptInMsg(rt *runtime.Runtime, session *Session, flow *Flow, optIn *OptIn, channel *Channel, urn urns.URN, createdOn time.Time) *Msg {
+func NewOutgoingOptInMsg(rt *runtime.Runtime, session *Session, flow *Flow, optIn *OptIn, channel *Channel, urn urns.URN) *Msg {
 	msg := &Msg{}
 	m := &msg.m
 	m.UUID = flows.MsgUUID(uuids.New())
@@ -297,7 +293,6 @@ func NewOutgoingOptInMsg(rt *runtime.Runtime, session *Session, flow *Flow, optI
 	m.Visibility = VisibilityVisible
 	m.MsgType = MsgTypeOptIn
 	m.MsgCount = 1
-	m.CreatedOn = createdOn
 
 	msg.SetChannel(channel)
 	msg.SetURN(urn)
@@ -316,26 +311,26 @@ func NewOutgoingOptInMsg(rt *runtime.Runtime, session *Session, flow *Flow, optI
 }
 
 // NewOutgoingFlowMsg creates an outgoing message for the passed in flow message
-func NewOutgoingFlowMsg(rt *runtime.Runtime, org *Org, channel *Channel, session *Session, flow *Flow, out *flows.MsgOut, tpl *Template, createdOn time.Time) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, session.Contact(), out, createdOn, session, flow, tpl, NilBroadcastID, NilTicketID, NilOptInID, NilUserID)
+func NewOutgoingFlowMsg(rt *runtime.Runtime, org *Org, channel *Channel, session *Session, flow *Flow, out *flows.MsgOut, tpl *Template) (*Msg, error) {
+	return newOutgoingTextMsg(rt, org, channel, session.Contact(), out, session, flow, tpl, NilBroadcastID, NilTicketID, NilOptInID, NilUserID)
 }
 
 // NewOutgoingBroadcastMsg creates an outgoing message which is part of a broadcast
-func NewOutgoingBroadcastMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, createdOn time.Time, bb *BroadcastBatch) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, contact, out, createdOn, nil, nil, nil, bb.BroadcastID, NilTicketID, bb.OptInID, bb.CreatedByID)
+func NewOutgoingBroadcastMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, bb *BroadcastBatch) (*Msg, error) {
+	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, nil, bb.BroadcastID, NilTicketID, bb.OptInID, bb.CreatedByID)
 }
 
 // NewOutgoingTicketMsg creates an outgoing message from a ticket
-func NewOutgoingTicketMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, createdOn time.Time, ticketID TicketID, userID UserID) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, contact, out, createdOn, nil, nil, nil, NilBroadcastID, ticketID, NilOptInID, userID)
+func NewOutgoingTicketMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, ticketID TicketID, userID UserID) (*Msg, error) {
+	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, nil, NilBroadcastID, ticketID, NilOptInID, userID)
 }
 
 // NewOutgoingChatMsg creates an outgoing message from chat
-func NewOutgoingChatMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, createdOn time.Time, userID UserID) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, contact, out, createdOn, nil, nil, nil, NilBroadcastID, NilTicketID, NilOptInID, userID)
+func NewOutgoingChatMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, userID UserID) (*Msg, error) {
+	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, nil, NilBroadcastID, NilTicketID, NilOptInID, userID)
 }
 
-func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, createdOn time.Time, session *Session, flow *Flow, tpl *Template, broadcastID BroadcastID, ticketID TicketID, optInID OptInID, userID UserID) (*Msg, error) {
+func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, session *Session, flow *Flow, tpl *Template, broadcastID BroadcastID, ticketID TicketID, optInID OptInID, userID UserID) (*Msg, error) {
 	msg := &Msg{}
 	m := &msg.m
 	m.UUID = out.UUID()
@@ -353,7 +348,6 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 	m.Visibility = VisibilityVisible
 	m.MsgType = MsgTypeText
 	m.MsgCount = 1
-	m.CreatedOn = createdOn
 	m.CreatedByID = userID
 	m.Metadata = null.Map[any](buildMsgMetadata(out, tpl))
 
@@ -595,17 +589,13 @@ func InsertMessages(ctx context.Context, tx DBorTx, msgs []*Msg) error {
 
 const sqlInsertMsgSQL = `
 INSERT INTO
-msgs_msg(uuid, text, attachments, quick_replies, locale, high_priority, created_on, modified_on, queued_on, sent_on, direction, status, metadata,
+msgs_msg(uuid, text, attachments, quick_replies, locale, high_priority, created_on, modified_on, sent_on, direction, status, metadata,
 		 visibility, msg_type, msg_count, error_count, next_attempt, failed_reason, channel_id,
 		 contact_id, contact_urn_id, org_id, flow_id, broadcast_id, ticket_id, optin_id, created_by_id)
-  VALUES(:uuid, :text, :attachments, :quick_replies, :locale, :high_priority, :created_on, now(), now(), :sent_on, :direction, :status, :metadata,
+  VALUES(:uuid, :text, :attachments, :quick_replies, :locale, :high_priority, now(), now(), :sent_on, :direction, :status, :metadata,
 		 :visibility, :msg_type, :msg_count, :error_count, :next_attempt, :failed_reason, :channel_id,
 		 :contact_id, :contact_urn_id, :org_id, :flow_id, :broadcast_id, :ticket_id, :optin_id, :created_by_id)
-RETURNING 
-	id AS id, 
-	modified_on AS modified_on,
-	queued_on AS queued_on
-`
+RETURNING id, created_on, modified_on`
 
 // MarkMessageHandled updates a message after handling
 func MarkMessageHandled(ctx context.Context, tx DBorTx, msgID MsgID, status MsgStatus, visibility MsgVisibility, flowID FlowID, ticketID TicketID, attachments []utils.Attachment, logUUIDs []ChannelLogUUID) error {
@@ -652,10 +642,9 @@ UPDATE msgs_msg m
        status = 'Q',
        error_count = 0,
        failed_reason = NULL,
-       queued_on = r.queued_on::timestamp with time zone,
        sent_on = NULL,
        modified_on = NOW()
-  FROM (VALUES(:id, :channel_id, :queued_on)) AS r(id, channel_id, queued_on)
+  FROM (VALUES(:id, :channel_id)) AS r(id, channel_id)
  WHERE m.id = r.id::bigint`
 
 const sqlUpdateMsgResendFailed = `
@@ -695,7 +684,6 @@ func ResendMessages(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, msg
 			channel := oa.ChannelByUUID(ch.UUID())
 			msg.m.ChannelID = channel.ID()
 			msg.m.Status = MsgStatusPending
-			msg.m.QueuedOn = dates.Now()
 			msg.m.SentOn = nil
 			msg.m.ErrorCount = 0
 			msg.m.FailedReason = ""
@@ -707,7 +695,6 @@ func ResendMessages(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, msg
 			// if we don't have channel or a URN, fail again
 			msg.m.ChannelID = NilChannelID
 			msg.m.Status = MsgStatusFailed
-			msg.m.QueuedOn = dates.Now()
 			msg.m.SentOn = nil
 			msg.m.ErrorCount = 0
 			msg.m.FailedReason = MsgFailedNoDestination

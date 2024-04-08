@@ -63,7 +63,7 @@
             "text": "hello",
             "attachments": [],
             "status": "Q",
-            "created_on": "2018-07-06T12:30:00.123456789Z",
+            "created_on": "$recent_timestamp$",
             "modified_on": "$recent_timestamp$"
         },
         "db_assertions": [
@@ -104,7 +104,7 @@
                 "audio/mp3:https://aws.com/test/test.mp3"
             ],
             "status": "Q",
-            "created_on": "2018-07-06T12:30:00.123456789Z",
+            "created_on": "$recent_timestamp$",
             "modified_on": "$recent_timestamp$"
         }
     },
@@ -134,7 +134,7 @@
             "text": "we can help",
             "attachments": [],
             "status": "Q",
-            "created_on": "2018-07-06T12:30:00.123456789Z",
+            "created_on": "$recent_timestamp$",
             "modified_on": "$recent_timestamp$"
         },
         "db_assertions": [
