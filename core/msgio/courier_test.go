@@ -68,7 +68,7 @@ func TestNewCourierMsg(t *testing.T) {
 	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, cathy)
 	require.NoError(t, err)
 
-	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg1, tpl)
+	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg1, tpl, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	require.NoError(t, err)
 
 	// insert to db so that it gets an id and time field values
@@ -82,7 +82,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"channel_uuid": "74729f45-7f29-4868-9dc4-90e491e3c7d8",
 		"contact_id": 10000,
 		"contact_urn_id": 10000,
-		"created_on": "%s",
+		"created_on": "2021-11-09T14:03:30Z",
 		"flow": {"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"},
 		"high_priority": false,
 		"id": 1,
@@ -109,7 +109,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"tps_cost": 2,
 		"urn": "tel:+16055741111",
 		"uuid": "%s"
-	}`, msg1.CreatedOn().Format(time.RFC3339Nano), session.ID(), msg1.UUID()))
+	}`, session.ID(), msg1.UUID()))
 
 	// create a priority flow message.. i.e. the session is responding to an incoming message
 	cathy.SetLastSeenOn(time.Date(2023, 4, 20, 10, 15, 0, 0, time.UTC))
@@ -124,7 +124,7 @@ func TestNewCourierMsg(t *testing.T) {
 	)
 	in1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "test", models.MsgStatusHandled)
 	session.SetIncomingMsg(in1.ID, null.String("EX123"))
-	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg2, nil)
+	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg2, nil, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	require.NoError(t, err)
 
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg2})
@@ -135,7 +135,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"contact_id": 10000,
 		"contact_last_seen_on": "2023-04-20T10:15:00Z",
 		"contact_urn_id": 10000,
-		"created_on": "%s",
+		"created_on": "2021-11-09T14:03:30Z",
 		"flow": {"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"},
 		"response_to_external_id": "EX123",
 		"high_priority": true,
@@ -148,7 +148,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"tps_cost": 1,
 		"urn": "tel:+16055741111",
 		"uuid": "%s"
-	}`, msg2.CreatedOn().Format(time.RFC3339Nano), session.ID(), msg2.UUID()))
+	}`, session.ID(), msg2.UUID()))
 
 	// try a broadcast message which won't have session and flow fields set and won't be high priority
 	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Blast"}, nil, models.NilScheduleID, []*testdata.Contact{testFred}, nil)
@@ -176,7 +176,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"uuid": "%s"
 	}`, msg3.CreatedOn().Format(time.RFC3339Nano), msg3.UUID()))
 
-	msg4 := models.NewOutgoingOptInMsg(rt, session, flow, optIn, channel, "tel:+16055741111?id=10000")
+	msg4 := models.NewOutgoingOptInMsg(rt, session, flow, optIn, channel, "tel:+16055741111?id=10000", time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg4})
 	require.NoError(t, err)
 
@@ -184,7 +184,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"channel_uuid": "74729f45-7f29-4868-9dc4-90e491e3c7d8",
 		"contact_id": 10000,
 		"contact_urn_id": 10000,
-		"created_on": "%s",
+		"created_on": "2021-11-09T14:03:30Z",
 		"flow": {"uuid": "9de3663f-c5c5-4c92-9f45-ecbc09abcc85", "name": "Favorites"},
 		"high_priority": true,
 		"id": 5,
@@ -201,7 +201,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"tps_cost": 1,
 		"urn": "tel:+16055741111",
 		"uuid": "%s"
-	}`, msg4.CreatedOn().Format(time.RFC3339Nano), optIn.ID(), session.ID(), msg4.UUID()))
+	}`, optIn.ID(), session.ID(), msg4.UUID()))
 }
 
 func createAndAssertCourierMsg(t *testing.T, oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, expectedJSON string) {

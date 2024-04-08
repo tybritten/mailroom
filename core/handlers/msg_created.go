@@ -100,7 +100,7 @@ func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa 
 		tpl = oa.TemplateByUUID(event.Msg.Templating().Template().UUID)
 	}
 
-	msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, scene.Session(), flow, event.Msg, tpl)
+	msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, scene.Session(), flow, event.Msg, tpl, event.CreatedOn())
 	if err != nil {
 		return errors.Wrapf(err, "error creating outgoing message to %s", event.Msg.URN())
 	}
