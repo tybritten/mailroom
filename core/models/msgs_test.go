@@ -164,7 +164,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		}
 
 		flowMsg := flows.NewMsgOut(tc.URN, chRef, tc.Text, tc.Attachments, tc.QuickReplies, nil, tc.Topic, i18n.NilLocale, tc.Unsendable)
-		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), ch, session, flow, flowMsg, nil)
+		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), ch, session, flow, flowMsg, nil, dates.Now())
 
 		assert.NoError(t, err)
 
@@ -214,7 +214,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 	// check that msg loop detection triggers after 20 repeats of the same text
 	newOutgoing := func(text string) *models.Msg {
 		flowMsg := flows.NewMsgOut(urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)), assets.NewChannelReference(testdata.TwilioChannel.UUID, "Twilio"), text, nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg, nil)
+		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg, nil, dates.Now())
 		require.NoError(t, err)
 		return msg
 	}
@@ -484,19 +484,18 @@ func TestNewOutgoingIVR(t *testing.T) {
 	require.NoError(t, err)
 
 	flowMsg := flows.NewIVRMsgOut(testdata.Cathy.URN, vonage.Reference(), "Hello", "http://example.com/hi.mp3", "eng-US")
-	dbMsg := models.NewOutgoingIVR(rt.Config, testdata.Org1.ID, conn, flowMsg)
+	dbMsg := models.NewOutgoingIVR(rt.Config, testdata.Org1.ID, conn, flowMsg, dates.Now())
 
 	assert.Equal(t, flowMsg.UUID(), dbMsg.UUID())
 	assert.Equal(t, models.MsgTypeVoice, dbMsg.Type())
 	assert.Equal(t, "Hello", dbMsg.Text())
 	assert.Equal(t, []utils.Attachment{"audio:http://example.com/hi.mp3"}, dbMsg.Attachments())
 	assert.Equal(t, i18n.Locale("eng-US"), dbMsg.Locale())
+	assert.WithinDuration(t, time.Now(), dbMsg.CreatedOn(), time.Second)
 	assert.WithinDuration(t, time.Now(), *dbMsg.SentOn(), time.Second)
 
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{dbMsg})
 	require.NoError(t, err)
-
-	assert.WithinDuration(t, time.Now(), dbMsg.CreatedOn(), time.Second)
 
 	assertdb.Query(t, rt.DB, `SELECT text, status, msg_type FROM msgs_msg WHERE uuid = $1`, dbMsg.UUID()).Columns(map[string]any{"text": "Hello", "status": "W", "msg_type": "V"})
 }
