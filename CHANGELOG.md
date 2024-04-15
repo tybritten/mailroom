@@ -1,3 +1,9 @@
+v9.1.35 (2024-04-15)
+-------------------------
+ * Add support for variables on templates as separate list
+ * Update to latest indexer (used for testing)
+ * Update test database
+
 v9.1.34 (2024-04-08)
 -------------------------
  * Revert changes to make Msg.created_on be db time because for contact history ordering we need it be event time
