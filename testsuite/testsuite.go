@@ -14,7 +14,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx/assertredis"
-	"github.com/nyaruka/rp-indexer/v8/indexers"
+	"github.com/nyaruka/rp-indexer/v9/indexers"
 	"github.com/olivere/elastic/v7"
 )
 
