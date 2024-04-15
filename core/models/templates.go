@@ -54,18 +54,20 @@ type TemplateTranslation struct {
 		Locale         i18n.Locale                 `json:"locale"`
 		ExternalLocale string                      `json:"external_locale"`
 		Components     []*static.TemplateComponent `json:"components"`
+		Variables      []*static.TemplateVariable  `json:"variables"`
 	}
 
 	components []assets.TemplateComponent
+	variables  []assets.TemplateVariable
 }
 
-func (t *TemplateTranslation) Channel() *assets.ChannelReference { return t.t.Channel }
-func (t *TemplateTranslation) Namespace() string                 { return t.t.Namespace }
-func (t *TemplateTranslation) ExternalID() string                { return t.t.ExternalID }
-func (t *TemplateTranslation) Locale() i18n.Locale               { return t.t.Locale }
-func (t *TemplateTranslation) ExternalLocale() string            { return t.t.ExternalLocale }
-
+func (t *TemplateTranslation) Channel() *assets.ChannelReference      { return t.t.Channel }
+func (t *TemplateTranslation) Namespace() string                      { return t.t.Namespace }
+func (t *TemplateTranslation) ExternalID() string                     { return t.t.ExternalID }
+func (t *TemplateTranslation) Locale() i18n.Locale                    { return t.t.Locale }
+func (t *TemplateTranslation) ExternalLocale() string                 { return t.t.ExternalLocale }
 func (t *TemplateTranslation) Components() []assets.TemplateComponent { return t.components }
+func (t *TemplateTranslation) Variables() []assets.TemplateVariable   { return t.variables }
 
 func (t *TemplateTranslation) UnmarshalJSON(d []byte) error {
 	if err := json.Unmarshal(d, &t.t); err != nil {
@@ -76,6 +78,12 @@ func (t *TemplateTranslation) UnmarshalJSON(d []byte) error {
 	for i := range t.t.Components {
 		t.components[i] = t.t.Components[i]
 	}
+
+	t.variables = make([]assets.TemplateVariable, len(t.t.Variables))
+	for i := range t.t.Variables {
+		t.variables[i] = t.t.Variables[i]
+	}
+
 	return nil
 }
 
@@ -91,7 +99,7 @@ func loadTemplates(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Templ
 const sqlSelectTemplatesByOrg = `
 SELECT ROW_TO_JSON(r) FROM (
      SELECT t.uuid, t.name, (SELECT ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(tr))) FROM (
-         SELECT tr.namespace, tr.locale, tr.external_locale, tr.external_id, tr.components, JSON_BUILD_OBJECT('uuid', c.uuid, 'name', c.name) as channel
+         SELECT tr.namespace, tr.locale, tr.external_locale, tr.external_id, tr.components, tr.variables, JSON_BUILD_OBJECT('uuid', c.uuid, 'name', c.name) as channel
            FROM templates_templatetranslation tr
            JOIN channels_channel c ON tr.channel_id = c.id
           WHERE tr.is_active = TRUE AND tr.status = 'A' AND tr.template_id = t.id AND c.is_active = TRUE
