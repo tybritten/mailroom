@@ -1,3 +1,8 @@
+v9.1.36 (2024-04-16)
+-------------------------
+ * Write templating to new msg.templating field
+ * Update to latest goflow
+
 v9.1.35 (2024-04-15)
 -------------------------
  * Add support for variables on templates as separate list
