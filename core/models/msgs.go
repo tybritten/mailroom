@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -89,6 +90,31 @@ var unsendableToFailedReason = map[flows.UnsendableReason]MsgFailedReason{
 	flows.UnsendableReasonNoDestination: MsgFailedNoDestination,
 }
 
+// Templating adds db support to the engine's templating struct
+type Templating struct {
+	*flows.MsgTemplating
+}
+
+// Scan supports reading translation values from JSON in database
+func (t *Templating) Scan(value any) error {
+	if value == nil {
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("failed type assertion to []byte")
+	}
+	return json.Unmarshal(b, &t)
+}
+
+func (t *Templating) Value() (driver.Value, error) {
+	if t == nil {
+		return nil, nil
+	}
+	return json.Marshal(t)
+}
+
 // Msg is our type for mailroom messages
 type Msg struct {
 	m struct {
@@ -108,6 +134,7 @@ type Msg struct {
 		QuickReplies pq.StringArray `db:"quick_replies"`
 		OptInID      OptInID        `db:"optin_id"`
 		Locale       i18n.Locale    `db:"locale"`
+		Templating   *Templating    `db:"templating"`
 
 		HighPriority bool          `db:"high_priority"`
 		Direction    MsgDirection  `db:"direction"`
@@ -147,6 +174,7 @@ func (m *Msg) CreatedByID() UserID      { return m.m.CreatedByID }
 func (m *Msg) Text() string                  { return m.m.Text }
 func (m *Msg) QuickReplies() []string        { return m.m.QuickReplies }
 func (m *Msg) Locale() i18n.Locale           { return m.m.Locale }
+func (m *Msg) Templating() *Templating       { return m.m.Templating }
 func (m *Msg) HighPriority() bool            { return m.m.HighPriority }
 func (m *Msg) CreatedOn() time.Time          { return m.m.CreatedOn }
 func (m *Msg) ModifiedOn() time.Time         { return m.m.ModifiedOn }
@@ -355,6 +383,10 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 	m.CreatedOn = createdOn
 	m.Metadata = null.Map[any](buildMsgMetadata(out, tpl))
 
+	if out.Templating() != nil {
+		m.Templating = &Templating{MsgTemplating: out.Templating()}
+	}
+
 	msg.SetChannel(channel)
 	msg.SetURN(out.URN())
 
@@ -459,7 +491,7 @@ func GetMsgRepetitions(rp *redis.Pool, contact *flows.Contact, msg *flows.MsgOut
 	return redis.Int(msgRepetitionsScript.Do(rc, key, contact.ID(), msg.Text()))
 }
 
-var loadMessagesSQL = `
+var sqlSelectMessagesByID = `
 SELECT 
 	id,
 	uuid,	
@@ -471,6 +503,7 @@ SELECT
 	attachments,
 	quick_replies,
 	locale,
+	templating,
 	created_on,
 	direction,
 	status,
@@ -497,10 +530,10 @@ ORDER BY
 
 // GetMessagesByID fetches the messages with the given ids
 func GetMessagesByID(ctx context.Context, db *sqlx.DB, orgID OrgID, direction MsgDirection, msgIDs []MsgID) ([]*Msg, error) {
-	return loadMessages(ctx, db, loadMessagesSQL, orgID, direction, pq.Array(msgIDs))
+	return loadMessages(ctx, db, sqlSelectMessagesByID, orgID, direction, pq.Array(msgIDs))
 }
 
-var loadMessagesForRetrySQL = `
+var sqlSelectMessagesForRetry = `
 SELECT 
 	m.id,
 	m.uuid,
@@ -512,6 +545,7 @@ SELECT
 	m.attachments,
 	m.quick_replies,
 	m.locale,
+	m.templating,
 	m.created_on,
 	m.direction,
 	m.status,
@@ -539,7 +573,7 @@ LIMIT 5000`
 
 // GetMessagesForRetry gets errored outgoing messages scheduled for retry, with an active channel
 func GetMessagesForRetry(ctx context.Context, db *sqlx.DB) ([]*Msg, error) {
-	return loadMessages(ctx, db, loadMessagesForRetrySQL)
+	return loadMessages(ctx, db, sqlSelectMessagesForRetry)
 }
 
 func loadMessages(ctx context.Context, db *sqlx.DB, sql string, params ...any) ([]*Msg, error) {
@@ -595,10 +629,10 @@ func InsertMessages(ctx context.Context, tx DBorTx, msgs []*Msg) error {
 
 const sqlInsertMsgSQL = `
 INSERT INTO
-msgs_msg(uuid, text, attachments, quick_replies, locale, high_priority, created_on, modified_on, sent_on, direction, status, metadata,
+msgs_msg(uuid, text, attachments, quick_replies, locale, templating, high_priority, created_on, modified_on, sent_on, direction, status, metadata,
 		 visibility, msg_type, msg_count, error_count, next_attempt, failed_reason, channel_id,
 		 contact_id, contact_urn_id, org_id, flow_id, broadcast_id, ticket_id, optin_id, created_by_id)
-  VALUES(:uuid, :text, :attachments, :quick_replies, :locale, :high_priority, :created_on, now(), :sent_on, :direction, :status, :metadata,
+  VALUES(:uuid, :text, :attachments, :quick_replies, :locale, :templating, :high_priority, :created_on, now(), :sent_on, :direction, :status, :metadata,
 		 :visibility, :msg_type, :msg_count, :error_count, :next_attempt, :failed_reason, :channel_id,
 		 :contact_id, :contact_urn_id, :org_id, :flow_id, :broadcast_id, :ticket_id, :optin_id, :created_by_id)
 RETURNING id, modified_on`
