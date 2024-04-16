@@ -52,6 +52,12 @@ type FlowRef struct {
 	Name string          `json:"name"`
 }
 
+type Templating struct {
+	*flows.MsgTemplating
+	ExternalID string `json:"external_id"`
+	Language   string `json:"language"`
+}
+
 // Msg is the format of a message queued to courier
 type Msg struct {
 	ID                   models.MsgID       `json:"id"`
@@ -62,6 +68,7 @@ type Msg struct {
 	Attachments          []utils.Attachment `json:"attachments,omitempty"`
 	QuickReplies         []string           `json:"quick_replies,omitempty"`
 	Locale               i18n.Locale        `json:"locale,omitempty"`
+	Templating           *Templating        `json:"templating,omitempty"`
 	HighPriority         bool               `json:"high_priority"`
 	MsgCount             int                `json:"tps_cost"`
 	CreatedOn            time.Time          `json:"created_on"`
@@ -130,6 +137,20 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 	} else if m.OptInID() != models.NilOptInID {
 		// an optin on a broadcast message means use it for authentication
 		msg.URNAuth = u.AuthTokens[fmt.Sprintf("optin:%d", m.OptInID())]
+	}
+
+	if m.Templating() != nil {
+		tpl := oa.TemplateByUUID(m.Templating().Template.UUID)
+		if tpl != nil {
+			tt := tpl.FindTranslation(m.Locale())
+			if tt != nil {
+				msg.Templating = &Templating{
+					MsgTemplating: m.Templating().MsgTemplating,
+					ExternalID:    tt.ExternalID(),
+					Language:      tt.ExternalLocale(), // i.e. en_US
+				}
+			}
+		}
 	}
 
 	if m.Contact != nil {

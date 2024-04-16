@@ -192,7 +192,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 
 		flow, _ := oa.FlowByID(tc.Flow.ID)
 
-		session := insertTestSession(t, ctx, rt, testdata.Org1, tc.Contact, testdata.Favorites)
+		session := insertTestSession(t, ctx, rt, testdata.Org1, tc.Contact)
 		if tc.ResponseTo != models.NilMsgID {
 			session.SetIncomingMsg(tc.ResponseTo, null.NullString)
 		}
@@ -220,6 +220,13 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		assert.Equal(t, expectedAttachments, msg.Attachments(), "%d: attachments mismatch", i)
 		assert.Equal(t, tc.QuickReplies, msg.QuickReplies(), "%d: quick replies mismatch", i)
 		assert.Equal(t, tc.Locale, msg.Locale(), "%d: locale mismatch", i)
+
+		if tc.Templating != nil {
+			assert.Equal(t, tc.Templating, msg.Templating().MsgTemplating, "%d: templating mismatch", i)
+		} else {
+			assert.Nil(t, msg.Templating(), "%d: templating should be nil", i)
+		}
+
 		assert.Equal(t, tc.Contact.ID, msg.ContactID())
 		assert.Equal(t, expectedChannelID, msg.ChannelID())
 		if tc.URNID != models.NilURNID {
@@ -249,7 +256,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 	require.NoError(t, err)
 	channel := oa.ChannelByUUID(testdata.TwilioChannel.UUID)
 	flow, _ := oa.FlowByID(testdata.Favorites.ID)
-	session := insertTestSession(t, ctx, rt, testdata.Org1, testdata.Cathy, testdata.Favorites)
+	session := insertTestSession(t, ctx, rt, testdata.Org1, testdata.Cathy)
 
 	// check that msg loop detection triggers after 20 repeats of the same text
 	newOutgoing := func(text string) *models.Msg {
@@ -573,7 +580,58 @@ func TestNewMsgOut(t *testing.T) {
 	assert.Equal(t, flows.UnsendableReasonNoDestination, out.UnsendableReason())
 }
 
-func insertTestSession(t *testing.T, ctx context.Context, rt *runtime.Runtime, org *testdata.Org, contact *testdata.Contact, flow *testdata.Flow) *models.Session {
+func TestMsgTemplating(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetData)
+
+	oa := testdata.Org1.Load(rt)
+	session := insertTestSession(t, ctx, rt, testdata.Org1, testdata.Cathy)
+	channel := oa.ChannelByUUID(testdata.FacebookChannel.UUID)
+	chRef := assets.NewChannelReference(testdata.FacebookChannel.UUID, "FB")
+	flow, _ := oa.FlowByID(testdata.Favorites.ID)
+
+	templating1 := flows.NewMsgTemplating(
+		assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"),
+		"tpls",
+		[]*flows.TemplatingComponent{{Type: "body", Name: "body", Variables: map[string]int{"1": 0}, Params: []*flows.TemplatingVariable{{Type: "text", Value: "name"}}}},
+		[]*flows.TemplatingVariable{{Type: "text", Value: "name"}},
+	)
+
+	// create a message with templating
+	out1 := flows.NewMsgOut(testdata.Cathy.URN, chRef, "Hello", nil, nil, templating1, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
+	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out1, nil, dates.Now())
+	require.NoError(t, err)
+
+	// create a message without templating
+	out2 := flows.NewMsgOut(testdata.Cathy.URN, chRef, "Hello", nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
+	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out2, nil, dates.Now())
+	require.NoError(t, err)
+
+	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg1, msg2})
+	require.NoError(t, err)
+
+	// check non-nil and nil templating writes to db correctly
+	assertdb.Query(t, rt.DB, `SELECT templating -> 'template' ->> 'name' FROM msgs_msg WHERE id = $1`, msg1.ID()).Returns("revive_issue")
+	assertdb.Query(t, rt.DB, `SELECT templating FROM msgs_msg WHERE id = $1`, msg2.ID()).Returns(nil)
+
+	type testStruct struct {
+		Templating *models.Templating `json:"templating"`
+	}
+
+	// check non-nil and nil reads from db correctly
+	s := &testStruct{}
+	err = rt.DB.Get(s, `SELECT templating FROM msgs_msg WHERE id = $1`, msg1.ID())
+	assert.NoError(t, err)
+	assert.Equal(t, &models.Templating{MsgTemplating: templating1}, s.Templating)
+
+	s = &testStruct{}
+	err = rt.DB.Get(s, `SELECT templating FROM msgs_msg WHERE id = $1`, msg2.ID())
+	assert.NoError(t, err)
+	assert.Nil(t, s.Templating)
+}
+
+func insertTestSession(t *testing.T, ctx context.Context, rt *runtime.Runtime, org *testdata.Org, contact *testdata.Contact) *models.Session {
 	testdata.InsertWaitingSession(rt, org, contact, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), time.Now(), false, nil)
 
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)

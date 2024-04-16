@@ -107,6 +107,14 @@ func TestNewCourierMsg(t *testing.T) {
 		],
 		"session_id": %d,
 		"session_status": "W",
+		"templating": {
+			"template": {"uuid": "9c22b594-fcab-4b29-9bcb-ce4404894a80", "name": "revive_issue"},
+			"components": [{"type": "body", "name": "body", "variables": {"1": 0}, "params": [{"type": "text", "value": "name"}]}],
+			"variables": [{"type": "text", "value": "name"}],
+			"namespace": "tpls",
+			"external_id": "eng1",
+			"language": "en_US"			
+		},
 		"text": "Hi there",
 		"tps_cost": 2,
 		"urn": "tel:+16055741111",
