@@ -9,9 +9,11 @@ import (
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
+	"github.com/nyaruka/goflow/test"
 	"github.com/nyaruka/goflow/utils"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
@@ -26,7 +28,7 @@ import (
 func TestNewOutgoingFlowMsg(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
-	defer testsuite.Reset(testsuite.ResetData)
+	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 
 	blake := testdata.InsertContact(rt, testdata.Org1, "79b94a23-6d13-43f4-95fe-c733ee457857", "Blake", i18n.NilLanguage, models.ContactStatusBlocked)
 	blakeURNID := testdata.InsertContactURN(rt, testdata.Org1, blake, "tel:++250700000007", 1, nil)
@@ -39,6 +41,8 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		URNID        models.URNID
 		Attachments  []utils.Attachment
 		QuickReplies []string
+		Locale       i18n.Locale
+		Templating   *flows.MsgTemplating
 		Topic        flows.MsgTopic
 		Unsendable   flows.UnsendableReason
 		Flow         *testdata.Flow
@@ -47,11 +51,11 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 
 		ExpectedStatus       models.MsgStatus
 		ExpectedFailedReason models.MsgFailedReason
-		ExpectedMetadata     map[string]any
+		ExpectedMetadata     string
 		ExpectedMsgCount     int
 		ExpectedPriority     bool
 	}{
-		{
+		{ // 0
 			Channel:              testdata.TwilioChannel,
 			Text:                 "missing urn id",
 			Contact:              testdata.Cathy,
@@ -61,24 +65,55 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			ResponseTo:           models.MsgID(123425),
 			ExpectedStatus:       models.MsgStatusQueued,
 			ExpectedFailedReason: models.NilMsgFailedReason,
-			ExpectedMetadata:     map[string]any{},
+			ExpectedMetadata:     `{}`,
 			ExpectedMsgCount:     1,
 			ExpectedPriority:     true,
 		},
-		{
-			Channel:              testdata.TwilioChannel,
-			Text:                 "test outgoing",
-			Contact:              testdata.Cathy,
-			URN:                  urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)),
-			URNID:                testdata.Cathy.URNID,
-			QuickReplies:         []string{"yes", "no"},
+		{ // 1
+			Channel:      testdata.TwilioChannel,
+			Text:         "test outgoing",
+			Contact:      testdata.Cathy,
+			URN:          urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)),
+			URNID:        testdata.Cathy.URNID,
+			QuickReplies: []string{"yes", "no"},
+			Locale:       "eng-US",
+			Templating: flows.NewMsgTemplating(
+				assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"),
+				"tpls",
+				[]*flows.TemplatingComponent{{Type: "body", Name: "body", Variables: map[string]int{"1": 0}, Params: []*flows.TemplatingVariable{{Type: "text", Value: "name"}}}},
+				[]*flows.TemplatingVariable{{Type: "text", Value: "name"}},
+			),
 			Topic:                flows.MsgTopicPurchase,
 			Flow:                 testdata.SingleMessage,
 			ExpectedStatus:       models.MsgStatusQueued,
 			ExpectedFailedReason: models.NilMsgFailedReason,
-			ExpectedMetadata:     map[string]any{"topic": "purchase"},
-			ExpectedMsgCount:     1,
-			ExpectedPriority:     false,
+			ExpectedMetadata: `{
+				"templating": {
+					"template": {"uuid": "9c22b594-fcab-4b29-9bcb-ce4404894a80", "name": "revive_issue"},
+					"namespace": "tpls",
+					"components": [
+						{
+							"type": "body",
+							"name": "body",
+							"variables": {"1": 0},
+							"params": [
+								{
+									"type": "text",
+									"value": "name"
+								}
+							]
+						}
+					],
+					"variables": [
+						{"type": "text", "value": "name"}
+					],
+					"external_id": "eng1",
+					"language": "en_US"
+				},
+				"topic": "purchase"
+			}`,
+			ExpectedMsgCount: 1,
+			ExpectedPriority: false,
 		},
 		{
 			Channel:              testdata.TwilioChannel,
@@ -90,7 +125,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			Flow:                 testdata.Favorites,
 			ExpectedStatus:       models.MsgStatusQueued,
 			ExpectedFailedReason: models.NilMsgFailedReason,
-			ExpectedMetadata:     map[string]any{},
+			ExpectedMetadata:     `{}`,
 			ExpectedMsgCount:     2,
 			ExpectedPriority:     false,
 		},
@@ -104,7 +139,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			SuspendedOrg:         true,
 			ExpectedStatus:       models.MsgStatusFailed,
 			ExpectedFailedReason: models.MsgFailedSuspended,
-			ExpectedMetadata:     map[string]any{},
+			ExpectedMetadata:     `{}`,
 			ExpectedMsgCount:     1,
 			ExpectedPriority:     false,
 		},
@@ -118,7 +153,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			Flow:                 testdata.Favorites,
 			ExpectedStatus:       models.MsgStatusFailed,
 			ExpectedFailedReason: models.MsgFailedNoDestination,
-			ExpectedMetadata:     map[string]any{},
+			ExpectedMetadata:     `{}`,
 			ExpectedMsgCount:     1,
 			ExpectedPriority:     false,
 		},
@@ -132,7 +167,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			Flow:                 testdata.Favorites,
 			ExpectedStatus:       models.MsgStatusFailed,
 			ExpectedFailedReason: models.MsgFailedContact,
-			ExpectedMetadata:     map[string]any{},
+			ExpectedMetadata:     `{}`,
 			ExpectedMsgCount:     1,
 			ExpectedPriority:     false,
 		},
@@ -140,8 +175,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 
 	now := time.Now()
 
-	for _, tc := range tcs {
-		desc := fmt.Sprintf("text='%s'", tc.Text)
+	for i, tc := range tcs {
 		rt.DB.MustExec(`UPDATE orgs_org SET is_suspended = $1 WHERE id = $2`, tc.SuspendedOrg, testdata.Org1.ID)
 
 		oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, testdata.Org1.ID, models.RefreshOrg)
@@ -163,8 +197,13 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			session.SetIncomingMsg(tc.ResponseTo, null.NullString)
 		}
 
-		flowMsg := flows.NewMsgOut(tc.URN, chRef, tc.Text, tc.Attachments, tc.QuickReplies, nil, tc.Topic, i18n.NilLocale, tc.Unsendable)
-		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), ch, session, flow, flowMsg, nil, dates.Now())
+		var template *models.Template
+		if tc.Templating != nil {
+			template = oa.TemplateByUUID(tc.Templating.Template.UUID)
+		}
+
+		flowMsg := flows.NewMsgOut(tc.URN, chRef, tc.Text, tc.Attachments, tc.QuickReplies, tc.Templating, tc.Topic, tc.Locale, tc.Unsendable)
+		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), ch, session, flow, flowMsg, template, dates.Now())
 
 		assert.NoError(t, err)
 
@@ -176,10 +215,11 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg})
 		assert.NoError(t, err)
 		assert.Equal(t, oa.OrgID(), msg.OrgID())
-		assert.Equal(t, tc.Text, msg.Text())
-		assert.Equal(t, models.MsgTypeText, msg.Type())
-		assert.Equal(t, expectedAttachments, msg.Attachments())
-		assert.Equal(t, tc.QuickReplies, msg.QuickReplies())
+		assert.Equal(t, tc.Text, msg.Text(), "%d: text mismatch", i)
+		assert.Equal(t, models.MsgTypeText, msg.Type(), "%d: type mismatch", i)
+		assert.Equal(t, expectedAttachments, msg.Attachments(), "%d: attachments mismatch", i)
+		assert.Equal(t, tc.QuickReplies, msg.QuickReplies(), "%d: quick replies mismatch", i)
+		assert.Equal(t, tc.Locale, msg.Locale(), "%d: locale mismatch", i)
 		assert.Equal(t, tc.Contact.ID, msg.ContactID())
 		assert.Equal(t, expectedChannelID, msg.ChannelID())
 		if tc.URNID != models.NilURNID {
@@ -189,10 +229,10 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		}
 		assert.Equal(t, tc.Flow.ID, msg.FlowID())
 
-		assert.Equal(t, tc.ExpectedStatus, msg.Status(), "status mismatch for %s", desc)
-		assert.Equal(t, tc.ExpectedFailedReason, msg.FailedReason(), "failed reason mismatch for %s", desc)
-		assert.Equal(t, tc.ExpectedMetadata, msg.Metadata())
-		assert.Equal(t, tc.ExpectedMsgCount, msg.MsgCount())
+		assert.Equal(t, tc.ExpectedStatus, msg.Status(), "%d: status mismatch", i)
+		assert.Equal(t, tc.ExpectedFailedReason, msg.FailedReason(), "%d: failed reason mismatch", i)
+		assert.Equal(t, tc.ExpectedMsgCount, msg.MsgCount(), "%d: msg count mismatch", i)
+		test.AssertEqualJSON(t, []byte(tc.ExpectedMetadata), jsonx.MustMarshal(msg.Metadata()), "%d: metadata mismatch", i)
 		assert.True(t, msg.ID() > 0)
 		assert.True(t, msg.CreatedOn().After(now))
 		assert.True(t, msg.ModifiedOn().After(now))
