@@ -80,7 +80,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			Templating: flows.NewMsgTemplating(
 				assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"),
 				"tpls",
-				[]*flows.TemplatingComponent{{Type: "body", Name: "body", Variables: map[string]int{"1": 0}, Params: []*flows.TemplatingVariable{{Type: "text", Value: "name"}}}},
+				[]*flows.TemplatingComponent{{Type: "body", Name: "body", Variables: map[string]int{"1": 0}}},
 				[]*flows.TemplatingVariable{{Type: "text", Value: "name"}},
 			),
 			Topic:                flows.MsgTopicPurchase,
@@ -565,7 +565,7 @@ func TestMsgTemplating(t *testing.T) {
 	templating1 := flows.NewMsgTemplating(
 		assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"),
 		"tpls",
-		[]*flows.TemplatingComponent{{Type: "body", Name: "body", Variables: map[string]int{"1": 0}, Params: []*flows.TemplatingVariable{{Type: "text", Value: "name"}}}},
+		[]*flows.TemplatingComponent{{Type: "body", Name: "body", Variables: map[string]int{"1": 0}}},
 		[]*flows.TemplatingVariable{{Type: "text", Value: "name"}},
 	)
 
