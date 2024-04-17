@@ -45,8 +45,6 @@ func TestNewCourierMsg(t *testing.T) {
 	cathyURN, _ := cathyURNs[0].AsURN(oa)
 	fredURN, _ := fredURNs[0].AsURN(oa)
 
-	tpl := oa.TemplateByUUID("9c22b594-fcab-4b29-9bcb-ce4404894a80")
-
 	flowMsg1 := flows.NewMsgOut(
 		cathyURN,
 		assets.NewChannelReference(testdata.TwilioChannel.UUID, "Test Channel"),
@@ -69,7 +67,7 @@ func TestNewCourierMsg(t *testing.T) {
 	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, cathy)
 	require.NoError(t, err)
 
-	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg1, tpl, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
+	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg1, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	require.NoError(t, err)
 
 	// insert to db so that it gets an id and time field values
@@ -88,17 +86,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"high_priority": false,
 		"id": 1,
 		"locale": "eng-US",
-		"metadata": {
-			"templating": {
-				"template": {"uuid": "9c22b594-fcab-4b29-9bcb-ce4404894a80", "name": "revive_issue"},
-				"components": [{"type": "body", "name": "body", "variables": {"1": 0}, "params": [{"type": "text", "value": "name"}]}],
-				"variables": [{"type": "text", "value": "name"}],
-				"namespace": "tpls",
-				"external_id": "eng1",
-				"language": "en_US"
-			},
-			"topic": "purchase"
-		},
+		"metadata": {"topic": "purchase"},
 		"org_id": 1,
 		"origin": "flow",
 		"quick_replies": [
@@ -134,7 +122,7 @@ func TestNewCourierMsg(t *testing.T) {
 	)
 	in1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "test", models.MsgStatusHandled)
 	session.SetIncomingMsg(in1.ID, null.String("EX123"))
-	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg2, nil, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
+	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg2, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	require.NoError(t, err)
 
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg2})

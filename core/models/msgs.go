@@ -342,26 +342,26 @@ func NewOutgoingOptInMsg(rt *runtime.Runtime, session *Session, flow *Flow, optI
 }
 
 // NewOutgoingFlowMsg creates an outgoing message for the passed in flow message
-func NewOutgoingFlowMsg(rt *runtime.Runtime, org *Org, channel *Channel, session *Session, flow *Flow, out *flows.MsgOut, tpl *Template, createdOn time.Time) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, session.Contact(), out, session, flow, tpl, NilBroadcastID, NilTicketID, NilOptInID, NilUserID, createdOn)
+func NewOutgoingFlowMsg(rt *runtime.Runtime, org *Org, channel *Channel, session *Session, flow *Flow, out *flows.MsgOut, createdOn time.Time) (*Msg, error) {
+	return newOutgoingTextMsg(rt, org, channel, session.Contact(), out, session, flow, NilBroadcastID, NilTicketID, NilOptInID, NilUserID, createdOn)
 }
 
 // NewOutgoingBroadcastMsg creates an outgoing message which is part of a broadcast
 func NewOutgoingBroadcastMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, bb *BroadcastBatch) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, nil, bb.BroadcastID, NilTicketID, bb.OptInID, bb.CreatedByID, dates.Now())
+	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, bb.BroadcastID, NilTicketID, bb.OptInID, bb.CreatedByID, dates.Now())
 }
 
 // NewOutgoingTicketMsg creates an outgoing message from a ticket
 func NewOutgoingTicketMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, ticketID TicketID, userID UserID) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, nil, NilBroadcastID, ticketID, NilOptInID, userID, dates.Now())
+	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, NilBroadcastID, ticketID, NilOptInID, userID, dates.Now())
 }
 
 // NewOutgoingChatMsg creates an outgoing message from chat
 func NewOutgoingChatMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, userID UserID) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, nil, NilBroadcastID, NilTicketID, NilOptInID, userID, dates.Now())
+	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, NilBroadcastID, NilTicketID, NilOptInID, userID, dates.Now())
 }
 
-func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, session *Session, flow *Flow, tpl *Template, broadcastID BroadcastID, ticketID TicketID, optInID OptInID, userID UserID, createdOn time.Time) (*Msg, error) {
+func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, session *Session, flow *Flow, broadcastID BroadcastID, ticketID TicketID, optInID OptInID, userID UserID, createdOn time.Time) (*Msg, error) {
 	msg := &Msg{}
 	m := &msg.m
 	m.UUID = out.UUID()
@@ -381,7 +381,7 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 	m.MsgCount = 1
 	m.CreatedByID = userID
 	m.CreatedOn = createdOn
-	m.Metadata = null.Map[any](buildMsgMetadata(out, tpl))
+	m.Metadata = null.Map[any](buildMsgMetadata(out))
 
 	if out.Templating() != nil {
 		m.Templating = &Templating{MsgTemplating: out.Templating()}
@@ -439,23 +439,8 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 	return msg, nil
 }
 
-func buildMsgMetadata(m *flows.MsgOut, t *Template) map[string]any {
+func buildMsgMetadata(m *flows.MsgOut) map[string]any {
 	metadata := make(map[string]any)
-	if m.Templating() != nil && t != nil {
-		tt := t.FindTranslation(m.Locale())
-
-		type templating struct {
-			flows.MsgTemplating
-			ExternalID string `json:"external_id"`
-			Language   string `json:"language"`
-		}
-
-		metadata["templating"] = templating{
-			MsgTemplating: *m.Templating(),
-			ExternalID:    tt.ExternalID(),
-			Language:      tt.ExternalLocale(), // i.e. en_US
-		}
-	}
 	if m.Topic() != flows.NilMsgTopic {
 		metadata["topic"] = string(m.Topic())
 	}

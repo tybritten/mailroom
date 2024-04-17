@@ -87,33 +87,9 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			Flow:                 testdata.SingleMessage,
 			ExpectedStatus:       models.MsgStatusQueued,
 			ExpectedFailedReason: models.NilMsgFailedReason,
-			ExpectedMetadata: `{
-				"templating": {
-					"template": {"uuid": "9c22b594-fcab-4b29-9bcb-ce4404894a80", "name": "revive_issue"},
-					"namespace": "tpls",
-					"components": [
-						{
-							"type": "body",
-							"name": "body",
-							"variables": {"1": 0},
-							"params": [
-								{
-									"type": "text",
-									"value": "name"
-								}
-							]
-						}
-					],
-					"variables": [
-						{"type": "text", "value": "name"}
-					],
-					"external_id": "eng1",
-					"language": "en_US"
-				},
-				"topic": "purchase"
-			}`,
-			ExpectedMsgCount: 1,
-			ExpectedPriority: false,
+			ExpectedMetadata:     `{"topic": "purchase"}`,
+			ExpectedMsgCount:     1,
+			ExpectedPriority:     false,
 		},
 		{
 			Channel:              testdata.TwilioChannel,
@@ -197,13 +173,8 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			session.SetIncomingMsg(tc.ResponseTo, null.NullString)
 		}
 
-		var template *models.Template
-		if tc.Templating != nil {
-			template = oa.TemplateByUUID(tc.Templating.Template.UUID)
-		}
-
 		flowMsg := flows.NewMsgOut(tc.URN, chRef, tc.Text, tc.Attachments, tc.QuickReplies, tc.Templating, tc.Topic, tc.Locale, tc.Unsendable)
-		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), ch, session, flow, flowMsg, template, dates.Now())
+		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), ch, session, flow, flowMsg, dates.Now())
 
 		assert.NoError(t, err)
 
@@ -261,7 +232,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 	// check that msg loop detection triggers after 20 repeats of the same text
 	newOutgoing := func(text string) *models.Msg {
 		flowMsg := flows.NewMsgOut(urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)), assets.NewChannelReference(testdata.TwilioChannel.UUID, "Twilio"), text, nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg, nil, dates.Now())
+		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg, dates.Now())
 		require.NoError(t, err)
 		return msg
 	}
@@ -600,12 +571,12 @@ func TestMsgTemplating(t *testing.T) {
 
 	// create a message with templating
 	out1 := flows.NewMsgOut(testdata.Cathy.URN, chRef, "Hello", nil, nil, templating1, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out1, nil, dates.Now())
+	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out1, dates.Now())
 	require.NoError(t, err)
 
 	// create a message without templating
 	out2 := flows.NewMsgOut(testdata.Cathy.URN, chRef, "Hello", nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out2, nil, dates.Now())
+	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out2, dates.Now())
 	require.NoError(t, err)
 
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg1, msg2})

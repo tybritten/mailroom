@@ -81,7 +81,7 @@ func TestMsgCreated(t *testing.T) {
 					Count: 1,
 				},
 				{
-					SQL: "SELECT COUNT(*) FROM msgs_msg WHERE contact_id = $1 AND text = $2 AND direction = 'O' AND status = 'Q' AND channel_id = $3 AND metadata::jsonb->'templating'->'template'->>'name' = 'revive_issue'",
+					SQL: "SELECT COUNT(*) FROM msgs_msg WHERE contact_id = $1 AND text = $2 AND direction = 'O' AND status = 'Q' AND channel_id = $3 AND templating->'template'->>'name' = 'revive_issue'",
 					Args: []any{
 						testdata.Alexandria.ID,
 						`Hi Alexandia, are you still experiencing problems with tooth?`,
