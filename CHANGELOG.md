@@ -1,3 +1,7 @@
+v9.1.37 (2024-04-17)
+-------------------------
+ * Stop writing templating into msg.metadata
+
 v9.1.36 (2024-04-16)
 -------------------------
  * Write templating to new msg.templating field
