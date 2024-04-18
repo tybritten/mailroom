@@ -1,3 +1,7 @@
+v9.1.38 (2024-04-18)
+-------------------------
+ * Update to latest goflow that removes params from templating
+
 v9.1.37 (2024-04-17)
 -------------------------
  * Stop writing templating into msg.metadata
