@@ -1,3 +1,7 @@
+v9.1.39 (2024-04-24)
+-------------------------
+ * Add contact/export endpoint so RP deosn't have to talk to elastic directly
+
 v9.1.38 (2024-04-18)
 -------------------------
  * Update to latest goflow that removes params from templating
