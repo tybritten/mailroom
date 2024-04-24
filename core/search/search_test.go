@@ -123,26 +123,58 @@ func TestGetContactIDsForQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	tcs := []struct {
+		group            *testdata.Group
+		status           models.ContactStatus
 		query            string
 		limit            int
 		expectedContacts []models.ContactID
 		expectedError    string
 	}{
 		{
+			group:            testdata.ActiveGroup,
+			status:           models.NilContactStatus,
 			query:            "george OR bob",
 			limit:            -1,
 			expectedContacts: []models.ContactID{testdata.George.ID, testdata.Bob.ID},
-		}, {
+		},
+		{
+			group:            nil,
+			status:           models.ContactStatusActive,
+			query:            "george OR bob",
+			limit:            -1,
+			expectedContacts: []models.ContactID{testdata.George.ID, testdata.Bob.ID},
+		},
+		{
+			group:            testdata.DoctorsGroup,
+			status:           models.ContactStatusActive,
+			query:            "name = cathy",
+			limit:            -1,
+			expectedContacts: []models.ContactID{testdata.Cathy.ID},
+		},
+		{
+			group:            nil,
+			status:           models.ContactStatusActive,
 			query:            "nobody",
 			limit:            -1,
 			expectedContacts: []models.ContactID{},
 		},
 		{
+			group:            nil,
+			status:           models.ContactStatusActive,
 			query:            "george",
 			limit:            1,
 			expectedContacts: []models.ContactID{testdata.George.ID},
 		},
 		{
+			group:            testdata.DoctorsGroup,
+			status:           models.NilContactStatus,
+			query:            "",
+			limit:            1,
+			expectedContacts: []models.ContactID{testdata.Cathy.ID},
+		},
+		{
+			group:         nil,
+			status:        models.ContactStatusActive,
 			query:         "goats > 2", // no such contact field
 			limit:         -1,
 			expectedError: "error parsing query: goats > 2: can't resolve 'goats' to attribute, scheme or field",
@@ -150,7 +182,12 @@ func TestGetContactIDsForQuery(t *testing.T) {
 	}
 
 	for i, tc := range tcs {
-		ids, err := search.GetContactIDsForQuery(ctx, rt, oa, tc.query, tc.limit)
+		var group *models.Group
+		if tc.group != nil {
+			group = oa.GroupByID(tc.group.ID)
+		}
+
+		ids, err := search.GetContactIDsForQuery(ctx, rt, oa, group, tc.status, tc.query, tc.limit)
 
 		if tc.expectedError != "" {
 			assert.EqualError(t, err, tc.expectedError)

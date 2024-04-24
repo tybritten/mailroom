@@ -47,6 +47,12 @@ func TestBulkCreate(t *testing.T) {
 	testsuite.RunWebTests(t, ctx, rt, "testdata/bulk_create.json", nil)
 }
 
+func TestExport(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	testsuite.RunWebTests(t, ctx, rt, "testdata/export.json", nil)
+}
+
 func TestExportPreview(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
