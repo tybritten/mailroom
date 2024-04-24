@@ -50,7 +50,7 @@ func PopulateSmartGroup(ctx context.Context, rt *runtime.Runtime, es *elastic.Cl
 	}
 
 	// calculate new set of ids
-	new, err := GetContactIDsForQuery(ctx, rt, oa, query, -1)
+	new, err := GetContactIDsForQuery(ctx, rt, oa, nil, models.ContactStatusActive, query, -1)
 	if err != nil {
 		return 0, errors.Wrapf(err, "error performing query: %s for group: %d", query, groupID)
 	}
