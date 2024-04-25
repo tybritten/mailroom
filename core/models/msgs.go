@@ -68,6 +68,7 @@ const (
 	MsgStatusWired        = MsgStatus("W") // outgoing msg requested to be sent via channel
 	MsgStatusSent         = MsgStatus("S") // outgoing msg having received sent confirmation from channel
 	MsgStatusDelivered    = MsgStatus("D") // outgoing msg having received delivery confirmation from channel
+	MsgStatusRead         = MsgStatus("R") // outgoing msg having received read confirmation from channel
 	MsgStatusErrored      = MsgStatus("E") // outgoing msg which has errored and will be retried
 	MsgStatusFailed       = MsgStatus("F") // outgoing msg which has failed permanently
 )

@@ -77,7 +77,7 @@ func insertOutgoingMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact 
 	}
 
 	var sentOn *time.Time
-	if status == models.MsgStatusWired || status == models.MsgStatusSent || status == models.MsgStatusDelivered {
+	if status == models.MsgStatusWired || status == models.MsgStatusSent || status == models.MsgStatusDelivered || status == models.MsgStatusRead {
 		t := dates.Now()
 		sentOn = &t
 	}
