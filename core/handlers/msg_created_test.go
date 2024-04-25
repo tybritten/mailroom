@@ -38,12 +38,8 @@ func TestMsgCreated(t *testing.T) {
 	msg1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "start", models.MsgStatusHandled)
 
 	templateAction := actions.NewSendMsg(handlers.NewActionUUID(), "Template time", nil, nil, false)
-	templateAction.Templating = &actions.Templating{
-		Template: &assets.TemplateReference{UUID: assets.TemplateUUID("9c22b594-fcab-4b29-9bcb-ce4404894a80"), Name: "revive_issue"},
-		Components: []*actions.TemplatingComponent{
-			{UUID: "cb369738-480f-49bb-aa5e-c0866bc1e5c9", Name: "body", Params: []string{"@contact.name", "tooth"}},
-		},
-	}
+	templateAction.Template = assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue")
+	templateAction.TemplateVariables = []string{"@contact.name", "tooth"}
 
 	tcs := []handlers.TestCase{
 		{
