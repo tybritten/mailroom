@@ -1,3 +1,7 @@
+v9.1.40 (2024-05-01)
+-------------------------
+ * Update to latest goflow with flow spec 13.5
+
 v9.1.39 (2024-04-24)
 -------------------------
  * Add contact/export endpoint so RP deosn't have to talk to elastic directly
