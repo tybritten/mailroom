@@ -28,7 +28,7 @@ func TestMessage(t *testing.T) {
 	testsuite.RunWebTests(t, ctx, rt, "testdata/message.json", nil)
 
 	orgTasks := testsuite.CurrentTasks(t, rt, "handler")[testdata.Org1.ID]
-	assert.Len(t, orgTasks, 3)
+	assert.Len(t, orgTasks, 2)
 	assert.Equal(t, "handle_contact_event", orgTasks[0].Type)
 	assert.Equal(t, "handle_contact_event", orgTasks[1].Type)
 }

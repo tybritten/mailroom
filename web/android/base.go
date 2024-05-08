@@ -16,8 +16,11 @@ type contactAndURN struct {
 	newContact bool
 }
 
-func resolveContact(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, channelID models.ChannelID, urn urns.URN) (*contactAndURN, error) {
-	urn = urn.Normalize()
+func resolveContact(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, channelID models.ChannelID, phone string) (*contactAndURN, error) {
+	urn, err := urns.ParsePhone(phone, oa.ChannelByID(channelID).Country())
+	if err != nil {
+		return nil, errors.Wrap(err, "error parsing phone number")
+	}
 
 	if err := urn.Validate(); err != nil {
 		return nil, errors.Wrap(err, "URN failed validation")

@@ -70,28 +70,5 @@
                 "count": 1
             }
         ]
-    },
-    {
-        "label": "use legacy urn field",
-        "method": "POST",
-        "path": "/mr/android/event",
-        "body": {
-            "org_id": 1,
-            "channel_id": 10000,
-            "urn": "tel:+16055741111",
-            "event_type": "mo_miss",
-            "extra": {},
-            "occurred_on": "2024-04-01T12:00:00Z"
-        },
-        "status": 200,
-        "response": {
-            "id": 3
-        },
-        "db_assertions": [
-            {
-                "query": "SELECT count(*) FROM channels_channelevent WHERE event_type = 'mo_miss' AND contact_id = 10000 AND status = 'P'",
-                "count": 2
-            }
-        ]
     }
 ]
