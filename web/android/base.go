@@ -17,11 +17,7 @@ type contactAndURN struct {
 }
 
 func resolveContact(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, channelID models.ChannelID, urn urns.URN) (*contactAndURN, error) {
-	urn = urn.Normalize(string(oa.Env().DefaultCountry()))
-
-	// TODO rework normalization to be idempotent because an invalid number like +2621112222 normalizes to
-	// 2621112222 (invalid) and then normalizes to +12621112222 (valid)
-	urn = urn.Normalize(string(oa.Env().DefaultCountry()))
+	urn = urn.Normalize()
 
 	if err := urn.Validate(); err != nil {
 		return nil, errors.Wrap(err, "URN failed validation")

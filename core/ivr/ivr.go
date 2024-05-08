@@ -143,7 +143,7 @@ func RequestCall(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 	// find a tel URL for the contact
 	telURN := urns.NilURN
 	for _, u := range contact.URNs() {
-		if u.Scheme() == urns.TelScheme {
+		if u.Scheme() == urns.Phone.Prefix {
 			telURN = u
 		}
 	}

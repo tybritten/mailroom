@@ -152,7 +152,7 @@ func (s *service) URNForRequest(r *http.Request) (urns.URN, error) {
 	if urn == "" {
 		return "", errors.Errorf("no urn found in body")
 	}
-	return urns.NewTelURNForCountry("+"+urn, "")
+	return urns.ParsePhone("+"+urn, "")
 }
 
 func (s *service) DownloadMedia(url string) (*http.Response, error) {
