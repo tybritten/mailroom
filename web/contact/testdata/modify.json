@@ -1105,7 +1105,7 @@
         ]
     },
     {
-        "label": "add existing URN",
+        "label": "add URNs, one of which already exists",
         "method": "POST",
         "path": "/mr/contact/modify",
         "body": {
@@ -1119,7 +1119,8 @@
                     "type": "urns",
                     "modification": "append",
                     "urns": [
-                        "tel:+255788555111"
+                        "tel:+255788555111",
+                        "tel:+255788555222"
                     ]
                 }
             ]
@@ -1137,10 +1138,19 @@
                         "created_on": "2018-07-06T12:30:00.123457Z",
                         "urns": [
                             "tel:+255788555111?id=30000",
-                            "tel:+255788555222?id=30001"
+                            "tel:+255788555222"
                         ]
                     },
-                    "events": []
+                    "events": [
+                        {
+                            "type": "contact_urns_changed",
+                            "created_on": "2018-07-06T12:30:00.123456789Z",
+                            "urns": [
+                                "tel:+255788555111?id=30000",
+                                "tel:+255788555222"
+                            ]
+                        }
+                    ]
                 }
             },
             "skipped": []
