@@ -24,7 +24,7 @@ func init() {
 //	{
 //	  "org_id": 1,
 //	  "channel_id": 12,
-//	  "urn": "tel:+250788123123",
+//	  "phone": "+250788123123",
 //	  "event_type": "mo_miss",
 //	  "extra": {"duration": 3},
 //	  "occurred_on": "2021-01-01T12:00:00Z"
@@ -32,7 +32,8 @@ func init() {
 type eventRequest struct {
 	OrgID      models.OrgID            `json:"org_id"       validate:"required"`
 	ChannelID  models.ChannelID        `json:"channel_id"   validate:"required"`
-	URN        urns.URN                `json:"urn"          validate:"required"`
+	URN        urns.URN                `json:"urn"` // deprecated
+	Phone      string                  `json:"phone"`
 	EventType  models.ChannelEventType `json:"event_type"   validate:"required"`
 	Extra      null.Map[any]           `json:"extra"        validate:"required"`
 	OccurredOn time.Time               `json:"occurred_on"  validate:"required"`
@@ -44,7 +45,15 @@ func handleEvent(ctx context.Context, rt *runtime.Runtime, r *eventRequest) (any
 		return nil, 0, errors.Wrap(err, "unable to load org assets")
 	}
 
-	cu, err := resolveContact(ctx, rt, oa, r.ChannelID, r.URN)
+	urn := r.URN
+	if urn == "" {
+		urn, err = urns.ParsePhone(r.Phone, oa.ChannelByID(r.ChannelID).Country())
+		if err != nil {
+			return nil, 0, errors.Wrap(err, "error parsing phone number")
+		}
+	}
+
+	cu, err := resolveContact(ctx, rt, oa, r.ChannelID, urn)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "error resolving contact")
 	}
