@@ -20,7 +20,6 @@ type Creation struct {
 
 // SpecToCreation validates that the spec is valid for the given assets
 func SpecToCreation(s *models.ContactSpec, env envs.Environment, sa flows.SessionAssets) (*Creation, error) {
-	country := string(env.DefaultCountry())
 	var err error
 	validated := &Creation{}
 
@@ -37,7 +36,7 @@ func SpecToCreation(s *models.ContactSpec, env envs.Environment, sa flows.Sessio
 
 	validated.URNs = make([]urns.URN, len(s.URNs))
 	for i, urn := range s.URNs {
-		validated.URNs[i] = urn.Normalize(country)
+		validated.URNs[i] = urn.Normalize()
 	}
 
 	validated.Mods = make([]flows.Modifier, 0, len(s.Fields))

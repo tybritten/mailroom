@@ -214,7 +214,7 @@ func (s *service) URNForRequest(r *http.Request) (urns.URN, error) {
 	if tel == "" {
 		return "", errors.New("no Caller or From parameter found in request")
 	}
-	return urns.NewTelURNForCountry(tel, "")
+	return urns.ParsePhone(tel, "")
 }
 
 // CallResponse is our struct for a Twilio call response

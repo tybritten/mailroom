@@ -4,21 +4,21 @@ go 1.22
 
 require (
 	github.com/Masterminds/semver v1.5.0
-	github.com/aws/aws-sdk-go v1.51.22
+	github.com/aws/aws-sdk-go v1.52.5
 	github.com/buger/jsonparser v1.1.1
 	github.com/edganiukov/fcm v0.4.0
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/go-chi/chi/v5 v5.0.12
-	github.com/go-playground/validator/v10 v10.19.0
+	github.com/go-playground/validator/v10 v10.20.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/protobuf v1.5.4
 	github.com/gomodule/redigo v1.9.2
 	github.com/gorilla/schema v1.3.0
-	github.com/jmoiron/sqlx v1.3.5
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
-	github.com/nyaruka/gocommon v1.53.2
-	github.com/nyaruka/goflow v0.210.0
+	github.com/nyaruka/gocommon v1.54.6
+	github.com/nyaruka/goflow v0.211.0
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.0
 	github.com/nyaruka/rp-indexer/v9 v9.1.0
@@ -26,12 +26,12 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.52.3
+	github.com/prometheus/common v0.53.0
 	github.com/samber/slog-multi v1.0.2
 	github.com/samber/slog-sentry v1.2.2
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f
+	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 )
 
 require (
@@ -53,15 +53,15 @@ require (
 	github.com/naoina/toml v0.1.1 // indirect
 	github.com/nyaruka/librato v1.1.1 // indirect
 	github.com/nyaruka/null/v2 v2.0.3 // indirect
-	github.com/nyaruka/phonenumbers v1.3.4 // indirect
+	github.com/nyaruka/phonenumbers v1.3.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/samber/lo v1.39.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
-	golang.org/x/crypto v0.22.0 // indirect
-	golang.org/x/net v0.24.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
+	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
+	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

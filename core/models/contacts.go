@@ -486,7 +486,7 @@ func (u *ContactURN) AsURN(oa *OrgAssets) (urns.URN, error) {
 	}
 
 	// re-encode our URN
-	urn, err := urns.NewURNFromParts(u.Scheme, u.Path, query.Encode(), string(u.Display))
+	urn, err := urns.NewFromParts(u.Scheme, u.Path, query.Encode(), string(u.Display))
 	if err != nil {
 		return urns.NilURN, errors.Wrapf(err, "invalid URN %s:%s", u.Scheme, u.Path)
 	}
@@ -591,7 +591,7 @@ WHERE
 func CreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, name string, language i18n.Language, urnz []urns.URN) (*Contact, *flows.Contact, error) {
 	// ensure all URNs are normalized
 	for i, urn := range urnz {
-		urnz[i] = urn.Normalize(string(oa.Env().DefaultCountry()))
+		urnz[i] = urn.Normalize()
 	}
 
 	// find current owners of these URNs
@@ -641,7 +641,7 @@ func CreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, nam
 func GetOrCreateContact(ctx context.Context, db DB, oa *OrgAssets, urnz []urns.URN, channelID ChannelID) (*Contact, *flows.Contact, bool, error) {
 	// ensure all URNs are normalized
 	for i, urn := range urnz {
-		urnz[i] = urn.Normalize(string(oa.Env().DefaultCountry()))
+		urnz[i] = urn.Normalize()
 	}
 
 	contactID, created, err := getOrCreateContact(ctx, db, oa.OrgID(), urnz, channelID)
@@ -676,7 +676,7 @@ func GetOrCreateContact(ctx context.Context, db DB, oa *OrgAssets, urnz []urns.U
 func GetOrCreateContactsFromURNs(ctx context.Context, db DB, oa *OrgAssets, urnz []urns.URN) (map[urns.URN]*Contact, map[urns.URN]*Contact, error) {
 	// ensure all URNs are normalized
 	for i, urn := range urnz {
-		urnz[i] = urn.Normalize(string(oa.Env().DefaultCountry()))
+		urnz[i] = urn.Normalize()
 	}
 
 	// find current owners of these URNs
@@ -1148,7 +1148,7 @@ func updateURNChannel(urn urns.URN, channel *Channel) (urns.URN, error) {
 	if channel != nil {
 		query["channel"] = []string{string(channel.UUID())}
 	}
-	urn, err = urns.NewURNFromParts(urn.Scheme(), urn.Path(), query.Encode(), urn.Display())
+	urn, err = urns.NewFromParts(urn.Scheme(), urn.Path(), query.Encode(), urn.Display())
 	if err != nil {
 		return urns.NilURN, errors.Wrap(err, "unable to create new urn")
 	}

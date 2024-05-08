@@ -425,7 +425,7 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 	}
 
 	// if we're sending to a phone, message may have to be sent in multiple parts
-	if out.URN().Scheme() == urns.TelScheme {
+	if out.URN().Scheme() == urns.Phone.Prefix {
 		m.MsgCount = gsm7.Segments(m.Text) + len(m.Attachments)
 	}
 
