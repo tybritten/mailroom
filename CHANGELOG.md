@@ -1,3 +1,7 @@
+v9.1.41 (2024-05-08)
+-------------------------
+ * Update to latest goflow
+
 v9.1.40 (2024-05-01)
 -------------------------
  * Update to latest goflow with flow spec 13.5
