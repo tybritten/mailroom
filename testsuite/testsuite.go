@@ -85,7 +85,7 @@ func Runtime() (context.Context, *runtime.Runtime) {
 		Config:            cfg,
 	}
 
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
 
 	return context.Background(), rt
 }
