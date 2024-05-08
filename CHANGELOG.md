@@ -1,3 +1,7 @@
+v9.1.42 (2024-05-08)
+-------------------------
+ * Support either urn or phone on android endpoints
+
 v9.1.41 (2024-05-08)
 -------------------------
  * Update to latest goflow
