@@ -92,28 +92,5 @@
                 "count": 1
             }
         ]
-    },
-    {
-        "label": "use legacy urn field",
-        "method": "POST",
-        "path": "/mr/android/message",
-        "body": {
-            "org_id": 1,
-            "channel_id": 10000,
-            "urn": "tel:+16055748888",
-            "text": "Chau",
-            "received_on": "2024-04-01T12:00:00Z"
-        },
-        "status": 200,
-        "response": {
-            "id": 3,
-            "duplicate": false
-        },
-        "db_assertions": [
-            {
-                "query": "SELECT count(*) FROM msgs_msg WHERE direction = 'I' and contact_id = 30000 AND text = 'Chau'",
-                "count": 1
-            }
-        ]
     }
 ]

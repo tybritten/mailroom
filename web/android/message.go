@@ -8,7 +8,6 @@ import (
 
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/stringsx"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
@@ -33,8 +32,7 @@ func init() {
 type messageRequest struct {
 	OrgID      models.OrgID     `json:"org_id"       validate:"required"`
 	ChannelID  models.ChannelID `json:"channel_id"   validate:"required"`
-	URN        urns.URN         `json:"urn"` // deprecated
-	Phone      string           `json:"phone"`
+	Phone      string           `json:"phone"        validate:"required"`
 	Text       string           `json:"text"         validate:"required"`
 	ReceivedOn time.Time        `json:"received_on"  validate:"required"`
 }
@@ -45,15 +43,7 @@ func handleMessage(ctx context.Context, rt *runtime.Runtime, r *messageRequest) 
 		return nil, 0, errors.Wrap(err, "unable to load org assets")
 	}
 
-	urn := r.URN
-	if urn == "" {
-		urn, err = urns.ParsePhone(r.Phone, oa.ChannelByID(r.ChannelID).Country())
-		if err != nil {
-			return nil, 0, errors.Wrap(err, "error parsing phone number")
-		}
-	}
-
-	cu, err := resolveContact(ctx, rt, oa, r.ChannelID, urn)
+	cu, err := resolveContact(ctx, rt, oa, r.ChannelID, r.Phone)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "error resolving contact")
 	}
