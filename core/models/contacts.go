@@ -486,7 +486,7 @@ func (u *ContactURN) AsURN(oa *OrgAssets) (urns.URN, error) {
 	}
 
 	// re-encode our URN
-	urn, err := urns.NewFromParts(u.Scheme, u.Path, query.Encode(), string(u.Display))
+	urn, err := urns.NewFromParts(u.Scheme, u.Path, query, string(u.Display))
 	if err != nil {
 		return urns.NilURN, errors.Wrapf(err, "invalid URN %s:%s", u.Scheme, u.Path)
 	}
@@ -1148,7 +1148,7 @@ func updateURNChannel(urn urns.URN, channel *Channel) (urns.URN, error) {
 	if channel != nil {
 		query["channel"] = []string{string(channel.UUID())}
 	}
-	urn, err = urns.NewFromParts(urn.Scheme(), urn.Path(), query.Encode(), urn.Display())
+	urn, err = urns.NewFromParts(urn.Scheme(), urn.Path(), query, urn.Display())
 	if err != nil {
 		return urns.NilURN, errors.Wrap(err, "unable to create new urn")
 	}
