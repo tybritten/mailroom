@@ -17,7 +17,7 @@ type contactAndURN struct {
 }
 
 func resolveContact(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, channelID models.ChannelID, phone string) (*contactAndURN, error) {
-	urn, err := urns.ParsePhone(phone, oa.ChannelByID(channelID).Country())
+	urn, err := urns.ParsePhone(phone, oa.ChannelByID(channelID).Country(), true, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "error parsing phone number")
 	}
