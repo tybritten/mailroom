@@ -62,9 +62,9 @@ func TestBuildRecipientsQuery(t *testing.T) {
 			expected: `uuid = "6393abc0-283d-4c9b-a1b3-641a035c34bf" AND status = "active"`,
 		},
 		{ // 3
-			userQuery:  `fields.gender = "M"`,
+			userQuery:  `fields.GENDER = "M"`,
 			exclusions: models.Exclusions{},
-			expected:   `gender = "M"`,
+			expected:   `fields.gender = "M"`,
 		},
 		{ // 4
 			userQuery: `gender = "M"`,
@@ -74,7 +74,7 @@ func TestBuildRecipientsQuery(t *testing.T) {
 				StartedPreviously: true,
 				NotSeenSinceDays:  30,
 			},
-			expected: `gender = "M" AND status = "active" AND flow = "" AND history != "Favorites" AND last_seen_on > "21-03-2022"`,
+			expected: `fields.gender = "M" AND status = "active" AND flow = "" AND history != "Favorites" AND last_seen_on > "21-03-2022"`,
 		},
 		{ // 5
 			userQuery: `name ~ ben`,
