@@ -358,7 +358,7 @@
         },
         "status": 400,
         "response": {
-            "error": "mismatched input '<EOF>' expecting {TEXT, STRING}",
+            "error": "mismatched input '<EOF>' expecting {STRING, PROPERTY, TEXT}",
             "code": "unexpected_token",
             "extra": {
                 "token": "<EOF>"

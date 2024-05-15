@@ -19,7 +19,7 @@
         },
         "status": 400,
         "response": {
-            "error": "mismatched input '$' expecting {'(', TEXT, STRING}",
+            "error": "mismatched input '$' expecting {'(', STRING, PROPERTY, TEXT}",
             "code": "unexpected_token",
             "extra": {
                 "token": "$"

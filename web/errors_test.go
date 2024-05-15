@@ -24,10 +24,10 @@ func TestErrorResponse(t *testing.T) {
 	_, err = contactql.ParseQuery(envs.NewBuilder().Build(), "$$", nil)
 
 	er2 := web.NewErrorResponse(err)
-	assert.Equal(t, "mismatched input '$' expecting {'(', TEXT, STRING}", er2.Error)
+	assert.Equal(t, "mismatched input '$' expecting {'(', STRING, PROPERTY, TEXT}", er2.Error)
 	assert.Equal(t, "unexpected_token", er2.Code)
 
 	er2JSON, err := jsonx.Marshal(er2)
 	assert.NoError(t, err)
-	assert.JSONEq(t, `{"error": "mismatched input '$' expecting {'(', TEXT, STRING}", "code": "unexpected_token", "extra": {"token": "$"}}`, string(er2JSON))
+	assert.JSONEq(t, `{"error": "mismatched input '$' expecting {'(', STRING, PROPERTY, TEXT}", "code": "unexpected_token", "extra": {"token": "$"}}`, string(er2JSON))
 }
