@@ -1,3 +1,8 @@
+v9.1.47 (2024-05-15)
+-------------------------
+ * Update to latest goflow which normalizes search props with type prefixes
+ * Remove no longer used params on parse_query endpoint
+
 v9.1.46 (2024-05-15)
 -------------------------
  * Update to latest goflow
