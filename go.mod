@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/Masterminds/semver v1.5.0
-	github.com/aws/aws-sdk-go v1.52.5
+	github.com/aws/aws-sdk-go v1.53.3
 	github.com/buger/jsonparser v1.1.1
 	github.com/edganiukov/fcm v0.4.0
 	github.com/getsentry/sentry-go v0.27.0
@@ -18,7 +18,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.54.9
-	github.com/nyaruka/goflow v0.212.0
+	github.com/nyaruka/goflow v0.213.0
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.0
 	github.com/nyaruka/rp-indexer/v9 v9.1.0
@@ -36,7 +36,7 @@ require (
 
 require (
 	github.com/Shopify/gomail v0.0.0-20220729171026-0784ece65e69 // indirect
-	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
+	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/blevesearch/segment v0.9.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect

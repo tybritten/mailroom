@@ -73,7 +73,7 @@
         },
         "status": 200,
         "response": {
-            "query": "gender = \"M\"",
+            "query": "fields.gender = \"M\"",
             "total": 0
         }
     },
@@ -127,7 +127,7 @@
         },
         "status": 200,
         "response": {
-            "query": "gender = \"M\" AND status = \"active\" AND flow = \"\" AND history != \"Pick a Number\" AND last_seen_on > \"07-04-2018\"",
+            "query": "fields.gender = \"M\" AND status = \"active\" AND flow = \"\" AND history != \"Pick a Number\" AND last_seen_on > \"07-04-2018\"",
             "total": 0
         }
     },

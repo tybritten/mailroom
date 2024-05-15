@@ -54,7 +54,7 @@
         },
         "status": 200,
         "response": {
-            "query": "birthday = \"tomorrow\" AND tel = 12345",
+            "query": "fields.birthday = \"tomorrow\" AND urns.tel = 12345",
             "metadata": {
                 "attributes": [],
                 "schemes": [
@@ -81,7 +81,7 @@
         },
         "status": 200,
         "response": {
-            "query": "age > 10",
+            "query": "fields.age > 10",
             "metadata": {
                 "attributes": [],
                 "schemes": [],

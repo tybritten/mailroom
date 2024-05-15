@@ -191,7 +191,7 @@ func TestSearch(t *testing.T) {
 			body:               fmt.Sprintf(`{"org_id": 1, "query": "AGE = 10 and gender = M", "group_id": %d}`, testdata.ActiveGroup.ID),
 			expectedStatus:     200,
 			expectedHits:       []models.ContactID{},
-			expectedQuery:      `age = 10 AND gender = "M"`,
+			expectedQuery:      `fields.age = 10 AND fields.gender = "M"`,
 			expectedAttributes: []string{},
 			expectedFields: []*assets.FieldReference{
 				assets.NewFieldReference("age", "Age"),
