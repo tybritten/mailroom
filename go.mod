@@ -18,7 +18,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.54.9
-	github.com/nyaruka/goflow v0.211.2
+	github.com/nyaruka/goflow v0.212.0
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.0
 	github.com/nyaruka/rp-indexer/v9 v9.1.0
@@ -36,7 +36,7 @@ require (
 
 require (
 	github.com/Shopify/gomail v0.0.0-20220729171026-0784ece65e69 // indirect
-	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20221202181307-76fa05c21b12 // indirect
+	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/blevesearch/segment v0.9.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
