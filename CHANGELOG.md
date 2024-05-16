@@ -1,3 +1,7 @@
+v9.1.49 (2024-05-16)
+-------------------------
+ * Update to latest goflow
+
 v9.1.48 (2024-05-16)
 -------------------------
  * Use is_proxy column on contact fields instead of is_system
