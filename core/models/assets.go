@@ -73,7 +73,7 @@ type OrgAssets struct {
 	campaignEventsByID    map[CampaignEventID]*CampaignEvent
 	campaignsByGroup      map[GroupID][]*Campaign
 
-	fields       []assets.Field
+	fields       []assets.Field // excludes proxy fields
 	fieldsByUUID map[assets.FieldUUID]*Field
 	fieldsByKey  map[string]*Field
 
@@ -205,7 +205,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 			oa.fieldsByUUID[field.UUID()] = field
 			oa.fieldsByKey[field.Key()] = field
 
-			if !field.System() {
+			if !field.Proxy() {
 				oa.fields = append(oa.fields, f)
 			}
 		}
