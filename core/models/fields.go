@@ -13,12 +13,12 @@ type FieldID int
 
 // Field is our mailroom type for contact field types
 type Field struct {
-	ID_     FieldID          `json:"id"`
-	UUID_   assets.FieldUUID `json:"uuid"`
-	Key_    string           `json:"key"`
-	Name_   string           `json:"name"`
-	Type_   assets.FieldType `json:"field_type"`
-	System_ bool             `json:"is_system"`
+	ID_    FieldID          `json:"id"`
+	UUID_  assets.FieldUUID `json:"uuid"`
+	Key_   string           `json:"key"`
+	Name_  string           `json:"name"`
+	Type_  assets.FieldType `json:"field_type"`
+	Proxy_ bool             `json:"is_proxy"`
 }
 
 // ID returns the ID of this field
@@ -36,8 +36,8 @@ func (f *Field) Name() string { return f.Name_ }
 // Type returns the value type for this field
 func (f *Field) Type() assets.FieldType { return f.Type_ }
 
-// System returns whether this is a system field
-func (f *Field) System() bool { return f.System_ }
+// Proxy returns whether this is a proxy field, e.g. created_on
+func (f *Field) Proxy() bool { return f.Proxy_ }
 
 // loadFields loads the assets for the passed in db
 func loadFields(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Field, error) {
@@ -51,7 +51,7 @@ func loadFields(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Field, e
 
 const sqlSelectFieldsByOrg = `
 SELECT ROW_TO_JSON(f) FROM (
-      SELECT id, uuid, key, name, is_system, (CASE value_type WHEN 'T' THEN 'text' WHEN 'N' THEN 'number' WHEN 'D' THEN 'datetime' WHEN 'S' THEN 'state' WHEN 'I' THEN 'district' WHEN 'W' THEN 'ward' END) AS field_type
+      SELECT id, uuid, key, name, (CASE value_type WHEN 'T' THEN 'text' WHEN 'N' THEN 'number' WHEN 'D' THEN 'datetime' WHEN 'S' THEN 'state' WHEN 'I' THEN 'district' WHEN 'W' THEN 'ward' END) AS field_type, is_proxy
         FROM contacts_contactfield 
        WHERE org_id = $1 AND is_active = TRUE
     ORDER BY key ASC
