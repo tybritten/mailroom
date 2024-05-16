@@ -1,3 +1,7 @@
+v9.1.48 (2024-05-16)
+-------------------------
+ * Use is_proxy column on contact fields instead of is_system
+
 v9.1.47 (2024-05-15)
 -------------------------
  * Update to latest goflow which normalizes search props with type prefixes
