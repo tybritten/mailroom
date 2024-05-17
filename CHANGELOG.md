@@ -1,3 +1,7 @@
+v9.1.50 (2024-05-17)
+-------------------------
+ * Update to latest goflow that fixes multi-version flow migrations
+
 v9.1.49 (2024-05-16)
 -------------------------
  * Update to latest goflow
