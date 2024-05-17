@@ -65,7 +65,7 @@ func Reset(what ResetFlag) {
 
 // Runtime returns the various runtime things a test might need
 func Runtime() (context.Context, *runtime.Runtime) {
-	es, err := elastic.NewSimpleClient(elastic.SetURL(elasticURL), elastic.SetSniff(false))
+	es, err := elastic.NewSimpleClient(elastic.SetURL(elasticURL), elastic.SetSniff(false), elastic.SetTraceLog(&elasticLog{}))
 	if err != nil {
 		panic(err)
 	}
@@ -99,6 +99,20 @@ func ReindexElastic(ctx context.Context) {
 	contactsIndexer.Index(db.DB, false, false)
 
 	es.Refresh(elasticContactsIndex).Do(ctx)
+}
+
+type elasticLog struct{}
+
+func (*elasticLog) Printf(format string, v ...interface{}) {
+	if traceElastic {
+		fmt.Printf(format, v...)
+	}
+}
+
+var traceElastic = false
+
+func TraceElastic(enable bool) {
+	traceElastic = enable
 }
 
 // returns an open test database pool
