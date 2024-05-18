@@ -135,7 +135,7 @@ func GetContactIDsForQueryPage(ctx context.Context, rt *runtime.Runtime, oa *mod
 	src := map[string]any{
 		"_source":          false,
 		"query":            eq,
-		"sort":             fieldSort,
+		"sort":             []any{fieldSort},
 		"from":             offset,
 		"size":             pageSize,
 		"track_total_hits": true,
@@ -160,13 +160,7 @@ func GetContactIDsForQueryPage(ctx context.Context, rt *runtime.Runtime, oa *mod
 		return nil, nil, 0, err
 	}
 
-	slog.Debug("paged contact query complete",
-		"org_id", oa.OrgID(),
-		"query", query,
-		"elapsed", time.Since(start),
-		"page_count", len(ids),
-		"total_count", results.Hits.TotalHits.Value,
-	)
+	slog.Debug("paged contact query complete", "org_id", oa.OrgID(), "query", query, "elapsed", time.Since(start), "page_count", len(ids), "total_count", results.Hits.TotalHits.Value)
 
 	return parsed, ids, results.Hits.TotalHits.Value, nil
 }
@@ -200,10 +194,11 @@ func GetContactIDsForQuery(ctx context.Context, rt *runtime.Runtime, oa *models.
 	// if limit provided that can be done with regular search, do that
 	if limit >= 0 && limit <= 10000 {
 		src := map[string]any{
-			"query": eq,
-			"sort":  sort,
-			"from":  0,
-			"size":  limit,
+			"_source": false,
+			"query":   eq,
+			"sort":    []any{sort},
+			"from":    0,
+			"size":    limit,
 		}
 
 		results, err := rt.ES.Search(index).Routing(routing).Source(string(jsonx.MustMarshal(src))).Do(ctx)
@@ -216,21 +211,16 @@ func GetContactIDsForQuery(ctx context.Context, rt *runtime.Runtime, oa *models.
 	// for larger limits, use scroll service
 	// note that this is no longer recommended, see https://www.elastic.co/guide/en/elasticsearch/reference/current/scroll-api.html
 	src := map[string]any{
-		"query": eq,
-		"sort":  sort,
-		"size":  10000,
+		"_source": false,
+		"query":   eq,
+		"sort":    []any{sort},
 	}
 
-	scroll := rt.ES.Scroll(index).Routing(routing).KeepAlive("15m").Body(src)
+	scroll := rt.ES.Scroll(index).Routing(routing).KeepAlive("15m").Body(src).Size(10000)
 	for {
 		results, err := scroll.Do(ctx)
 		if err == io.EOF {
-			slog.Debug("contact query complete",
-				"org_id", oa.OrgID(),
-				"query", query,
-				"elapsed", time.Since(start),
-				"match_count", len(ids),
-			)
+			slog.Debug("contact query complete", "org_id", oa.OrgID(), "query", query, "elapsed", time.Since(start), "match_count", len(ids))
 
 			return ids, nil
 		}
