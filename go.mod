@@ -17,8 +17,8 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
-	github.com/nyaruka/gocommon v1.54.9
-	github.com/nyaruka/goflow v0.214.0
+	github.com/nyaruka/gocommon v1.55.0
+	github.com/nyaruka/goflow v0.214.1
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.0
 	github.com/nyaruka/rp-indexer/v9 v9.1.0

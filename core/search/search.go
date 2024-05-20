@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/nyaruka/gocommon/elastic"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/contactql"
 	"github.com/nyaruka/goflow/contactql/es"
-	"github.com/nyaruka/goflow/utils/elastic"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	eslegacy "github.com/olivere/elastic/v7"
@@ -56,7 +56,7 @@ func BuildElasticQuery(oa *models.OrgAssets, group *models.Group, status models.
 		must = append(must, es.ToElasticQuery(oa.Env(), assetMapper, query))
 	}
 
-	bq := map[string]any{"must": must}
+	not := []elastic.Query{}
 
 	// exclude ids if present
 	if len(excludeIDs) > 0 {
@@ -64,10 +64,10 @@ func BuildElasticQuery(oa *models.OrgAssets, group *models.Group, status models.
 		for i := range excludeIDs {
 			ids[i] = fmt.Sprintf("%d", excludeIDs[i])
 		}
-		bq["must_not"] = elastic.Ids(ids...)
+		not = append(not, elastic.Ids(ids...))
 	}
 
-	return elastic.Query{"bool": bq}
+	return elastic.Bool(must, not)
 }
 
 // GetContactTotal returns the total count of matching contacts for the given query
@@ -127,7 +127,7 @@ func GetContactIDsForQueryPage(ctx context.Context, rt *runtime.Runtime, oa *mod
 	routing := strconv.FormatInt(int64(oa.OrgID()), 10)
 	eq := BuildElasticQuery(oa, group, models.NilContactStatus, excludeIDs, parsed)
 
-	fieldSort, err := es.ToElasticFieldSort(sort, oa.SessionAssets())
+	fieldSort, err := es.ToElasticSort(sort, oa.SessionAssets())
 	if err != nil {
 		return nil, nil, 0, errors.Wrapf(err, "error parsing sort")
 	}
