@@ -1,13 +1,14 @@
 package msgio
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/edganiukov/fcm"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 // SyncAndroidChannel tries to trigger sync of the given Android channel via FCM
@@ -34,7 +35,7 @@ func SyncAndroidChannel(fc *fcm.Client, channel *models.Channel) error {
 	start := time.Now()
 
 	if _, err := fc.Send(sync); err != nil {
-		return errors.Wrap(err, "error syncing channel")
+		return fmt.Errorf("error syncing channel: %w", err)
 	}
 
 	slog.Debug("android sync complete", "elapsed", time.Since(start), "channel_uuid", channel.UUID())
@@ -48,7 +49,7 @@ func CreateFCMClient(cfg *runtime.Config) *fcm.Client {
 	}
 	client, err := fcm.NewClient(cfg.FCMKey)
 	if err != nil {
-		panic(errors.Wrap(err, "unable to create FCM client"))
+		panic(fmt.Errorf("unable to create FCM client: %w", err))
 	}
 	return client
 }

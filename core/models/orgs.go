@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -25,7 +26,6 @@ import (
 	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 // Register a airtime service factory with the engine
@@ -127,7 +127,7 @@ func (o *Org) EmailService(ctx context.Context, rt *runtime.Runtime, retries *sm
 	if smtpURL == "" && o.o.ParentID != NilOrgID {
 		parent, err := GetOrgAssets(ctx, rt, o.o.ParentID)
 		if err != nil {
-			return nil, errors.Wrap(err, "error loading parent org")
+			return nil, fmt.Errorf("error loading parent org: %w", err)
 		}
 		smtpURL = parent.Org().FlowSMTP()
 	}
@@ -150,7 +150,7 @@ func (o *Org) AirtimeService(httpClient *http.Client, httpRetries *httpx.RetryCo
 	secret := o.ConfigValue(configDTOneSecret, "")
 
 	if key == "" || secret == "" {
-		return nil, errors.Errorf("missing %s or %s on DTOne configuration for org: %d", configDTOneKey, configDTOneSecret, o.ID())
+		return nil, fmt.Errorf("missing %s or %s on DTOne configuration for org: %d", configDTOneKey, configDTOneSecret, o.ID())
 	}
 	return dtone.NewService(httpClient, httpRetries, key, secret), nil
 }
@@ -162,7 +162,7 @@ func (o *Org) StoreAttachment(ctx context.Context, rt *runtime.Runtime, filename
 	// read the content
 	contentBytes, err := io.ReadAll(content)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to read attachment content")
+		return "", fmt.Errorf("unable to read attachment content: %w", err)
 	}
 	content.Close()
 
@@ -175,7 +175,7 @@ func (o *Org) StoreAttachment(ctx context.Context, rt *runtime.Runtime, filename
 
 	url, err := rt.AttachmentStorage.Put(ctx, path, contentType, contentBytes)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to store attachment content")
+		return "", fmt.Errorf("unable to store attachment content: %w", err)
 	}
 
 	return utils.Attachment(contentType + ":" + url), nil
@@ -210,16 +210,16 @@ func LoadOrg(ctx context.Context, cfg *runtime.Config, db *sql.DB, orgID OrgID) 
 	org := &Org{}
 	rows, err := db.QueryContext(ctx, selectOrgByID, orgID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error loading org: %d", orgID)
+		return nil, fmt.Errorf("error loading org: %d: %w", orgID, err)
 	}
 	defer rows.Close()
 	if !rows.Next() {
-		return nil, errors.Errorf("no org with id: %d", orgID)
+		return nil, fmt.Errorf("no org with id: %d", orgID)
 	}
 
 	err = dbutil.ScanJSON(rows, org)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error unmarshalling org")
+		return nil, fmt.Errorf("error unmarshalling org: %w", err)
 	}
 
 	slog.Debug("loaded org environment", "elapsed", time.Since(start), "org_id", orgID)

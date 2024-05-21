@@ -2,6 +2,7 @@ package msg
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/nyaruka/mailroom/core/models"
@@ -9,7 +10,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -32,12 +32,12 @@ type handleRequest struct {
 func handleHandle(ctx context.Context, rt *runtime.Runtime, r *handleRequest) (any, int, error) {
 	oa, err := models.GetOrgAssets(ctx, rt, r.OrgID)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "unable to load org assets")
+		return nil, 0, fmt.Errorf("unable to load org assets: %w", err)
 	}
 
 	msgs, err := models.GetMessagesByID(ctx, rt.DB, oa.OrgID(), models.DirectionIn, r.MsgIDs)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "error loading messages to handle")
+		return nil, 0, fmt.Errorf("error loading messages to handle: %w", err)
 	}
 
 	rc := rt.RP.Get()
@@ -53,7 +53,7 @@ func handleHandle(ctx context.Context, rt *runtime.Runtime, r *handleRequest) (a
 
 		urn, err := models.URNForID(ctx, rt.DB, oa, *m.ContactURNID())
 		if err != nil {
-			return nil, 0, errors.Wrap(err, "error fetching msg URN")
+			return nil, 0, fmt.Errorf("error fetching msg URN: %w", err)
 		}
 
 		attachments := make([]string, len(m.Attachments()))
@@ -73,7 +73,7 @@ func handleHandle(ctx context.Context, rt *runtime.Runtime, r *handleRequest) (a
 			NewContact:    false,
 		})
 		if err != nil {
-			return nil, 0, errors.Wrap(err, "error queueing handle task")
+			return nil, 0, fmt.Errorf("error queueing handle task: %w", err)
 		}
 
 		queuedMsgIDs = append(queuedMsgIDs, m.ID())

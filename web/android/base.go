@@ -2,11 +2,11 @@ package android
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 type contactAndURN struct {
@@ -19,16 +19,16 @@ type contactAndURN struct {
 func resolveContact(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, channelID models.ChannelID, phone string) (*contactAndURN, error) {
 	urn, err := urns.ParsePhone(phone, oa.ChannelByID(channelID).Country(), true, true)
 	if err != nil {
-		return nil, errors.Wrap(err, "error parsing phone number")
+		return nil, fmt.Errorf("error parsing phone number: %w", err)
 	}
 
 	if err := urn.Validate(); err != nil {
-		return nil, errors.Wrap(err, "URN failed validation")
+		return nil, fmt.Errorf("URN failed validation: %w", err)
 	}
 
 	contact, flowContact, created, err := models.GetOrCreateContact(ctx, rt.DB, oa, []urns.URN{urn}, channelID)
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting or creating contact")
+		return nil, fmt.Errorf("error getting or creating contact: %w", err)
 	}
 
 	// find the URN on the contact

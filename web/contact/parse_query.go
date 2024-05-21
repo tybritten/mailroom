@@ -2,13 +2,13 @@ package contact
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/nyaruka/goflow/contactql"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -47,7 +47,7 @@ type parseResponse struct {
 func handleParseQuery(ctx context.Context, rt *runtime.Runtime, r *parseRequest) (any, int, error) {
 	oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, r.OrgID, models.RefreshFields|models.RefreshGroups)
 	if err != nil {
-		return nil, 0, errors.Wrapf(err, "unable to load org assets")
+		return nil, 0, fmt.Errorf("unable to load org assets: %w", err)
 	}
 
 	env := oa.Env()

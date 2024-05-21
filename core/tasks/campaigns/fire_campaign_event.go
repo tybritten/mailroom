@@ -18,7 +18,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 )
 
@@ -79,7 +78,7 @@ func (t *FireCampaignEventTask) Perform(ctx context.Context, rt *runtime.Runtime
 		rc.Close()
 
 		// if we had an error, return that
-		return errors.Wrapf(err, "error loading event fire from db: %v", t.FireIDs)
+		return fmt.Errorf("error loading event fire from db: %v: %w", t.FireIDs, err)
 	}
 
 	// no fires returned
@@ -111,7 +110,7 @@ func (t *FireCampaignEventTask) Perform(ctx context.Context, rt *runtime.Runtime
 	}
 
 	if err != nil {
-		return errors.Wrapf(err, "error firing campaign events: %d", t.FireIDs)
+		return fmt.Errorf("error firing campaign events: %d: %w", t.FireIDs, err)
 	}
 
 	return nil
@@ -126,7 +125,7 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 	if dbEvent == nil {
 		err := models.DeleteEventFires(ctx, rt.DB, fires)
 		if err != nil {
-			return nil, errors.Wrap(err, "error deleting fires for inactive campaign event")
+			return nil, fmt.Errorf("error deleting fires for inactive campaign event: %w", err)
 		}
 		return fires, nil
 	}
@@ -136,12 +135,12 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 	if err == models.ErrNotFound {
 		err := models.DeleteEventFires(ctx, rt.DB, fires)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error deleting fires for inactive flow")
+			return nil, fmt.Errorf("error deleting fires for inactive flow: %w", err)
 		}
 		return fires, nil
 	}
 	if err != nil {
-		return nil, errors.Wrapf(err, "error loading campaign event flow: %s", flowUUID)
+		return nil, fmt.Errorf("error loading campaign event flow: %s: %w", flowUUID, err)
 	}
 
 	dbFlow := flow.(*models.Flow)
@@ -156,7 +155,7 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 		}
 		contactsInAFlow, err := models.FilterByWaitingSession(ctx, rt.DB, allContactIDs)
 		if err != nil {
-			return nil, errors.Wrap(err, "error finding waiting sessions")
+			return nil, fmt.Errorf("error finding waiting sessions: %w", err)
 		}
 		for _, f := range fires {
 			if slices.Contains(contactsInAFlow, f.ContactID) {
@@ -176,7 +175,7 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 	// mark the skipped fires as skipped and record as handled
 	err = models.MarkEventsFired(ctx, rt.DB, maps.Values(firesToSkip), time.Now(), models.FireResultSkipped)
 	if err != nil {
-		return nil, errors.Wrap(err, "error marking events skipped")
+		return nil, fmt.Errorf("error marking events skipped: %w", err)
 	}
 
 	handled := maps.Values(firesToSkip)
@@ -189,7 +188,7 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 			return models.MarkEventsFired(ctx, tx, fired, time.Now(), models.FireResultFired)
 		})
 		if err != nil {
-			return nil, errors.Wrapf(err, "error triggering ivr flow start")
+			return nil, fmt.Errorf("error triggering ivr flow start: %w", err)
 		}
 
 		handled = append(handled, fired...)
@@ -210,7 +209,7 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 		// mark those events as fired
 		err := models.MarkEventsFired(ctx, tx, fired, firedOn, models.FireResultFired)
 		if err != nil {
-			return errors.Wrap(err, "error marking events fired")
+			return fmt.Errorf("error marking events fired: %w", err)
 		}
 
 		handled = append(handled, fired...)

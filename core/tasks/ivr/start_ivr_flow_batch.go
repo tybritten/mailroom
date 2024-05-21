@@ -10,7 +10,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 const TypeStartIVRFlowBatch = "start_ivr_flow_batch"
@@ -46,7 +45,7 @@ func handleFlowStartBatch(ctx context.Context, rt *runtime.Runtime, oa *models.O
 	// ok, we can initiate calls for the remaining contacts
 	contacts, err := models.LoadContacts(ctx, rt.ReadonlyDB, oa, batch.ContactIDs)
 	if err != nil {
-		return errors.Wrapf(err, "error loading contacts")
+		return fmt.Errorf("error loading contacts: %w", err)
 	}
 
 	// for each contacts, request a call start
@@ -78,7 +77,7 @@ func handleFlowStartBatch(ctx context.Context, rt *runtime.Runtime, oa *models.O
 	if batch.IsLast {
 		err := models.MarkStartComplete(ctx, rt.DB, batch.StartID)
 		if err != nil {
-			return errors.Wrapf(err, "error trying to set batch as complete")
+			return fmt.Errorf("error trying to set batch as complete: %w", err)
 		}
 	}
 

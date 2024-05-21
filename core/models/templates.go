@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/assets/static"
-	"github.com/pkg/errors"
 )
 
 type Template struct {
@@ -91,7 +91,7 @@ func (t *TemplateTranslation) UnmarshalJSON(d []byte) error {
 func loadTemplates(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Template, error) {
 	rows, err := db.QueryContext(ctx, sqlSelectTemplatesByOrg, orgID)
 	if err != nil && err != sql.ErrNoRows {
-		return nil, errors.Wrapf(err, "error querying templates for org: %d", orgID)
+		return nil, fmt.Errorf("error querying templates for org: %d: %w", orgID, err)
 	}
 	return ScanJSONRows(rows, func() assets.Template { return &Template{} })
 }

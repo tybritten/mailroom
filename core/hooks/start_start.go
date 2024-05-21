@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/mailroom/core/models"
@@ -9,7 +10,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queues"
-	"github.com/pkg/errors"
 )
 
 // StartStartHook is our hook to fire our scene starts
@@ -38,7 +38,7 @@ func (h *startStartHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sql
 
 			err := tasks.Queue(rc, taskQ, oa.OrgID(), &starts.StartFlowTask{FlowStart: start}, priority)
 			if err != nil {
-				return errors.Wrapf(err, "error queuing flow start")
+				return fmt.Errorf("error queuing flow start: %w", err)
 			}
 		}
 	}

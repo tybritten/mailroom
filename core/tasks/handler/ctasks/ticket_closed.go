@@ -2,6 +2,7 @@ package ctasks
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/nyaruka/goflow/flows"
@@ -10,7 +11,6 @@ import (
 	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 const TypeTicketClosed = "ticket_closed"
@@ -39,7 +39,7 @@ func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa 
 	// load our ticket
 	tickets, err := models.LoadTickets(ctx, rt.DB, []models.TicketID{t.TicketID})
 	if err != nil {
-		return errors.Wrapf(err, "error loading ticket")
+		return fmt.Errorf("error loading ticket: %w", err)
 	}
 	// ticket has been deleted ignore this event
 	if len(tickets) == 0 {
@@ -49,7 +49,7 @@ func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa 
 	// build our flow contact
 	flowContact, err := contact.FlowContact(oa)
 	if err != nil {
-		return errors.Wrapf(err, "error creating flow contact")
+		return fmt.Errorf("error creating flow contact: %w", err)
 	}
 
 	// do we have associated trigger?
@@ -67,14 +67,14 @@ func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa 
 		return nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "error loading flow for trigger")
+		return fmt.Errorf("error loading flow for trigger: %w", err)
 	}
 
 	// if this is an IVR flow, we need to trigger that start (which happens in a different queue)
 	if flow.FlowType() == models.FlowTypeVoice {
 		err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{contact.ID()}, nil)
 		if err != nil {
-			return errors.Wrapf(err, "error while triggering ivr flow")
+			return fmt.Errorf("error while triggering ivr flow: %w", err)
 		}
 		return nil
 	}
@@ -89,7 +89,7 @@ func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa 
 
 	_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{contact}, []flows.Trigger{flowTrigger}, nil, flow.FlowType().Interrupts())
 	if err != nil {
-		return errors.Wrapf(err, "error starting flow for contact")
+		return fmt.Errorf("error starting flow for contact: %w", err)
 	}
 	return nil
 }

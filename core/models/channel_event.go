@@ -2,10 +2,10 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 type ChannelEventID int64
@@ -91,5 +91,8 @@ func NewChannelEvent(orgID OrgID, eventType ChannelEventType, channelID ChannelI
 // MarkChannelEventHandled updates a channel event after handling
 func MarkChannelEventHandled(ctx context.Context, tx DBorTx, id ChannelEventID) error {
 	_, err := tx.ExecContext(ctx, `UPDATE channels_channelevent SET status = 'H' WHERE id = $1`, id)
-	return errors.Wrap(err, "error marking event as handled")
+	if err != nil {
+		return fmt.Errorf("error marking event as handled: %w", err)
+	}
+	return nil
 }

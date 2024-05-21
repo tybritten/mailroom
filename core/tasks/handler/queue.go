@@ -13,7 +13,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queues"
-	"github.com/pkg/errors"
 )
 
 // Task is the interface for all contact tasks - tasks which operate on a single contact in real time
@@ -32,7 +31,7 @@ func RegisterContactTask(name string, initFunc func() Task) {
 func readTask(type_ string, data []byte) (Task, error) {
 	fn := registeredTypes[type_]
 	if fn == nil {
-		return nil, errors.Errorf("unknown task type: %s", type_)
+		return nil, fmt.Errorf("unknown task type: %s", type_)
 	}
 
 	t := fn()
@@ -55,7 +54,7 @@ func QueueTask(rc redis.Conn, orgID models.OrgID, contactID models.ContactID, ta
 func queueTask(rc redis.Conn, orgID models.OrgID, contactID models.ContactID, task Task, front bool, errorCount int) error {
 	taskJSON, err := json.Marshal(task)
 	if err != nil {
-		return errors.Wrapf(err, "error marshalling handler task")
+		return fmt.Errorf("error marshalling handler task: %w", err)
 	}
 
 	payload := &payload{Type: task.Type(), Task: taskJSON, QueuedOn: dates.Now(), ErrorCount: errorCount}
@@ -70,13 +69,13 @@ func queueTask(rc redis.Conn, orgID models.OrgID, contactID models.ContactID, ta
 		_, err = redis.Int64(rc.Do("RPUSH", contactQ, string(payloadJSON)))
 	}
 	if err != nil {
-		return errors.Wrapf(err, "error queuing handler task")
+		return fmt.Errorf("error queuing handler task: %w", err)
 	}
 
 	// then add a handle task for that contact on our global handler queue to
 	err = tasks.Queue(rc, tasks.HandlerQueue, orgID, &HandleContactEventTask{ContactID: contactID}, queues.DefaultPriority)
 	if err != nil {
-		return errors.Wrapf(err, "error queuing handle task")
+		return fmt.Errorf("error queuing handle task: %w", err)
 	}
 	return nil
 }

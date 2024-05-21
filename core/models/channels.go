@@ -11,7 +11,6 @@ import (
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 // ChannelID is the type for channel IDs
@@ -127,7 +126,7 @@ func (c *Channel) Reference() *assets.ChannelReference {
 func GetChannelsByID(ctx context.Context, db *sql.DB, ids []ChannelID) ([]*Channel, error) {
 	rows, err := db.QueryContext(ctx, sqlSelectChannelsByID, pq.Array(ids))
 	if err != nil {
-		return nil, errors.Wrapf(err, "error querying channels by id")
+		return nil, fmt.Errorf("error querying channels by id: %w", err)
 	}
 	defer rows.Close()
 
@@ -145,7 +144,7 @@ SELECT ROW_TO_JSON(r) FROM (
 func loadChannels(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Channel, error) {
 	rows, err := db.QueryContext(ctx, sqlSelectChannelsByOrg, orgID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error querying channels for org: %d", orgID)
+		return nil, fmt.Errorf("error querying channels for org: %d: %w", orgID, err)
 	}
 
 	return ScanJSONRows(rows, func() assets.Channel { return &Channel{} })
@@ -191,7 +190,7 @@ func OrgIDForChannelUUID(ctx context.Context, db DBorTx, channelUUID assets.Chan
 	var orgID OrgID
 	err := db.GetContext(ctx, &orgID, `SELECT org_id FROM channels_channel WHERE uuid = $1 AND is_active = TRUE`, channelUUID)
 	if err != nil {
-		return NilOrgID, errors.Wrapf(err, "no channel found with uuid: %s", channelUUID)
+		return NilOrgID, fmt.Errorf("no channel found with uuid: %s: %w", channelUUID, err)
 	}
 	return orgID, nil
 }

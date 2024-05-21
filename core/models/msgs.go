@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -23,7 +24,6 @@ import (
 	"github.com/nyaruka/goflow/utils"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 // maximum number of repeated messages to same contact allowed in 5 minute window
@@ -214,7 +214,7 @@ func (m *Msg) SetURN(urn urns.URN) error {
 	// set our ID if we have one
 	urnInt := GetURNInt(urn, "id")
 	if urnInt == 0 {
-		return errors.Errorf("missing urn id on urn: %s", urn)
+		return fmt.Errorf("missing urn id on urn: %s", urn)
 	}
 
 	urnID := URNID(urnInt)
@@ -409,7 +409,7 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 		// also fail right away if this looks like a loop
 		repetitions, err := GetMsgRepetitions(rt.RP, contact, out)
 		if err != nil {
-			return nil, errors.Wrap(err, "error looking up msg repetitions")
+			return nil, fmt.Errorf("error looking up msg repetitions: %w", err)
 		}
 		if repetitions >= msgRepetitionLimit {
 			m.Status = MsgStatusFailed
@@ -565,7 +565,7 @@ func GetMessagesForRetry(ctx context.Context, db *sqlx.DB) ([]*Msg, error) {
 func loadMessages(ctx context.Context, db *sqlx.DB, sql string, params ...any) ([]*Msg, error) {
 	rows, err := db.QueryxContext(ctx, sql, params...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error querying msgs")
+		return nil, fmt.Errorf("error querying msgs: %w", err)
 	}
 	defer rows.Close()
 
@@ -575,7 +575,7 @@ func loadMessages(ctx context.Context, db *sqlx.DB, sql string, params ...any) (
 		msg := &Msg{}
 		err = rows.StructScan(&msg.m)
 		if err != nil {
-			return nil, errors.Wrap(err, "error scanning msg row")
+			return nil, fmt.Errorf("error scanning msg row: %w", err)
 		}
 
 		msgs = append(msgs, msg)
@@ -629,7 +629,10 @@ func MarkMessageHandled(ctx context.Context, tx DBorTx, msgID MsgID, status MsgS
 		`UPDATE msgs_msg SET status = $2, visibility = $3, flow_id = $4, ticket_id = $5, attachments = $6, log_uuids = array_cat(log_uuids, $7) WHERE id = $1`,
 		msgID, status, visibility, flowID, ticketID, pq.Array(attachments), pq.Array(logUUIDs),
 	)
-	return errors.Wrapf(err, "error marking msg #%d as handled", msgID)
+	if err != nil {
+		return fmt.Errorf("error marking msg #%d as handled: %w", msgID, err)
+	}
+	return nil
 }
 
 // MarkMessagesForRequeuing marks the passed in messages as initializing(I) with a next attempt value
@@ -696,11 +699,11 @@ func ResendMessages(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, msg
 			// reselect channel for this message's URN
 			urn, err := URNForID(ctx, rt.DB, oa, *urnID)
 			if err != nil {
-				return nil, errors.Wrap(err, "error loading URN")
+				return nil, fmt.Errorf("error loading URN: %w", err)
 			}
 			contactURN, err := flows.ParseRawURN(channels, urn, assets.IgnoreMissing)
 			if err != nil {
-				return nil, errors.Wrap(err, "error parsing URN")
+				return nil, fmt.Errorf("error parsing URN: %w", err)
 			}
 
 			ch = channels.GetForURN(contactURN, assets.ChannelRoleSend)
@@ -732,13 +735,13 @@ func ResendMessages(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, msg
 	// update the messages that can be resent
 	err := BulkQuery(ctx, "updating messages for resending", rt.DB, sqlUpdateMsgForResending, resends)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error updating messages for resending")
+		return nil, fmt.Errorf("error updating messages for resending: %w", err)
 	}
 
 	// and update the messages that can't be
 	_, err = rt.DB.ExecContext(ctx, sqlUpdateMsgResendFailed, pq.Array(refails))
 	if err != nil {
-		return nil, errors.Wrapf(err, "error updating non-resendable messages")
+		return nil, fmt.Errorf("error updating non-resendable messages: %w", err)
 	}
 
 	return resent, nil
@@ -798,23 +801,27 @@ UPDATE msgs_msg
 func UpdateMessageDeletedBySender(ctx context.Context, db *sql.DB, orgID OrgID, msgID MsgID) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return errors.Wrap(err, "error beginning transaction")
+		return fmt.Errorf("error beginning transaction: %w", err)
 	}
 
 	res, err := tx.ExecContext(ctx, sqlUpdateMsgDeletedBySender, msgID, orgID)
 	if err != nil {
-		return errors.Wrap(err, "error updating message visibility")
+		return fmt.Errorf("error updating message visibility: %w", err)
 	}
 
 	// if there was such a message, remove its labels too
 	if rows, _ := res.RowsAffected(); rows == 1 {
 		_, err = tx.ExecContext(ctx, `DELETE FROM msgs_msg_labels WHERE msg_id = $1`, msgID)
 		if err != nil {
-			return errors.Wrap(err, "error removing message labels")
+			return fmt.Errorf("error removing message labels: %w", err)
 		}
 	}
 
-	return errors.Wrap(tx.Commit(), "error committing transaction")
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("error committing transaction: %w", err)
+	}
+
+	return nil
 }
 
 // NilID implementations

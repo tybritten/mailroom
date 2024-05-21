@@ -13,7 +13,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -137,11 +136,11 @@ func handleIndex(ctx context.Context, rt *runtime.Runtime, r *http.Request, w ht
 }
 
 func handle404(w http.ResponseWriter, r *http.Request) {
-	WriteMarshalled(w, http.StatusNotFound, NewErrorResponse(errors.Errorf("not found: %s", r.URL.String())))
+	WriteMarshalled(w, http.StatusNotFound, NewErrorResponse(fmt.Errorf("not found: %s", r.URL.String())))
 }
 
 func handle405(w http.ResponseWriter, r *http.Request) {
-	WriteMarshalled(w, http.StatusMethodNotAllowed, NewErrorResponse(errors.Errorf("illegal method: %s", r.Method)))
+	WriteMarshalled(w, http.StatusMethodNotAllowed, NewErrorResponse(fmt.Errorf("illegal method: %s", r.Method)))
 }
 
 func WriteMarshalled(w http.ResponseWriter, status int, value any) error {

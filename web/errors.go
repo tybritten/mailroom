@@ -1,9 +1,9 @@
 package web
 
 import (
-	"github.com/nyaruka/goflow/utils"
+	"errors"
 
-	"github.com/pkg/errors"
+	"github.com/nyaruka/goflow/utils"
 )
 
 // ErrorResponse is the type for our error responses
@@ -15,8 +15,8 @@ type ErrorResponse struct {
 
 // NewErrorResponse creates a new error response from the passed in error
 func NewErrorResponse(err error) *ErrorResponse {
-	rich, isRich := errors.Cause(err).(utils.RichError)
-	if isRich {
+	var rich utils.RichError
+	if errors.As(err, &rich) {
 		return &ErrorResponse{
 			Error: rich.Error(),
 			Code:  rich.Code(),

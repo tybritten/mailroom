@@ -2,6 +2,8 @@ package contact
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/nyaruka/goflow/contactql"
@@ -9,7 +11,6 @@ import (
 	"github.com/nyaruka/mailroom/core/search"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -40,7 +41,7 @@ type previewResponse struct {
 func handleExportPreview(ctx context.Context, rt *runtime.Runtime, r *previewRequest) (any, int, error) {
 	oa, err := models.GetOrgAssets(ctx, rt, r.OrgID)
 	if err != nil {
-		return nil, 0, errors.Wrapf(err, "unable to load org assets")
+		return nil, 0, fmt.Errorf("unable to load org assets: %w", err)
 	}
 
 	group := oa.GroupByID(r.GroupID)
@@ -52,7 +53,7 @@ func handleExportPreview(ctx context.Context, rt *runtime.Runtime, r *previewReq
 	if r.Query == "" {
 		count, err := models.GetGroupContactCount(ctx, rt.DB.DB, group.ID())
 		if err != nil {
-			return nil, 0, errors.Wrap(err, "error querying group count")
+			return nil, 0, fmt.Errorf("error querying group count: %w", err)
 		}
 		return &previewResponse{Total: count}, http.StatusOK, nil
 	}
@@ -63,7 +64,7 @@ func handleExportPreview(ctx context.Context, rt *runtime.Runtime, r *previewReq
 		if isQueryError {
 			return qerr, http.StatusBadRequest, nil
 		}
-		return nil, 0, errors.Wrap(err, "error querying preview")
+		return nil, 0, fmt.Errorf("error querying preview: %w", err)
 	}
 
 	return &previewResponse{Total: int(total)}, http.StatusOK, nil

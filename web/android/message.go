@@ -3,6 +3,7 @@ package android
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -40,19 +40,19 @@ type messageRequest struct {
 func handleMessage(ctx context.Context, rt *runtime.Runtime, r *messageRequest) (any, int, error) {
 	oa, err := models.GetOrgAssets(ctx, rt, r.OrgID)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "unable to load org assets")
+		return nil, 0, fmt.Errorf("unable to load org assets: %w", err)
 	}
 
 	cu, err := resolveContact(ctx, rt, oa, r.ChannelID, r.Phone)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "error resolving contact")
+		return nil, 0, fmt.Errorf("error resolving contact: %w", err)
 	}
 
 	text := dbutil.ToValidUTF8(stringsx.Truncate(r.Text, 640))
 
 	existingID, err := checkDuplicate(ctx, rt, text, cu.contactID, r.ReceivedOn)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "error checking for duplicate message")
+		return nil, 0, fmt.Errorf("error checking for duplicate message: %w", err)
 	}
 	if existingID != models.NilMsgID {
 		return map[string]any{"id": existingID, "duplicate": true}, http.StatusOK, nil
@@ -60,7 +60,7 @@ func handleMessage(ctx context.Context, rt *runtime.Runtime, r *messageRequest) 
 
 	m := models.NewIncomingAndroid(r.OrgID, r.ChannelID, cu.contactID, cu.urnID, text, r.ReceivedOn)
 	if err := models.InsertMessages(ctx, rt.DB, []*models.Msg{m}); err != nil {
-		return nil, 0, errors.Wrap(err, "error inserting message")
+		return nil, 0, fmt.Errorf("error inserting message: %w", err)
 	}
 
 	rc := rt.RP.Get()
@@ -77,7 +77,7 @@ func handleMessage(ctx context.Context, rt *runtime.Runtime, r *messageRequest) 
 		NewContact:    cu.newContact,
 	})
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "error queueing handle task")
+		return nil, 0, fmt.Errorf("error queueing handle task: %w", err)
 	}
 
 	return map[string]any{"id": m.ID(), "duplicate": false}, http.StatusOK, nil
@@ -89,7 +89,7 @@ func checkDuplicate(ctx context.Context, rt *runtime.Runtime, text string, conta
 	var id models.MsgID
 	err := row.Scan(&id)
 	if err != nil && err != sql.ErrNoRows {
-		return models.NilMsgID, errors.Wrap(err, "error checking for duplicate message")
+		return models.NilMsgID, fmt.Errorf("error checking for duplicate message: %w", err)
 	}
 
 	return id, nil

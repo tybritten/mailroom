@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/Masterminds/semver v1.5.0
-	github.com/aws/aws-sdk-go v1.53.4
+	github.com/aws/aws-sdk-go v1.53.6
 	github.com/buger/jsonparser v1.1.1
 	github.com/edganiukov/fcm v0.4.0
 	github.com/getsentry/sentry-go v0.27.0
@@ -17,14 +17,13 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
-	github.com/nyaruka/gocommon v1.55.0
-	github.com/nyaruka/goflow v0.214.1
+	github.com/nyaruka/gocommon v1.55.1
+	github.com/nyaruka/goflow v0.214.2
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.0
 	github.com/nyaruka/rp-indexer/v9 v9.1.0
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.53.0
 	github.com/samber/slog-multi v1.0.2
@@ -54,6 +53,7 @@ require (
 	github.com/nyaruka/librato v1.1.1 // indirect
 	github.com/nyaruka/null/v2 v2.0.3 // indirect
 	github.com/nyaruka/phonenumbers v1.3.5 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/samber/lo v1.39.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect

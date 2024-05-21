@@ -2,13 +2,13 @@ package starts
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 const TypeStartFlowBatch = "start_flow_batch"
@@ -39,7 +39,7 @@ func (t *StartFlowBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	// start these contacts in our flow
 	_, err := runner.StartFlowBatch(ctx, rt, oa, t.FlowStartBatch)
 	if err != nil {
-		return errors.Wrap(err, "error starting flow batch")
+		return fmt.Errorf("error starting flow batch: %w", err)
 	}
 	return nil
 }

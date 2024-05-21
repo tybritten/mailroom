@@ -2,13 +2,13 @@ package msg
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/msgio"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -31,17 +31,17 @@ func handleResend(ctx context.Context, rt *runtime.Runtime, r *resendRequest) (a
 	// grab our org
 	oa, err := models.GetOrgAssets(ctx, rt, r.OrgID)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "unable to load org assets")
+		return nil, 0, fmt.Errorf("unable to load org assets: %w", err)
 	}
 
 	msgs, err := models.GetMessagesByID(ctx, rt.DB, r.OrgID, models.DirectionOut, r.MsgIDs)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "error loading messages to resend")
+		return nil, 0, fmt.Errorf("error loading messages to resend: %w", err)
 	}
 
 	resends, err := models.ResendMessages(ctx, rt, oa, msgs)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "error resending messages")
+		return nil, 0, fmt.Errorf("error resending messages: %w", err)
 	}
 
 	msgio.QueueMessages(ctx, rt, rt.DB, nil, resends)

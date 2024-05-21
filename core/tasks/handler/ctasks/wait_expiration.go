@@ -2,6 +2,7 @@ package ctasks
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 const TypeWaitExpiration = "expiration_event"
@@ -42,13 +42,13 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	// build our flow contact
 	flowContact, err := contact.FlowContact(oa)
 	if err != nil {
-		return errors.Wrapf(err, "error creating flow contact")
+		return fmt.Errorf("error creating flow contact: %w", err)
 	}
 
 	// look for a waiting session for this contact
 	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, flowContact)
 	if err != nil {
-		return errors.Wrapf(err, "error loading waiting session for contact")
+		return fmt.Errorf("error loading waiting session for contact: %w", err)
 	}
 
 	// if we didn't find a session or it is another session then this session has already been interrupted
@@ -59,7 +59,7 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	// check that our expiration is still the same
 	expiresOn, err := models.GetSessionWaitExpiresOn(ctx, rt.DB, t.SessionID)
 	if err != nil {
-		return errors.Wrapf(err, "unable to load expiration for run")
+		return fmt.Errorf("unable to load expiration for run: %w", err)
 	}
 
 	if expiresOn == nil {
@@ -76,7 +76,7 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 
 	_, err = runner.ResumeFlow(ctx, rt, oa, session, contact, resume, nil)
 	if err != nil {
-		return errors.Wrap(err, "error resuming flow for expiration")
+		return fmt.Errorf("error resuming flow for expiration: %w", err)
 	}
 
 	return nil

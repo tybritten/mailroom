@@ -21,7 +21,6 @@ import (
 	"github.com/nyaruka/goflow/utils"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 var courierHttpClient = &http.Client{
@@ -215,7 +214,7 @@ func PushCourierBatch(rc redis.Conn, oa *models.OrgAssets, ch *models.Channel, s
 		var err error
 		batch[i], err = NewCourierMsg(oa, s.Msg, s.URN, ch)
 		if err != nil {
-			return errors.Wrap(err, "error creating courier message")
+			return fmt.Errorf("error creating courier message: %w", err)
 		}
 	}
 
@@ -326,14 +325,14 @@ func FetchAttachment(ctx context.Context, rt *runtime.Runtime, ch *models.Channe
 
 	resp, err := httpx.DoTrace(courierHttpClient, req, nil, nil, -1)
 	if err != nil {
-		return "", "", errors.Wrap(err, "error calling courier endpoint")
+		return "", "", fmt.Errorf("error calling courier endpoint: %w", err)
 	}
 	if resp.Response.StatusCode != 200 {
-		return "", "", errors.Errorf("error calling courier endpoint, got non-200 status: %s", string(resp.ResponseTrace))
+		return "", "", fmt.Errorf("error calling courier endpoint, got non-200 status: %s", string(resp.ResponseTrace))
 	}
 	fa := &fetchAttachmentResponse{}
 	if err := json.Unmarshal(resp.ResponseBody, fa); err != nil {
-		return "", "", errors.Wrap(err, "error unmarshaling courier response")
+		return "", "", fmt.Errorf("error unmarshaling courier response: %w", err)
 	}
 
 	return utils.Attachment(fmt.Sprintf("%s:%s", fa.Attachment.ContentType, fa.Attachment.URL)), models.ChannelLogUUID(fa.LogUUID), nil

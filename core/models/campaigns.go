@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 // FireID is our id for our event fires
@@ -185,7 +185,7 @@ func (e *CampaignEvent) ScheduleForContact(tz *time.Location, now time.Time, con
 	// calculate our next fire
 	scheduled, err := e.ScheduleForTime(tz, now, start)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error calculating offset for start: %s and event: %d", start, e.ID())
+		return nil, fmt.Errorf("error calculating offset for start: %s and event: %d: %w", start, e.ID(), err)
 	}
 
 	return scheduled, nil
@@ -213,7 +213,7 @@ func (e *CampaignEvent) ScheduleForTime(tz *time.Location, now time.Time, start 
 	case OffsetWeek:
 		scheduled = scheduled.AddDate(0, 0, e.Offset()*7)
 	default:
-		return nil, errors.Errorf("unknown offset unit: %s", e.Unit())
+		return nil, fmt.Errorf("unknown offset unit: %s", e.Unit())
 	}
 
 	// now set our delivery hour if set
@@ -260,7 +260,7 @@ func (e *CampaignEvent) StartMode() StartMode { return e.e.StartMode }
 func loadCampaigns(ctx context.Context, db *sql.DB, orgID OrgID) ([]*Campaign, error) {
 	rows, err := db.QueryContext(ctx, selectCampaignsSQL, orgID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error querying campaigns for org: %d", orgID)
+		return nil, fmt.Errorf("error querying campaigns for org: %d: %w", orgID, err)
 	}
 	defer rows.Close()
 
@@ -269,7 +269,7 @@ func loadCampaigns(ctx context.Context, db *sql.DB, orgID OrgID) ([]*Campaign, e
 		campaign := &Campaign{}
 		err := dbutil.ScanJSON(rows, &campaign.c)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error unmarshalling campaign")
+			return nil, fmt.Errorf("error unmarshalling campaign: %w", err)
 		}
 
 		campaigns = append(campaigns, campaign)
@@ -363,7 +363,7 @@ func DeleteEventFires(ctx context.Context, db DBorTx, fires []*EventFire) error 
 
 	_, err := db.ExecContext(ctx, sqlDeleteEventFires, pq.Array(ids))
 	if err != nil {
-		return errors.Wrapf(err, "error deleting fires for inactive event")
+		return fmt.Errorf("error deleting fires for inactive event: %w", err)
 	}
 
 	return nil
@@ -400,13 +400,13 @@ func LoadEventFires(ctx context.Context, db *sqlx.DB, ids []FireID) ([]*EventFir
 
 	q, vs, err := sqlx.In(sqlSelectEventFires, ids)
 	if err != nil {
-		return nil, errors.Wrap(err, "error rebinding campaign fire query")
+		return nil, fmt.Errorf("error rebinding campaign fire query: %w", err)
 	}
 	q = db.Rebind(q)
 
 	rows, err := db.QueryxContext(ctx, q, vs...)
 	if err != nil {
-		return nil, errors.Wrap(err, "error querying event fires")
+		return nil, fmt.Errorf("error querying event fires: %w", err)
 	}
 	defer rows.Close()
 
@@ -415,7 +415,7 @@ func LoadEventFires(ctx context.Context, db *sqlx.DB, ids []FireID) ([]*EventFir
 		fire := &EventFire{}
 		err := rows.StructScan(fire)
 		if err != nil {
-			return nil, errors.Wrap(err, "error scanning campaign fire")
+			return nil, fmt.Errorf("error scanning campaign fire: %w", err)
 		}
 		fires = append(fires, fire)
 	}
@@ -471,7 +471,7 @@ type FireDelete struct {
 func DeleteUnfiredContactEvents(ctx context.Context, tx DBorTx, contactIDs []ContactID) error {
 	_, err := tx.ExecContext(ctx, `DELETE FROM campaigns_eventfire WHERE contact_id = ANY($1) AND fired IS NULL`, pq.Array(contactIDs))
 	if err != nil {
-		return errors.Wrapf(err, "error deleting unfired contact events")
+		return fmt.Errorf("error deleting unfired contact events: %w", err)
 	}
 	return nil
 }
@@ -533,7 +533,7 @@ func AddCampaignEventsForGroupAddition(ctx context.Context, tx DBorTx, oa *OrgAs
 	// first remove all unfired events that may be affected by our group change
 	err := DeleteUnfiredEventsForGroupRemoval(ctx, tx, oa, cids, groupID)
 	if err != nil {
-		return errors.Wrapf(err, "error removing unfired campaign events for contacts")
+		return fmt.Errorf("error removing unfired campaign events for contacts: %w", err)
 	}
 
 	// now calculate which event fires need to be added
@@ -552,7 +552,7 @@ func AddCampaignEventsForGroupAddition(ctx context.Context, tx DBorTx, oa *OrgAs
 					// calculate our scheduled fire
 					scheduled, err := e.ScheduleForContact(tz, time.Now(), contact)
 					if err != nil {
-						return errors.Wrapf(err, "error calculating schedule for event: %d and contact: %d", e.ID(), c.ID())
+						return fmt.Errorf("error calculating schedule for event: %d and contact: %d: %w", e.ID(), c.ID(), err)
 					}
 
 					// if we have one, add it to our list for our batch commit
@@ -576,17 +576,17 @@ func AddCampaignEventsForGroupAddition(ctx context.Context, tx DBorTx, oa *OrgAs
 func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, eventID CampaignEventID) error {
 	event := oa.CampaignEventByID(eventID)
 	if event == nil {
-		return errors.Errorf("can't find campaign event with id %d", eventID)
+		return fmt.Errorf("can't find campaign event with id %d", eventID)
 	}
 
 	field := oa.FieldByKey(event.RelativeToKey())
 	if field == nil {
-		return errors.Errorf("can't find field with key %s", event.RelativeToKey())
+		return fmt.Errorf("can't find field with key %s", event.RelativeToKey())
 	}
 
 	eligible, err := campaignEventEligibleContacts(ctx, rt.DB, event.campaign.GroupID(), field)
 	if err != nil {
-		return errors.Wrapf(err, "unable to calculate eligible contacts for event %d", eventID)
+		return fmt.Errorf("unable to calculate eligible contacts for event %d: %w", eventID, err)
 	}
 
 	fas := make([]*FireAdd, 0, len(eligible))
@@ -598,7 +598,7 @@ func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 		// calculate next fire for this contact
 		scheduled, err := event.ScheduleForTime(tz, time.Now(), start)
 		if err != nil {
-			return errors.Wrapf(err, "error calculating offset for start: %s and event: %d", start, eventID)
+			return fmt.Errorf("error calculating offset for start: %s and event: %d: %w", start, eventID, err)
 		}
 
 		if scheduled != nil {
@@ -651,7 +651,7 @@ func campaignEventEligibleContacts(ctx context.Context, db *sqlx.DB, groupID Gro
 
 	rows, err := db.QueryxContext(ctx, query, params...)
 	if err != nil && err != sql.ErrNoRows {
-		return nil, errors.Wrapf(err, "error querying for eligible contacts")
+		return nil, fmt.Errorf("error querying for eligible contacts: %w", err)
 	}
 	defer rows.Close()
 
@@ -662,7 +662,7 @@ func campaignEventEligibleContacts(ctx context.Context, db *sqlx.DB, groupID Gro
 
 		err := rows.StructScan(&contact)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error scanning eligible contact result")
+			return nil, fmt.Errorf("error scanning eligible contact result: %w", err)
 		}
 
 		contacts = append(contacts, contact)

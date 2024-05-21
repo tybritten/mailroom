@@ -2,6 +2,7 @@ package starts
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/ivr"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queues"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -62,7 +62,7 @@ func (t *StartFlowTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mo
 func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, start *models.FlowStart) error {
 	flow, err := oa.FlowByID(start.FlowID)
 	if err != nil {
-		return errors.Wrap(err, "error loading flow")
+		return fmt.Errorf("error loading flow: %w", err)
 	}
 
 	var contactIDs []models.ContactID
@@ -71,7 +71,7 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		// if we are meant to create a new contact, do so
 		contact, _, err := models.CreateContact(ctx, rt.DB, oa, models.NilUserID, "", i18n.NilLanguage, nil)
 		if err != nil {
-			return errors.Wrapf(err, "error creating new contact")
+			return fmt.Errorf("error creating new contact: %w", err)
 		}
 		contactIDs = []models.ContactID{contact.ID()}
 	} else {
@@ -92,21 +92,21 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 			ExcludeGroupIDs: start.ExcludeGroupIDs,
 		}, limit)
 		if err != nil {
-			return errors.Wrap(err, "error resolving start recipients")
+			return fmt.Errorf("error resolving start recipients: %w", err)
 		}
 	}
 
 	// mark our start as starting, last task will mark as complete
 	err = models.MarkStartStarted(ctx, rt.DB, start.ID, len(contactIDs))
 	if err != nil {
-		return errors.Wrapf(err, "error marking start as started")
+		return fmt.Errorf("error marking start as started: %w", err)
 	}
 
 	// if there are no contacts to start, mark our start as complete, we are done
 	if len(contactIDs) == 0 {
 		err = models.MarkStartComplete(ctx, rt.DB, start.ID)
 		if err != nil {
-			return errors.Wrapf(err, "error marking start as complete")
+			return fmt.Errorf("error marking start as complete: %w", err)
 		}
 		return nil
 	}
@@ -145,7 +145,7 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		err = tasks.Queue(rc, q, start.OrgID, batchTask, priority)
 		if err != nil {
 			if i == 0 {
-				return errors.Wrap(err, "error queuing flow start batch")
+				return fmt.Errorf("error queuing flow start batch: %w", err)
 			}
 			// if we've already queued other batches.. we don't want to error and have the task be retried
 			slog.Error("error queuing flow start batch", "error", err)

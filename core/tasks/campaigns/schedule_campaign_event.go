@@ -9,7 +9,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
-	"github.com/pkg/errors"
 )
 
 // TypeScheduleCampaignEvent is the type of the schedule event task
@@ -44,13 +43,13 @@ func (t *ScheduleCampaignEventTask) Perform(ctx context.Context, rt *runtime.Run
 	locker := redisx.NewLocker(fmt.Sprintf(scheduleLockKey, t.CampaignEventID), time.Hour)
 	lock, err := locker.Grab(rt.RP, time.Minute*5)
 	if err != nil {
-		return errors.Wrapf(err, "error grabbing lock to schedule campaign event %d", t.CampaignEventID)
+		return fmt.Errorf("error grabbing lock to schedule campaign event %d: %w", t.CampaignEventID, err)
 	}
 	defer locker.Release(rt.RP, lock)
 
 	err = models.ScheduleCampaignEvent(ctx, rt, oa, t.CampaignEventID)
 	if err != nil {
-		return errors.Wrapf(err, "error scheduling campaign event %d", t.CampaignEventID)
+		return fmt.Errorf("error scheduling campaign event %d: %w", t.CampaignEventID, err)
 	}
 
 	return nil
