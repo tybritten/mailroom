@@ -3,6 +3,7 @@ package mailroom
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"github.com/nyaruka/mailroom/web"
 	"github.com/nyaruka/redisx"
 	"github.com/olivere/elastic/v7"
-	"github.com/pkg/errors"
 )
 
 // Mailroom is a service for handling RapidPro events
@@ -188,7 +188,7 @@ func (mr *Mailroom) Stop() error {
 func openAndCheckDBConnection(url string, maxOpenConns int) (*sql.DB, *sqlx.DB, error) {
 	db, err := sqlx.Open("postgres", url)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "unable to open database connection: '%s'", url)
+		return nil, nil, fmt.Errorf("unable to open database connection: '%s': %w", url, err)
 	}
 
 	// configure our pool

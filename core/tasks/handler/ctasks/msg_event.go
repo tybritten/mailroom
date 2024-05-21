@@ -2,6 +2,7 @@ package ctasks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
@@ -17,7 +18,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 const TypeMsgEvent = "msg_event"
@@ -62,7 +62,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 			} else {
 				attachment, logUUID, err := msgio.FetchAttachment(ctx, rt, channel, attURL, t.MsgID)
 				if err != nil {
-					return errors.Wrapf(err, "error fetching attachment '%s'", attURL)
+					return fmt.Errorf("error fetching attachment '%s': %w", attURL, err)
 				}
 
 				attachments = append(attachments, attachment)
@@ -75,7 +75,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 	if contact.Status() == models.ContactStatusBlocked || channel == nil {
 		err := models.MarkMessageHandled(ctx, rt.DB, t.MsgID, models.MsgStatusHandled, models.VisibilityArchived, models.NilFlowID, models.NilTicketID, attachments, logUUIDs)
 		if err != nil {
-			return errors.Wrapf(err, "error updating message for deleted contact")
+			return fmt.Errorf("error updating message for deleted contact: %w", err)
 		}
 		return nil
 	}
@@ -84,7 +84,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 	if len(contact.URNs()) > 0 {
 		err := contact.UpdatePreferredURN(ctx, rt.DB, oa, t.URNID, channel)
 		if err != nil {
-			return errors.Wrapf(err, "error changing primary URN")
+			return fmt.Errorf("error changing primary URN: %w", err)
 		}
 	}
 
@@ -93,7 +93,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 	if contact.Status() == models.ContactStatusStopped {
 		err := contact.Unstop(ctx, rt.DB)
 		if err != nil {
-			return errors.Wrapf(err, "error unstopping contact")
+			return fmt.Errorf("error unstopping contact: %w", err)
 		}
 
 		recalcGroups = true
@@ -102,21 +102,21 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 	// build our flow contact
 	flowContact, err := contact.FlowContact(oa)
 	if err != nil {
-		return errors.Wrapf(err, "error creating flow contact")
+		return fmt.Errorf("error creating flow contact: %w", err)
 	}
 
 	// if this is a new or newly unstopped contact, we need to calculate dynamic groups and campaigns
 	if recalcGroups {
 		err = models.CalculateDynamicGroups(ctx, rt.DB, oa, []*flows.Contact{flowContact})
 		if err != nil {
-			return errors.Wrapf(err, "unable to initialize new contact")
+			return fmt.Errorf("unable to initialize new contact: %w", err)
 		}
 	}
 
 	// look up any open tickes for this contact and forward this message to that
 	ticket, err := models.LoadOpenTicketForContact(ctx, rt.DB, contact)
 	if err != nil {
-		return errors.Wrapf(err, "unable to look up open tickets for contact")
+		return fmt.Errorf("unable to look up open tickets for contact: %w", err)
 	}
 
 	// find any matching triggers
@@ -125,7 +125,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 	// look for a waiting session for this contact
 	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, flowContact)
 	if err != nil {
-		return errors.Wrapf(err, "error loading active session for contact")
+		return fmt.Errorf("error loading active session for contact: %w", err)
 	}
 
 	// we have a session and it has an active flow, check whether we should honor triggers
@@ -140,7 +140,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 		}
 
 		if err != nil {
-			return errors.Wrapf(err, "error loading flow for session")
+			return fmt.Errorf("error loading flow for session: %w", err)
 		}
 	}
 
@@ -160,7 +160,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 	flowMsgHook := func(ctx context.Context, tx *sqlx.Tx, rp *redis.Pool, oa *models.OrgAssets, sessions []*models.Session) error {
 		// set our incoming message event on our session
 		if len(sessions) != 1 {
-			return errors.Errorf("handle hook called with more than one session")
+			return fmt.Errorf("handle hook called with more than one session")
 		}
 		sessions[0].SetIncomingMsg(t.MsgID, t.MsgExternalID)
 
@@ -173,7 +173,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 		// load our flow
 		flow, err = oa.FlowByID(trigger.FlowID())
 		if err != nil && err != models.ErrNotFound {
-			return errors.Wrap(err, "error loading flow for trigger")
+			return fmt.Errorf("error loading flow for trigger: %w", err)
 		}
 
 		// trigger flow is still active, start it
@@ -185,7 +185,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 				}
 				err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{contact.ID()}, ivrMsgHook)
 				if err != nil {
-					return errors.Wrapf(err, "error while triggering ivr flow")
+					return fmt.Errorf("error while triggering ivr flow: %w", err)
 				}
 				return nil
 			}
@@ -199,7 +199,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 			trigger := tb.Build()
 			_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{contact}, []flows.Trigger{trigger}, flowMsgHook, flow.FlowType().Interrupts())
 			if err != nil {
-				return errors.Wrapf(err, "error starting flow for contact")
+				return fmt.Errorf("error starting flow for contact: %w", err)
 			}
 			return nil
 		}
@@ -210,7 +210,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 		resume := resumes.NewMsg(oa.Env(), flowContact, msgIn)
 		_, err = runner.ResumeFlow(ctx, rt, oa, session, contact, resume, flowMsgHook)
 		if err != nil {
-			return errors.Wrapf(err, "error resuming flow for contact")
+			return fmt.Errorf("error resuming flow for contact: %w", err)
 		}
 		return nil
 	}
@@ -218,7 +218,7 @@ func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *mod
 	// this message didn't trigger and new sessions or resume any existing ones, so handle as inbox
 	err = handleAsInbox(ctx, rt, oa, flowContact, msgIn, attachments, logUUIDs, ticket)
 	if err != nil {
-		return errors.Wrapf(err, "error handling inbox message")
+		return fmt.Errorf("error handling inbox message: %w", err)
 	}
 	return nil
 }
@@ -233,7 +233,7 @@ func handleAsInbox(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsset
 
 	err := models.HandleAndCommitEvents(ctx, rt, oa, models.NilUserID, contactEvents)
 	if err != nil {
-		return errors.Wrap(err, "error handling inbox message events")
+		return fmt.Errorf("error handling inbox message events: %w", err)
 	}
 
 	return markMsgHandled(ctx, rt.DB, msg, nil, attachments, ticket, logUUIDs)
@@ -252,13 +252,13 @@ func markMsgHandled(ctx context.Context, db models.DBorTx, msg *flows.MsgIn, flo
 
 	err := models.MarkMessageHandled(ctx, db, models.MsgID(msg.ID()), models.MsgStatusHandled, models.VisibilityVisible, flowID, ticketID, attachments, logUUIDs)
 	if err != nil {
-		return errors.Wrapf(err, "error marking message as handled")
+		return fmt.Errorf("error marking message as handled: %w", err)
 	}
 
 	if ticket != nil {
 		err = models.UpdateTicketLastActivity(ctx, db, []*models.Ticket{ticket})
 		if err != nil {
-			return errors.Wrapf(err, "error updating last activity for open ticket")
+			return fmt.Errorf("error updating last activity for open ticket: %w", err)
 		}
 	}
 

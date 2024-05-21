@@ -17,7 +17,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/ivr"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queues"
-	"github.com/pkg/errors"
 )
 
 // TypeHandleContactEvent is the task type for flagging that a contact has handler tasks to be handled
@@ -51,7 +50,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 	// try to get the lock for this contact, waiting up to 10 seconds
 	locks, _, err := models.LockContacts(ctx, rt, oa.OrgID(), []models.ContactID{t.ContactID}, time.Second*10)
 	if err != nil {
-		return errors.Wrapf(err, "error acquiring lock for contact %d", t.ContactID)
+		return fmt.Errorf("error acquiring lock for contact %d: %w", t.ContactID, err)
 	}
 
 	// we didn't get the lock.. requeue for later
@@ -60,7 +59,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 		defer rc.Close()
 		err = tasks.Queue(rc, tasks.HandlerQueue, oa.OrgID(), &HandleContactEventTask{ContactID: t.ContactID}, queues.DefaultPriority)
 		if err != nil {
-			return errors.Wrapf(err, "error re-adding contact task after failing to get lock")
+			return fmt.Errorf("error re-adding contact task after failing to get lock: %w", err)
 		}
 		slog.Info("failed to get lock for contact, requeued and skipping", "org_id", oa.OrgID(), "contact_id", t.ContactID)
 		return nil
@@ -83,7 +82,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 
 		// real error? report
 		if err != nil {
-			return errors.Wrapf(err, "error popping handler task")
+			return fmt.Errorf("error popping handler task: %w", err)
 		}
 
 		// decode our event, this is a normal task at its top level
@@ -92,7 +91,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 
 		ctask, err := readTask(taskPayload.Type, taskPayload.Task)
 		if err != nil {
-			return errors.Wrapf(err, "error reading handler task")
+			return fmt.Errorf("error reading handler task: %w", err)
 		}
 
 		start := time.Now()
@@ -144,7 +143,7 @@ func performHandlerTask(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 		if err == sql.ErrNoRows { // if contact no longer exists, ignore event, whatever it was gonna do is about to be deleted too
 			return nil
 		}
-		return errors.Wrapf(err, "error loading contact")
+		return fmt.Errorf("error loading contact: %w", err)
 	}
 
 	return task.Perform(ctx, rt, oa, contact)
@@ -162,7 +161,7 @@ func TriggerIVRFlow(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 	err := models.InsertFlowStarts(ctx, tx, []*models.FlowStart{start})
 	if err != nil {
 		tx.Rollback()
-		return errors.Wrapf(err, "error inserting ivr flow start")
+		return fmt.Errorf("error inserting ivr flow start: %w", err)
 	}
 
 	// call our hook if we have one
@@ -170,7 +169,7 @@ func TriggerIVRFlow(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 		err = hook(ctx, tx)
 		if err != nil {
 			tx.Rollback()
-			return errors.Wrapf(err, "error while calling db hook")
+			return fmt.Errorf("error while calling db hook: %w", err)
 		}
 	}
 
@@ -178,7 +177,7 @@ func TriggerIVRFlow(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
-		return errors.Wrapf(err, "error committing transaction for ivr flow starts")
+		return fmt.Errorf("error committing transaction for ivr flow starts: %w", err)
 	}
 
 	// create our batch of all our contacts
@@ -189,7 +188,7 @@ func TriggerIVRFlow(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 	defer rc.Close()
 	err = tasks.Queue(rc, tasks.BatchQueue, orgID, task, queues.HighPriority)
 	if err != nil {
-		return errors.Wrapf(err, "error queuing ivr flow start")
+		return fmt.Errorf("error queuing ivr flow start: %w", err)
 	}
 
 	return nil

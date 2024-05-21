@@ -2,6 +2,8 @@ package models
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/i18n"
@@ -12,7 +14,6 @@ import (
 	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 // BroadcastID is our internal type for broadcast ids, which can be null/0
@@ -80,7 +81,7 @@ func NewBroadcastFromEvent(ctx context.Context, tx DBorTx, oa *OrgAssets, event 
 	// resolve our contact references
 	contactIDs, err := GetContactIDsFromReferences(ctx, tx, oa.OrgID(), event.Contacts)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error resolving contact references")
+		return nil, fmt.Errorf("error resolving contact references: %w", err)
 	}
 
 	// and our groups
@@ -112,13 +113,19 @@ func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastB
 // MarkBroadcastSent marks the given broadcast as sent
 func MarkBroadcastSent(ctx context.Context, db DBorTx, id BroadcastID) error {
 	_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'S', modified_on = now() WHERE id = $1`, id)
-	return errors.Wrapf(err, "error marking broadcast #%d as sent", id)
+	if err != nil {
+		return fmt.Errorf("error marking broadcast #%d as sent: %w", id, err)
+	}
+	return nil
 }
 
 // MarkBroadcastFailed marks the given broadcast as failed
 func MarkBroadcastFailed(ctx context.Context, db DBorTx, id BroadcastID) error {
 	_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'S', modified_on = now() WHERE id = $1`, id)
-	return errors.Wrapf(err, "error marking broadcast #%d as failed", id)
+	if err != nil {
+		return fmt.Errorf("error marking broadcast #%d as failed: %w", id, err)
+	}
+	return nil
 }
 
 // InsertBroadcast inserts the given broadcast into the DB
@@ -141,7 +148,7 @@ func InsertBroadcast(ctx context.Context, db DBorTx, bcast *Broadcast) error {
 
 	err := BulkQuery(ctx, "inserting broadcast", db, sqlInsertBroadcast, []*dbBroadcast{dbb})
 	if err != nil {
-		return errors.Wrap(err, "error inserting broadcast")
+		return fmt.Errorf("error inserting broadcast: %w", err)
 	}
 
 	bcast.ID = dbb.ID
@@ -155,7 +162,7 @@ func InsertBroadcast(ctx context.Context, db DBorTx, bcast *Broadcast) error {
 	// insert our contacts
 	err = BulkQuery(ctx, "inserting broadcast contacts", db, sqlInsertBroadcastContacts, contacts)
 	if err != nil {
-		return errors.Wrapf(err, "error inserting contacts for broadcast")
+		return fmt.Errorf("error inserting contacts for broadcast: %w", err)
 	}
 
 	// build up all our group associations
@@ -167,7 +174,7 @@ func InsertBroadcast(ctx context.Context, db DBorTx, bcast *Broadcast) error {
 	// insert our groups
 	err = BulkQuery(ctx, "inserting broadcast groups", db, sqlInsertBroadcastGroups, groups)
 	if err != nil {
-		return errors.Wrapf(err, "error inserting groups for broadcast")
+		return fmt.Errorf("error inserting groups for broadcast: %w", err)
 	}
 
 	return nil
@@ -228,7 +235,7 @@ func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime
 	// load all our contacts
 	contacts, err := LoadContacts(ctx, rt.DB, oa, b.ContactIDs)
 	if err != nil {
-		return nil, errors.Wrap(err, "error loading contacts for broadcast")
+		return nil, fmt.Errorf("error loading contacts for broadcast: %w", err)
 	}
 
 	// for each contact, build our message
@@ -238,7 +245,7 @@ func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime
 	for _, c := range contacts {
 		msg, err := b.createMessage(rt, oa, c)
 		if err != nil {
-			return nil, errors.Wrap(err, "error creating broadcast message")
+			return nil, fmt.Errorf("error creating broadcast message: %w", err)
 		}
 		if msg != nil {
 			msgs = append(msgs, msg)
@@ -248,7 +255,7 @@ func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime
 	// insert them in a single request
 	err = InsertMessages(ctx, rt.DB, msgs)
 	if err != nil {
-		return nil, errors.Wrap(err, "error inserting broadcast messages")
+		return nil, fmt.Errorf("error inserting broadcast messages: %w", err)
 	}
 
 	return msgs, nil
@@ -258,7 +265,7 @@ func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime
 func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Contact) (*Msg, error) {
 	contact, err := c.FlowContact(oa)
 	if err != nil {
-		return nil, errors.Wrap(err, "error creating flow contact for broadcast message")
+		return nil, fmt.Errorf("error creating flow contact for broadcast message: %w", err)
 	}
 
 	trans, lang := b.Translations.ForContact(oa.Env(), contact, b.BaseLanguage)
@@ -293,7 +300,7 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 
 	msg, err := NewOutgoingBroadcastMsg(rt, oa.Org(), ch, contact, out, b)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error creating outgoing message")
+		return nil, fmt.Errorf("error creating outgoing message: %w", err)
 	}
 
 	return msg, nil

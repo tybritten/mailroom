@@ -2,6 +2,7 @@ package flow
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/nyaruka/goflow/assets"
@@ -11,7 +12,6 @@ import (
 	"github.com/nyaruka/mailroom/core/search"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -59,12 +59,12 @@ type previewResponse struct {
 func handleStartPreview(ctx context.Context, rt *runtime.Runtime, r *previewRequest) (any, int, error) {
 	oa, err := models.GetOrgAssets(ctx, rt, r.OrgID)
 	if err != nil {
-		return nil, 0, errors.Wrapf(err, "unable to load org assets")
+		return nil, 0, fmt.Errorf("unable to load org assets: %w", err)
 	}
 
 	flow, err := oa.FlowByID(r.FlowID)
 	if err != nil {
-		return nil, 0, errors.Wrapf(err, "unable to load flow")
+		return nil, 0, fmt.Errorf("unable to load flow: %w", err)
 	}
 
 	groups := make([]*models.Group, 0, len(r.Include.GroupUUIDs))
@@ -89,7 +89,7 @@ func handleStartPreview(ctx context.Context, rt *runtime.Runtime, r *previewRequ
 
 	parsedQuery, total, err := search.GetContactTotal(ctx, rt, oa, nil, query)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "error querying preview")
+		return nil, 0, fmt.Errorf("error querying preview: %w", err)
 	}
 
 	return &previewResponse{Query: parsedQuery.String(), Total: int(total)}, http.StatusOK, nil

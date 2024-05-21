@@ -10,7 +10,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -49,7 +48,7 @@ func (c *RetryPendingCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 	// check the size of our handle queue
 	handlerSize, err := tasks.HandlerQueue.Size(rc)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error finding size of handler queue")
+		return nil, fmt.Errorf("error finding size of handler queue: %w", err)
 	}
 
 	// if our queue has items in it, don't queue anything else in there, wait for it to be empty
@@ -61,7 +60,7 @@ func (c *RetryPendingCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 	// get all incoming messages that are still empty
 	rows, err := rt.DB.Queryx(unhandledMsgsQuery)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error querying for unhandled messages")
+		return nil, fmt.Errorf("error querying for unhandled messages: %w", err)
 	}
 	defer rows.Close()
 
@@ -74,7 +73,7 @@ func (c *RetryPendingCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 
 		err = rows.Scan(&orgID, &contactID, &msgID, &eventJSON)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error scanning msg row")
+			return nil, fmt.Errorf("error scanning msg row: %w", err)
 		}
 
 		// our key is built such that we will only retry once an hour
@@ -82,7 +81,7 @@ func (c *RetryPendingCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 
 		dupe, err := c.marker.IsMember(rc, key)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error checking for dupe retry")
+			return nil, fmt.Errorf("error checking for dupe retry: %w", err)
 		}
 
 		// we already retried this, skip
@@ -92,19 +91,19 @@ func (c *RetryPendingCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 
 		task, err := readTask("msg_event", eventJSON) // TODO find a better way to do this
 		if err != nil {
-			return nil, errors.Wrapf(err, "error reading msg data as task")
+			return nil, fmt.Errorf("error reading msg data as task: %w", err)
 		}
 
 		// queue this event up for handling
 		err = QueueTask(rc, orgID, contactID, task)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error queuing retry for task")
+			return nil, fmt.Errorf("error queuing retry for task: %w", err)
 		}
 
 		// mark it as queued
 		err = c.marker.Add(rc, key)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error marking task for retry")
+			return nil, fmt.Errorf("error marking task for retry: %w", err)
 		}
 
 		retried++

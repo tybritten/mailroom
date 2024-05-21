@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -10,7 +11,6 @@ import (
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 type FlowRunID int64
@@ -106,7 +106,7 @@ func newRun(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, session *Session, f
 
 	flowID, err := FlowIDForUUID(ctx, tx, oa, fr.FlowReference().UUID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to load flow with uuid: %s", fr.FlowReference().UUID)
+		return nil, fmt.Errorf("unable to load flow with uuid: %s: %w", fr.FlowReference().UUID, err)
 	}
 
 	// create our run

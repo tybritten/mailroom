@@ -2,11 +2,11 @@ package web
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 type JSONHandler[T any] func(ctx context.Context, rt *runtime.Runtime, request *T) (any, int, error)
@@ -16,7 +16,7 @@ func JSONPayload[T any](handler JSONHandler[T]) Handler {
 		payload := new(T)
 
 		if err := ReadAndValidateJSON(r, payload); err != nil {
-			return errors.Wrap(err, "request failed validation"), http.StatusBadRequest, nil
+			return fmt.Errorf("request failed validation: %w", err), http.StatusBadRequest, nil
 		}
 
 		return handler(ctx, rt, payload)

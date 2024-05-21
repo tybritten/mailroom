@@ -2,6 +2,7 @@ package msgs
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queues"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -69,7 +69,7 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		ExcludeGroupIDs: nil,
 	}, -1)
 	if err != nil {
-		return errors.Wrap(err, "error resolving broadcast recipients")
+		return fmt.Errorf("error resolving broadcast recipients: %w", err)
 	}
 
 	// if there are no contacts to send to, mark our broadcast as sent, we are done
@@ -77,7 +77,7 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		if bcast.ID != models.NilBroadcastID {
 			err = models.MarkBroadcastSent(ctx, rt.DB, bcast.ID)
 			if err != nil {
-				return errors.Wrapf(err, "error marking broadcast as sent")
+				return fmt.Errorf("error marking broadcast as sent: %w", err)
 			}
 		}
 		return nil
@@ -101,7 +101,7 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		err = tasks.Queue(rc, q, bcast.OrgID, &SendBroadcastBatchTask{BroadcastBatch: batch}, queues.DefaultPriority)
 		if err != nil {
 			if i == 0 {
-				return errors.Wrap(err, "error queuing broadcast batch")
+				return fmt.Errorf("error queuing broadcast batch: %w", err)
 			}
 			// if we've already queued other batches.. we don't want to error and have the task be retried
 			slog.Error("error queuing broadcast batch", "error", err)

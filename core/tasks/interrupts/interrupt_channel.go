@@ -2,13 +2,13 @@ package interrupts
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/msgio"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 // TypeInterruptChannel is the type of the interruption of a channel
@@ -40,23 +40,23 @@ func (t *InterruptChannelTask) Perform(ctx context.Context, rt *runtime.Runtime,
 	// load channel from db instead of assets because it may already be released
 	channels, err := models.GetChannelsByID(ctx, db.DB, []models.ChannelID{t.ChannelID})
 	if err != nil {
-		return errors.Wrapf(err, "error getting channels")
+		return fmt.Errorf("error getting channels: %w", err)
 	}
 
 	channel := channels[0]
 
 	if err := models.InterruptSessionsForChannel(ctx, db, t.ChannelID); err != nil {
-		return errors.Wrapf(err, "error interrupting sessions")
+		return fmt.Errorf("error interrupting sessions: %w", err)
 	}
 
 	err = msgio.ClearCourierQueues(rc, channel)
 	if err != nil {
-		return errors.Wrapf(err, "error clearing courier queues")
+		return fmt.Errorf("error clearing courier queues: %w", err)
 	}
 
 	err = models.FailChannelMessages(ctx, rt.DB.DB, oa.OrgID(), t.ChannelID, models.MsgFailedChannelRemoved)
 	if err != nil {
-		return errors.Wrapf(err, "error failing channel messages")
+		return fmt.Errorf("error failing channel messages: %w", err)
 	}
 
 	return nil

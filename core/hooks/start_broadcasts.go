@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows/events"
@@ -10,7 +11,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/msgs"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queues"
-	"github.com/pkg/errors"
 )
 
 // StartBroadcastsHook is our hook for starting broadcasts
@@ -30,7 +30,7 @@ func (h *startBroadcastsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx
 
 			bcast, err := models.NewBroadcastFromEvent(ctx, tx, oa, event)
 			if err != nil {
-				return errors.Wrapf(err, "error creating broadcast")
+				return fmt.Errorf("error creating broadcast: %w", err)
 			}
 
 			taskQ := tasks.HandlerQueue
@@ -44,7 +44,7 @@ func (h *startBroadcastsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx
 
 			err = tasks.Queue(rc, taskQ, oa.OrgID(), &msgs.SendBroadcastTask{Broadcast: bcast}, priority)
 			if err != nil {
-				return errors.Wrapf(err, "error queuing broadcast task")
+				return fmt.Errorf("error queuing broadcast task: %w", err)
 			}
 		}
 	}

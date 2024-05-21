@@ -3,13 +3,13 @@ package flow
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/Masterminds/semver"
 	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -31,13 +31,13 @@ func handleMigrate(ctx context.Context, rt *runtime.Runtime, r *migrateRequest) 
 	// do a JSON to JSON migration of the definition
 	migrated, err := goflow.MigrateDefinition(rt.Config, r.Flow, r.ToVersion)
 	if err != nil {
-		return errors.Wrapf(err, "unable to migrate flow"), http.StatusUnprocessableEntity, nil
+		return fmt.Errorf("unable to migrate flow: %w", err), http.StatusUnprocessableEntity, nil
 	}
 
 	// try to read result to check that it's valid
 	_, err = goflow.ReadFlow(rt.Config, migrated)
 	if err != nil {
-		return errors.Wrapf(err, "unable to read migrated flow"), http.StatusUnprocessableEntity, nil
+		return fmt.Errorf("unable to read migrated flow: %w", err), http.StatusUnprocessableEntity, nil
 	}
 
 	return migrated, http.StatusOK, nil

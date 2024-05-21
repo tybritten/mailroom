@@ -3,9 +3,9 @@ package models
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/nyaruka/goflow/assets"
-	"github.com/pkg/errors"
 )
 
 // FieldID is our type for the database field ID
@@ -43,7 +43,7 @@ func (f *Field) Proxy() bool { return f.Proxy_ }
 func loadFields(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Field, error) {
 	rows, err := db.QueryContext(ctx, sqlSelectFieldsByOrg, orgID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error querying fields for org: %d", orgID)
+		return nil, fmt.Errorf("error querying fields for org: %d: %w", orgID, err)
 	}
 
 	return ScanJSONRows(rows, func() assets.Field { return &Field{} })

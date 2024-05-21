@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/runtime"
 	cache "github.com/patrickmn/go-cache"
-	"github.com/pkg/errors"
 )
 
 // Refresh is our type for the pieces of org assets we want fresh (not cached)
@@ -168,7 +168,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshOrg > 0 {
 		oa.org, err = LoadOrg(ctx, rt.Config, db, orgID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading environment for org %d", orgID)
+			return nil, fmt.Errorf("error loading environment for org %d: %w", orgID, err)
 		}
 	} else {
 		oa.org = prev.org
@@ -177,7 +177,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshChannels > 0 {
 		oa.channels, err = loadAssetType(ctx, db, orgID, "channels", loadChannels)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading channel assets for org %d", orgID)
+			return nil, fmt.Errorf("error loading channel assets for org %d: %w", orgID, err)
 		}
 		oa.channelsByID = make(map[ChannelID]*Channel)
 		oa.channelsByUUID = make(map[assets.ChannelUUID]*Channel)
@@ -195,7 +195,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshFields > 0 {
 		fields, err := loadAssetType(ctx, db, orgID, "fields", loadFields)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading field assets for org %d", orgID)
+			return nil, fmt.Errorf("error loading field assets for org %d: %w", orgID, err)
 		}
 		oa.fields = make([]assets.Field, 0, len(fields))
 		oa.fieldsByUUID = make(map[assets.FieldUUID]*Field, len(fields))
@@ -218,7 +218,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshGroups > 0 {
 		oa.groups, err = loadAssetType(ctx, db, orgID, "groups", loadGroups)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading group assets for org %d", orgID)
+			return nil, fmt.Errorf("error loading group assets for org %d: %w", orgID, err)
 		}
 		oa.groupsByID = make(map[GroupID]*Group)
 		oa.groupsByUUID = make(map[assets.GroupUUID]*Group)
@@ -236,7 +236,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshClassifiers > 0 {
 		oa.classifiers, err = loadAssetType(ctx, db, orgID, "classifiers", loadClassifiers)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading classifier assets for org %d", orgID)
+			return nil, fmt.Errorf("error loading classifier assets for org %d: %w", orgID, err)
 		}
 		oa.classifiersByUUID = make(map[assets.ClassifierUUID]*Classifier)
 		for _, c := range oa.classifiers {
@@ -250,7 +250,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshLabels > 0 {
 		oa.labels, err = loadAssetType(ctx, db, orgID, "labels", loadLabels)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading group labels for org %d", orgID)
+			return nil, fmt.Errorf("error loading group labels for org %d: %w", orgID, err)
 		}
 		oa.labelsByUUID = make(map[assets.LabelUUID]*Label)
 		for _, l := range oa.labels {
@@ -264,7 +264,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshOptIns > 0 {
 		oa.optIns, err = loadAssetType(ctx, db, orgID, "optins", loadOptIns)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading optins for org %d", orgID)
+			return nil, fmt.Errorf("error loading optins for org %d: %w", orgID, err)
 		}
 		oa.optInsByID = make(map[OptInID]*OptIn)
 		oa.optInsByUUID = make(map[assets.OptInUUID]*OptIn)
@@ -281,7 +281,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshResthooks > 0 {
 		oa.resthooks, err = loadAssetType(ctx, db, orgID, "resthooks", loadResthooks)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading resthooks for org %d", orgID)
+			return nil, fmt.Errorf("error loading resthooks for org %d: %w", orgID, err)
 		}
 	} else {
 		oa.resthooks = prev.resthooks
@@ -290,7 +290,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshCampaigns > 0 {
 		oa.campaigns, err = loadAssetType(ctx, db, orgID, "campaigns", loadCampaigns)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading campaigns for org %d", orgID)
+			return nil, fmt.Errorf("error loading campaigns for org %d: %w", orgID, err)
 		}
 		oa.campaignEventsByField = make(map[FieldID][]*CampaignEvent)
 		oa.campaignEventsByID = make(map[CampaignEventID]*CampaignEvent)
@@ -312,7 +312,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshTriggers > 0 {
 		oa.triggers, err = loadAssetType(ctx, db, orgID, "triggers", loadTriggers)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading triggers for org %d", orgID)
+			return nil, fmt.Errorf("error loading triggers for org %d: %w", orgID, err)
 		}
 	} else {
 		oa.triggers = prev.triggers
@@ -321,7 +321,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshTemplates > 0 {
 		oa.templates, err = loadAssetType(ctx, db, orgID, "templates", loadTemplates)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading templates for org %d", orgID)
+			return nil, fmt.Errorf("error loading templates for org %d: %w", orgID, err)
 		}
 		oa.templatesByUUID = make(map[assets.TemplateUUID]*Template)
 		for _, t := range oa.templates {
@@ -335,7 +335,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshGlobals > 0 {
 		oa.globals, err = loadAssetType(ctx, db, orgID, "globals", loadGlobals)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading globals for org %d", orgID)
+			return nil, fmt.Errorf("error loading globals for org %d: %w", orgID, err)
 		}
 	} else {
 		oa.globals = prev.globals
@@ -345,7 +345,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 		oa.locations, err = loadLocations(ctx, db, oa)
 		oa.locationsBuiltAt = time.Now()
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading group locations for org %d", orgID)
+			return nil, fmt.Errorf("error loading group locations for org %d: %w", orgID, err)
 		}
 	} else {
 		oa.locations = prev.locations
@@ -363,7 +363,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshTopics > 0 {
 		oa.topics, err = loadAssetType(ctx, db, orgID, "topics", loadTopics)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading topic assets for org %d", orgID)
+			return nil, fmt.Errorf("error loading topic assets for org %d: %w", orgID, err)
 		}
 		oa.topicsByID = make(map[TopicID]*Topic, len(oa.topics))
 		oa.topicsByUUID = make(map[assets.TopicUUID]*Topic, len(oa.topics))
@@ -380,7 +380,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshUsers > 0 {
 		oa.users, err = loadAssetType(ctx, db, orgID, "users", loadUsers)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error loading user assets for org %d", orgID)
+			return nil, fmt.Errorf("error loading user assets for org %d: %w", orgID, err)
 		}
 		oa.usersByID = make(map[UserID]*User)
 		oa.usersByEmail = make(map[string]*User)
@@ -397,7 +397,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	// intialize our session assets
 	oa.sessionAssets, err = engine.NewSessionAssets(oa.Env(), oa, goflow.MigrationConfig(rt.Config))
 	if err != nil {
-		return nil, errors.Wrapf(err, "error build session assets for org: %d", orgID)
+		return nil, fmt.Errorf("error build session assets for org: %d: %w", orgID, err)
 	}
 
 	return oa, nil
@@ -499,7 +499,7 @@ func (a *OrgAssets) CloneForSimulation(ctx context.Context, rt *runtime.Runtime,
 		// get the original flow
 		flowAsset, err := a.FlowByUUID(flowUUID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to find flow with UUID '%s'", flowUUID)
+			return nil, fmt.Errorf("unable to find flow with UUID '%s': %w", flowUUID, err)
 		}
 		f := flowAsset.(*Flow)
 
@@ -515,7 +515,7 @@ func (a *OrgAssets) CloneForSimulation(ctx context.Context, rt *runtime.Runtime,
 	// rebuild our session assets with our new items
 	clone.sessionAssets, err = engine.NewSessionAssets(a.Env(), clone, goflow.MigrationConfig(rt.Config))
 	if err != nil {
-		return nil, errors.Wrapf(err, "error build session assets for org: %d", clone.OrgID())
+		return nil, fmt.Errorf("error build session assets for org: %d: %w", clone.OrgID(), err)
 	}
 
 	return clone, err
@@ -580,7 +580,7 @@ func (a *OrgAssets) loadFlow(fromCache func() assets.Flow, fromDB func(context.C
 
 	dbFlow, err := fromDB(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "error loading flow from db")
+		return nil, fmt.Errorf("error loading flow from db: %w", err)
 	}
 
 	if dbFlow == nil {

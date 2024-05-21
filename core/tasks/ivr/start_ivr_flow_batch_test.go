@@ -2,6 +2,7 @@ package ivr_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/nyaruka/mailroom/utils/queues"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,7 +37,7 @@ func TestIVR(t *testing.T) {
 	start := models.NewFlowStart(testdata.Org1.ID, models.StartTypeTrigger, testdata.IVRFlow.ID).
 		WithContactIDs([]models.ContactID{testdata.Cathy.ID})
 
-	service.callError = errors.Errorf("unable to create call")
+	service.callError = fmt.Errorf("unable to create call")
 
 	err := tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
 	require.NoError(t, err)

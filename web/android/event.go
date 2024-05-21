@@ -2,6 +2,7 @@ package android
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -40,12 +40,12 @@ type eventRequest struct {
 func handleEvent(ctx context.Context, rt *runtime.Runtime, r *eventRequest) (any, int, error) {
 	oa, err := models.GetOrgAssets(ctx, rt, r.OrgID)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "unable to load org assets")
+		return nil, 0, fmt.Errorf("unable to load org assets: %w", err)
 	}
 
 	cu, err := resolveContact(ctx, rt, oa, r.ChannelID, r.Phone)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "error resolving contact")
+		return nil, 0, fmt.Errorf("error resolving contact: %w", err)
 	}
 
 	// only missed call events from Android relayers need handling, rest are just historical records
@@ -58,7 +58,7 @@ func handleEvent(ctx context.Context, rt *runtime.Runtime, r *eventRequest) (any
 
 	e := models.NewChannelEvent(r.OrgID, r.EventType, r.ChannelID, cu.contactID, cu.urnID, status, r.Extra, r.OccurredOn)
 	if err := e.Insert(ctx, rt.DB); err != nil {
-		return nil, 0, errors.Wrap(err, "error inserting event")
+		return nil, 0, fmt.Errorf("error inserting event: %w", err)
 	}
 
 	if needsHandling {
@@ -75,7 +75,7 @@ func handleEvent(ctx context.Context, rt *runtime.Runtime, r *eventRequest) (any
 			NewContact: cu.newContact,
 		})
 		if err != nil {
-			return nil, 0, errors.Wrap(err, "error queueing handle task")
+			return nil, 0, fmt.Errorf("error queueing handle task: %w", err)
 		}
 	}
 

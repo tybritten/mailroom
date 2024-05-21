@@ -2,12 +2,12 @@ package interrupts
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 // TypeInterruptSessions is the type of the interrupt session task
@@ -52,7 +52,7 @@ func (t *InterruptSessionsTask) Perform(ctx context.Context, rt *runtime.Runtime
 	}
 	if len(t.SessionIDs) > 0 {
 		if err := models.ExitSessions(ctx, db, t.SessionIDs, models.SessionStatusInterrupted); err != nil {
-			return errors.Wrapf(err, "error interrupting sessions")
+			return fmt.Errorf("error interrupting sessions: %w", err)
 		}
 	}
 

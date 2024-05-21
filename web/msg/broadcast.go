@@ -2,6 +2,7 @@ package msg
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/nyaruka/mailroom/web"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -51,15 +51,15 @@ func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastReque
 
 	tx, err := rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, 0, errors.Wrapf(err, "error beginning transaction")
+		return nil, 0, fmt.Errorf("error beginning transaction: %w", err)
 	}
 
 	if err := models.InsertBroadcast(ctx, tx, bcast); err != nil {
-		return nil, 0, errors.Wrapf(err, "error inserting broadcast")
+		return nil, 0, fmt.Errorf("error inserting broadcast: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, 0, errors.Wrapf(err, "error committing transaction")
+		return nil, 0, fmt.Errorf("error committing transaction: %w", err)
 	}
 
 	task := &msgs.SendBroadcastTask{Broadcast: bcast}

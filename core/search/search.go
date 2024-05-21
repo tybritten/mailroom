@@ -16,7 +16,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	eslegacy "github.com/olivere/elastic/v7"
-	"github.com/pkg/errors"
 )
 
 // AssetMapper maps resolved assets in queries to how we identify them in ES which in the case
@@ -77,13 +76,13 @@ func GetContactTotal(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAss
 	var err error
 
 	if rt.ES == nil {
-		return nil, 0, errors.Errorf("no elastic client available, check your configuration")
+		return nil, 0, fmt.Errorf("no elastic client available, check your configuration")
 	}
 
 	if query != "" {
 		parsed, err = contactql.ParseQuery(env, query, oa.SessionAssets())
 		if err != nil {
-			return nil, 0, errors.Wrapf(err, "error parsing query: %s", query)
+			return nil, 0, fmt.Errorf("error parsing query: %s: %w", query, err)
 		}
 	}
 
@@ -96,10 +95,10 @@ func GetContactTotal(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAss
 		// Get *elastic.Error which contains additional information
 		ee, ok := err.(*eslegacy.Error)
 		if !ok {
-			return nil, 0, errors.Wrap(err, "error performing query")
+			return nil, 0, fmt.Errorf("error performing query: %w", err)
 		}
 
-		return nil, 0, errors.Wrapf(err, "error performing query: %s", ee.Details.Reason)
+		return nil, 0, fmt.Errorf("error performing query: %s: %w", ee.Details.Reason, err)
 	}
 
 	return parsed, count, nil
@@ -114,13 +113,13 @@ func GetContactIDsForQueryPage(ctx context.Context, rt *runtime.Runtime, oa *mod
 	var err error
 
 	if rt.ES == nil {
-		return nil, nil, 0, errors.Errorf("no elastic client available, check your configuration")
+		return nil, nil, 0, fmt.Errorf("no elastic client available, check your configuration")
 	}
 
 	if query != "" {
 		parsed, err = contactql.ParseQuery(env, query, oa.SessionAssets())
 		if err != nil {
-			return nil, nil, 0, errors.Wrapf(err, "error parsing query: %s", query)
+			return nil, nil, 0, fmt.Errorf("error parsing query: %s: %w", query, err)
 		}
 	}
 
@@ -129,7 +128,7 @@ func GetContactIDsForQueryPage(ctx context.Context, rt *runtime.Runtime, oa *mod
 
 	fieldSort, err := es.ToElasticSort(sort, oa.SessionAssets())
 	if err != nil {
-		return nil, nil, 0, errors.Wrapf(err, "error parsing sort")
+		return nil, nil, 0, fmt.Errorf("error parsing sort: %w", err)
 	}
 
 	src := map[string]any{
@@ -148,10 +147,10 @@ func GetContactIDsForQueryPage(ctx context.Context, rt *runtime.Runtime, oa *mod
 		// Get *elastic.Error which contains additional information
 		ee, ok := err.(*eslegacy.Error)
 		if !ok {
-			return nil, nil, 0, errors.Wrapf(err, "error performing query")
+			return nil, nil, 0, fmt.Errorf("error performing query: %w", err)
 		}
 
-		return nil, nil, 0, errors.Wrapf(err, "error performing query: %s", ee.Details.Reason)
+		return nil, nil, 0, fmt.Errorf("error performing query: %s: %w", ee.Details.Reason, err)
 	}
 
 	ids := make([]models.ContactID, 0, pageSize)
@@ -174,14 +173,14 @@ func GetContactIDsForQuery(ctx context.Context, rt *runtime.Runtime, oa *models.
 	var err error
 
 	if rt.ES == nil {
-		return nil, errors.Errorf("no elastic client available, check your configuration")
+		return nil, fmt.Errorf("no elastic client available, check your configuration")
 	}
 
 	// turn into elastic query
 	if query != "" {
 		parsed, err = contactql.ParseQuery(env, query, oa.SessionAssets())
 		if err != nil {
-			return nil, errors.Wrapf(err, "error parsing query: %s", query)
+			return nil, fmt.Errorf("error parsing query: %s: %w", query, err)
 		}
 	}
 
@@ -225,7 +224,7 @@ func GetContactIDsForQuery(ctx context.Context, rt *runtime.Runtime, oa *models.
 			return ids, nil
 		}
 		if err != nil {
-			return nil, errors.Wrapf(err, "error scrolling through results for search: %s", query)
+			return nil, fmt.Errorf("error scrolling through results for search: %s: %w", query, err)
 		}
 
 		ids, err = appendIDsFromHits(ids, results.Hits.Hits)
@@ -240,7 +239,7 @@ func appendIDsFromHits(ids []models.ContactID, hits []*eslegacy.SearchHit) ([]mo
 	for _, hit := range hits {
 		id, err := strconv.Atoi(hit.Id)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unexpected non-integer contact id: %s", hit.Id)
+			return nil, fmt.Errorf("unexpected non-integer contact id: %s: %w", hit.Id, err)
 		}
 
 		ids = append(ids, models.ContactID(id))

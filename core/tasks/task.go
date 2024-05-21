@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -10,7 +11,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queues"
-	"github.com/pkg/errors"
 )
 
 var HandlerQueue = queues.NewFairSorted("handler")
@@ -41,12 +41,12 @@ func Perform(ctx context.Context, rt *runtime.Runtime, task *queues.Task) error 
 	// decode our task body
 	typedTask, err := ReadTask(task.Type, task.Task)
 	if err != nil {
-		return errors.Wrapf(err, "error reading task of type %s", task.Type)
+		return fmt.Errorf("error reading task of type %s: %w", task.Type, err)
 	}
 
 	oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, models.OrgID(task.OwnerID), typedTask.WithAssets())
 	if err != nil {
-		return errors.Wrap(err, "error loading org assets")
+		return fmt.Errorf("error loading org assets: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, typedTask.Timeout())
@@ -68,7 +68,7 @@ func Queue(rc redis.Conn, q *queues.FairSorted, orgID models.OrgID, task Task, p
 func ReadTask(typeName string, data json.RawMessage) (Task, error) {
 	f := registeredTypes[typeName]
 	if f == nil {
-		return nil, errors.Errorf("unknown task type: '%s'", typeName)
+		return nil, fmt.Errorf("unknown task type: '%s'", typeName)
 	}
 
 	task := f()

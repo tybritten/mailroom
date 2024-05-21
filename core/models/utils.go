@@ -11,7 +11,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/dbutil"
-	"github.com/pkg/errors"
 )
 
 // Queryer lets us pass anything that supports QueryContext to a function (sql.DB, sql.Tx, sqlx.DB, sqlx.Tx)
@@ -48,7 +47,7 @@ func BulkQuery[T any](ctx context.Context, label string, tx DBorTx, sql string, 
 
 	err := dbutil.BulkQuery(ctx, tx, sql, structs)
 	if err != nil {
-		return errors.Wrap(err, "error making bulk query")
+		return fmt.Errorf("error making bulk query: %w", err)
 	}
 
 	slog.Info(fmt.Sprintf("%s bulk sql complete", label), "elapsed", time.Since(start), "rows", len(structs))
@@ -64,7 +63,7 @@ func BulkQueryBatches(ctx context.Context, label string, tx DBorTx, sql string, 
 	for i, batch := range batches {
 		err := dbutil.BulkQuery(ctx, tx, sql, batch)
 		if err != nil {
-			return errors.Wrap(err, "error making bulk batch query")
+			return fmt.Errorf("error making bulk batch query: %w", err)
 		}
 
 		slog.Info(fmt.Sprintf("%s bulk sql batch complete", label), "elapsed", time.Since(start), "rows", len(batch), "batch", i+1)
@@ -94,7 +93,7 @@ func ScanJSONRows[T any](rows *sql.Rows, f func() T) ([]T, error) {
 		a := f()
 		err := dbutil.ScanJSON(rows, &a)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error scanning into %T", a)
+			return nil, fmt.Errorf("error scanning into %T: %w", a, err)
 		}
 		as = append(as, a)
 	}

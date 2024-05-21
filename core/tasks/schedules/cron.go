@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queues"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -43,7 +42,7 @@ func (c *schedulesCron) Run(ctx context.Context, rt *runtime.Runtime) (map[strin
 	// get any expired schedules
 	unfired, err := models.GetUnfiredSchedules(ctx, rt.DB.DB)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error while getting unfired schedules")
+		return nil, fmt.Errorf("error while getting unfired schedules: %w", err)
 	}
 
 	// for each unfired schedule

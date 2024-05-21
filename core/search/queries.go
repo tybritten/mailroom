@@ -1,6 +1,7 @@
 package search
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/nyaruka/gocommon/dates"
@@ -8,7 +9,6 @@ import (
 	"github.com/nyaruka/goflow/envs"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
-	"github.com/pkg/errors"
 )
 
 // BuildRecipientsQuery builds a query from a set of inclusions/exclusions (i.e. a flow start or broadcast)
@@ -19,7 +19,7 @@ func BuildRecipientsQuery(oa *models.OrgAssets, flow *models.Flow, groups []*mod
 	if userQuery != "" {
 		parsedQuery, err = contactql.ParseQuery(oa.Env(), userQuery, oa.SessionAssets())
 		if err != nil {
-			return "", errors.Wrap(err, "invalid user query")
+			return "", fmt.Errorf("invalid user query: %w", err)
 		}
 	}
 

@@ -2,6 +2,8 @@ package contact
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/nyaruka/goflow/contactql"
@@ -9,7 +11,6 @@ import (
 	"github.com/nyaruka/mailroom/core/search"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -40,7 +41,7 @@ type exportResponse struct {
 func handleExport(ctx context.Context, rt *runtime.Runtime, r *exportRequest) (any, int, error) {
 	oa, err := models.GetOrgAssets(ctx, rt, r.OrgID)
 	if err != nil {
-		return nil, 0, errors.Wrapf(err, "unable to load org assets")
+		return nil, 0, fmt.Errorf("unable to load org assets: %w", err)
 	}
 
 	group := oa.GroupByID(r.GroupID)
@@ -54,7 +55,7 @@ func handleExport(ctx context.Context, rt *runtime.Runtime, r *exportRequest) (a
 		if isQueryError {
 			return qerr, http.StatusBadRequest, nil
 		}
-		return nil, 0, errors.Wrap(err, "error querying export")
+		return nil, 0, fmt.Errorf("error querying export: %w", err)
 	}
 
 	return &exportResponse{ContactIDs: ids}, http.StatusOK, nil

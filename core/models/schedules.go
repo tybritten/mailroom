@@ -9,8 +9,6 @@ import (
 
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/null/v3"
-
-	"github.com/pkg/errors"
 )
 
 // ScheduleID is our internal type for schedule IDs
@@ -99,16 +97,16 @@ func (s *Schedule) Timezone() (*time.Location, error) {
 func (s *Schedule) DeleteWithTarget(ctx context.Context, tx *sql.Tx) error {
 	if s.Broadcast() != nil {
 		if _, err := tx.ExecContext(ctx, `UPDATE msgs_broadcast SET is_active = FALSE, schedule_id = NULL WHERE id = $1`, s.Broadcast().ID); err != nil {
-			return errors.Wrap(err, "error deactivating scheduled broadcast")
+			return fmt.Errorf("error deactivating scheduled broadcast: %w", err)
 		}
 	} else if s.Trigger() != nil {
 		if _, err := tx.ExecContext(ctx, `UPDATE triggers_trigger SET is_active = FALSE, schedule_id = NULL WHERE id = $1`, s.Trigger().ID()); err != nil {
-			return errors.Wrap(err, "error deactivating scheduled trigger")
+			return fmt.Errorf("error deactivating scheduled trigger: %w", err)
 		}
 	}
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM schedules_schedule WHERE id = $1`, s.s.ID); err != nil {
-		return errors.Wrap(err, "error deleting schedule")
+		return fmt.Errorf("error deleting schedule: %w", err)
 	}
 
 	return nil
@@ -120,7 +118,7 @@ func (s *Schedule) UpdateFires(ctx context.Context, tx DBorTx, last time.Time, n
 		s.s.ID, last, next,
 	)
 	if err != nil {
-		return errors.Wrapf(err, "error updating schedule fire dates for: %d", s.s.ID)
+		return fmt.Errorf("error updating schedule fire dates for: %d: %w", s.s.ID, err)
 	}
 	return nil
 }
@@ -134,10 +132,10 @@ func (s *Schedule) GetNextFire(tz *time.Location, now time.Time) (*time.Time, er
 
 	// should have hour and minute on everything else
 	if s.s.HourOfDay == nil {
-		return nil, errors.Errorf("schedule %d has no repeat_hour_of_day set", s.s.ID)
+		return nil, fmt.Errorf("schedule %d has no repeat_hour_of_day set", s.s.ID)
 	}
 	if s.s.MinuteOfHour == nil {
-		return nil, errors.Errorf("schedule %d has no repeat_minute_of_hour set", s.s.ID)
+		return nil, fmt.Errorf("schedule %d has no repeat_minute_of_hour set", s.s.ID)
 	}
 
 	// increment now by a minute, we don't want to double schedule in case of small clock drifts between boxes or db
@@ -161,7 +159,7 @@ func (s *Schedule) GetNextFire(tz *time.Location, now time.Time) (*time.Time, er
 
 	case RepeatPeriodWeekly:
 		if s.s.DaysOfWeek == "" {
-			return nil, errors.Errorf("schedule %d repeats weekly but has no repeat_days_of_week", s.s.ID)
+			return nil, fmt.Errorf("schedule %d repeats weekly but has no repeat_days_of_week", s.s.ID)
 		}
 
 		// build a map of the days we send on
@@ -169,7 +167,7 @@ func (s *Schedule) GetNextFire(tz *time.Location, now time.Time) (*time.Time, er
 		for i := 0; i < len(s.s.DaysOfWeek); i++ {
 			day, found := dayStrToDayInt[s.s.DaysOfWeek[i]]
 			if !found {
-				return nil, errors.Errorf("schedule %d has unknown day of week: %s", s.s.ID, string(s.s.DaysOfWeek[i]))
+				return nil, fmt.Errorf("schedule %d has unknown day of week: %s", s.s.ID, string(s.s.DaysOfWeek[i]))
 			}
 			sendDays[day] = true
 		}
@@ -183,7 +181,7 @@ func (s *Schedule) GetNextFire(tz *time.Location, now time.Time) (*time.Time, er
 
 	case RepeatPeriodMonthly:
 		if s.s.DayOfMonth == nil {
-			return nil, errors.Errorf("schedule %d repeats monthly but has no repeat_day_of_month", s.s.ID)
+			return nil, fmt.Errorf("schedule %d repeats monthly but has no repeat_day_of_month", s.s.ID)
 		}
 
 		// figure out our next fire day, in the case that they asked for a day greater than the number of days
@@ -269,7 +267,7 @@ SELECT ROW_TO_JSON(s) FROM (
 func GetUnfiredSchedules(ctx context.Context, db *sql.DB) ([]*Schedule, error) {
 	rows, err := db.QueryContext(ctx, sqlSelectUnfiredSchedules)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error selecting unfired schedules")
+		return nil, fmt.Errorf("error selecting unfired schedules: %w", err)
 	}
 	defer rows.Close()
 
@@ -278,7 +276,7 @@ func GetUnfiredSchedules(ctx context.Context, db *sql.DB) ([]*Schedule, error) {
 		s := &Schedule{}
 		err := dbutil.ScanJSON(rows, &s.s)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error reading schedule")
+			return nil, fmt.Errorf("error reading schedule: %w", err)
 		}
 		unfired = append(unfired, s)
 	}

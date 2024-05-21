@@ -2,6 +2,8 @@ package ctasks
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -11,7 +13,6 @@ import (
 	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 const TypeWaitTimeout = "timeout_event"
@@ -43,13 +44,13 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	// build our flow contact
 	flowContact, err := contact.FlowContact(oa)
 	if err != nil {
-		return errors.Wrapf(err, "error creating flow contact")
+		return fmt.Errorf("error creating flow contact: %w", err)
 	}
 
 	// look for a waiting session for this contact
 	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, flowContact)
 	if err != nil {
-		return errors.Wrapf(err, "error loading waiting session for contact")
+		return fmt.Errorf("error loading waiting session for contact: %w", err)
 	}
 
 	// if we didn't find a session or it is another session then this session has already been interrupted
@@ -78,10 +79,15 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		var eerr *engine.Error
 		if errors.As(err, &eerr) && eerr.Code() == engine.ErrorResumeRejectedByWait && resume.Type() == resumes.TypeWaitTimeout {
 			log.Info("clearing session timeout which is no longer set in flow")
-			return errors.Wrap(session.ClearWaitTimeout(ctx, rt.DB), "error clearing session timeout")
+
+			if err := session.ClearWaitTimeout(ctx, rt.DB); err != nil {
+				return fmt.Errorf("error clearing session timeout: %w", err)
+			}
+
+			return nil
 		}
 
-		return errors.Wrap(err, "error resuming flow for timeout")
+		return fmt.Errorf("error resuming flow for timeout: %w", err)
 	}
 
 	return nil

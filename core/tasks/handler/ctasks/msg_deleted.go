@@ -2,11 +2,11 @@ package ctasks
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/pkg/errors"
 )
 
 const TypeMsgDeleted = "msg_deleted"
@@ -29,5 +29,8 @@ func (t *MsgDeletedTask) UseReadOnly() bool {
 
 func (t *MsgDeletedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
 	err := models.UpdateMessageDeletedBySender(ctx, rt.DB.DB, oa.OrgID(), t.MsgID)
-	return errors.Wrap(err, "error deleting message")
+	if err != nil {
+		return fmt.Errorf("error deleting message: %w", err)
+	}
+	return nil
 }

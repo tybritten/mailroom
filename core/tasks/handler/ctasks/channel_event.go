@@ -3,6 +3,7 @@ package ctasks
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -15,7 +16,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
-	"github.com/pkg/errors"
 )
 
 const TypeChannelEvent = "channel_event"
@@ -69,33 +69,33 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 	if t.EventType == models.EventTypeStopContact {
 		err := contact.Stop(ctx, rt.DB, oa)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error stopping contact")
+			return nil, fmt.Errorf("error stopping contact: %w", err)
 		}
 	}
 
 	if models.ContactSeenEvents[t.EventType] {
 		err := contact.UpdateLastSeenOn(ctx, rt.DB, t.CreatedOn)
 		if err != nil {
-			return nil, errors.Wrap(err, "error updating contact last_seen_on")
+			return nil, fmt.Errorf("error updating contact last_seen_on: %w", err)
 		}
 	}
 
 	// make sure this URN is our highest priority (this is usually a noop)
 	err := contact.UpdatePreferredURN(ctx, rt.DB, oa, t.URNID, channel)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error changing primary URN")
+		return nil, fmt.Errorf("error changing primary URN: %w", err)
 	}
 
 	// build our flow contact
 	flowContact, err := contact.FlowContact(oa)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error creating flow contact")
+		return nil, fmt.Errorf("error creating flow contact: %w", err)
 	}
 
 	if t.NewContact {
 		err = models.CalculateDynamicGroups(ctx, rt.DB, oa, []*flows.Contact{flowContact})
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to initialize new contact")
+			return nil, fmt.Errorf("unable to initialize new contact: %w", err)
 		}
 	}
 
@@ -120,13 +120,13 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 	case models.EventTypeWelcomeMessage, models.EventTypeStopContact:
 		trigger = nil
 	default:
-		return nil, errors.Errorf("unknown channel event type: %s", t.EventType)
+		return nil, fmt.Errorf("unknown channel event type: %s", t.EventType)
 	}
 
 	if trigger != nil {
 		flow, err = oa.FlowByID(trigger.FlowID())
 		if err != nil && err != models.ErrNotFound {
-			return nil, errors.Wrap(err, "error loading flow for trigger")
+			return nil, fmt.Errorf("error loading flow for trigger: %w", err)
 		}
 	}
 
@@ -139,7 +139,7 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 	if flow.FlowType() == models.FlowTypeVoice && call == nil {
 		err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{contact.ID()}, nil)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error while triggering ivr flow")
+			return nil, fmt.Errorf("error while triggering ivr flow: %w", err)
 		}
 		return nil, nil
 	}
@@ -149,11 +149,11 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 	if t.Extra != nil {
 		asJSON, err := json.Marshal(map[string]any(t.Extra))
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to marshal extra from channel event")
+			return nil, fmt.Errorf("unable to marshal extra from channel event: %w", err)
 		}
 		params, err = types.ReadXObject(asJSON)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to read extra from channel event")
+			return nil, fmt.Errorf("unable to read extra from channel event: %w", err)
 		}
 	}
 
@@ -194,7 +194,7 @@ func (t *ChannelEventTask) handle(ctx context.Context, rt *runtime.Runtime, oa *
 
 	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{contact}, []flows.Trigger{trig}, hook, flow.FlowType().Interrupts())
 	if err != nil {
-		return nil, errors.Wrapf(err, "error starting flow for contact")
+		return nil, fmt.Errorf("error starting flow for contact: %w", err)
 	}
 	if len(sessions) == 0 {
 		return nil, nil
