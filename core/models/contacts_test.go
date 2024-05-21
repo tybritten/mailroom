@@ -166,7 +166,7 @@ func TestCreateContact(t *testing.T) {
 
 	var uerr *models.URNError
 	if assert.ErrorAs(t, err, &uerr) {
-		assert.Equal(t, "urn_taken", uerr.Code)
+		assert.Equal(t, "taken", uerr.Code)
 		assert.Equal(t, 0, uerr.Index)
 	}
 }

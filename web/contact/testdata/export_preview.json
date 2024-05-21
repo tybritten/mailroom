@@ -102,10 +102,10 @@
             "group_id": 10000,
             "query": "gender ="
         },
-        "status": 400,
+        "status": 422,
         "response": {
             "error": "mismatched input '<EOF>' expecting {STRING, PROPERTY, TEXT}",
-            "code": "unexpected_token",
+            "code": "query:unexpected_token",
             "extra": {
                 "token": "<EOF>"
             }

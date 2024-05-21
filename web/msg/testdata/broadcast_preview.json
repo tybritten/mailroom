@@ -139,10 +139,10 @@
             },
             "exclude": {}
         },
-        "status": 400,
+        "status": 422,
         "response": {
             "error": "mismatched input '<EOF>' expecting {STRING, PROPERTY, TEXT}",
-            "code": "unexpected_token",
+            "code": "query:unexpected_token",
             "extra": {
                 "token": "<EOF>"
             }
@@ -159,10 +159,10 @@
             },
             "exclude": {}
         },
-        "status": 400,
+        "status": 422,
         "response": {
             "error": "can't resolve 'goats' to attribute, scheme or field",
-            "code": "unknown_property",
+            "code": "query:unknown_property",
             "extra": {
                 "property": "goats"
             }

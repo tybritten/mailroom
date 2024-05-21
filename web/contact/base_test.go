@@ -141,14 +141,14 @@ func TestSearch(t *testing.T) {
 			method:         "POST",
 			url:            "/mr/contact/search",
 			body:           fmt.Sprintf(`{"org_id": 1, "query": "birthday = tomorrow", "group_id": %d}`, testdata.ActiveGroup.ID),
-			expectedStatus: 400,
+			expectedStatus: 422,
 			expectedError:  "can't resolve 'birthday' to attribute, scheme or field",
 		},
 		{ // 2
 			method:         "POST",
 			url:            "/mr/contact/search",
 			body:           fmt.Sprintf(`{"org_id": 1, "query": "age > tomorrow", "group_id": %d}`, testdata.ActiveGroup.ID),
-			expectedStatus: 400,
+			expectedStatus: 422,
 			expectedError:  "can't convert 'tomorrow' to a number",
 		},
 		{ // 3

@@ -17,10 +17,10 @@
             "org_id": 1,
             "query": "$"
         },
-        "status": 400,
+        "status": 422,
         "response": {
             "error": "mismatched input '$' expecting {'(', STRING, PROPERTY, TEXT}",
-            "code": "unexpected_token",
+            "code": "query:unexpected_token",
             "extra": {
                 "token": "$"
             }
@@ -34,10 +34,10 @@
             "org_id": 1,
             "query": "birthday = tomorrow"
         },
-        "status": 400,
+        "status": 422,
         "response": {
             "error": "can't resolve 'birthday' to attribute, scheme or field",
-            "code": "unknown_property",
+            "code": "query:unknown_property",
             "extra": {
                 "property": "birthday"
             }

@@ -30,12 +30,12 @@ type changeLanguageRequest struct {
 func handleChangeLanguage(ctx context.Context, rt *runtime.Runtime, r *changeLanguageRequest) (any, int, error) {
 	flow, err := goflow.ReadFlow(rt.Config, r.Flow)
 	if err != nil {
-		return fmt.Errorf("unable to read flow: %w", err), http.StatusUnprocessableEntity, nil
+		return nil, 0, fmt.Errorf("unable to read flow: %w", err)
 	}
 
 	copy, err := flow.ChangeLanguage(r.Language)
 	if err != nil {
-		return fmt.Errorf("unable to change flow language: %w", err), http.StatusUnprocessableEntity, nil
+		return nil, 0, fmt.Errorf("unable to change flow language: %w", err)
 	}
 
 	return copy, http.StatusOK, nil

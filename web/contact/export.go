@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/nyaruka/goflow/contactql"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/search"
 	"github.com/nyaruka/mailroom/runtime"
@@ -51,10 +50,6 @@ func handleExport(ctx context.Context, rt *runtime.Runtime, r *exportRequest) (a
 
 	ids, err := search.GetContactIDsForQuery(ctx, rt, oa, group, models.NilContactStatus, r.Query, -1)
 	if err != nil {
-		isQueryError, qerr := contactql.IsQueryError(err)
-		if isQueryError {
-			return qerr, http.StatusBadRequest, nil
-		}
 		return nil, 0, fmt.Errorf("error querying export: %w", err)
 	}
 

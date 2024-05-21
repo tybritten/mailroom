@@ -81,11 +81,11 @@ type URNError struct {
 func (e *URNError) Error() string { return e.msg }
 
 func newURNInUseError(index int) error {
-	return &URNError{msg: fmt.Sprintf("URN %d in use by other contacts", index), Code: "urn_taken", Index: index}
+	return &URNError{msg: fmt.Sprintf("URN %d in use by other contacts", index), Code: "taken", Index: index}
 }
 
 func newURNInvalidError(index int, cause error) error {
-	return &URNError{msg: fmt.Sprintf("URN %d invalid: %s", index, cause.Error()), Code: "urn_invalid", Index: index}
+	return &URNError{msg: fmt.Sprintf("URN %d invalid: %s", index, cause.Error()), Code: "invalid", Index: index}
 }
 
 // Contact is our mailroom struct that represents a contact
@@ -918,7 +918,7 @@ func nornalizeAndValidateURNs(urnz []urns.URN) ([]urns.URN, error) {
 	norm := make([]urns.URN, len(urnz))
 	for i, urn := range urnz {
 		norm[i] = urn.Normalize()
-		if err := urnz[i].Validate(); err != nil {
+		if err := norm[i].Validate(); err != nil {
 			return nil, newURNInvalidError(i, err)
 		}
 	}

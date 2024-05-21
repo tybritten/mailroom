@@ -129,9 +129,13 @@
                 ]
             }
         },
-        "status": 400,
+        "status": 422,
         "response": {
-            "error": "URN 1 invalid: invalid path component"
+            "error": "URN 1 invalid: invalid path component",
+            "code": "urn:invalid",
+            "extra": {
+                "index": 1
+            }
         }
     },
     {
@@ -149,9 +153,13 @@
                 ]
             }
         },
-        "status": 400,
+        "status": 422,
         "response": {
-            "error": "URN 1 in use by other contacts"
+            "error": "URN 1 in use by other contacts",
+            "code": "urn:taken",
+            "extra": {
+                "index": 1
+            }
         }
     },
     {
