@@ -359,10 +359,7 @@
         "status": 422,
         "response": {
             "error": "mismatched input '<EOF>' expecting {STRING, PROPERTY, TEXT}",
-            "code": "query:unexpected_token",
-            "extra": {
-                "token": "<EOF>"
-            }
+            "code": "query:syntax"
         }
     }
 ]

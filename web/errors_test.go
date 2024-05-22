@@ -26,10 +26,10 @@ func TestErrorToResponse(t *testing.T) {
 
 	resp, status = web.ErrorToResponse(err)
 	assert.Equal(t, "mismatched input '$' expecting {'(', STRING, PROPERTY, TEXT}", resp.Error)
-	assert.Equal(t, "query:unexpected_token", resp.Code)
+	assert.Equal(t, "query:syntax", resp.Code)
 	assert.Equal(t, 422, status)
 
 	er2JSON, err := jsonx.Marshal(resp)
 	assert.NoError(t, err)
-	assert.JSONEq(t, `{"error": "mismatched input '$' expecting {'(', STRING, PROPERTY, TEXT}", "code": "query:unexpected_token", "extra": {"token": "$"}}`, string(er2JSON))
+	assert.JSONEq(t, `{"error": "mismatched input '$' expecting {'(', STRING, PROPERTY, TEXT}", "code": "query:syntax"}`, string(er2JSON))
 }
