@@ -1,3 +1,9 @@
+v9.1.52 (2024-05-22)
+-------------------------
+ * Rework handling of urn, flow and query errors so they all get returned as 422s from web endpoints
+ * Use std library errors
+ * Remove unused contact/bulk_create endpoint
+
 v9.1.51 (2024-05-20)
 -------------------------
  * Update to latest goflow and rework calling ES
