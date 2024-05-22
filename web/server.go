@@ -90,9 +90,13 @@ func (s *Server) WrapHandler(handler Handler) http.HandlerFunc {
 			return
 		}
 
-		slog.Error("error handling request", "comp", "server", "request", r, "error", err)
+		resp, status := ErrorToResponse(err)
 
-		WriteMarshalled(w, http.StatusInternalServerError, NewErrorResponse(err))
+		if status == http.StatusInternalServerError {
+			slog.Error("error handling request", "comp", "server", "request", r, "error", err)
+		}
+
+		WriteMarshalled(w, status, resp)
 	}
 }
 
@@ -136,11 +140,11 @@ func handleIndex(ctx context.Context, rt *runtime.Runtime, r *http.Request, w ht
 }
 
 func handle404(w http.ResponseWriter, r *http.Request) {
-	WriteMarshalled(w, http.StatusNotFound, NewErrorResponse(fmt.Errorf("not found: %s", r.URL.String())))
+	WriteMarshalled(w, http.StatusNotFound, &ErrorResponse{Error: fmt.Sprintf("not found: %s", r.URL.String())})
 }
 
 func handle405(w http.ResponseWriter, r *http.Request) {
-	WriteMarshalled(w, http.StatusMethodNotAllowed, NewErrorResponse(fmt.Errorf("illegal method: %s", r.Method)))
+	WriteMarshalled(w, http.StatusMethodNotAllowed, &ErrorResponse{Error: fmt.Sprintf("illegal method: %s", r.Method)})
 }
 
 func WriteMarshalled(w http.ResponseWriter, status int, value any) error {

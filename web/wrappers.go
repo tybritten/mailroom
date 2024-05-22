@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -33,10 +32,10 @@ func MarshaledResponse(handler MarshaledHandler) Handler {
 			return err
 		}
 
-		// handler returned an error to use as the response
+		// TODO rework remaining places that handlers return error as the value
 		asError, isError := value.(error)
 		if isError {
-			value = NewErrorResponse(asError)
+			value = &ErrorResponse{Error: asError.Error()}
 		}
 
 		return WriteMarshalled(w, status, value)
@@ -49,7 +48,7 @@ func RequireAuthToken(handler Handler) Handler {
 		auth := r.Header.Get("authorization")
 
 		if rt.Config.AuthToken != "" && fmt.Sprintf("Token %s", rt.Config.AuthToken) != auth {
-			return WriteMarshalled(w, http.StatusUnauthorized, NewErrorResponse(errors.New("invalid or missing authorization header")))
+			return WriteMarshalled(w, http.StatusUnauthorized, &ErrorResponse{Error: "invalid or missing authorization header"})
 		}
 
 		// we are authenticated, call our chain

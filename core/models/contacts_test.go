@@ -162,7 +162,13 @@ func TestCreateContact(t *testing.T) {
 	assert.Equal(t, assets.GroupUUID("d636c966-79c1-4417-9f1c-82ad629773a2"), flowContact.Groups().All()[0].UUID())
 
 	_, _, err = models.CreateContact(ctx, rt.DB, oa, models.UserID(1), "Rich", `kin`, []urns.URN{urns.URN("telegram:200001")})
-	assert.EqualError(t, err, "URNs in use by other contacts")
+	assert.EqualError(t, err, "URN 0 in use by other contacts")
+
+	var uerr *models.URNError
+	if assert.ErrorAs(t, err, &uerr) {
+		assert.Equal(t, "taken", uerr.Code)
+		assert.Equal(t, 0, uerr.Index)
+	}
 }
 
 func TestCreateContactRace(t *testing.T) {

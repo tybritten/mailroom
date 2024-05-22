@@ -72,6 +72,22 @@ var contactToFlowStatus = map[ContactStatus]flows.ContactStatus{
 	ContactStatusArchived: flows.ContactStatusArchived,
 }
 
+type URNError struct {
+	msg   string
+	Code  string
+	Index int
+}
+
+func (e *URNError) Error() string { return e.msg }
+
+func newURNInUseError(index int) error {
+	return &URNError{msg: fmt.Sprintf("URN %d in use by other contacts", index), Code: "taken", Index: index}
+}
+
+func newURNInvalidError(index int, cause error) error {
+	return &URNError{msg: fmt.Sprintf("URN %d invalid: %s", index, cause.Error()), Code: "invalid", Index: index}
+}
+
 // Contact is our mailroom struct that represents a contact
 type Contact struct {
 	id            ContactID
@@ -589,9 +605,10 @@ WHERE
 
 // CreateContact creates a new contact for the passed in org with the passed in URNs
 func CreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, name string, language i18n.Language, urnz []urns.URN) (*Contact, *flows.Contact, error) {
-	// ensure all URNs are normalized
-	for i, urn := range urnz {
-		urnz[i] = urn.Normalize()
+	// ensure all URNs are normalized and valid
+	urnz, err := nornalizeAndValidateURNs(urnz)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// find current owners of these URNs
@@ -600,15 +617,17 @@ func CreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, nam
 		return nil, nil, fmt.Errorf("error looking up contacts for URNs: %w", err)
 	}
 
-	if len(uniqueContactIDs(owners)) > 0 {
-		return nil, nil, errors.New("URNs in use by other contacts")
+	for i, urn := range urnz {
+		if owners[urn] != NilContactID {
+			return nil, nil, newURNInUseError(i)
+		}
 	}
 
 	contactID, err := tryInsertContactAndURNs(ctx, db, oa.OrgID(), userID, name, language, urnz, NilChannelID)
 	if err != nil {
 		// always possible that another thread created a contact with these URNs after we checked above
 		if dbutil.IsUniqueViolation(err) {
-			return nil, nil, errors.New("URNs in use by other contacts")
+			return nil, nil, newURNInUseError(0)
 		}
 		return nil, nil, err
 	}
@@ -639,9 +658,10 @@ func CreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, nam
 // * If URNs exists and belongs to a single contact it returns that contact (other URNs are not assigned to the contact).
 // * If URNs exists and belongs to multiple contacts it will return an error.
 func GetOrCreateContact(ctx context.Context, db DB, oa *OrgAssets, urnz []urns.URN, channelID ChannelID) (*Contact, *flows.Contact, bool, error) {
-	// ensure all URNs are normalized
-	for i, urn := range urnz {
-		urnz[i] = urn.Normalize()
+	// ensure all URNs are normalized and valid
+	urnz, err := nornalizeAndValidateURNs(urnz)
+	if err != nil {
+		return nil, nil, false, err
 	}
 
 	contactID, created, err := getOrCreateContact(ctx, db, oa.OrgID(), urnz, channelID)
@@ -674,9 +694,10 @@ func GetOrCreateContact(ctx context.Context, db DB, oa *OrgAssets, urnz []urns.U
 // GetOrCreateContactsFromURNs will fetch or create the contacts for the passed in URNs, returning a map of the fetched
 // contacts and another map of the created contacts.
 func GetOrCreateContactsFromURNs(ctx context.Context, db DB, oa *OrgAssets, urnz []urns.URN) (map[urns.URN]*Contact, map[urns.URN]*Contact, error) {
-	// ensure all URNs are normalized
-	for i, urn := range urnz {
-		urnz[i] = urn.Normalize()
+	// ensure all URNs are normalized and valid
+	urnz, err := nornalizeAndValidateURNs(urnz)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// find current owners of these URNs
@@ -821,16 +842,10 @@ func uniqueContactIDs(urnMap map[urns.URN]ContactID) []ContactID {
 	return unique
 }
 
-// Tries to create a new contact for the passed in org with the passed in URNs. Returned error can be tested with `dbutil.IsUniqueViolation` to
-// determine if problem was one or more of the URNs already exist and are assigned to other contacts.
+// Tries to create a new contact for the passed in org with the passed in validated URNs. Returned error can be tested
+// with `dbutil.IsUniqueViolation` to determine if problem was one or more of the URNs already exist and are assigned to
+// other contacts.
 func tryInsertContactAndURNs(ctx context.Context, db DB, orgID OrgID, userID UserID, name string, language i18n.Language, urnz []urns.URN, channelID ChannelID) (ContactID, error) {
-	// check the URNs are valid
-	for _, urn := range urnz {
-		if err := urn.Validate(); err != nil {
-			return NilContactID, fmt.Errorf("can't insert invalid URN '%s': %w", urn, err)
-		}
-	}
-
 	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return NilContactID, fmt.Errorf("error beginning transaction: %w", err)
@@ -897,6 +912,17 @@ func insertContactAndURNs(ctx context.Context, db DBorTx, orgID OrgID, userID Us
 	}
 
 	return contactID, nil
+}
+
+func nornalizeAndValidateURNs(urnz []urns.URN) ([]urns.URN, error) {
+	norm := make([]urns.URN, len(urnz))
+	for i, urn := range urnz {
+		norm[i] = urn.Normalize()
+		if err := norm[i].Validate(); err != nil {
+			return nil, newURNInvalidError(i, err)
+		}
+	}
+	return norm, nil
 }
 
 // URNForURN will return a URN for the passed in URN including all the special query parameters

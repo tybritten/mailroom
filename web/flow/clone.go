@@ -34,14 +34,14 @@ func handleClone(ctx context.Context, rt *runtime.Runtime, r *cloneRequest) (any
 	// try to clone the flow definition
 	cloneJSON, err := goflow.CloneDefinition(r.Flow, r.DependencyMapping)
 	if err != nil {
-		return fmt.Errorf("unable to read flow: %w", err), http.StatusUnprocessableEntity, nil
+		return nil, 0, fmt.Errorf("unable to read flow: %w", err)
 	}
 
 	// read flow to check that cloning produced something valid
 	_, err = goflow.ReadFlow(rt.Config, cloneJSON)
 	if err != nil {
-		return fmt.Errorf("unable to clone flow: %w", err), http.StatusUnprocessableEntity, nil
+		return nil, 0, fmt.Errorf("unable to clone flow: %w", err)
 	}
 
-	return cloneJSON, http.StatusOK, nil
+	return json.RawMessage(cloneJSON), http.StatusOK, nil
 }

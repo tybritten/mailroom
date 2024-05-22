@@ -58,10 +58,6 @@ func handleParseQuery(ctx context.Context, rt *runtime.Runtime, r *parseRequest)
 
 	parsed, err := contactql.ParseQuery(env, r.Query, resolver)
 	if err != nil {
-		isQueryError, qerr := contactql.IsQueryError(err)
-		if isQueryError {
-			return qerr, http.StatusBadRequest, nil
-		}
 		return nil, 0, err
 	}
 

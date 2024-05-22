@@ -33,7 +33,7 @@ type inspectRequest struct {
 func handleInspect(ctx context.Context, rt *runtime.Runtime, r *inspectRequest) (any, int, error) {
 	flow, err := goflow.ReadFlow(rt.Config, r.Flow)
 	if err != nil {
-		return fmt.Errorf("unable to read flow: %w", err), http.StatusUnprocessableEntity, nil
+		return nil, 0, fmt.Errorf("unable to read flow: %w", err)
 	}
 
 	var sa flows.SessionAssets

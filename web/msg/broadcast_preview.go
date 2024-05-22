@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/nyaruka/goflow/assets"
-	"github.com/nyaruka/goflow/contactql"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/search"
@@ -69,11 +68,7 @@ func handleBroadcastPreview(ctx context.Context, rt *runtime.Runtime, r *preview
 
 	query, err := search.BuildRecipientsQuery(oa, nil, groups, r.Include.ContactUUIDs, r.Include.Query, r.Exclude, nil)
 	if err != nil {
-		isQueryError, qerr := contactql.IsQueryError(err)
-		if isQueryError {
-			return qerr, http.StatusBadRequest, nil
-		}
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("error building query: %w", err)
 	}
 	if query == "" {
 		return &previewResponse{Query: "", Total: 0}, http.StatusOK, nil

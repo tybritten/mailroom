@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/nyaruka/goflow/contactql"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/search"
 	"github.com/nyaruka/mailroom/runtime"
@@ -60,10 +59,6 @@ func handleExportPreview(ctx context.Context, rt *runtime.Runtime, r *previewReq
 
 	_, total, err := search.GetContactTotal(ctx, rt, oa, group, r.Query)
 	if err != nil {
-		isQueryError, qerr := contactql.IsQueryError(err)
-		if isQueryError {
-			return qerr, http.StatusBadRequest, nil
-		}
 		return nil, 0, fmt.Errorf("error querying preview: %w", err)
 	}
 
