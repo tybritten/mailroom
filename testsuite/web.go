@@ -143,6 +143,8 @@ func RunWebTests(t *testing.T, ctx context.Context, rt *runtime.Runtime, truthFi
 			}
 
 			if expectedIsJSON {
+				assert.Equal(t, "application/json", resp.Header.Get("Content-Type"), "%s: unexpected content type", tc.Label)
+
 				test.AssertEqualJSON(t, expectedResponse, actual.actualResponse, "%s: unexpected JSON response", tc.Label)
 			} else {
 				assert.Equal(t, string(expectedResponse), string(actual.actualResponse), "%s: unexpected response", tc.Label)
