@@ -1,3 +1,7 @@
+v9.1.53 (2024-05-24)
+-------------------------
+ * Update deps including goflow
+
 v9.1.52 (2024-05-22)
 -------------------------
  * Rework handling of urn, flow and query errors so they all get returned as 422s from web endpoints
