@@ -1,3 +1,7 @@
+v9.1.54 (2024-05-24)
+-------------------------
+ * Actually update goflow
+
 v9.1.53 (2024-05-24)
 -------------------------
  * Update deps including goflow
