@@ -92,5 +92,31 @@
                 "count": 1
             }
         ]
+    },
+    {
+        "label": "invalid phone number creates 422 response",
+        "method": "POST",
+        "path": "/mr/android/message",
+        "body": {
+            "org_id": 1,
+            "channel_id": 10000,
+            "phone": "+4625",
+            "text": "Hola",
+            "received_on": "2024-04-01T12:00:00Z"
+        },
+        "status": 422,
+        "response": {
+            "error": "URN 0 invalid: not a possible number",
+            "code": "urn:invalid",
+            "extra": {
+                "index": 0
+            }
+        },
+        "db_assertions": [
+            {
+                "query": "SELECT count(*) FROM msgs_msg WHERE direction = 'I' and contact_id = 30000 AND text = 'Hola'",
+                "count": 1
+            }
+        ]
     }
 ]

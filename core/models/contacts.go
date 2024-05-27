@@ -84,7 +84,7 @@ func newURNInUseError(index int) error {
 	return &URNError{msg: fmt.Sprintf("URN %d in use by other contacts", index), Code: "taken", Index: index}
 }
 
-func newURNInvalidError(index int, cause error) error {
+func NewURNInvalidError(index int, cause error) error {
 	return &URNError{msg: fmt.Sprintf("URN %d invalid: %s", index, cause.Error()), Code: "invalid", Index: index}
 }
 
@@ -919,7 +919,7 @@ func nornalizeAndValidateURNs(urnz []urns.URN) ([]urns.URN, error) {
 	for i, urn := range urnz {
 		norm[i] = urn.Normalize()
 		if err := norm[i].Validate(); err != nil {
-			return nil, newURNInvalidError(i, err)
+			return nil, NewURNInvalidError(i, err)
 		}
 	}
 	return norm, nil
