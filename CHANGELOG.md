@@ -1,3 +1,7 @@
+v9.1.55 (2024-05-27)
+-------------------------
+ * Android endpoint should return 422 for invalid phone number
+
 v9.1.54 (2024-05-24)
 -------------------------
  * Actually update goflow
