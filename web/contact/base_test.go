@@ -210,7 +210,7 @@ func TestSearch(t *testing.T) {
 			body = bytes.NewReader([]byte(tc.body))
 		}
 
-		req, err := http.NewRequest(tc.method, "http://localhost:8090"+tc.url, body)
+		req, err := http.NewRequest(tc.method, "http://localhost:8091"+tc.url, body)
 		assert.NoError(t, err, "%d: error creating request", i)
 
 		resp, err := http.DefaultClient.Do(req)

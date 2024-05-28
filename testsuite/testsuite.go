@@ -72,6 +72,7 @@ func Runtime() (context.Context, *runtime.Runtime) {
 
 	cfg := runtime.NewDefaultConfig()
 	cfg.ElasticContactsIndex = elasticContactsIndex
+	cfg.Port = 8091
 
 	dbx := getDB()
 	rt := &runtime.Runtime{
