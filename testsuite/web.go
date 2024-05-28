@@ -84,7 +84,7 @@ func RunWebTests(t *testing.T, ctx context.Context, rt *runtime.Runtime, truthFi
 			httpx.SetRequestor(httpx.DefaultRequestor)
 		}
 
-		testURL := "http://localhost:8090" + tc.Path
+		testURL := "http://localhost:8091" + tc.Path
 		var req *http.Request
 		if tc.BodyEncode == "multipart" {
 			var parts []MultiPartPart
