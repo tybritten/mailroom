@@ -54,7 +54,7 @@ func (t *PopulateDynamicGroupTask) Perform(ctx context.Context, rt *runtime.Runt
 
 	slog.Info("starting population of smart group", "group_id", t.GroupID, "org_id", oa.OrgID(), "query", t.Query)
 
-	count, err := search.PopulateSmartGroup(ctx, rt, rt.ES, oa, t.GroupID, t.Query)
+	count, err := search.PopulateSmartGroup(ctx, rt, oa, t.GroupID, t.Query)
 	if err != nil {
 		return fmt.Errorf("error populating smart group: %d: %w", t.GroupID, err)
 	}

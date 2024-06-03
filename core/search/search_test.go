@@ -1,8 +1,12 @@
 package search_test
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/gocommon/uuids"
+	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/search"
 	"github.com/nyaruka/mailroom/testsuite"
@@ -119,8 +123,23 @@ func TestGetContactIDsForQueryPage(t *testing.T) {
 func TestGetContactIDsForQuery(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
+	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetElastic)
+
 	oa, err := models.GetOrgAssets(ctx, rt, 1)
 	require.NoError(t, err)
+
+	// so that we can test queries that span multiple responses
+	cylonIDs := make([]models.ContactID, 10003)
+	for i := range 10003 {
+		cylonIDs[i] = testdata.InsertContact(rt, testdata.Org1, flows.ContactUUID(uuids.New()), fmt.Sprintf("Cylon %d", i), i18n.NilLanguage, models.ContactStatusActive).ID
+	}
+
+	// create some extra contacts in the other org to be sure we're filtering correctly
+	testdata.InsertContact(rt, testdata.Org2, flows.ContactUUID(uuids.New()), "George", i18n.NilLanguage, models.ContactStatusActive)
+	testdata.InsertContact(rt, testdata.Org2, flows.ContactUUID(uuids.New()), "Bob", i18n.NilLanguage, models.ContactStatusActive)
+	testdata.InsertContact(rt, testdata.Org2, flows.ContactUUID(uuids.New()), "Cylon 0", i18n.NilLanguage, models.ContactStatusActive)
+
+	testsuite.ReindexElastic(ctx)
 
 	tcs := []struct {
 		group            *testdata.Group
@@ -171,6 +190,13 @@ func TestGetContactIDsForQuery(t *testing.T) {
 			query:            "",
 			limit:            1,
 			expectedContacts: []models.ContactID{testdata.Cathy.ID},
+		},
+		{
+			group:            nil,
+			status:           models.ContactStatusActive,
+			query:            "name has cylon",
+			limit:            -1,
+			expectedContacts: cylonIDs,
 		},
 		{
 			group:         nil,

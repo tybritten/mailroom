@@ -61,7 +61,7 @@ func TestSmartGroups(t *testing.T) {
 		err := models.UpdateGroupStatus(ctx, rt.DB, testdata.DoctorsGroup.ID, models.GroupStatusInitializing)
 		assert.NoError(t, err)
 
-		count, err := search.PopulateSmartGroup(ctx, rt, rt.ES, oa, testdata.DoctorsGroup.ID, tc.query)
+		count, err := search.PopulateSmartGroup(ctx, rt, oa, testdata.DoctorsGroup.ID, tc.query)
 		assert.NoError(t, err, "error populating smart group for: %s", tc.query)
 
 		assert.Equal(t, count, len(tc.expectedContactIDs), "%d: contact count mismatch", i)
