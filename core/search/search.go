@@ -3,7 +3,6 @@ package search
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"strconv"
 	"time"
@@ -154,10 +153,7 @@ func GetContactIDsForQueryPage(ctx context.Context, rt *runtime.Runtime, oa *mod
 	}
 
 	ids := make([]models.ContactID, 0, pageSize)
-	ids, err = appendIDsFromHits(ids, results.Hits.Hits)
-	if err != nil {
-		return nil, nil, 0, err
-	}
+	ids = appendIDsFromHits(ids, results.Hits.Hits)
 
 	slog.Debug("paged contact query complete", "org_id", oa.OrgID(), "query", query, "elapsed", time.Since(start), "page_count", len(ids), "total_count", results.Hits.TotalHits.Value)
 
@@ -168,7 +164,6 @@ func GetContactIDsForQueryPage(ctx context.Context, rt *runtime.Runtime, oa *mod
 func GetContactIDsForQuery(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, group *models.Group, status models.ContactStatus, query string, limit int) ([]models.ContactID, error) {
 	env := oa.Env()
 	index := rt.Config.ElasticContactsIndex
-	start := time.Now()
 	var parsed *contactql.ContactQuery
 	var err error
 
@@ -187,62 +182,71 @@ func GetContactIDsForQuery(ctx context.Context, rt *runtime.Runtime, oa *models.
 	routing := strconv.FormatInt(int64(oa.OrgID()), 10)
 	eq := BuildElasticQuery(oa, group, status, nil, parsed)
 	sort := elastic.SortBy("id", true)
-
 	ids := make([]models.ContactID, 0, 100)
 
-	// if limit provided that can be done with regular search, do that
-	if limit >= 0 && limit <= 10000 {
+	// if limit provided that can be done with single search, do that
+	if limit >= 0 && limit <= 10_000 {
 		src := map[string]any{
-			"_source": false,
-			"query":   eq,
-			"sort":    []any{sort},
-			"from":    0,
-			"size":    limit,
+			"_source":          false,
+			"query":            eq,
+			"sort":             []any{sort},
+			"from":             0,
+			"size":             limit,
+			"track_total_hits": false,
 		}
 
 		results, err := rt.ES.Search(index).Routing(routing).Source(string(jsonx.MustMarshal(src))).Do(ctx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error searching ES index: %w", err)
 		}
-		return appendIDsFromHits(ids, results.Hits.Hits)
+		return appendIDsFromHits(ids, results.Hits.Hits), nil
 	}
 
-	// for larger limits, use scroll service
-	// note that this is no longer recommended, see https://www.elastic.co/guide/en/elasticsearch/reference/current/scroll-api.html
+	// for larger limits we need to take a point in time and iterate through multiple search requests using search_after
+	pit, err := rt.ES.OpenPointInTime(index).Routing(routing).KeepAlive("1m").Do(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error creating ES point-in-time: %w", err)
+	}
+
 	src := map[string]any{
-		"_source": false,
-		"query":   eq,
-		"sort":    []any{sort},
+		"_source":          false,
+		"query":            eq,
+		"sort":             []any{sort},
+		"pit":              map[string]any{"id": pit.Id, "keep_alive": "1m"},
+		"size":             10_000,
+		"track_total_hits": false,
 	}
 
-	scroll := rt.ES.Scroll(index).Routing(routing).KeepAlive("15m").Body(src).Size(10000)
 	for {
-		results, err := scroll.Do(ctx)
-		if err == io.EOF {
-			slog.Debug("contact query complete", "org_id", oa.OrgID(), "query", query, "elapsed", time.Since(start), "match_count", len(ids))
-
-			return ids, nil
-		}
+		results, err := rt.ES.Search().Source(string(jsonx.MustMarshal(src))).Do(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("error scrolling through results for search: %s: %w", query, err)
+			return nil, fmt.Errorf("error searching ES index: %w", err)
 		}
 
-		ids, err = appendIDsFromHits(ids, results.Hits.Hits)
-		if err != nil {
-			return nil, err
+		if len(results.Hits.Hits) == 0 {
+			break
 		}
+
+		ids = appendIDsFromHits(ids, results.Hits.Hits)
+
+		lastHit := results.Hits.Hits[len(results.Hits.Hits)-1]
+		src["search_after"] = lastHit.Sort
 	}
+
+	if _, err := rt.ES.ClosePointInTime(pit.Id).Do(ctx); err != nil {
+		return nil, fmt.Errorf("error closing ES point-in-time: %w", err)
+	}
+
+	return ids, nil
 }
 
 // utility to convert search hits to contact IDs and append them to the given slice
-func appendIDsFromHits(ids []models.ContactID, hits []*eslegacy.SearchHit) ([]models.ContactID, error) {
+func appendIDsFromHits(ids []models.ContactID, hits []*eslegacy.SearchHit) []models.ContactID {
 	for _, hit := range hits {
 		id, err := strconv.Atoi(hit.Id)
-		if err != nil {
-			return nil, fmt.Errorf("unexpected non-integer contact id: %s: %w", hit.Id, err)
+		if err == nil {
+			ids = append(ids, models.ContactID(id))
 		}
-
-		ids = append(ids, models.ContactID(id))
 	}
-	return ids, nil
+	return ids
 }

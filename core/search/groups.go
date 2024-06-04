@@ -8,12 +8,11 @@ import (
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/olivere/elastic/v7"
 )
 
 // PopulateSmartGroup calculates which members should be part of a group and populates the contacts
 // for that group by performing the minimum number of inserts / deletes.
-func PopulateSmartGroup(ctx context.Context, rt *runtime.Runtime, es *elastic.Client, oa *models.OrgAssets, groupID models.GroupID, query string) (int, error) {
+func PopulateSmartGroup(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, groupID models.GroupID, query string) (int, error) {
 	err := models.UpdateGroupStatus(ctx, rt.DB, groupID, models.GroupStatusEvaluating)
 	if err != nil {
 		return 0, fmt.Errorf("error marking dynamic group as evaluating: %w", err)
