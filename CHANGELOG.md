@@ -1,3 +1,8 @@
+v9.1.56 (2024-06-04)
+-------------------------
+ * Replace usage of deprecated elastic scroll API
+ * Run tests on port 8091 to avoid conflicts with local dev server
+
 v9.1.55 (2024-05-27)
 -------------------------
  * Android endpoint should return 422 for invalid phone number
