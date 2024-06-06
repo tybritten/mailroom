@@ -1,3 +1,7 @@
+v9.1.59 (2024-06-06)
+-------------------------
+ * Add endpoint to validate and resolve URNs
+
 v9.1.58 (2024-06-06)
 -------------------------
  * Update goflow
