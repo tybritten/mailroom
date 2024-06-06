@@ -252,6 +252,12 @@ func TestParseQuery(t *testing.T) {
 	testsuite.RunWebTests(t, ctx, rt, "testdata/parse_query.json", nil)
 }
 
+func TestURNs(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	testsuite.RunWebTests(t, ctx, rt, "testdata/urns.json", nil)
+}
+
 func TestSpecToCreation(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
