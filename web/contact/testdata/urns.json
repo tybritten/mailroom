@@ -19,6 +19,7 @@
                 "tel:+16055741111",
                 "tel:+1 (605) 574 2222",
                 "tel:+1-6055747777",
+                "tel:1234",
                 "tel:[[[",
                 "xyz:2345",
                 "abc"
@@ -29,14 +30,20 @@
             "urns": [
                 {
                     "normalized": "tel:+16055741111",
-                    "contact_id": 10000
+                    "contact_id": 10000,
+                    "e164": true
                 },
                 {
                     "normalized": "tel:+16055742222",
-                    "contact_id": 10001
+                    "contact_id": 10001,
+                    "e164": true
                 },
                 {
-                    "normalized": "tel:+16055747777"
+                    "normalized": "tel:+16055747777",
+                    "e164": true
+                },
+                {
+                    "normalized": "tel:1234"
                 },
                 {
                     "normalized": "tel:[[[",
