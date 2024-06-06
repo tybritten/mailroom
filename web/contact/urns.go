@@ -20,42 +20,52 @@ func init() {
 //
 //	{
 //	  "org_id": 1,
-//	  "urns": ["tel:+593979123456", "webchat:123456", "line:1234567890"]
+//	  "urns": ["tel:+593 979 123456", "webchat:123456", "line:1234567890"]
 //	}
 //
 //	{
-//	  "tel:+593979123456": 35657,
-//	  "webchat:123456": "invalid path component"
-//	  "line:1234567890": null
+//	  "urns": [
+//	    {"normalized": "tel:+593979123456", "contact_id": 35657},
+//	    {"normalized": "webchat:123456", "error": "invalid path component"}
+//	    {"normalized": "line:1234567890"}
+//	  ]
 //	}
 type urnsRequest struct {
 	OrgID models.OrgID `json:"org_id"   validate:"required"`
 	URNs  []urns.URN   `json:"urns"  validate:"required"`
 }
 
+type urnResult struct {
+	Normalized urns.URN         `json:"normalized"`
+	ContactID  models.ContactID `json:"contact_id,omitempty"`
+	Error      string           `json:"error,omitempty"`
+}
+
 // handles a request to create the given contact
 func handleURNs(ctx context.Context, rt *runtime.Runtime, r *urnsRequest) (any, int, error) {
-	urnsToLookup := make(map[urns.URN]urns.URN, len(r.URNs)) // normalized to original form of valid URNs
-	result := make(map[urns.URN]any, len(r.URNs))
+	urnsToLookup := make(map[urns.URN]int, len(r.URNs)) // normalized to index of valid URNs
+	results := make([]urnResult, len(r.URNs))
 
-	for _, urn := range r.URNs {
+	for i, urn := range r.URNs {
 		norm := urn.Normalize()
+
+		results[i].Normalized = norm
+
 		if err := norm.Validate(); err != nil {
-			result[urn] = err.Error()
+			results[i].Error = err.Error()
 		} else {
-			urnsToLookup[norm] = urn
+			urnsToLookup[norm] = i
 		}
 	}
 
-	owners, err := models.GetContactIDsFromURNs(ctx, rt.DB, r.OrgID, maps.Keys(urnsToLookup))
+	ownerIDs, err := models.GetContactIDsFromURNs(ctx, rt.DB, r.OrgID, maps.Keys(urnsToLookup))
 	if err != nil {
 		return nil, 0, fmt.Errorf("error getting URN owners: %w", err)
 	}
 
-	for nurn, owner := range owners {
-		orig := urnsToLookup[nurn]
-		result[orig] = owner
+	for nurn, ownerID := range ownerIDs {
+		results[urnsToLookup[nurn]].ContactID = ownerID
 	}
 
-	return result, http.StatusOK, nil
+	return map[string]any{"urns": results}, http.StatusOK, nil
 }

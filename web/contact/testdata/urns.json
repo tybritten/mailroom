@@ -20,16 +20,37 @@
                 "tel:+1 (605) 574 2222",
                 "tel:+1-6055747777",
                 "tel:[[[",
-                "xyz:2345"
+                "xyz:2345",
+                "abc"
             ]
         },
         "status": 200,
         "response": {
-            "tel:+16055741111": 10000,
-            "tel:+1 (605) 574 2222": 10001,
-            "tel:+1-6055747777": null,
-            "tel:[[[": "invalid path component",
-            "xyz:2345": "unknown URN scheme"
+            "urns": [
+                {
+                    "normalized": "tel:+16055741111",
+                    "contact_id": 10000
+                },
+                {
+                    "normalized": "tel:+16055742222",
+                    "contact_id": 10001
+                },
+                {
+                    "normalized": "tel:+16055747777"
+                },
+                {
+                    "normalized": "tel:[[[",
+                    "error": "invalid path component"
+                },
+                {
+                    "normalized": "xyz:2345",
+                    "error": "unknown URN scheme"
+                },
+                {
+                    "normalized": ":abc",
+                    "error": "scheme or path cannot be empty"
+                }
+            ]
         }
     }
 ]
