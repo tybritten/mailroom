@@ -612,7 +612,7 @@ func CreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, nam
 	}
 
 	// find current owners of these URNs
-	owners, err := contactIDsFromURNs(ctx, db, oa.OrgID(), urnz)
+	owners, err := GetContactIDsFromURNs(ctx, db, oa.OrgID(), urnz)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error looking up contacts for URNs: %w", err)
 	}
@@ -725,8 +725,8 @@ func GetOrCreateContactsFromURNs(ctx context.Context, db DB, oa *OrgAssets, urnz
 	return fetched, created, nil
 }
 
-// looks up the contact IDs who own the given urns (which should be normalized by the caller) and returns that information as a map
-func contactIDsFromURNs(ctx context.Context, db Queryer, orgID OrgID, urnz []urns.URN) (map[urns.URN]ContactID, error) {
+// GetContactIDsFromURNs looks up the contact IDs who own the given urns (which should be normalized by the caller) and returns that information as a map
+func GetContactIDsFromURNs(ctx context.Context, db Queryer, orgID OrgID, urnz []urns.URN) (map[urns.URN]ContactID, error) {
 	identityToOriginal := make(map[urns.URN]urns.URN, len(urnz))
 	identities := make([]urns.URN, len(urnz))
 	owners := make(map[urns.URN]ContactID, len(urnz))
@@ -756,9 +756,9 @@ func contactIDsFromURNs(ctx context.Context, db Queryer, orgID OrgID, urnz []urn
 	return owners, nil
 }
 
-// like contactIDsFromURNs but fetches the contacts
+// like GetContactIDsFromURNs but fetches the contacts
 func contactsFromURNs(ctx context.Context, db Queryer, oa *OrgAssets, urnz []urns.URN) (map[urns.URN]*Contact, error) {
-	ids, err := contactIDsFromURNs(ctx, db, oa.OrgID(), urnz)
+	ids, err := GetContactIDsFromURNs(ctx, db, oa.OrgID(), urnz)
 	if err != nil {
 		return nil, err
 	}
@@ -791,7 +791,7 @@ func contactsFromURNs(ctx context.Context, db Queryer, oa *OrgAssets, urnz []urn
 
 func getOrCreateContact(ctx context.Context, db DB, orgID OrgID, urnz []urns.URN, channelID ChannelID) (ContactID, bool, error) {
 	// find current owners of these URNs
-	owners, err := contactIDsFromURNs(ctx, db, orgID, urnz)
+	owners, err := GetContactIDsFromURNs(ctx, db, orgID, urnz)
 	if err != nil {
 		return NilContactID, false, fmt.Errorf("error looking up contacts for URNs: %w", err)
 	}
@@ -811,7 +811,7 @@ func getOrCreateContact(ctx context.Context, db DB, orgID OrgID, urnz []urns.URN
 	if dbutil.IsUniqueViolation(err) {
 		// another thread must have created contacts with these URNs in the time between us looking them up and trying to
 		// create them ourselves, so let's try to fetch that contact
-		owners, err := contactIDsFromURNs(ctx, db, orgID, urnz)
+		owners, err := GetContactIDsFromURNs(ctx, db, orgID, urnz)
 		if err != nil {
 			return NilContactID, false, fmt.Errorf("error looking up contacts for URNs: %w", err)
 		}

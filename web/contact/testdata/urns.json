@@ -1,0 +1,35 @@
+[
+    {
+        "label": "error if fields not provided",
+        "method": "POST",
+        "path": "/mr/contact/urns",
+        "body": {},
+        "status": 400,
+        "response": {
+            "error": "request failed validation: field 'org_id' is required, field 'urns' is required"
+        }
+    },
+    {
+        "label": "normalizes, validates and resolves urns",
+        "method": "POST",
+        "path": "/mr/contact/urns",
+        "body": {
+            "org_id": 1,
+            "urns": [
+                "tel:+16055741111",
+                "tel:+1 (605) 574 2222",
+                "tel:+1-6055747777",
+                "tel:[[[",
+                "xyz:2345"
+            ]
+        },
+        "status": 200,
+        "response": {
+            "tel:+16055741111": 10000,
+            "tel:+1 (605) 574 2222": 10001,
+            "tel:+1-6055747777": null,
+            "tel:[[[": "invalid path component",
+            "xyz:2345": "unknown URN scheme"
+        }
+    }
+]
