@@ -1,12 +1,14 @@
 package search
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/nyaruka/gocommon/elastic"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/goflow/assets"
@@ -14,7 +16,6 @@ import (
 	"github.com/nyaruka/goflow/contactql/es"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-	eslegacy "github.com/olivere/elastic/v7"
 )
 
 // AssetMapper maps resolved assets in queries to how we identify them in ES which in the case
@@ -89,18 +90,12 @@ func GetContactTotal(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAss
 	eq := BuildElasticQuery(oa, group, models.NilContactStatus, nil, parsed)
 	src := map[string]any{"query": eq}
 
-	count, err := rt.ES.Count(rt.Config.ElasticContactsIndex).Routing(routing).BodyJson(src).Do(ctx)
+	count, err := rt.ES.Count().Index(rt.Config.ElasticContactsIndex).Routing(routing).Raw(bytes.NewReader(jsonx.MustMarshal(src))).Do(ctx)
 	if err != nil {
-		// Get *elastic.Error which contains additional information
-		ee, ok := err.(*eslegacy.Error)
-		if !ok {
-			return nil, 0, fmt.Errorf("error performing query: %w", err)
-		}
-
-		return nil, 0, fmt.Errorf("error performing query: %s: %w", ee.Details.Reason, err)
+		return nil, 0, fmt.Errorf("error performing count: %w", err)
 	}
 
-	return parsed, count, nil
+	return parsed, count.Count, nil
 }
 
 // GetContactIDsForQueryPage returns a page of contact ids for the given query and sort
@@ -139,25 +134,17 @@ func GetContactIDsForQueryPage(ctx context.Context, rt *runtime.Runtime, oa *mod
 		"track_total_hits": true,
 	}
 
-	s := rt.ES.Search(index).Routing(routing).Source(string(jsonx.MustMarshal(src)))
-
-	results, err := s.Do(ctx)
+	results, err := rt.ES.Search().Index(index).Routing(routing).Raw(bytes.NewReader(jsonx.MustMarshal(src))).Do(ctx)
 	if err != nil {
-		// Get *elastic.Error which contains additional information
-		ee, ok := err.(*eslegacy.Error)
-		if !ok {
-			return nil, nil, 0, fmt.Errorf("error performing query: %w", err)
-		}
-
-		return nil, nil, 0, fmt.Errorf("error performing query: %s: %w", ee.Details.Reason, err)
+		return nil, nil, 0, fmt.Errorf("error performing query: %w", err)
 	}
 
 	ids := make([]models.ContactID, 0, pageSize)
 	ids = appendIDsFromHits(ids, results.Hits.Hits)
 
-	slog.Debug("paged contact query complete", "org_id", oa.OrgID(), "query", query, "elapsed", time.Since(start), "page_count", len(ids), "total_count", results.Hits.TotalHits.Value)
+	slog.Debug("paged contact query complete", "org_id", oa.OrgID(), "query", query, "elapsed", time.Since(start), "page_count", len(ids), "total_count", results.Hits.Total.Value)
 
-	return parsed, ids, results.Hits.TotalHits.Value, nil
+	return parsed, ids, results.Hits.Total.Value, nil
 }
 
 // GetContactIDsForQuery returns up to limit the contact ids that match the given query, sorted by id. Limit of -1 means return all.
@@ -195,7 +182,7 @@ func GetContactIDsForQuery(ctx context.Context, rt *runtime.Runtime, oa *models.
 			"track_total_hits": false,
 		}
 
-		results, err := rt.ES.Search(index).Routing(routing).Source(string(jsonx.MustMarshal(src))).Do(ctx)
+		results, err := rt.ES.Search().Index(index).Routing(routing).Raw(bytes.NewReader(jsonx.MustMarshal(src))).Do(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("error searching ES index: %w", err)
 		}
@@ -218,7 +205,7 @@ func GetContactIDsForQuery(ctx context.Context, rt *runtime.Runtime, oa *models.
 	}
 
 	for {
-		results, err := rt.ES.Search().Source(string(jsonx.MustMarshal(src))).Do(ctx)
+		results, err := rt.ES.Search().Raw(bytes.NewReader(jsonx.MustMarshal(src))).Do(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("error searching ES index: %w", err)
 		}
@@ -233,7 +220,7 @@ func GetContactIDsForQuery(ctx context.Context, rt *runtime.Runtime, oa *models.
 		src["search_after"] = lastHit.Sort
 	}
 
-	if _, err := rt.ES.ClosePointInTime(pit.Id).Do(ctx); err != nil {
+	if _, err := rt.ES.ClosePointInTime().Id(pit.Id).Do(ctx); err != nil {
 		return nil, fmt.Errorf("error closing ES point-in-time: %w", err)
 	}
 
@@ -241,9 +228,9 @@ func GetContactIDsForQuery(ctx context.Context, rt *runtime.Runtime, oa *models.
 }
 
 // utility to convert search hits to contact IDs and append them to the given slice
-func appendIDsFromHits(ids []models.ContactID, hits []*eslegacy.SearchHit) []models.ContactID {
+func appendIDsFromHits(ids []models.ContactID, hits []types.Hit) []models.ContactID {
 	for _, hit := range hits {
-		id, err := strconv.Atoi(hit.Id)
+		id, err := strconv.Atoi(*hit.Id_)
 		if err == nil {
 			ids = append(ids, models.ContactID(id))
 		}

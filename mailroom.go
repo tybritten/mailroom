@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/storage"
@@ -16,7 +17,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
 	"github.com/nyaruka/redisx"
-	"github.com/olivere/elastic/v7"
 )
 
 // Mailroom is a service for handling RapidPro events
@@ -126,7 +126,7 @@ func (mr *Mailroom) Start() error {
 	}
 
 	// initialize our elastic client
-	mr.rt.ES, err = newElasticClient(c.Elastic, c.ElasticUsername, c.ElasticPassword)
+	mr.rt.ES, err = elasticsearch.NewTypedClient(elasticsearch.Config{Addresses: []string{c.Elastic}, Username: c.ElasticUsername, Password: c.ElasticPassword})
 	if err != nil {
 		log.Error("elastic search not available", "error", err)
 	} else {
@@ -176,11 +176,6 @@ func (mr *Mailroom) Stop() error {
 
 	mr.wg.Wait()
 
-	// stop ES client if we have one
-	if mr.rt.ES != nil {
-		mr.rt.ES.Stop()
-	}
-
 	log.Info("mailroom stopped")
 	return nil
 }
@@ -202,20 +197,6 @@ func openAndCheckDBConnection(url string, maxOpenConns int) (*sql.DB, *sqlx.DB, 
 	cancel()
 
 	return db.DB, db, err
-}
-
-func newElasticClient(url string, username string, password string) (*elastic.Client, error) {
-	// enable retrying
-	backoff := elastic.NewSimpleBackoff(500, 1000, 2000)
-	backoff.Jitter(true)
-	retrier := elastic.NewBackoffRetrier(backoff)
-
-	return elastic.NewClient(
-		elastic.SetURL(url),
-		elastic.SetSniff(false),
-		elastic.SetRetrier(retrier),
-		elastic.SetBasicAuth(username, password),
-	)
 }
 
 func checkStorage(s storage.Storage) error {
