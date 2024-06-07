@@ -20,14 +20,14 @@ jobs:
           - 5432:5432
         options: --name textit-postgres-1 --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       elastic:
-          image: elasticsearch:8.13.4
-          ports:
-            - 9200:9200
-          env:
-            discovery.type: single-node
-            xpack.security.enabled: false
-          options: --ulimit memlock=-1:-1 --ulimit nofile=65536:65536
-  
+        image: elasticsearch:8.13.4
+        ports:
+          - 9200:9200
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+        options: --health-cmd "curl http://localhost:9200/_cluster/health" --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -86,7 +86,7 @@ jobs:
           go-version: ${{ env.go-version }}
 
       - name: Publish release
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         if: ${{ !contains(github.ref, '-') }}
         with:
           args: release --clean
@@ -94,7 +94,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish non-master release
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         if: contains(github.ref, '-')
         with:
           args: release --clean --skip-validate

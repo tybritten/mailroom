@@ -1,3 +1,15 @@
+v9.1.59 (2024-06-06)
+-------------------------
+ * Add endpoint to validate and resolve URNs
+
+v9.1.58 (2024-06-06)
+-------------------------
+ * Update goflow
+
+v9.1.57 (2024-06-05)
+-------------------------
+ * Update goflow
+
 v9.1.56 (2024-06-04)
 -------------------------
  * Replace usage of deprecated elastic scroll API
