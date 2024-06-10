@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/Masterminds/semver v1.5.0
-	github.com/aws/aws-sdk-go v1.53.17
+	github.com/aws/aws-sdk-go v1.53.19
 	github.com/buger/jsonparser v1.1.1
 	github.com/edganiukov/fcm v0.4.0
 	github.com/getsentry/sentry-go v0.28.0
@@ -18,7 +18,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.55.5
-	github.com/nyaruka/goflow v0.215.0
+	github.com/nyaruka/goflow v0.215.1
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.1
 	github.com/nyaruka/rp-indexer/v9 v9.1.3
