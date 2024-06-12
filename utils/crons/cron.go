@@ -46,7 +46,7 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, allInstances bo
 
 	// for jobs that run on all instances, the lock key is specific to this instance
 	if allInstances {
-		lockName = fmt.Sprintf("%s:%s", lockName, rt.Config.InstanceName)
+		lockName = fmt.Sprintf("%s:%s", lockName, rt.Config.InstanceID)
 	}
 
 	locker := redisx.NewLocker(lockName, timeout+time.Second*30)
