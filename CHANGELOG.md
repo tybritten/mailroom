@@ -1,3 +1,7 @@
+v9.1.62 (2024-06-12)
+-------------------------
+ * Update airtime to save transfer UUIDs and transaction ID as external_id
+
 v9.1.61 (2024-06-11)
 -------------------------
  * Update goflow
