@@ -94,6 +94,8 @@ github.com/nyaruka/goflow v0.216.0 h1:/2ytfB05o3lAuR1Wc2ZbVRIxH86NQm6RUhIXhE4HP3
 github.com/nyaruka/goflow v0.216.0/go.mod h1:lcdYSHmtkYzdI6VsXKpxD7ZISEHlU+6f49JKtcMJlMU=
 github.com/nyaruka/goflow v0.216.1 h1:tpMWiXNSX4gRpBa8JMLx+AsTqPV4OgvJ8dj1VswDOsg=
 github.com/nyaruka/goflow v0.216.1/go.mod h1:lcdYSHmtkYzdI6VsXKpxD7ZISEHlU+6f49JKtcMJlMU=
+github.com/nyaruka/goflow v0.216.2 h1:jLxVqbb63S5X1xJB1vHt/IyHxalQCWn0W5sa7q0w0j8=
+github.com/nyaruka/goflow v0.216.2/go.mod h1:lcdYSHmtkYzdI6VsXKpxD7ZISEHlU+6f49JKtcMJlMU=
 github.com/nyaruka/librato v1.1.1 h1:0nTYtJLl3Sn7lX3CuHsLf+nXy1k/tGV0OjVxLy3Et4s=
 github.com/nyaruka/librato v1.1.1/go.mod h1:fme1Fu1PT2qvkaBZyw8WW+SrnFe2qeeCWpvqmAaKAKE=
 github.com/nyaruka/null/v2 v2.0.3 h1:rdmMRQyVzrOF3Jff/gpU/7BDR9mQX0lcLl4yImsA3kw=
