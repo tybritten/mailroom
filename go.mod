@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/Masterminds/semver v1.5.0
-	github.com/aws/aws-sdk-go v1.53.21
+	github.com/aws/aws-sdk-go v1.54.1
 	github.com/buger/jsonparser v1.1.1
 	github.com/edganiukov/fcm v0.4.0
 	github.com/getsentry/sentry-go v0.28.1
@@ -18,7 +18,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.55.5
-	github.com/nyaruka/goflow v0.216.3
+	github.com/nyaruka/goflow v0.216.4
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.1
 	github.com/nyaruka/rp-indexer/v9 v9.1.3
@@ -30,7 +30,7 @@ require (
 	github.com/samber/slog-sentry v1.2.2
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8
+	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
 )
 
 require (
