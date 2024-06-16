@@ -91,8 +91,8 @@ func TestCron(t *testing.T) {
 	// simulate two different instances running the same cron
 	cfg1 := *rt.Config
 	cfg2 := *rt.Config
-	cfg1.InstanceName = "instance1"
-	cfg2.InstanceName = "instance2"
+	cfg1.InstanceID = "instance1"
+	cfg2.InstanceID = "instance2"
 	rt1 := *rt
 	rt1.Config = &cfg1
 	rt2 := *rt
