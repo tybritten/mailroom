@@ -1,3 +1,28 @@
+v9.1.65 (2024-06-14)
+-------------------------
+ * Fix clearing wait timeouts
+
+v9.1.64 (2024-06-14)
+-------------------------
+ * Update goflow
+
+v9.1.63 (2024-06-12)
+-------------------------
+ * Update goflow
+ * Rename config setting InstanceName to InstanceID
+
+v9.1.62 (2024-06-12)
+-------------------------
+ * Update airtime to save transfer UUIDs and transaction ID as external_id
+
+v9.1.61 (2024-06-11)
+-------------------------
+ * Update goflow
+
+v9.1.60 (2024-06-10)
+-------------------------
+ * Update to latest goflow
+
 v9.1.59 (2024-06-06)
 -------------------------
  * Add endpoint to validate and resolve URNs

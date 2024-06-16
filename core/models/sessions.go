@@ -468,7 +468,9 @@ func (s *Session) ClearWaitTimeout(ctx context.Context, db *sqlx.DB) error {
 
 	if db != nil {
 		_, err := db.ExecContext(ctx, `UPDATE flows_flowsession SET timeout_on = NULL WHERE id = $1`, s.ID())
-		return fmt.Errorf("error clearing wait timeout: %w", err)
+		if err != nil {
+			return fmt.Errorf("error clearing wait timeout: %w", err)
+		}
 	}
 	return nil
 }

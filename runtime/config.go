@@ -75,10 +75,10 @@ type Config struct {
 	LibratoToken     string `help:"the token that will be used to authenticate to Librato"`
 	FCMKey           string `help:"the FCM API key used to notify Android relayers to sync"`
 
-	InstanceName string     `help:"the unique name of this instance used for analytics"`
-	LogLevel     slog.Level `help:"the logging level courier should use"`
-	UUIDSeed     int        `help:"seed to use for UUID generation in a testing environment"`
-	Version      string     `help:"the version of this mailroom install"`
+	InstanceID string     `help:"the unique identifier of this instance, defaults to hostname"`
+	LogLevel   slog.Level `help:"the logging level courier should use"`
+	UUIDSeed   int        `help:"seed to use for UUID generation in a testing environment"`
+	Version    string     `help:"the version of this mailroom install"`
 }
 
 // NewDefaultConfig returns a new default configuration object
@@ -130,10 +130,10 @@ func NewDefaultConfig() *Config {
 		AWSSecretAccessKey: "",
 		AWSUseCredChain:    false,
 
-		InstanceName: hostname,
-		LogLevel:     slog.LevelWarn,
-		UUIDSeed:     0,
-		Version:      "Dev",
+		InstanceID: hostname,
+		LogLevel:   slog.LevelWarn,
+		UUIDSeed:   0,
+		Version:    "Dev",
 	}
 }
 
