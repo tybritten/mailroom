@@ -44,6 +44,7 @@ jobs:
           psql -h localhost -U postgres --no-password -c "CREATE USER mailroom_test PASSWORD 'temba';"
           psql -h localhost -U postgres --no-password -c "ALTER ROLE mailroom_test WITH SUPERUSER;"
           psql -h localhost -U postgres --no-password -c "CREATE DATABASE mailroom_test;"
+          psql -h localhost -U postgres --no-password -c "ALTER SYSTEM SET max_connections = 500;"
 
       - name: Install Go
         uses: actions/setup-go@v5
