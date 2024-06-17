@@ -20,11 +20,12 @@ jobs:
           - 5432:5432
         options: --name textit-postgres-1 --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       elastic:
-        image: elasticsearch:7.17.9
+        image: elasticsearch:8.13.4
         ports:
           - 9200:9200
         env:
           discovery.type: single-node
+          xpack.security.enabled: false
         options: --health-cmd "curl http://localhost:9200/_cluster/health" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
