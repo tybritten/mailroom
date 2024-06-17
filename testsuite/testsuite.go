@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/storage"
@@ -15,7 +16,7 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx/assertredis"
 	"github.com/nyaruka/rp-indexer/v9/indexers"
-	"github.com/olivere/elastic/v7"
+	"golang.org/x/exp/maps"
 )
 
 var _db *sqlx.DB
@@ -65,11 +66,6 @@ func Reset(what ResetFlag) {
 
 // Runtime returns the various runtime things a test might need
 func Runtime() (context.Context, *runtime.Runtime) {
-	es, err := elastic.NewSimpleClient(elastic.SetURL(elasticURL), elastic.SetSniff(false), elastic.SetTraceLog(&elasticLog{}))
-	if err != nil {
-		panic(err)
-	}
-
 	cfg := runtime.NewDefaultConfig()
 	cfg.ElasticContactsIndex = elasticContactsIndex
 	cfg.Port = 8091
@@ -79,7 +75,7 @@ func Runtime() (context.Context, *runtime.Runtime) {
 		DB:                dbx,
 		ReadonlyDB:        dbx.DB,
 		RP:                getRP(),
-		ES:                es,
+		ES:                getES(),
 		AttachmentStorage: storage.NewFS(attachmentStorageDir, 0766),
 		SessionStorage:    storage.NewFS(sessionStorageDir, 0766),
 		LogStorage:        storage.NewFS(logStorageDir, 0766),
@@ -99,21 +95,8 @@ func ReindexElastic(ctx context.Context) {
 	contactsIndexer := indexers.NewContactIndexer(elasticURL, elasticContactsIndex, 1, 1, 100)
 	contactsIndexer.Index(db.DB, false, false)
 
-	es.Refresh(elasticContactsIndex).Do(ctx)
-}
-
-type elasticLog struct{}
-
-func (*elasticLog) Printf(format string, v ...interface{}) {
-	if traceElastic {
-		fmt.Printf(format, v...)
-	}
-}
-
-var traceElastic = false
-
-func TraceElastic(enable bool) {
-	traceElastic = enable
+	_, err := es.Indices.Refresh().Index(elasticContactsIndex).Do(ctx)
+	noError(err)
 }
 
 // returns an open test database pool
@@ -146,8 +129,8 @@ func getRC() redis.Conn {
 }
 
 // returns an Elastic client
-func getES() *elastic.Client {
-	es, err := elastic.NewSimpleClient(elastic.SetURL(elasticURL), elastic.SetSniff(false))
+func getES() *elasticsearch.TypedClient {
+	es, err := elasticsearch.NewTypedClient(elasticsearch.Config{Addresses: []string{elasticURL}})
 	noError(err)
 	return es
 }
@@ -218,17 +201,17 @@ func resetStorage() {
 func resetElastic(ctx context.Context) {
 	es := getES()
 
-	exists, err := es.IndexExists(elasticContactsIndex).Do(ctx)
+	exists, err := es.Indices.ExistsAlias(elasticContactsIndex).Do(ctx)
 	noError(err)
 
 	if exists {
 		// get any indexes for the contacts alias
-		ar, err := es.Aliases().Index(elasticContactsIndex).Do(ctx)
+		ar, err := es.Indices.GetAlias().Name(elasticContactsIndex).Do(ctx)
 		noError(err)
 
 		// and delete them
-		for _, index := range ar.IndicesByAlias(elasticContactsIndex) {
-			_, err := es.DeleteIndex(index).Do(ctx)
+		for _, index := range maps.Keys(ar) {
+			_, err := es.Indices.Delete(index).Do(ctx)
 			noError(err)
 		}
 	}
