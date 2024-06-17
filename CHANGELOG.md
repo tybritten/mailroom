@@ -1,3 +1,7 @@
+v9.1.66 (2024-06-17)
+-------------------------
+ * Switch to official Elastic v8 client library
+
 v9.1.65 (2024-06-14)
 -------------------------
  * Fix clearing wait timeouts
