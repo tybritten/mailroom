@@ -73,7 +73,8 @@ type Config struct {
 	CourierAuthToken string `help:"the authentication token used for requests to Courier"`
 	LibratoUsername  string `help:"the username that will be used to authenticate to Librato"`
 	LibratoToken     string `help:"the token that will be used to authenticate to Librato"`
-	FCMKey           string `help:"the FCM API key used to notify Android relayers to sync"`
+
+	AndroidFCMServiceAccountFile string `help:"the FCM Service Account Credentials JSON File used to notify Android relayers to sync"`
 
 	InstanceID string     `help:"the unique identifier of this instance, defaults to hostname"`
 	LogLevel   slog.Level `help:"the logging level courier should use"`

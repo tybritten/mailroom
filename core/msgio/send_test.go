@@ -49,10 +49,9 @@ func TestQueueMessages(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	mockFCM := newMockFCMEndpoint("FCMID3")
-	defer mockFCM.Stop()
+	mockFCM := newMockFCMService("FCMID3")
 
-	fc := mockFCM.Client("FCMKEY123")
+	fc := mockFCM.Client(ctx, "testdata/android.json")
 
 	// create some Andoid channels
 	androidChannel1 := testdata.InsertChannel(rt, testdata.Org1, "A", "Android 1", "123", []string{"tel"}, "SR", map[string]any{"FCM_ID": "FCMID1"})

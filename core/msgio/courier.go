@@ -152,7 +152,7 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		}
 	}
 
-	if m.Contact != nil {
+	if m.Contact != nil && m.Contact.LastSeenOn() != nil {
 		msg.ContactLastSeenOn = m.Contact.LastSeenOn()
 	}
 

@@ -1,13 +1,11 @@
 package msgio_test
 
 import (
-	"io"
-	"net/http"
-	"net/http/httptest"
+	"context"
+	"errors"
 	"testing"
 
-	"github.com/edganiukov/fcm"
-	"github.com/nyaruka/gocommon/jsonx"
+	"firebase.google.com/go/v4/messaging"
 	"github.com/nyaruka/goflow/utils"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/msgio"
@@ -17,57 +15,53 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type MockFCMEndpoint struct {
-	server *httptest.Server
+type MockFCMService struct {
 	tokens []string
 
 	// log of messages sent to this endpoint
-	Messages []*fcm.Message
+	Messages []*messaging.Message
 }
 
-func (m *MockFCMEndpoint) Handle(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-
-	requestBody, _ := io.ReadAll(r.Body)
-
-	message := &fcm.Message{}
-	jsonx.Unmarshal(requestBody, message)
-
-	m.Messages = append(m.Messages, message)
-
-	w.Header().Set("Content-Type", "application/json")
-
-	if utils.StringSliceContains(m.tokens, message.Token, false) {
-		w.WriteHeader(200)
-		w.Write([]byte(`{}`))
-	} else {
-		w.WriteHeader(401)
-		w.Write([]byte(`{"error": "bad_token"}`))
-	}
+func (m *MockFCMService) Client(ctx context.Context, androidFCMServiceAccountFile string) *MockFCMClient {
+	return &MockFCMClient{FCMService: m}
 }
 
-func (m *MockFCMEndpoint) Stop() {
-	m.server.Close()
-}
-
-func (m *MockFCMEndpoint) Client(apiKey string) *fcm.Client {
-	client, _ := fcm.NewClient("FCMKEY123", fcm.WithEndpoint(m.server.URL))
-	return client
-}
-
-func newMockFCMEndpoint(tokens ...string) *MockFCMEndpoint {
-	mock := &MockFCMEndpoint{tokens: tokens}
-	mock.server = httptest.NewServer(http.HandlerFunc(mock.Handle))
+func newMockFCMService(tokens ...string) *MockFCMService {
+	mock := &MockFCMService{tokens: tokens}
 	return mock
+}
+
+type MockFCMClient struct {
+	FCMService *MockFCMService
+}
+
+func (fc *MockFCMClient) Send(ctx context.Context, messages ...*messaging.Message) (*messaging.BatchResponse, error) {
+	successCount := 0
+	failureCount := 0
+	sendResponses := make([]*messaging.SendResponse, len(messages))
+	var err error
+
+	for _, message := range messages {
+		fc.FCMService.Messages = append(fc.FCMService.Messages, message)
+
+		if utils.StringSliceContains(fc.FCMService.tokens, message.Token, false) {
+			successCount += 1
+			sendResponses = append(sendResponses, &messaging.SendResponse{Success: true})
+		} else {
+			failureCount += 1
+			err = errors.New("401 error: 401 Unauthorized")
+			sendResponses = append(sendResponses, &messaging.SendResponse{Error: err})
+		}
+	}
+	return &messaging.BatchResponse{SuccessCount: successCount, FailureCount: failureCount, Responses: sendResponses}, err
 }
 
 func TestSyncAndroidChannel(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
-	mockFCM := newMockFCMEndpoint("FCMID3")
-	defer mockFCM.Stop()
+	mockFCM := newMockFCMService("FCMID3")
 
-	fc := mockFCM.Client("FCMKEY123")
+	fc := mockFCM.Client(ctx, "testdata/android.json")
 
 	// create some Android channels
 	testChannel1 := testdata.InsertChannel(rt, testdata.Org1, "A", "Android 1", "123", []string{"tel"}, "SR", map[string]any{"FCM_ID": ""})       // no FCM ID
@@ -81,13 +75,13 @@ func TestSyncAndroidChannel(t *testing.T) {
 	channel2 := oa.ChannelByID(testChannel2.ID)
 	channel3 := oa.ChannelByID(testChannel3.ID)
 
-	err = msgio.SyncAndroidChannel(nil, channel1)
+	err = msgio.SyncAndroidChannel(ctx, nil, channel1)
 	assert.EqualError(t, err, "instance has no FCM configuration")
-	err = msgio.SyncAndroidChannel(fc, channel1)
+	err = msgio.SyncAndroidChannel(ctx, fc, channel1)
 	assert.NoError(t, err)
-	err = msgio.SyncAndroidChannel(fc, channel2)
+	err = msgio.SyncAndroidChannel(ctx, fc, channel2)
 	assert.EqualError(t, err, "error syncing channel: 401 error: 401 Unauthorized")
-	err = msgio.SyncAndroidChannel(fc, channel3)
+	err = msgio.SyncAndroidChannel(ctx, fc, channel3)
 	assert.NoError(t, err)
 
 	// check that we try to sync the 2 channels with FCM IDs, even tho one fails
@@ -95,19 +89,20 @@ func TestSyncAndroidChannel(t *testing.T) {
 	assert.Equal(t, "FCMID2", mockFCM.Messages[0].Token)
 	assert.Equal(t, "FCMID3", mockFCM.Messages[1].Token)
 
-	assert.Equal(t, "high", mockFCM.Messages[0].Priority)
-	assert.Equal(t, "sync", mockFCM.Messages[0].CollapseKey)
-	assert.Equal(t, map[string]any{"msg": "sync"}, mockFCM.Messages[0].Data)
+	assert.Equal(t, "high", mockFCM.Messages[0].Android.Priority)
+	assert.Equal(t, "sync", mockFCM.Messages[0].Android.CollapseKey)
+	assert.Equal(t, map[string]string{"msg": "sync"}, mockFCM.Messages[0].Data)
 }
 
 func TestCreateFCMClient(t *testing.T) {
-	_, rt := testsuite.Runtime()
+	ctx, rt := testsuite.Runtime()
 
-	rt.Config.FCMKey = "1234"
+	rt.Config.AndroidFCMServiceAccountFile = `testdata/android.json`
 
-	assert.NotNil(t, msgio.CreateFCMClient(rt.Config))
+	assert.NotNil(t, msgio.CreateFCMClient(ctx, rt.Config))
 
-	rt.Config.FCMKey = ""
+	rt.Config.AndroidFCMServiceAccountFile = ""
 
-	assert.Nil(t, msgio.CreateFCMClient(rt.Config))
+	assert.Nil(t, msgio.CreateFCMClient(ctx, rt.Config))
+
 }
