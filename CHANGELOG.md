@@ -1,3 +1,8 @@
+v9.1.68 (2024-06-19)
+-------------------------
+ * Return no recipients case as 422 status with error code
+ * Add node UUID param to msg/broadcast endpoint
+
 v9.1.67 (2024-06-19)
 -------------------------
  * Update FCM client
