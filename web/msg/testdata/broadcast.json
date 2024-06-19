@@ -92,5 +92,32 @@
                 "count": 1
             }
         ]
+    },
+    {
+        "label": "error if broadcast doesn't have any recipients",
+        "method": "POST",
+        "path": "/mr/msg/broadcast",
+        "body": {
+            "org_id": 1,
+            "user_id": 4,
+            "translations": {
+                "eng": {
+                    "text": "Anyone?"
+                }
+            },
+            "base_language": "eng",
+            "node_uuid": "4d662a8b-c8fe-4c9b-8234-5d4e1f07b45b"
+        },
+        "status": 422,
+        "response": {
+            "error": "can't create broadcast with no recipients",
+            "code": "broadcast:no_recipients"
+        },
+        "db_assertions": [
+            {
+                "query": "SELECT count(*) FROM msgs_broadcast WHERE translations->'eng'->>'text' = 'Anyone?'",
+                "count": 0
+            }
+        ]
     }
 ]

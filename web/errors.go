@@ -43,5 +43,9 @@ func ErrorToResponse(err error) (*ErrorResponse, int) {
 		}, http.StatusUnprocessableEntity
 	}
 
+	if errors.Is(err, models.ErrNoRecipients) {
+		return &ErrorResponse{Error: err.Error(), Code: "broadcast:no_recipients"}, http.StatusUnprocessableEntity
+	}
+
 	return &ErrorResponse{Error: err.Error()}, http.StatusInternalServerError
 }

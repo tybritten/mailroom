@@ -58,6 +58,10 @@ func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastReque
 		r.ContactIDs = append(r.ContactIDs, contactIDs...)
 	}
 
+	if len(r.ContactIDs) == 0 && len(r.GroupIDs) == 0 && len(r.URNs) == 0 && r.Query == "" {
+		return nil, 0, models.ErrNoRecipients
+	}
+
 	bcast := models.NewBroadcast(r.OrgID, r.Translations, models.TemplateStateUnevaluated, r.BaseLanguage, r.OptInID, r.URNs, r.ContactIDs, r.GroupIDs, r.Query, r.UserID)
 
 	tx, err := rt.DB.BeginTxx(ctx, nil)
