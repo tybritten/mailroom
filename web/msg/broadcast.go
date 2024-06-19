@@ -42,11 +42,22 @@ type broadcastRequest struct {
 	GroupIDs     []models.GroupID            `json:"group_ids"`
 	URNs         []urns.URN                  `json:"urns"`
 	Query        string                      `json:"query"`
+	NodeUUID     flows.NodeUUID              `json:"node_uuid"`
 	OptInID      models.OptInID              `json:"optin_id"`
 }
 
 // handles a request to create the given broadcast
 func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastRequest) (any, int, error) {
+	// if a node is specified, get all the contacts at that node
+	if r.NodeUUID != "" {
+		contactIDs, err := models.GetContactIDsAtNode(ctx, rt, r.OrgID, r.NodeUUID)
+		if err != nil {
+			return nil, 0, fmt.Errorf("error getting contacts at node %s: %w", r.NodeUUID, err)
+		}
+
+		r.ContactIDs = append(r.ContactIDs, contactIDs...)
+	}
+
 	bcast := models.NewBroadcast(r.OrgID, r.Translations, models.TemplateStateUnevaluated, r.BaseLanguage, r.OptInID, r.URNs, r.ContactIDs, r.GroupIDs, r.Query, r.UserID)
 
 	tx, err := rt.DB.BeginTxx(ctx, nil)
