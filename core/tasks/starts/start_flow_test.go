@@ -27,7 +27,7 @@ func TestStartFlowTask(t *testing.T) {
 	rt.DB.MustExec(`UPDATE flows_flow SET flow_type = 'B' WHERE id = $1`, testdata.SingleMessage.ID)
 
 	sID := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), time.Now(), true, nil)
-	testdata.InsertFlowRun(rt, testdata.Org1, sID, testdata.George, testdata.Favorites, models.RunStatusWaiting)
+	testdata.InsertFlowRun(rt, testdata.Org1, sID, testdata.George, testdata.Favorites, models.RunStatusWaiting, "")
 
 	tcs := []struct {
 		flowID                   models.FlowID

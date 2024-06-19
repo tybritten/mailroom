@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
@@ -71,11 +72,20 @@ func TestBroadcast(t *testing.T) {
 
 	polls := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
 
+	createRun := func(org *testdata.Org, contact *testdata.Contact, nodeUUID flows.NodeUUID) {
+		sessionID := testdata.InsertFlowSession(rt, org, contact, models.FlowTypeMessaging, models.SessionStatusWaiting, testdata.Favorites, models.NilCallID)
+		testdata.InsertFlowRun(rt, org, sessionID, contact, testdata.Favorites, models.RunStatusWaiting, nodeUUID)
+	}
+
+	// put bob and george in a flows at different nodes
+	createRun(testdata.Org1, testdata.Bob, "dd79811e-a88a-4e67-bb47-a132fe8ce3f2")
+	createRun(testdata.Org1, testdata.George, "a52a9e6d-34bb-4be1-8034-99e33d0862c6")
+
 	testsuite.RunWebTests(t, ctx, rt, "testdata/broadcast.json", map[string]string{
 		"polls_id": fmt.Sprintf("%d", polls.ID),
 	})
 
-	testsuite.AssertBatchTasks(t, testdata.Org1.ID, map[string]int{"send_broadcast": 1})
+	testsuite.AssertBatchTasks(t, testdata.Org1.ID, map[string]int{"send_broadcast": 2})
 }
 
 func TestBroadcastPreview(t *testing.T) {

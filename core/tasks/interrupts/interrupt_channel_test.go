@@ -26,7 +26,7 @@ func TestInterruptChannel(t *testing.T) {
 		sessionID := testdata.InsertWaitingSession(rt, org, contact, models.FlowTypeMessaging, flow, connectionID, time.Now(), time.Now(), false, nil)
 
 		// give session one waiting run too
-		testdata.InsertFlowRun(rt, org, sessionID, contact, flow, models.RunStatusWaiting)
+		testdata.InsertFlowRun(rt, org, sessionID, contact, flow, models.RunStatusWaiting, "")
 		return sessionID
 	}
 

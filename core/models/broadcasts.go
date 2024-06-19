@@ -58,6 +58,8 @@ type dbBroadcast struct {
 	ParentID     BroadcastID                 `db:"parent_id"`
 }
 
+var ErrNoRecipients = errors.New("can't create broadcast with no recipients")
+
 // NewBroadcast creates a new broadcast with the passed in parameters
 func NewBroadcast(orgID OrgID, translations flows.BroadcastTranslations,
 	state TemplateState, baseLanguage i18n.Language, optInID OptInID, urns []urns.URN, contactIDs []ContactID, groupIDs []GroupID, query string, createdByID UserID) *Broadcast {
