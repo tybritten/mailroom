@@ -134,7 +134,7 @@ func (mr *Mailroom) Start() error {
 	}
 
 	// warn if we won't be doing FCM syncing
-	if c.FCMKey == "" {
+	if c.AndroidFCMServiceAccountFile == "" {
 		log.Warn("fcm not configured, no android syncing")
 	}
 

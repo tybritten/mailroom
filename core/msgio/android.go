@@ -1,18 +1,25 @@
 package msgio
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
-	"github.com/edganiukov/fcm"
+	"firebase.google.com/go/v4/messaging"
+	fcm "github.com/appleboy/go-fcm"
+
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
+type fcmClient interface {
+	Send(ctx context.Context, message ...*messaging.Message) (*messaging.BatchResponse, error)
+}
+
 // SyncAndroidChannel tries to trigger sync of the given Android channel via FCM
-func SyncAndroidChannel(fc *fcm.Client, channel *models.Channel) error {
+func SyncAndroidChannel(ctx context.Context, fc fcmClient, channel *models.Channel) error {
 	if fc == nil {
 		return errors.New("instance has no FCM configuration")
 	}
@@ -25,16 +32,18 @@ func SyncAndroidChannel(fc *fcm.Client, channel *models.Channel) error {
 		return nil
 	}
 
-	sync := &fcm.Message{
-		Token:       fcmID,
-		Priority:    "high",
-		CollapseKey: "sync",
-		Data:        map[string]any{"msg": "sync"},
+	sync := &messaging.Message{
+		Token: fcmID,
+		Android: &messaging.AndroidConfig{
+			Priority:    "high",
+			CollapseKey: "sync",
+		},
+		Data: map[string]string{"msg": "sync"},
 	}
 
 	start := time.Now()
 
-	if _, err := fc.Send(sync); err != nil {
+	if _, err := fc.Send(ctx, sync); err != nil {
 		return fmt.Errorf("error syncing channel: %w", err)
 	}
 
@@ -43,11 +52,11 @@ func SyncAndroidChannel(fc *fcm.Client, channel *models.Channel) error {
 }
 
 // CreateFCMClient creates an FCM client based on the configured FCM API key
-func CreateFCMClient(cfg *runtime.Config) *fcm.Client {
-	if cfg.FCMKey == "" {
+func CreateFCMClient(ctx context.Context, cfg *runtime.Config) *fcm.Client {
+	if cfg.AndroidFCMServiceAccountFile == "" {
 		return nil
 	}
-	client, err := fcm.NewClient(cfg.FCMKey)
+	client, err := fcm.NewClient(ctx, fcm.WithCredentialsFile(cfg.AndroidFCMServiceAccountFile))
 	if err != nil {
 		panic(fmt.Errorf("unable to create FCM client: %w", err))
 	}

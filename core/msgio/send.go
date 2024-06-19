@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"slices"
 
-	"github.com/edganiukov/fcm"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"golang.org/x/exp/maps"
@@ -22,7 +21,7 @@ type contactAndChannel struct {
 }
 
 // QueueMessages tries to queue the given messages to courier or trigger Android channel syncs
-func QueueMessages(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc *fcm.Client, msgs []*models.Msg) {
+func QueueMessages(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc fcmClient, msgs []*models.Msg) {
 	queued := tryToQueue(ctx, rt, db, fc, msgs)
 
 	if len(queued) != len(msgs) {
@@ -42,7 +41,7 @@ func QueueMessages(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, f
 	}
 }
 
-func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc *fcm.Client, msgs []*models.Msg) []*models.Msg {
+func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc fcmClient, msgs []*models.Msg) []*models.Msg {
 	// messages that have been successfully queued
 	queued := make([]*models.Msg, 0, len(msgs))
 
@@ -76,14 +75,14 @@ func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc *
 		if err != nil {
 			slog.Error("error getting org assets", "error", err)
 		} else {
-			queued = append(queued, tryToQueueForOrg(rt, fc, oa, orgSends)...)
+			queued = append(queued, tryToQueueForOrg(ctx, rt, fc, oa, orgSends)...)
 		}
 	}
 
 	return queued
 }
 
-func tryToQueueForOrg(rt *runtime.Runtime, fc *fcm.Client, oa *models.OrgAssets, sends []Send) []*models.Msg {
+func tryToQueueForOrg(ctx context.Context, rt *runtime.Runtime, fc fcmClient, oa *models.OrgAssets, sends []Send) []*models.Msg {
 	// sends by courier, organized by contact+channel
 	courierSends := make(map[contactAndChannel][]Send, 100)
 
@@ -134,11 +133,11 @@ func tryToQueueForOrg(rt *runtime.Runtime, fc *fcm.Client, oa *models.OrgAssets,
 	// if we have any android messages, trigger syncs for the unique channels
 	if len(androidMsgs) > 0 {
 		if fc == nil {
-			fc = CreateFCMClient(rt.Config)
+			fc = CreateFCMClient(ctx, rt.Config)
 		}
 
 		for channel, msgs := range androidMsgs {
-			err := SyncAndroidChannel(fc, channel)
+			err := SyncAndroidChannel(ctx, fc, channel)
 			if err != nil {
 				slog.Error("error syncing messages", "error", err, "channel_uuid", channel.UUID())
 			}
