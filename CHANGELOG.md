@@ -1,3 +1,7 @@
+v9.1.67 (2024-06-19)
+-------------------------
+ * Update FCM client
+
 v9.1.66 (2024-06-17)
 -------------------------
  * Switch to official Elastic v8 client library
