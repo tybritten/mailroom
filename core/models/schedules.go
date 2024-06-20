@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -126,7 +127,7 @@ func (s *Schedule) UpdateFires(ctx context.Context, tx DBorTx, last time.Time, n
 }
 
 // GetNextFire returns the next fire for this schedule (if any)
-func (s *Schedule) GetNextFire(tz *time.Location, now time.Time) (*time.Time, error) {
+func (s *Schedule) GetNextFire(now time.Time) (*time.Time, error) {
 	// Never repeats? no next fire
 	if s.RepeatPeriod == RepeatPeriodNever {
 		return nil, nil
@@ -134,10 +135,14 @@ func (s *Schedule) GetNextFire(tz *time.Location, now time.Time) (*time.Time, er
 
 	// should have hour and minute on everything else
 	if s.RepeatHourOfDay == nil {
-		return nil, fmt.Errorf("schedule %d has no repeat_hour_of_day set", s.ID)
+		return nil, errors.New("no repeat_hour_of_day set")
 	}
 	if s.RepeatMinuteOfHour == nil {
-		return nil, fmt.Errorf("schedule %d has no repeat_minute_of_hour set", s.ID)
+		return nil, errors.New("no repeat_minute_of_hour set")
+	}
+	tz, err := s.GetTimezone()
+	if err != nil {
+		return nil, fmt.Errorf("error loading timezone: %w", err)
 	}
 
 	// increment now by a minute, we don't want to double schedule in case of small clock drifts between boxes or db
@@ -161,13 +166,13 @@ func (s *Schedule) GetNextFire(tz *time.Location, now time.Time) (*time.Time, er
 
 	case RepeatPeriodWeekly:
 		if s.RepeatDaysOfWeek == "" {
-			return nil, fmt.Errorf("schedule %d repeats weekly but has no repeat_days_of_week", s.ID)
+			return nil, errors.New("repeats weekly but has no repeat_days_of_week")
 		}
 
 		// get the days we repeat on
 		sendDays, err := s.GetRepeatDaysOfWeek()
 		if err != nil {
-			return nil, fmt.Errorf("error getting days of week for schedule %d", s.ID)
+			return nil, err
 		}
 
 		// until we are in the future, increment a day until we reach a day of week we send on
@@ -179,7 +184,7 @@ func (s *Schedule) GetNextFire(tz *time.Location, now time.Time) (*time.Time, er
 
 	case RepeatPeriodMonthly:
 		if s.RepeatDayOfMonth == nil {
-			return nil, fmt.Errorf("schedule %d repeats monthly but has no repeat_day_of_month", s.ID)
+			return nil, errors.New("repeats monthly but has no repeat_day_of_month")
 		}
 
 		// figure out our next fire day, in the case that they asked for a day greater than the number of days
@@ -219,7 +224,7 @@ const sqlSelectUnfiredSchedules = `
 SELECT ROW_TO_JSON(s) FROM (
     SELECT
         s.id,
-		s.org_id,
+        s.org_id,
         s.repeat_hour_of_day,
         s.repeat_minute_of_hour,
         s.repeat_day_of_month,

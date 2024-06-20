@@ -54,15 +54,8 @@ func (c *schedulesCron) Run(ctx context.Context, rt *runtime.Runtime) (map[strin
 		log := log.With("schedule_id", s.ID)
 		now := time.Now()
 
-		// grab our timezone
-		tz, err := s.GetTimezone()
-		if err != nil {
-			log.Error("error firing schedule, unknown timezone", "error", err)
-			continue
-		}
-
 		// calculate our next fire
-		nextFire, err := s.GetNextFire(tz, now)
+		nextFire, err := s.GetNextFire(now)
 		if err != nil {
 			log.Error("error calculating next fire for schedule", "error", err)
 			continue
