@@ -9,6 +9,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/null/v3"
 )
@@ -57,10 +58,11 @@ type Schedule struct {
 	RepeatPeriod       RepeatPeriod `db:"repeat_period"         json:"repeat_period"`
 	RepeatHourOfDay    *int         `db:"repeat_hour_of_day"    json:"repeat_hour_of_day"`
 	RepeatMinuteOfHour *int         `db:"repeat_minute_of_hour" json:"repeat_minute_of_hour"`
-	RepeatDayOfMonth   *int         `db:"repeat_day_of_month"   json:"repeat_day_of_month"`
 	RepeatDaysOfWeek   null.String  `db:"repeat_days_of_week"   json:"repeat_days_of_week"`
+	RepeatDayOfMonth   *int         `db:"repeat_day_of_month"   json:"repeat_day_of_month"`
 	NextFire           *time.Time   `db:"next_fire"             json:"next_fire"`
 	LastFire           *time.Time   `db:"last_fire"             json:"last_fire"`
+	IsPaused           bool         `db:"is_paused"`
 
 	// target that schedule has been loaded with
 	Broadcast *Broadcast `json:"broadcast,omitempty"`
@@ -69,14 +71,67 @@ type Schedule struct {
 }
 
 // NewSchedule creates a new schedule object
-func NewSchedule(period RepeatPeriod, hourOfDay, minuteOfHour, dayOfMonth *int, daysOfWeek string) *Schedule {
-	return &Schedule{
-		RepeatPeriod:       period,
-		RepeatHourOfDay:    hourOfDay,
-		RepeatMinuteOfHour: minuteOfHour,
-		RepeatDayOfMonth:   dayOfMonth,
-		RepeatDaysOfWeek:   null.String(daysOfWeek),
+func NewSchedule(oa *OrgAssets, start time.Time, repeatPeriod RepeatPeriod, repeatDaysOfWeek string) (*Schedule, error) {
+	// get start time in org timezone so that we always fire at the appropriate time regardless of timezone / dst changes
+	tz := oa.Env().Timezone()
+	start = start.In(tz)
+
+	s := &Schedule{
+		OrgID:        oa.OrgID(),
+		RepeatPeriod: repeatPeriod,
+		Timezone:     tz.String(),
 	}
+
+	if s.RepeatPeriod == RepeatPeriodNever {
+		s.NextFire = &start
+	} else {
+		hour, minute := start.Hour(), start.Minute()
+		s.RepeatHourOfDay = &hour
+		s.RepeatMinuteOfHour = &minute
+
+		if repeatPeriod == RepeatPeriodDaily {
+
+		} else if repeatPeriod == RepeatPeriodWeekly {
+			if repeatDaysOfWeek == "" {
+				return nil, errors.New("weekly repeating schedules must specify days of the week")
+			}
+			for _, day := range repeatDaysOfWeek {
+				_, found := dayStrToDayInt[day]
+				if !found {
+					return nil, fmt.Errorf("unknown day of week: %s", string(day))
+				}
+			}
+
+			s.RepeatDaysOfWeek = null.String(repeatDaysOfWeek)
+		} else if repeatPeriod == RepeatPeriodMonthly {
+			day := start.Day()
+			s.RepeatDayOfMonth = &day
+		} else {
+			return nil, fmt.Errorf("invalid repeat period: %s", repeatPeriod)
+		}
+
+		// if the given start time is in the past, calculate next fire in the future
+		if start.Before(dates.Now()) {
+			next, err := s.GetNextFire(start)
+			if err != nil {
+				return nil, err
+			}
+			s.NextFire = next
+		} else {
+			s.NextFire = &start
+		}
+	}
+
+	return s, nil
+}
+
+const sqlInsertSchedule = `
+INSERT INTO schedules_schedule( org_id,  repeat_period,  repeat_hour_of_day,  repeat_minute_of_hour,  repeat_days_of_week,  repeat_day_of_month,  next_fire,  is_paused)
+	                    VALUES(:org_id, :repeat_period, :repeat_hour_of_day, :repeat_minute_of_hour, :repeat_days_of_week, :repeat_day_of_month, :next_fire,      FALSE)
+  RETURNING id`
+
+func (s *Schedule) Insert(ctx context.Context, db DBorTx) error {
+	return BulkQuery(ctx, "insert schedule", db, sqlInsertSchedule, []any{s})
 }
 
 func (s *Schedule) GetTimezone() (*time.Location, error) {

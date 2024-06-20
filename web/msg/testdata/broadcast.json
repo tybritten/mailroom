@@ -19,6 +19,33 @@
         }
     },
     {
+        "label": "error if broadcast doesn't have any recipients",
+        "method": "POST",
+        "path": "/mr/msg/broadcast",
+        "body": {
+            "org_id": 1,
+            "user_id": 4,
+            "translations": {
+                "eng": {
+                    "text": "Anyone?"
+                }
+            },
+            "base_language": "eng",
+            "node_uuid": "4d662a8b-c8fe-4c9b-8234-5d4e1f07b45b"
+        },
+        "status": 422,
+        "response": {
+            "error": "can't create broadcast with no recipients",
+            "code": "broadcast:no_recipients"
+        },
+        "db_assertions": [
+            {
+                "query": "SELECT count(*) FROM msgs_broadcast WHERE translations->'eng'->>'text' = 'Anyone?'",
+                "count": 0
+            }
+        ]
+    },
+    {
         "label": "create broadcast and return id",
         "method": "POST",
         "path": "/mr/msg/broadcast",
@@ -94,7 +121,7 @@
         ]
     },
     {
-        "label": "error if broadcast doesn't have any recipients",
+        "label": "create a one off scheduled broadcast",
         "method": "POST",
         "path": "/mr/msg/broadcast",
         "body": {
@@ -102,21 +129,139 @@
             "user_id": 4,
             "translations": {
                 "eng": {
-                    "text": "Anyone?"
+                    "text": "Remember"
                 }
             },
             "base_language": "eng",
-            "node_uuid": "4d662a8b-c8fe-4c9b-8234-5d4e1f07b45b"
+            "contact_ids": [
+                10001
+            ],
+            "schedule": {
+                "start": "2034-06-20T14:05:30Z",
+                "repeat_period": "O"
+            }
         },
-        "status": 422,
+        "status": 200,
         "response": {
-            "error": "can't create broadcast with no recipients",
-            "code": "broadcast:no_recipients"
+            "id": 3
         },
         "db_assertions": [
             {
-                "query": "SELECT count(*) FROM msgs_broadcast WHERE translations->'eng'->>'text' = 'Anyone?'",
-                "count": 0
+                "query": "SELECT count(*) FROM msgs_broadcast WHERE translations->'eng'->>'text' = 'Remember' AND schedule_id IS NOT NULL",
+                "count": 1
+            },
+            {
+                "query": "SELECT count(*) FROM schedules_schedule WHERE repeat_period = 'O' AND repeat_hour_of_day IS NULL AND repeat_minute_of_hour IS NULL AND repeat_days_of_week IS NULL AND repeat_day_of_month IS NULL AND next_fire = '2034-06-20T14:05:30Z'",
+                "count": 1
+            }
+        ]
+    },
+    {
+        "label": "create a daily repeating scheduled broadcast",
+        "method": "POST",
+        "path": "/mr/msg/broadcast",
+        "body": {
+            "org_id": 1,
+            "user_id": 4,
+            "translations": {
+                "spa": {
+                    "text": "Buenos días"
+                }
+            },
+            "base_language": "spa",
+            "contact_ids": [
+                10001
+            ],
+            "schedule": {
+                "start": "2034-06-20T14:05:30Z",
+                "repeat_period": "D"
+            }
+        },
+        "status": 200,
+        "response": {
+            "id": 4
+        },
+        "db_assertions": [
+            {
+                "query": "SELECT count(*) FROM msgs_broadcast WHERE translations->'spa'->>'text' = 'Buenos días' AND schedule_id IS NOT NULL",
+                "count": 1
+            },
+            {
+                "query": "SELECT count(*) FROM schedules_schedule WHERE repeat_period = 'D' AND repeat_hour_of_day = 7 AND repeat_minute_of_hour = 5 AND repeat_days_of_week IS NULL AND repeat_day_of_month IS NULL AND next_fire = '2034-06-20T14:05:30Z'",
+                "count": 1
+            }
+        ]
+    },
+    {
+        "label": "create a weekly repeating scheduled broadcast",
+        "method": "POST",
+        "path": "/mr/msg/broadcast",
+        "body": {
+            "org_id": 1,
+            "user_id": 4,
+            "translations": {
+                "eng": {
+                    "text": "Happy Monday"
+                }
+            },
+            "base_language": "eng",
+            "contact_ids": [
+                10001
+            ],
+            "schedule": {
+                "start": "2034-06-20T14:05:30Z",
+                "repeat_period": "W",
+                "repeat_days_of_week": "M"
+            }
+        },
+        "status": 200,
+        "response": {
+            "id": 5
+        },
+        "db_assertions": [
+            {
+                "query": "SELECT count(*) FROM msgs_broadcast WHERE translations->'eng'->>'text' = 'Happy Monday' AND schedule_id IS NOT NULL",
+                "count": 1
+            },
+            {
+                "query": "SELECT count(*) FROM schedules_schedule WHERE repeat_period = 'W' AND repeat_hour_of_day = 7 AND repeat_minute_of_hour = 5 AND repeat_days_of_week = 'M' AND repeat_day_of_month IS NULL AND next_fire = '2034-06-20T14:05:30Z'",
+                "count": 1
+            }
+        ]
+    },
+    {
+        "label": "create a monthly repeating scheduled broadcast",
+        "method": "POST",
+        "path": "/mr/msg/broadcast",
+        "body": {
+            "org_id": 1,
+            "user_id": 4,
+            "translations": {
+                "eng": {
+                    "text": "Happy Month"
+                }
+            },
+            "base_language": "eng",
+            "contact_ids": [
+                10001
+            ],
+            "schedule": {
+                "start": "2034-06-20T14:05:30Z",
+                "repeat_period": "M"
+            }
+        },
+        "status": 200,
+        "response": {
+            "id": 6
+        },
+        "db_assertions": [
+            {
+                "query": "SELECT count(*) FROM msgs_broadcast WHERE translations->'eng'->>'text' = 'Happy Month' AND schedule_id IS NOT NULL",
+                "count": 1
+            },
+            {
+                "query": "SELECT count(*) FROM schedules_schedule WHERE repeat_period = 'M' AND repeat_hour_of_day = 7 AND repeat_minute_of_hour = 5 AND repeat_days_of_week IS NULL AND repeat_day_of_month = 20 AND next_fire = '2034-06-20T14:05:30Z'",
+                "count": 1
             }
         ]
     }

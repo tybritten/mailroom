@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/urns"
@@ -31,7 +32,12 @@ func init() {
 //	  "group_ids": [101, 102],
 //	  "contact_ids": [4646],
 //	  "urns": [4646],
-//	  "optin_id": 456
+//	  "optin_id": 456,
+//	  "schedule": {
+//	    "start": "2024-06-20T09:04:30Z",
+//	    "repeat_period": "W",
+//	    "repeat_days_of_week": "MF"
+//	  }
 //	}
 type broadcastRequest struct {
 	OrgID        models.OrgID                `json:"org_id"        validate:"required"`
@@ -44,10 +50,20 @@ type broadcastRequest struct {
 	Query        string                      `json:"query"`
 	NodeUUID     flows.NodeUUID              `json:"node_uuid"`
 	OptInID      models.OptInID              `json:"optin_id"`
+	Schedule     *struct {
+		Start            time.Time           `json:"start"`
+		RepeatPeriod     models.RepeatPeriod `json:"repeat_period"`
+		RepeatDaysOfWeek string              `json:"repeat_days_of_week"`
+	} `json:"schedule"`
 }
 
 // handles a request to create the given broadcast
 func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastRequest) (any, int, error) {
+	oa, err := models.GetOrgAssets(ctx, rt, r.OrgID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("unable to load org assets: %w", err)
+	}
+
 	// if a node is specified, get all the contacts at that node
 	if r.NodeUUID != "" {
 		contactIDs, err := models.GetContactIDsAtNode(ctx, rt, r.OrgID, r.NodeUUID)
@@ -62,11 +78,24 @@ func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastReque
 		return nil, 0, models.ErrNoRecipients
 	}
 
-	bcast := models.NewBroadcast(r.OrgID, r.Translations, models.TemplateStateUnevaluated, r.BaseLanguage, r.OptInID, r.URNs, r.ContactIDs, r.GroupIDs, r.Query, r.UserID)
-
 	tx, err := rt.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error beginning transaction: %w", err)
+	}
+
+	bcast := models.NewBroadcast(r.OrgID, r.Translations, models.TemplateStateUnevaluated, r.BaseLanguage, r.OptInID, r.URNs, r.ContactIDs, r.GroupIDs, r.Query, r.UserID)
+
+	if r.Schedule != nil {
+		sched, err := models.NewSchedule(oa, r.Schedule.Start, r.Schedule.RepeatPeriod, r.Schedule.RepeatDaysOfWeek)
+		if err != nil {
+			return fmt.Errorf("error creating schedule: %w", err), http.StatusBadRequest, nil
+		}
+
+		if err := sched.Insert(ctx, tx); err != nil {
+			return nil, 0, fmt.Errorf("error inserting schedule: %w", err)
+		}
+
+		bcast.ScheduleID = sched.ID
 	}
 
 	if err := models.InsertBroadcast(ctx, tx, bcast); err != nil {
@@ -77,13 +106,16 @@ func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastReque
 		return nil, 0, fmt.Errorf("error committing transaction: %w", err)
 	}
 
-	task := &msgs.SendBroadcastTask{Broadcast: bcast}
+	// if broadcast doesn't have a schedule, queue it up for immediate sending
+	if r.Schedule == nil {
+		task := &msgs.SendBroadcastTask{Broadcast: bcast}
 
-	rc := rt.RP.Get()
-	defer rc.Close()
-	err = tasks.Queue(rc, tasks.BatchQueue, bcast.OrgID, task, queues.HighPriority)
-	if err != nil {
-		slog.Error("error queueing broadcast task", "error", err)
+		rc := rt.RP.Get()
+		defer rc.Close()
+		err = tasks.Queue(rc, tasks.BatchQueue, bcast.OrgID, task, queues.HighPriority)
+		if err != nil {
+			slog.Error("error queueing broadcast task", "error", err)
+		}
 	}
 
 	return map[string]any{"id": bcast.ID}, http.StatusOK, nil

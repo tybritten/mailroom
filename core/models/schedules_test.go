@@ -5,13 +5,85 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestNewSchedule(t *testing.T) {
+	_, rt := testsuite.Runtime()
+
+	oa := testdata.Org1.Load(rt)
+
+	dates.SetNowSource(dates.NewFixedNowSource(time.Date(2024, 6, 20, 14, 30, 0, 0, time.UTC)))
+	defer dates.SetNowSource(dates.DefaultNowSource)
+
+	_, err := models.NewSchedule(oa, time.Date(2024, 6, 20, 14, 46, 30, 0, time.UTC), "Z", "")
+	assert.EqualError(t, err, "invalid repeat period: Z")
+
+	// create one off schedule
+	sched, err := models.NewSchedule(oa, time.Date(2024, 6, 20, 14, 45, 55, 0, time.UTC), models.RepeatPeriodNever, "")
+	assert.NoError(t, err)
+	assert.Equal(t, testdata.Org1.ID, sched.OrgID)
+	assert.Equal(t, models.RepeatPeriodNever, sched.RepeatPeriod)
+	assert.Equal(t, time.Date(2024, 6, 20, 7, 45, 55, 0, oa.Env().Timezone()), *sched.NextFire)
+
+	// create daily schedule with start in the future
+	sched, err = models.NewSchedule(oa, time.Date(2024, 6, 20, 14, 45, 55, 0, time.UTC), models.RepeatPeriodDaily, "")
+	assert.NoError(t, err)
+	assert.Equal(t, testdata.Org1.ID, sched.OrgID)
+	assert.Equal(t, models.RepeatPeriodDaily, sched.RepeatPeriod)
+	assert.Equal(t, 7, *sched.RepeatHourOfDay)
+	assert.Equal(t, 45, *sched.RepeatMinuteOfHour)
+	assert.Equal(t, time.Date(2024, 6, 20, 7, 45, 55, 0, oa.Env().Timezone()), *sched.NextFire)
+
+	// create daily schedule with start in the past
+	sched, err = models.NewSchedule(oa, time.Date(2024, 6, 20, 14, 15, 55, 0, time.UTC), models.RepeatPeriodDaily, "")
+	assert.NoError(t, err)
+	assert.Equal(t, testdata.Org1.ID, sched.OrgID)
+	assert.Equal(t, models.RepeatPeriodDaily, sched.RepeatPeriod)
+	assert.Equal(t, 7, *sched.RepeatHourOfDay)
+	assert.Equal(t, 15, *sched.RepeatMinuteOfHour)
+	assert.Equal(t, time.Date(2024, 6, 21, 7, 15, 0, 0, oa.Env().Timezone()), *sched.NextFire) // calculated
+
+	_, err = models.NewSchedule(oa, time.Date(2024, 6, 20, 14, 45, 55, 0, time.UTC), models.RepeatPeriodWeekly, "")
+	assert.EqualError(t, err, "weekly repeating schedules must specify days of the week")
+
+	// create weekly schedule with start in the future
+	sched, err = models.NewSchedule(oa, time.Date(2024, 6, 20, 14, 45, 55, 0, time.UTC), models.RepeatPeriodWeekly, "MF")
+	assert.NoError(t, err)
+	assert.Equal(t, testdata.Org1.ID, sched.OrgID)
+	assert.Equal(t, models.RepeatPeriodWeekly, sched.RepeatPeriod)
+	assert.Equal(t, 7, *sched.RepeatHourOfDay)
+	assert.Equal(t, 45, *sched.RepeatMinuteOfHour)
+	assert.Equal(t, "MF", string(sched.RepeatDaysOfWeek))
+	assert.Equal(t, time.Date(2024, 6, 20, 7, 45, 55, 0, oa.Env().Timezone()), *sched.NextFire)
+
+	// create weekly schedule with start in the past
+	sched, err = models.NewSchedule(oa, time.Date(2024, 6, 20, 14, 15, 55, 0, time.UTC), models.RepeatPeriodWeekly, "MF")
+	assert.NoError(t, err)
+	assert.Equal(t, testdata.Org1.ID, sched.OrgID)
+	assert.Equal(t, models.RepeatPeriodWeekly, sched.RepeatPeriod)
+	assert.Equal(t, 7, *sched.RepeatHourOfDay)
+	assert.Equal(t, 15, *sched.RepeatMinuteOfHour)
+	assert.Equal(t, "MF", string(sched.RepeatDaysOfWeek))
+	assert.Equal(t, time.Date(2024, 6, 21, 7, 15, 0, 0, oa.Env().Timezone()), *sched.NextFire)
+
+	// create monthly schedule with start in the past
+	sched, err = models.NewSchedule(oa, time.Date(2024, 6, 20, 14, 15, 55, 0, time.UTC), models.RepeatPeriodMonthly, "")
+	assert.NoError(t, err)
+	assert.Equal(t, testdata.Org1.ID, sched.OrgID)
+	assert.Equal(t, models.RepeatPeriodMonthly, sched.RepeatPeriod)
+	assert.Equal(t, 7, *sched.RepeatHourOfDay)
+	assert.Equal(t, 15, *sched.RepeatMinuteOfHour)
+	assert.Equal(t, 20, *sched.RepeatDayOfMonth)
+	assert.Equal(t, time.Date(2024, 7, 20, 7, 15, 0, 0, oa.Env().Timezone()), *sched.NextFire)
+}
 
 func TestGetExpired(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
@@ -68,9 +140,9 @@ func TestGetExpired(t *testing.T) {
 	assert.Equal(t, []models.GroupID{testdata.DoctorsGroup.ID}, bcast.GroupIDs)
 }
 
-func TestNextFire(t *testing.T) {
+func TestGetNextFire(t *testing.T) {
 	la, err := time.LoadLocation("America/Los_Angeles")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tcs := []struct {
 		Label         string
