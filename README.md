@@ -35,8 +35,7 @@ For use with RapidPro/TextIt, you will need to configure these settings:
 - `MAILROOM_READONLY_DB`: URL for an additional database connection for read-only operations (optional)
 - `MAILROOM_REDIS`: URL describing how to connect to Redis (default "redis://localhost:6379/15")
 - `MAILROOM_SMTP_SERVER`: the smtp configuration for sending emails ex: smtp://user%40password@server:port/?from=foo%40gmail.com
-- `MAILROOM_FCM_KEY`: the key for Firebase Cloud Messaging used to sync Android channels
-- `MAILROOM_ELASTIC`: URL describing how to connect to ElasticSearch (default "http://localhost:9200")
+- `MAILROOM_ANDROID_FCM_SERVICE_ACCOUNT_FILE`: the FCM Service Account Credentials JSON File path used to notify Android relayers to sync
 - `MAILROOM_ELASTIC_USERNAME`: ElasticSearch username for Basic Auth
 - `MAILROOM_ELASTIC_PASSWORD`: ElasticSearch password for Basic Auth
 
