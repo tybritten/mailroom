@@ -37,24 +37,24 @@ func TestGetExpired(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(schedules))
 
-	assert.Equal(t, s3, schedules[0].ID())
-	assert.Nil(t, schedules[0].Broadcast())
-	assert.Equal(t, models.RepeatPeriodNever, schedules[0].RepeatPeriod())
-	assert.NotNil(t, schedules[0].NextFire())
-	assert.Nil(t, schedules[0].LastFire())
+	assert.Equal(t, s3, schedules[0].ID)
+	assert.Nil(t, schedules[0].Broadcast)
+	assert.Equal(t, models.RepeatPeriodNever, schedules[0].RepeatPeriod)
+	assert.NotNil(t, schedules[0].NextFire)
+	assert.Nil(t, schedules[0].LastFire)
 
-	assert.Equal(t, s2, schedules[1].ID())
-	assert.Nil(t, schedules[1].Broadcast())
+	assert.Equal(t, s2, schedules[1].ID)
+	assert.Nil(t, schedules[1].Broadcast)
 
-	trigger := schedules[1].Trigger()
+	trigger := schedules[1].Trigger
 	assert.NotNil(t, trigger)
 	assert.Equal(t, testdata.Favorites.ID, trigger.FlowID())
 	assert.Equal(t, testdata.Org1.ID, trigger.OrgID())
 	assert.Equal(t, []models.ContactID{testdata.Cathy.ID, testdata.George.ID}, trigger.ContactIDs())
 	assert.Equal(t, []models.GroupID{testdata.DoctorsGroup.ID}, trigger.IncludeGroupIDs())
 
-	assert.Equal(t, s1, schedules[2].ID())
-	bcast := schedules[2].Broadcast()
+	assert.Equal(t, s1, schedules[2].ID)
+	bcast := schedules[2].Broadcast
 	assert.NotNil(t, bcast)
 	assert.Equal(t, i18n.Language("eng"), bcast.BaseLanguage)
 	assert.Equal(t, models.TemplateStateUnevaluated, bcast.TemplateState)

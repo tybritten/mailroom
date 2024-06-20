@@ -31,7 +31,12 @@ func init() {
 //	  "group_ids": [101, 102],
 //	  "contact_ids": [4646],
 //	  "urns": [4646],
-//	  "optin_id": 456
+//	  "optin_id": 456,
+//	  "schedule": {
+//	    "start_datetime": "2024-06-20T09:04:30Z",
+//	    "repeat_period": "W",
+//	    "repeat_days_of_week": "MF",
+//	  }
 //	}
 type broadcastRequest struct {
 	OrgID        models.OrgID                `json:"org_id"        validate:"required"`
