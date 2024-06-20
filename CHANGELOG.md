@@ -1,3 +1,7 @@
+v9.1.69 (2024-06-20)
+-------------------------
+ * Add support for creating broadcasts with schedules
+
 v9.1.68 (2024-06-19)
 -------------------------
  * Return no recipients case as 422 status with error code
