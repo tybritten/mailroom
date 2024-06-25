@@ -1,3 +1,7 @@
+v9.1.70 (2024-06-25)
+-------------------------
+ * Add support for exclusions on broadcasts
+
 v9.1.69 (2024-06-20)
 -------------------------
  * Add support for creating broadcasts with schedules
