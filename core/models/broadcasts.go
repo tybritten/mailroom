@@ -38,10 +38,11 @@ type Broadcast struct {
 	TemplateState TemplateState               `json:"template_state"`
 	BaseLanguage  i18n.Language               `json:"base_language"`
 	OptInID       OptInID                     `json:"optin_id"`
-	URNs          []urns.URN                  `json:"urns,omitempty"`
-	ContactIDs    []ContactID                 `json:"contact_ids,omitempty"`
 	GroupIDs      []GroupID                   `json:"group_ids,omitempty"`
+	ContactIDs    []ContactID                 `json:"contact_ids,omitempty"`
+	URNs          []urns.URN                  `json:"urns,omitempty"`
 	Query         string                      `json:"query,omitempty"`
+	Exclusions    Exclusions                  `json:"exclusions,omitempty"`
 	CreatedByID   UserID                      `json:"created_by_id,omitempty"`
 	ScheduleID    ScheduleID                  `json:"schedule_id,omitempty"`
 	ParentID      BroadcastID                 `json:"parent_id,omitempty"`
@@ -55,6 +56,7 @@ type dbBroadcast struct {
 	OptInID      OptInID                     `db:"optin_id"`
 	URNs         pq.StringArray              `db:"urns"`
 	Query        null.String                 `db:"query"`
+	Exclusions   Exclusions                  `db:"exclusions"`
 	CreatedByID  UserID                      `db:"created_by_id"`
 	ScheduleID   ScheduleID                  `db:"schedule_id"`
 	ParentID     BroadcastID                 `db:"parent_id"`
@@ -64,7 +66,7 @@ var ErrNoRecipients = errors.New("can't create broadcast with no recipients")
 
 // NewBroadcast creates a new broadcast with the passed in parameters
 func NewBroadcast(orgID OrgID, translations flows.BroadcastTranslations,
-	state TemplateState, baseLanguage i18n.Language, optInID OptInID, urns []urns.URN, contactIDs []ContactID, groupIDs []GroupID, query string, createdByID UserID) *Broadcast {
+	state TemplateState, baseLanguage i18n.Language, optInID OptInID, groupIDs []GroupID, contactIDs []ContactID, urns []urns.URN, query string, exclude Exclusions, createdByID UserID) *Broadcast {
 
 	return &Broadcast{
 		OrgID:         orgID,
@@ -72,10 +74,11 @@ func NewBroadcast(orgID OrgID, translations flows.BroadcastTranslations,
 		TemplateState: state,
 		BaseLanguage:  baseLanguage,
 		OptInID:       optInID,
-		URNs:          urns,
-		ContactIDs:    contactIDs,
 		GroupIDs:      groupIDs,
+		ContactIDs:    contactIDs,
+		URNs:          urns,
 		Query:         query,
+		Exclusions:    exclude,
 		CreatedByID:   createdByID,
 	}
 }
@@ -97,7 +100,7 @@ func NewBroadcastFromEvent(ctx context.Context, tx DBorTx, oa *OrgAssets, event 
 		}
 	}
 
-	return NewBroadcast(oa.OrgID(), event.Translations, TemplateStateEvaluated, event.BaseLanguage, NilOptInID, event.URNs, contactIDs, groupIDs, event.ContactQuery, NilUserID), nil
+	return NewBroadcast(oa.OrgID(), event.Translations, TemplateStateEvaluated, event.BaseLanguage, NilOptInID, groupIDs, contactIDs, event.URNs, event.ContactQuery, NoExclusions, NilUserID), nil
 }
 
 func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastBatch {
@@ -146,6 +149,7 @@ func InsertBroadcast(ctx context.Context, db DBorTx, bcast *Broadcast) error {
 		OptInID:      bcast.OptInID,
 		URNs:         ua,
 		Query:        null.String(bcast.Query),
+		Exclusions:   bcast.Exclusions,
 		CreatedByID:  bcast.CreatedByID,
 		ScheduleID:   bcast.ScheduleID,
 		ParentID:     bcast.ParentID,
@@ -193,10 +197,11 @@ func InsertChildBroadcast(ctx context.Context, db DBorTx, parent *Broadcast) (*B
 		parent.TemplateState,
 		parent.BaseLanguage,
 		parent.OptInID,
-		parent.URNs,
-		parent.ContactIDs,
 		parent.GroupIDs,
+		parent.ContactIDs,
+		parent.URNs,
 		parent.Query,
+		parent.Exclusions,
 		parent.CreatedByID,
 	)
 	child.ParentID = parent.ID
@@ -216,8 +221,8 @@ type broadcastGroup struct {
 
 const sqlInsertBroadcast = `
 INSERT INTO
-	msgs_broadcast( org_id,  parent_id, created_on, modified_on, status,  translations,  base_language,  urns,  optin_id,  query,  schedule_id, is_active)
-			VALUES(:org_id, :parent_id, NOW()     , NOW(),       'Q',    :translations, :base_language, :urns, :optin_id, :query, :schedule_id,      TRUE)
+	msgs_broadcast( org_id,  parent_id, created_on, modified_on, status,  translations,  base_language,  urns,  query,  exclusions,  optin_id,  schedule_id, is_active)
+			VALUES(:org_id, :parent_id, NOW()     , NOW(),       'Q',    :translations, :base_language, :urns, :query, :exclusions, :optin_id, :schedule_id,      TRUE)
 RETURNING id`
 
 const sqlInsertBroadcastContacts = `INSERT INTO msgs_broadcast_contacts(broadcast_id, contact_id) VALUES(:broadcast_id, :contact_id)`

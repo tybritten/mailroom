@@ -44,11 +44,12 @@ type broadcastRequest struct {
 	UserID       models.UserID               `json:"user_id"       validate:"required"`
 	Translations flows.BroadcastTranslations `json:"translations"  validate:"required"`
 	BaseLanguage i18n.Language               `json:"base_language" validate:"required"`
-	ContactIDs   []models.ContactID          `json:"contact_ids"`
 	GroupIDs     []models.GroupID            `json:"group_ids"`
+	ContactIDs   []models.ContactID          `json:"contact_ids"`
 	URNs         []urns.URN                  `json:"urns"`
 	Query        string                      `json:"query"`
 	NodeUUID     flows.NodeUUID              `json:"node_uuid"`
+	Exclude      models.Exclusions           `json:"exclude"`
 	OptInID      models.OptInID              `json:"optin_id"`
 	Schedule     *struct {
 		Start            time.Time           `json:"start"`
@@ -83,7 +84,7 @@ func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastReque
 		return nil, 0, fmt.Errorf("error beginning transaction: %w", err)
 	}
 
-	bcast := models.NewBroadcast(r.OrgID, r.Translations, models.TemplateStateUnevaluated, r.BaseLanguage, r.OptInID, r.URNs, r.ContactIDs, r.GroupIDs, r.Query, r.UserID)
+	bcast := models.NewBroadcast(r.OrgID, r.Translations, models.TemplateStateUnevaluated, r.BaseLanguage, r.OptInID, r.GroupIDs, r.ContactIDs, r.URNs, r.Query, r.Exclude, r.UserID)
 
 	if r.Schedule != nil {
 		sched, err := models.NewSchedule(oa, r.Schedule.Start, r.Schedule.RepeatPeriod, r.Schedule.RepeatDaysOfWeek)

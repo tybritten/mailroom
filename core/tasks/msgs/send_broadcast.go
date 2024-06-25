@@ -66,6 +66,7 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		GroupIDs:        bcast.GroupIDs,
 		URNs:            bcast.URNs,
 		Query:           string(bcast.Query),
+		Exclusions:      bcast.Exclusions,
 		ExcludeGroupIDs: nil,
 	}, -1)
 	if err != nil {

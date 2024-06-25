@@ -33,10 +33,11 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 		models.TemplateStateUnevaluated,
 		"eng",
 		optIn.ID,
-		[]urns.URN{"tel:+593979012345"},
-		[]models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID, testdata.Cathy.ID},
 		[]models.GroupID{testdata.DoctorsGroup.ID},
+		[]models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID, testdata.Cathy.ID},
+		[]urns.URN{"tel:+593979012345"},
 		"",
+		models.NoExclusions,
 		models.NilUserID,
 	)
 
@@ -46,9 +47,11 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 	assert.Equal(t, translations, bcast.Translations)
 	assert.Equal(t, models.TemplateStateUnevaluated, bcast.TemplateState)
 	assert.Equal(t, optIn.ID, bcast.OptInID)
-	assert.Equal(t, []urns.URN{"tel:+593979012345"}, bcast.URNs)
-	assert.Equal(t, []models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID, testdata.Cathy.ID}, bcast.ContactIDs)
 	assert.Equal(t, []models.GroupID{testdata.DoctorsGroup.ID}, bcast.GroupIDs)
+	assert.Equal(t, []models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID, testdata.Cathy.ID}, bcast.ContactIDs)
+	assert.Equal(t, []urns.URN{"tel:+593979012345"}, bcast.URNs)
+	assert.Equal(t, "", bcast.Query)
+	assert.Equal(t, models.NoExclusions, bcast.Exclusions)
 
 	batch := bcast.CreateBatch([]models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID}, false)
 
