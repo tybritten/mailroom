@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -124,3 +125,20 @@ func (m *JSONMap) Scan(value any) error {
 
 // Value implements the Valuer interface
 func (m JSONMap) Value() (driver.Value, error) { return json.Marshal(m) }
+
+// JSONCol is a generic wrapper which is written to and read from the database as JSON.
+type JSONCol[T any] struct {
+	Val T
+}
+
+func (t *JSONCol[T]) Scan(value any) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("failed type assertion to []byte")
+	}
+	return json.Unmarshal(b, &t.Val)
+}
+
+func (t *JSONCol[T]) Value() (driver.Value, error) {
+	return json.Marshal(t.Val)
+}

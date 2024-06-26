@@ -49,17 +49,17 @@ type Broadcast struct {
 }
 
 type dbBroadcast struct {
-	ID           BroadcastID                 `db:"id"`
-	OrgID        OrgID                       `db:"org_id"`
-	Translations flows.BroadcastTranslations `db:"translations"`
-	BaseLanguage i18n.Language               `db:"base_language"`
-	OptInID      OptInID                     `db:"optin_id"`
-	URNs         pq.StringArray              `db:"urns"`
-	Query        null.String                 `db:"query"`
-	Exclusions   Exclusions                  `db:"exclusions"`
-	CreatedByID  UserID                      `db:"created_by_id"`
-	ScheduleID   ScheduleID                  `db:"schedule_id"`
-	ParentID     BroadcastID                 `db:"parent_id"`
+	ID           BroadcastID                          `db:"id"`
+	OrgID        OrgID                                `db:"org_id"`
+	Translations JSONCol[flows.BroadcastTranslations] `db:"translations"`
+	BaseLanguage i18n.Language                        `db:"base_language"`
+	OptInID      OptInID                              `db:"optin_id"`
+	URNs         pq.StringArray                       `db:"urns"`
+	Query        null.String                          `db:"query"`
+	Exclusions   Exclusions                           `db:"exclusions"`
+	CreatedByID  UserID                               `db:"created_by_id"`
+	ScheduleID   ScheduleID                           `db:"schedule_id"`
+	ParentID     BroadcastID                          `db:"parent_id"`
 }
 
 var ErrNoRecipients = errors.New("can't create broadcast with no recipients")
@@ -144,7 +144,7 @@ func InsertBroadcast(ctx context.Context, db DBorTx, bcast *Broadcast) error {
 	dbb := &dbBroadcast{
 		ID:           bcast.ID,
 		OrgID:        bcast.OrgID,
-		Translations: bcast.Translations,
+		Translations: JSONCol[flows.BroadcastTranslations]{bcast.Translations},
 		BaseLanguage: bcast.BaseLanguage,
 		OptInID:      bcast.OptInID,
 		URNs:         ua,

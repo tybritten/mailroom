@@ -96,7 +96,7 @@ type Templating struct {
 	*flows.MsgTemplating
 }
 
-// Scan supports reading translation values from JSON in database
+// Scan supports reading templating values from JSON in database
 func (t *Templating) Scan(value any) error {
 	if value == nil {
 		return nil
