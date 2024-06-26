@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -101,26 +102,19 @@ func ScanJSONRows[T any](rows *sql.Rows, f func() T) ([]T, error) {
 	return as, nil
 }
 
-// Map is a generic map which is written to the database as JSON. For nullable fields use null.Map.
-type JSONMap map[string]any
-
-// Scan implements the Scanner interface
-func (m *JSONMap) Scan(value any) error {
-	var raw []byte
-	switch typed := value.(type) {
-	case string:
-		raw = []byte(typed)
-	case []byte:
-		raw = typed
-	default:
-		return fmt.Errorf("unable to scan %T as map", value)
-	}
-
-	if err := json.Unmarshal(raw, m); err != nil {
-		return err
-	}
-	return nil
+// JSONB is a generic wrapper for a type which should be written to and read from the database as JSON.
+type JSONB[T any] struct {
+	V T
 }
 
-// Value implements the Valuer interface
-func (m JSONMap) Value() (driver.Value, error) { return json.Marshal(m) }
+func (t *JSONB[T]) Scan(value any) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("failed type assertion to []byte")
+	}
+	return json.Unmarshal(b, &t.V)
+}
+
+func (t JSONB[T]) Value() (driver.Value, error) {
+	return json.Marshal(t.V)
+}

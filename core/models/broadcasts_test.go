@@ -74,33 +74,6 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE direction = 'O' AND broadcast_id IS NULL AND text = 'Hi there'`).Returns(2)
 }
 
-func TestBroadcastTranslations(t *testing.T) {
-	_, rt := testsuite.Runtime()
-
-	defer func() {
-		rt.DB.MustExec(`DELETE FROM msgs_broadcast_contacts`)
-		rt.DB.MustExec(`DELETE FROM msgs_broadcast`)
-	}()
-
-	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Hello", `spa`: "Hola"}, nil, models.NilScheduleID, []*testdata.Contact{testdata.Cathy}, nil)
-
-	type TestStruct struct {
-		Translations flows.BroadcastTranslations `json:"translations"`
-	}
-
-	s := &TestStruct{}
-	err := rt.DB.Get(s, `SELECT translations FROM msgs_broadcast WHERE id = $1`, bcastID)
-	require.NoError(t, err)
-
-	assert.Equal(t, flows.BroadcastTranslations{"eng": {Text: "Hello"}, "spa": {Text: "Hola"}}, s.Translations)
-
-	s.Translations = flows.BroadcastTranslations{"fra": {Text: "Bonjour"}}
-
-	rt.DB.MustExec(`UPDATE msgs_broadcast SET translations = $1 WHERE id = $2`, s.Translations, bcastID)
-
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_broadcast WHERE translations -> 'fra' ->> 'text' = 'Bonjour'`, 1)
-}
-
 func TestBroadcastBatchCreateMessage(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
