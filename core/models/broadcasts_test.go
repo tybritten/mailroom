@@ -218,4 +218,6 @@ func TestInsertChildBroadcast(t *testing.T) {
 	assert.Equal(t, parent.OrgID, child.OrgID)
 	assert.Equal(t, parent.BaseLanguage, child.BaseLanguage)
 	assert.Equal(t, parent.OptInID, child.OptInID)
+	assert.Equal(t, parent.TemplateID, child.TemplateID)
+	assert.Equal(t, parent.TemplateVariables, child.TemplateVariables)
 }
