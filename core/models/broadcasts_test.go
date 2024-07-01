@@ -18,6 +18,63 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestInsertBroadcast(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetData)
+
+	optIn := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
+
+	// create a broadcast which doesn't actually exist in the DB
+	bcast := models.NewBroadcast(
+		testdata.Org1.ID,
+		flows.BroadcastTranslations{"eng": {Text: "Hi there"}},
+		models.TemplateStateUnevaluated,
+		"eng",
+		optIn.ID,
+		[]models.GroupID{testdata.DoctorsGroup.ID},
+		[]models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID, testdata.Cathy.ID},
+		[]urns.URN{"tel:+593979012345"},
+		"",
+		models.NoExclusions,
+		models.NilUserID,
+	)
+
+	err := models.InsertBroadcast(ctx, rt.DB, bcast)
+	assert.NoError(t, err)
+	assert.NotEqual(t, models.NilBroadcastID, bcast.ID)
+
+	assertdb.Query(t, rt.DB, `SELECT base_language, translations->'eng'->>'text' AS text FROM msgs_broadcast WHERE id = $1`, bcast.ID).Columns(map[string]any{"base_language": "eng", "text": "Hi there"})
+}
+
+func TestInsertChildBroadcast(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetData)
+
+	optIn := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
+	schedID := testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodDaily, time.Now())
+	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Hello"}, optIn, schedID, []*testdata.Contact{testdata.Bob, testdata.Cathy}, nil)
+
+	var bj json.RawMessage
+	err := rt.DB.GetContext(ctx, &bj, `SELECT ROW_TO_JSON(r) FROM (
+		SELECT id, org_id, translations, base_language, optin_id, template_id, template_variables, query, created_by_id, parent_id FROM msgs_broadcast WHERE id = $1
+	) r`, bcastID)
+	require.NoError(t, err)
+
+	parent := &models.Broadcast{}
+	jsonx.MustUnmarshal(bj, parent)
+
+	child, err := models.InsertChildBroadcast(ctx, rt.DB, parent)
+	assert.NoError(t, err)
+	assert.Equal(t, parent.ID, child.ParentID)
+	assert.Equal(t, parent.OrgID, child.OrgID)
+	assert.Equal(t, parent.BaseLanguage, child.BaseLanguage)
+	assert.Equal(t, parent.OptInID, child.OptInID)
+	assert.Equal(t, parent.TemplateID, child.TemplateID)
+	assert.Equal(t, parent.TemplateVariables, child.TemplateVariables)
+}
+
 func TestNonPersistentBroadcasts(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
@@ -192,32 +249,4 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			}
 		}
 	}
-}
-
-func TestInsertChildBroadcast(t *testing.T) {
-	ctx, rt := testsuite.Runtime()
-
-	defer testsuite.Reset(testsuite.ResetData)
-
-	optIn := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
-	schedID := testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodDaily, time.Now())
-	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Hello"}, optIn, schedID, []*testdata.Contact{testdata.Bob, testdata.Cathy}, nil)
-
-	var bj json.RawMessage
-	err := rt.DB.GetContext(ctx, &bj, `SELECT ROW_TO_JSON(r) FROM (
-		SELECT id, org_id, translations, base_language, optin_id, query, created_by_id, parent_id FROM msgs_broadcast WHERE id = $1
-	) r`, bcastID)
-	require.NoError(t, err)
-
-	parent := &models.Broadcast{}
-	jsonx.MustUnmarshal(bj, parent)
-
-	child, err := models.InsertChildBroadcast(ctx, rt.DB, parent)
-	assert.NoError(t, err)
-	assert.Equal(t, parent.ID, child.ParentID)
-	assert.Equal(t, parent.OrgID, child.OrgID)
-	assert.Equal(t, parent.BaseLanguage, child.BaseLanguage)
-	assert.Equal(t, parent.OptInID, child.OptInID)
-	assert.Equal(t, parent.TemplateID, child.TemplateID)
-	assert.Equal(t, parent.TemplateVariables, child.TemplateVariables)
 }
