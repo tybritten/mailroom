@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 
@@ -116,3 +117,8 @@ SELECT ROW_TO_JSON(r) FROM (
       WHERE org_id = $1 
    ORDER BY name ASC
 ) r;`
+
+func (i *TemplateID) Scan(value any) error         { return null.ScanInt(value, i) }
+func (i TemplateID) Value() (driver.Value, error)  { return null.IntValue(i) }
+func (i *TemplateID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
+func (i TemplateID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
