@@ -1,3 +1,7 @@
+v9.1.72 (2024-07-02)
+-------------------------
+ * Fix creating broadcast to node with more than 65K contacts
+
 v9.1.71 (2024-07-02)
 -------------------------
  * Update deps
