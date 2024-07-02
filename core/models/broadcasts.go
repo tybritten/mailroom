@@ -171,7 +171,7 @@ func InsertBroadcast(ctx context.Context, db DBorTx, bcast *Broadcast) error {
 	}
 
 	// insert our contacts
-	err = BulkQuery(ctx, "inserting broadcast contacts", db, sqlInsertBroadcastContacts, contacts)
+	err = BulkQueryBatches(ctx, "inserting broadcast contacts", db, sqlInsertBroadcastContacts, 1000, contacts)
 	if err != nil {
 		return fmt.Errorf("error inserting contacts for broadcast: %w", err)
 	}
