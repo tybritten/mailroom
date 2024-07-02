@@ -435,13 +435,7 @@ func DeleteUnfiredEventFires(ctx context.Context, tx DBorTx, removes []*FireDele
 	if len(removes) == 0 {
 		return nil
 	}
-
-	// convert to list of interfaces
-	is := make([]any, len(removes))
-	for i := range removes {
-		is[i] = removes[i]
-	}
-	return BulkQueryBatches(ctx, "removing campaign event fires", tx, sqlRemoveUnfiredFires, 1000, is)
+	return BulkQueryBatches(ctx, "removing campaign event fires", tx, sqlRemoveUnfiredFires, 1000, removes)
 }
 
 const sqlRemoveUnfiredFires = `
@@ -493,13 +487,7 @@ func AddEventFires(ctx context.Context, tx DBorTx, adds []*FireAdd) error {
 	if len(adds) == 0 {
 		return nil
 	}
-
-	// convert to list of interfaces
-	is := make([]any, len(adds))
-	for i := range adds {
-		is[i] = adds[i]
-	}
-	return BulkQueryBatches(ctx, "adding campaign event fires", tx, sqlInsertEventFires, 1000, is)
+	return BulkQueryBatches(ctx, "adding campaign event fires", tx, sqlInsertEventFires, 1000, adds)
 }
 
 // DeleteUnfiredEventsForGroupRemoval deletes any unfired events for all campaigns that are
