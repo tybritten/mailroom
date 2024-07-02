@@ -1,3 +1,9 @@
+v9.1.71 (2024-07-02)
+-------------------------
+ * Update deps
+ * Add initial support for templates on broadcasts
+ * Replace JSONMap with JSONB generic type
+
 v9.1.70 (2024-06-25)
 -------------------------
  * Add support for exclusions on broadcasts
