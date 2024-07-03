@@ -1,3 +1,7 @@
+v9.1.74 (2024-07-03)
+-------------------------
+ * Deprecate broadcast.template_state and add broadcast.expressions
+
 v9.1.73 (2024-07-03)
 -------------------------
  * Update goflow which changes how broadcast translations are selected
