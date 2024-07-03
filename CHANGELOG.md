@@ -1,3 +1,9 @@
+v9.1.73 (2024-07-03)
+-------------------------
+ * Update goflow which changes how broadcast translations are selected
+ * Add cron to trigger sync for old seen android channels
+ * Simplify getting single channel by ID
+
 v9.1.72 (2024-07-02)
 -------------------------
  * Fix creating broadcast to node with more than 65K contacts
