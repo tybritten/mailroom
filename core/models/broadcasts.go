@@ -36,8 +36,8 @@ type Broadcast struct {
 	ID                BroadcastID                 `json:"broadcast_id,omitempty"`
 	OrgID             OrgID                       `json:"org_id"`
 	Translations      flows.BroadcastTranslations `json:"translations"`
-	TemplateState     TemplateState               `json:"template_state"`
 	BaseLanguage      i18n.Language               `json:"base_language"`
+	Expressions       bool                        `json:"expressions"`
 	OptInID           OptInID                     `json:"optin_id,omitempty"`
 	TemplateID        TemplateID                  `json:"template_id,omitempty"`
 	TemplateVariables []string                    `json:"template_variables,omitempty"`
@@ -49,6 +49,7 @@ type Broadcast struct {
 	CreatedByID       UserID                      `json:"created_by_id,omitempty"`
 	ScheduleID        ScheduleID                  `json:"schedule_id,omitempty"`
 	ParentID          BroadcastID                 `json:"parent_id,omitempty"`
+	TemplateState     TemplateState               `json:"template_state"` // deprecated
 }
 
 type dbBroadcast struct {
@@ -71,13 +72,18 @@ var ErrNoRecipients = errors.New("can't create broadcast with no recipients")
 
 // NewBroadcast creates a new broadcast with the passed in parameters
 func NewBroadcast(orgID OrgID, translations flows.BroadcastTranslations,
-	state TemplateState, baseLanguage i18n.Language, optInID OptInID, groupIDs []GroupID, contactIDs []ContactID, urns []urns.URN, query string, exclude Exclusions, createdByID UserID) *Broadcast {
+	baseLanguage i18n.Language, expressions bool, optInID OptInID, groupIDs []GroupID, contactIDs []ContactID, urns []urns.URN, query string, exclude Exclusions, createdByID UserID) *Broadcast {
+
+	templateState := TemplateStateEvaluated
+	if expressions {
+		templateState = TemplateStateUnevaluated
+	}
 
 	return &Broadcast{
 		OrgID:         orgID,
 		Translations:  translations,
-		TemplateState: state,
 		BaseLanguage:  baseLanguage,
+		Expressions:   expressions,
 		OptInID:       optInID,
 		GroupIDs:      groupIDs,
 		ContactIDs:    contactIDs,
@@ -85,6 +91,7 @@ func NewBroadcast(orgID OrgID, translations flows.BroadcastTranslations,
 		Query:         query,
 		Exclusions:    exclude,
 		CreatedByID:   createdByID,
+		TemplateState: templateState, // deprecated
 	}
 }
 
@@ -105,20 +112,21 @@ func NewBroadcastFromEvent(ctx context.Context, tx DBorTx, oa *OrgAssets, event 
 		}
 	}
 
-	return NewBroadcast(oa.OrgID(), event.Translations, TemplateStateEvaluated, event.BaseLanguage, NilOptInID, groupIDs, contactIDs, event.URNs, event.ContactQuery, NoExclusions, NilUserID), nil
+	return NewBroadcast(oa.OrgID(), event.Translations, event.BaseLanguage, true, NilOptInID, groupIDs, contactIDs, event.URNs, event.ContactQuery, NoExclusions, NilUserID), nil
 }
 
 func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastBatch {
 	return &BroadcastBatch{
 		BroadcastID:   b.ID,
 		OrgID:         b.OrgID,
-		BaseLanguage:  b.BaseLanguage,
 		Translations:  b.Translations,
-		TemplateState: b.TemplateState,
+		BaseLanguage:  b.BaseLanguage,
+		Expressions:   b.Expressions,
 		OptInID:       b.OptInID,
 		CreatedByID:   b.CreatedByID,
 		ContactIDs:    contactIDs,
 		IsLast:        isLast,
+		TemplateState: b.TemplateState, // deprecated
 	}
 }
 
@@ -197,8 +205,8 @@ func InsertChildBroadcast(ctx context.Context, db DBorTx, parent *Broadcast) (*B
 	child := &Broadcast{
 		OrgID:             parent.OrgID,
 		Translations:      parent.Translations,
-		TemplateState:     parent.TemplateState,
 		BaseLanguage:      parent.BaseLanguage,
+		Expressions:       parent.Expressions,
 		OptInID:           parent.OptInID,
 		TemplateID:        parent.TemplateID,
 		TemplateVariables: parent.TemplateVariables,
@@ -209,6 +217,7 @@ func InsertChildBroadcast(ctx context.Context, db DBorTx, parent *Broadcast) (*B
 		Exclusions:        parent.Exclusions,
 		CreatedByID:       parent.CreatedByID,
 		ParentID:          parent.ID,
+		TemplateState:     parent.TemplateState, // deprecated
 	}
 
 	return child, InsertBroadcast(ctx, db, child)
@@ -239,13 +248,14 @@ type BroadcastBatch struct {
 	OrgID             OrgID                       `json:"org_id"`
 	Translations      flows.BroadcastTranslations `json:"translations"`
 	BaseLanguage      i18n.Language               `json:"base_language"`
-	TemplateState     TemplateState               `json:"template_state"`
+	Expressions       bool                        `json:"expressions"`
 	OptInID           OptInID                     `json:"optin_id,omitempty"`
 	TemplateID        TemplateID                  `json:"template_id,omitempty"`
 	TemplateVariables []string                    `json:"template_variables,omitempty"`
 	ContactIDs        []ContactID                 `json:"contact_ids"`
 	CreatedByID       UserID                      `json:"created_by_id"`
 	IsLast            bool                        `json:"is_last"`
+	TemplateState     TemplateState               `json:"template_state"` // deprecated
 }
 
 func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets) ([]*Msg, error) {
@@ -290,7 +300,7 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 	attachments := trans.Attachments
 	quickReplies := trans.QuickReplies
 
-	if b.TemplateState == TemplateStateUnevaluated {
+	if b.Expressions || b.TemplateState == TemplateStateUnevaluated {
 		// build up the minimum viable context for templates
 		templateCtx := types.NewXObject(map[string]types.XValue{
 			"contact": flows.Context(oa.Env(), contact),

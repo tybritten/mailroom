@@ -29,8 +29,8 @@ func TestInsertBroadcast(t *testing.T) {
 	bcast := models.NewBroadcast(
 		testdata.Org1.ID,
 		flows.BroadcastTranslations{"eng": {Text: "Hi there"}},
-		models.TemplateStateUnevaluated,
 		"eng",
+		true,
 		optIn.ID,
 		[]models.GroupID{testdata.DoctorsGroup.ID},
 		[]models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID, testdata.Cathy.ID},
@@ -93,8 +93,8 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 	bcast := models.NewBroadcast(
 		testdata.Org1.ID,
 		translations,
-		models.TemplateStateUnevaluated,
 		"eng",
+		true,
 		optIn.ID,
 		[]models.GroupID{testdata.DoctorsGroup.ID},
 		[]models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID, testdata.Cathy.ID},

@@ -131,13 +131,14 @@ func TestGetExpired(t *testing.T) {
 	bcast := schedules[2].Broadcast
 	assert.NotNil(t, bcast)
 	assert.Equal(t, i18n.Language("eng"), bcast.BaseLanguage)
-	assert.Equal(t, models.TemplateStateUnevaluated, bcast.TemplateState)
 	assert.Equal(t, "Test message", bcast.Translations["eng"].Text)
 	assert.Equal(t, "Un Message", bcast.Translations["fra"].Text)
+	assert.True(t, bcast.Expressions)
 	assert.Equal(t, optIn.ID, bcast.OptInID)
 	assert.Equal(t, testdata.Org1.ID, bcast.OrgID)
 	assert.Equal(t, []models.ContactID{testdata.Cathy.ID, testdata.George.ID}, bcast.ContactIDs)
 	assert.Equal(t, []models.GroupID{testdata.DoctorsGroup.ID}, bcast.GroupIDs)
+	assert.Equal(t, models.TemplateStateUnevaluated, bcast.TemplateState) // deprecated
 }
 
 func TestGetNextFire(t *testing.T) {

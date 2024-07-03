@@ -29,10 +29,10 @@ func init() {
 //	  "user_id": 56,
 //	  "translations": {"eng": {"text": "Hello @contact"}, "spa": {"text": "Hola @contact"}},
 //	  "base_language": "eng",
+//	  "optin_id": 456,
 //	  "group_ids": [101, 102],
 //	  "contact_ids": [4646],
 //	  "urns": [4646],
-//	  "optin_id": 456,
 //	  "schedule": {
 //	    "start": "2024-06-20T09:04:30Z",
 //	    "repeat_period": "W",
@@ -40,18 +40,20 @@ func init() {
 //	  }
 //	}
 type broadcastRequest struct {
-	OrgID        models.OrgID                `json:"org_id"        validate:"required"`
-	UserID       models.UserID               `json:"user_id"       validate:"required"`
-	Translations flows.BroadcastTranslations `json:"translations"  validate:"required"`
-	BaseLanguage i18n.Language               `json:"base_language" validate:"required"`
-	GroupIDs     []models.GroupID            `json:"group_ids"`
-	ContactIDs   []models.ContactID          `json:"contact_ids"`
-	URNs         []urns.URN                  `json:"urns"`
-	Query        string                      `json:"query"`
-	NodeUUID     flows.NodeUUID              `json:"node_uuid"`
-	Exclude      models.Exclusions           `json:"exclude"`
-	OptInID      models.OptInID              `json:"optin_id"`
-	Schedule     *struct {
+	OrgID             models.OrgID                `json:"org_id"        validate:"required"`
+	UserID            models.UserID               `json:"user_id"       validate:"required"`
+	Translations      flows.BroadcastTranslations `json:"translations"  validate:"required"`
+	BaseLanguage      i18n.Language               `json:"base_language" validate:"required"`
+	OptInID           models.OptInID              `json:"optin_id"`
+	TemplateID        models.TemplateID           `json:"template_id"`
+	TemplateVariables []string                    `json:"template_variables"`
+	GroupIDs          []models.GroupID            `json:"group_ids"`
+	ContactIDs        []models.ContactID          `json:"contact_ids"`
+	URNs              []urns.URN                  `json:"urns"`
+	Query             string                      `json:"query"`
+	NodeUUID          flows.NodeUUID              `json:"node_uuid"`
+	Exclude           models.Exclusions           `json:"exclude"`
+	Schedule          *struct {
 		Start            time.Time           `json:"start"`
 		RepeatPeriod     models.RepeatPeriod `json:"repeat_period"`
 		RepeatDaysOfWeek string              `json:"repeat_days_of_week"`
@@ -84,7 +86,9 @@ func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastReque
 		return nil, 0, fmt.Errorf("error beginning transaction: %w", err)
 	}
 
-	bcast := models.NewBroadcast(r.OrgID, r.Translations, models.TemplateStateUnevaluated, r.BaseLanguage, r.OptInID, r.GroupIDs, r.ContactIDs, r.URNs, r.Query, r.Exclude, r.UserID)
+	bcast := models.NewBroadcast(r.OrgID, r.Translations, r.BaseLanguage, true, r.OptInID, r.GroupIDs, r.ContactIDs, r.URNs, r.Query, r.Exclude, r.UserID)
+	bcast.TemplateID = r.TemplateID
+	bcast.TemplateVariables = r.TemplateVariables
 
 	if r.Schedule != nil {
 		sched, err := models.NewSchedule(oa, r.Schedule.Start, r.Schedule.RepeatPeriod, r.Schedule.RepeatDaysOfWeek)
