@@ -103,7 +103,7 @@ func insertOutgoingMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact 
 func InsertBroadcast(rt *runtime.Runtime, org *Org, baseLanguage i18n.Language, text map[i18n.Language]string, optIn *OptIn, schedID models.ScheduleID, contacts []*Contact, groups []*Group) models.BroadcastID {
 	translations := make(flows.BroadcastTranslations)
 	for lang, t := range text {
-		translations[lang] = &flows.BroadcastTranslation{Text: t}
+		translations[lang] = &flows.MsgContent{Text: t}
 	}
 
 	var optInID models.OptInID

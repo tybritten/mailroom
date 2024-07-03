@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/goflow/excellent/types"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
+	"github.com/nyaruka/goflow/utils"
 	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
@@ -284,16 +285,10 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 		return nil, fmt.Errorf("error creating flow contact for broadcast message: %w", err)
 	}
 
-	trans, lang := b.Translations.ForContact(oa.Env(), contact, b.BaseLanguage)
-	if trans == nil {
-		// in theory shoud never happen because we shouldn't save a broadcast like this
-		return nil, errors.New("broadcast has no translation in base language")
-	}
-
+	trans, locale := b.Translations.ForContact(oa.Env(), contact, b.BaseLanguage)
 	text := trans.Text
 	attachments := trans.Attachments
 	quickReplies := trans.QuickReplies
-	locale := i18n.NewLocale(lang, i18n.NilCountry)
 
 	if b.TemplateState == TemplateStateUnevaluated {
 		// build up the minimum viable context for templates
@@ -303,7 +298,17 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 			"globals": flows.Context(oa.Env(), oa.SessionAssets().Globals()),
 			"urns":    flows.ContextFunc(oa.Env(), contact.URNs().MapContext),
 		})
-		text, _, _ = goflow.Engine(rt).Evaluator().Template(oa.Env(), templateCtx, text, nil)
+
+		ev := goflow.Engine(rt).Evaluator()
+		text, _, _ = ev.Template(oa.Env(), templateCtx, text, nil)
+
+		for i := range attachments {
+			evaluated, _, _ := ev.Template(oa.Env(), templateCtx, string(attachments[i]), nil)
+			attachments[i] = utils.Attachment(evaluated)
+		}
+		for i := range quickReplies {
+			quickReplies[i], _, _ = ev.Template(oa.Env(), templateCtx, quickReplies[i], nil)
+		}
 	}
 
 	// don't create a message if we have no content
