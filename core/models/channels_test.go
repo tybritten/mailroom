@@ -101,7 +101,7 @@ func TestGetChannelByID(t *testing.T) {
 
 }
 
-func TestGetOldSeenAndroidChannels(t *testing.T) {
+func TestGetAndroidChannelsToSync(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
 	defer testsuite.Reset(testsuite.ResetData)
@@ -118,7 +118,7 @@ func TestGetOldSeenAndroidChannels(t *testing.T) {
 	rt.DB.MustExec(`UPDATE channels_channel SET last_seen = NOW() - INTERVAL '20 minutes' WHERE id = $1`, testChannel4.ID)
 	rt.DB.MustExec(`UPDATE channels_channel SET last_seen = NOW() - INTERVAL '10 days' WHERE id = $1`, testChannel5.ID)
 
-	oldSeenAndroidChannels, err := models.GetOldSeenAndroidChannels(ctx, rt.DB)
+	oldSeenAndroidChannels, err := models.GetAndroidChannelsToSync(ctx, rt.DB)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(oldSeenAndroidChannels))
 

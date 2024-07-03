@@ -35,7 +35,7 @@ func (s *SyncAndroidChannelsCron) Run(ctx context.Context, rt *runtime.Runtime) 
 		s.FCMClient = msgio.CreateFCMClient(ctx, rt.Config)
 	}
 
-	oldSeenAndroidChannels, err := models.GetOldSeenAndroidChannels(ctx, rt.DB)
+	oldSeenAndroidChannels, err := models.GetAndroidChannelsToSync(ctx, rt.DB)
 	if err != nil {
 		return nil, fmt.Errorf("error loading old seen android channels: %w", err)
 	}

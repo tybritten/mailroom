@@ -121,8 +121,9 @@ func (c *Channel) Reference() *assets.ChannelReference {
 	return assets.NewChannelReference(c.UUID(), c.Name())
 }
 
-// GetChannelByID fetches a channel by ID - NOTE this will return a "lite" channels and only include fields for sending,
-// and that this function will return deleted channels.
+// GetChannelByID fetches a channel by ID even if it's deleted.
+//
+// NOTE that this function returns a "lite" channel with only sending related fields.
 func GetChannelByID(ctx context.Context, db *sql.DB, id ChannelID) (*Channel, error) {
 	row := db.QueryRowContext(ctx, sqlSelectChannelByID, id)
 	ch := &Channel{}
@@ -136,15 +137,16 @@ func GetChannelByID(ctx context.Context, db *sql.DB, id ChannelID) (*Channel, er
 
 const sqlSelectChannelByID = `
 SELECT ROW_TO_JSON(r) FROM (
-    SELECT c.id, c.uuid, c.org_id, c.name, c.channel_type, COALESCE(c.tps, 10) AS tps, c.config
+    SELECT c.id, c.uuid, c.org_id, c.channel_type, c.name, c.address, COALESCE(c.tps, 10) AS tps, c.config
       FROM channels_channel c
      WHERE c.id = $1
 ) r;`
 
-// GetOldSeenAndroidChannels returns the android channels that have not synced between 15 min ago up to 7 days
-func GetOldSeenAndroidChannels(ctx context.Context, db DBorTx) ([]Channel, error) {
-
-	rows, err := db.QueryContext(ctx, sqlSelectOldSeenAndroidChannels)
+// GetAndroidChannelsToSync returns the android channels that have not synced between 15 min ago up to 7 days.
+//
+// NOTE that this function returns a "lite" channel with only sending related fields.
+func GetAndroidChannelsToSync(ctx context.Context, db DBorTx) ([]Channel, error) {
+	rows, err := db.QueryContext(ctx, sqlSelectAndroidChannelsToSync)
 	if err != nil {
 		return nil, fmt.Errorf("error querying old seen android channels: %w", err)
 	}
@@ -152,25 +154,12 @@ func GetOldSeenAndroidChannels(ctx context.Context, db DBorTx) ([]Channel, error
 	return ScanJSONRows(rows, func() Channel { return Channel{} })
 }
 
-const sqlSelectOldSeenAndroidChannels = `
-SELECT ROW_TO_JSON(r) FROM (SELECT
-	c.id as id,
-	c.uuid as uuid,
-	c.org_id as org_id,
-	c.name as name,
-	c.channel_type as channel_type,
-	COALESCE(c.tps, 10) as tps,
-	c.address as address,
-	c.config as config
-FROM
-	channels_channel c
-WHERE
-	c.channel_type = 'A' AND
-	c.last_seen >= NOW() - INTERVAL '7 days' AND
-	c.last_seen <  NOW() - INTERVAL '15 minutes' AND
-	c.is_active = TRUE
-ORDER BY
-	c.last_seen DESC, c.id DESC
+const sqlSelectAndroidChannelsToSync = `
+SELECT ROW_TO_JSON(r) FROM (
+    SELECT c.id, c.uuid, c.org_id, c.channel_type, c.name, c.address, COALESCE(c.tps, 10) AS tps, c.config
+      FROM channels_channel c
+     WHERE c.channel_type = 'A' AND c.last_seen >= NOW() - INTERVAL '7 days' AND c.last_seen <  NOW() - INTERVAL '15 minutes' AND c.is_active
+  ORDER BY c.last_seen DESC, c.id DESC
 ) r;`
 
 // loadChannels loads all the channels for the passed in org
@@ -185,16 +174,16 @@ func loadChannels(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Channe
 
 const sqlSelectChannelsByOrg = `
 SELECT ROW_TO_JSON(r) FROM (SELECT
-	c.id as id,
-	c.uuid as uuid,
-	c.org_id as org_id,
-	c.name as name,
-	c.channel_type as channel_type,
-	COALESCE(c.tps, 10) as tps,
-	c.country as country,
-	c.address as address,
-	c.schemes as schemes,
-	c.config as config,
+	c.id,
+	c.uuid,
+	c.org_id,
+	c.name,
+	c.channel_type,
+	COALESCE(c.tps, 10) AS tps,
+	c.country,
+	c.address,
+	c.schemes,
+	c.config,
 	(SELECT ARRAY(
 		SELECT CASE r 
 		WHEN 'R' THEN 'receive' 
@@ -204,7 +193,7 @@ SELECT ROW_TO_JSON(r) FROM (SELECT
 		WHEN 'U' THEN 'ussd'
 		END 
 		FROM unnest(regexp_split_to_array(c.role,'')) AS r)
-	) as roles,
+	) AS roles,
 	CASE WHEN channel_type IN ('FBA') THEN '{"optins"}'::text[] ELSE '{}'::text[] END AS features,
 	jsonb_extract_path(c.config, 'matching_prefixes') AS match_prefixes,
 	jsonb_extract_path(c.config, 'allow_international') AS allow_international,
