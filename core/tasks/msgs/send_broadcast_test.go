@@ -204,8 +204,8 @@ func TestBroadcastTask(t *testing.T) {
 
 	tcs := []struct {
 		translations    flows.BroadcastTranslations
-		templateState   models.TemplateState
 		baseLanguage    i18n.Language
+		expressions     bool
 		optIn           *testdata.OptIn
 		groupIDs        []models.GroupID
 		contactIDs      []models.ContactID
@@ -221,8 +221,8 @@ func TestBroadcastTask(t *testing.T) {
 			translations: flows.BroadcastTranslations{
 				"eng": {Text: "hello world"},
 			},
-			templateState:   models.TemplateStateEvaluated,
 			baseLanguage:    "eng",
+			expressions:     false,
 			optIn:           polls,
 			groupIDs:        []models.GroupID{testdata.DoctorsGroup.ID},
 			contactIDs:      []models.ContactID{testdata.Cathy.ID},
@@ -236,8 +236,8 @@ func TestBroadcastTask(t *testing.T) {
 			translations: flows.BroadcastTranslations{
 				"eng": {Text: "hi @(title(contact.name)) from @globals.org_name goflow URN: @urns.tel Gender: @fields.gender"},
 			},
-			templateState:   models.TemplateStateUnevaluated,
 			baseLanguage:    "eng",
+			expressions:     true,
 			contactIDs:      []models.ContactID{testdata.Cathy.ID},
 			exclusions:      models.NoExclusions,
 			createdByID:     testdata.Agent.ID,
@@ -250,8 +250,8 @@ func TestBroadcastTask(t *testing.T) {
 				"eng": {Text: "hello"},
 				"spa": {Text: "hola"},
 			},
-			templateState:   models.TemplateStateUnevaluated,
 			baseLanguage:    "eng",
+			expressions:     true,
 			query:           "name = Cathy OR name = George OR name = Bob",
 			exclusions:      models.NoExclusions,
 			queue:           tasks.BatchQueue,
@@ -263,8 +263,8 @@ func TestBroadcastTask(t *testing.T) {
 				"eng": {Text: "goodbye"},
 				"spa": {Text: "chau"},
 			},
-			templateState:   models.TemplateStateUnevaluated,
 			baseLanguage:    "eng",
+			expressions:     true,
 			query:           "name = Cathy OR name = George OR name = Bob",
 			exclusions:      models.Exclusions{NotSeenSinceDays: 60},
 			queue:           tasks.BatchQueue,
@@ -282,7 +282,7 @@ func TestBroadcastTask(t *testing.T) {
 			optInID = tc.optIn.ID
 		}
 
-		bcast := models.NewBroadcast(oa.OrgID(), tc.translations, tc.templateState, tc.baseLanguage, optInID, tc.groupIDs, tc.contactIDs, tc.URNs, tc.query, tc.exclusions, tc.createdByID)
+		bcast := models.NewBroadcast(oa.OrgID(), tc.translations, tc.baseLanguage, tc.expressions, optInID, tc.groupIDs, tc.contactIDs, tc.URNs, tc.query, tc.exclusions, tc.createdByID)
 
 		task := &msgs.SendBroadcastTask{Broadcast: bcast}
 
