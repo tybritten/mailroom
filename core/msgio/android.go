@@ -14,12 +14,12 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-type fcmClient interface {
+type FCMClient interface {
 	Send(ctx context.Context, message ...*messaging.Message) (*messaging.BatchResponse, error)
 }
 
 // SyncAndroidChannel tries to trigger sync of the given Android channel via FCM
-func SyncAndroidChannel(ctx context.Context, fc fcmClient, channel *models.Channel) error {
+func SyncAndroidChannel(ctx context.Context, fc FCMClient, channel *models.Channel) error {
 	if fc == nil {
 		return errors.New("instance has no FCM configuration")
 	}

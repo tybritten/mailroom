@@ -21,7 +21,7 @@ type contactAndChannel struct {
 }
 
 // QueueMessages tries to queue the given messages to courier or trigger Android channel syncs
-func QueueMessages(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc fcmClient, msgs []*models.Msg) {
+func QueueMessages(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc FCMClient, msgs []*models.Msg) {
 	queued := tryToQueue(ctx, rt, db, fc, msgs)
 
 	if len(queued) != len(msgs) {
@@ -41,7 +41,7 @@ func QueueMessages(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, f
 	}
 }
 
-func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc fcmClient, msgs []*models.Msg) []*models.Msg {
+func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc FCMClient, msgs []*models.Msg) []*models.Msg {
 	// messages that have been successfully queued
 	queued := make([]*models.Msg, 0, len(msgs))
 
@@ -82,7 +82,7 @@ func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, fc f
 	return queued
 }
 
-func tryToQueueForOrg(ctx context.Context, rt *runtime.Runtime, fc fcmClient, oa *models.OrgAssets, sends []Send) []*models.Msg {
+func tryToQueueForOrg(ctx context.Context, rt *runtime.Runtime, fc FCMClient, oa *models.OrgAssets, sends []Send) []*models.Msg {
 	// sends by courier, organized by contact+channel
 	courierSends := make(map[contactAndChannel][]Send, 100)
 
