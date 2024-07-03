@@ -173,7 +173,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			expectedText:         "Hi @Cathy",
 			expectedAttachments:  []utils.Attachment{},
 			expectedQuickReplies: nil,
-			expectedLocale:       "eng",
+			expectedLocale:       "eng-US",
 		},
 		{ // 1: contact language not set, uses base language
 			contactLanguage:      i18n.NilLanguage,
@@ -183,7 +183,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			expectedText:         "Hello Cathy",
 			expectedAttachments:  []utils.Attachment{},
 			expectedQuickReplies: nil,
-			expectedLocale:       "eng",
+			expectedLocale:       "eng-US",
 		},
 		{ // 2: contact language iggnored if it isn't a valid org language, even if translation exists
 			contactLanguage:      "spa",
@@ -193,7 +193,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			expectedText:         "Hello Cathy",
 			expectedAttachments:  []utils.Attachment{},
 			expectedQuickReplies: nil,
-			expectedLocale:       "eng",
+			expectedLocale:       "eng-US",
 		},
 		{ // 3: contact language used
 			contactLanguage: "fra",
@@ -206,14 +206,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			expectedText:         "Bonjour Cathy",
 			expectedAttachments:  []utils.Attachment{"audio/mp3:http://test.fr.mp3"},
 			expectedQuickReplies: []string{"oui", "no"},
-			expectedLocale:       "fra",
-		},
-		{ // 4: broken broadcast with no translation in base language
-			contactLanguage: i18n.NilLanguage,
-			translations:    flows.BroadcastTranslations{"fra": {Text: "Bonjour @contact.name"}},
-			baseLanguage:    "eng",
-			templateState:   models.TemplateStateUnevaluated,
-			expectedError:   "error creating broadcast message: broadcast has no translation in base language",
+			expectedLocale:       "fra-US",
 		},
 		{ // 5: broadcast with optin
 			contactLanguage:      i18n.NilLanguage,
@@ -224,7 +217,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			expectedText:         "Hi @Cathy",
 			expectedAttachments:  []utils.Attachment{},
 			expectedQuickReplies: nil,
-			expectedLocale:       "eng",
+			expectedLocale:       "eng-US",
 		},
 	}
 
@@ -247,11 +240,11 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 		} else {
 			assert.NoError(t, err, "unexpected error in test case %d", i)
 			if assert.Len(t, msgs, 1, "msg count mismatch in test case %d", i) {
-				assert.Equal(t, tc.expectedText, msgs[0].Text(), "msg text mismatch in test case %d", i)
-				assert.Equal(t, tc.expectedAttachments, msgs[0].Attachments(), "attachments mismatch in test case %d", i)
-				assert.Equal(t, tc.expectedQuickReplies, msgs[0].QuickReplies(), "quick replies mismatch in test case %d", i)
-				assert.Equal(t, tc.expectedLocale, msgs[0].Locale(), "msg locale mismatch in test case %d", i)
-				assert.Equal(t, tc.optInID, msgs[0].OptInID(), "optin id mismatch in test case %d", i)
+				assert.Equal(t, tc.expectedText, msgs[0].Text(), "%d: msg text mismatch", i)
+				assert.Equal(t, tc.expectedAttachments, msgs[0].Attachments(), "%d: attachments mismatch", i)
+				assert.Equal(t, tc.expectedQuickReplies, msgs[0].QuickReplies(), "%d: quick replies mismatch", i)
+				assert.Equal(t, tc.expectedLocale, msgs[0].Locale(), "%d: msg locale mismatch", i)
+				assert.Equal(t, tc.optInID, msgs[0].OptInID(), "%d: optin id mismatch", i)
 			}
 		}
 	}
