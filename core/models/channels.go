@@ -141,6 +141,38 @@ SELECT ROW_TO_JSON(r) FROM (
      WHERE c.id = $1
 ) r;`
 
+// GetOldSeenAndroidChannels returns the android channels that have not synced between 15 min ago up to 7 days
+func GetOldSeenAndroidChannels(ctx context.Context, db DBorTx) ([]Channel, error) {
+
+	rows, err := db.QueryContext(ctx, sqlSelectOldSeenAndroidChannels)
+	if err != nil {
+		return nil, fmt.Errorf("error querying old seen android channels: %w", err)
+	}
+
+	return ScanJSONRows(rows, func() Channel { return Channel{} })
+}
+
+const sqlSelectOldSeenAndroidChannels = `
+SELECT ROW_TO_JSON(r) FROM (SELECT
+	c.id as id,
+	c.uuid as uuid,
+	c.org_id as org_id,
+	c.name as name,
+	c.channel_type as channel_type,
+	COALESCE(c.tps, 10) as tps,
+	c.address as address,
+	c.config as config
+FROM
+	channels_channel c
+WHERE
+	c.channel_type = 'A' AND
+	c.last_seen >= NOW() - INTERVAL '7 days' AND
+	c.last_seen <  NOW() - INTERVAL '15 minutes' AND
+	c.is_active = TRUE
+ORDER BY
+	c.last_seen DESC, c.id DESC
+) r;`
+
 // loadChannels loads all the channels for the passed in org
 func loadChannels(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.Channel, error) {
 	rows, err := db.QueryContext(ctx, sqlSelectChannelsByOrg, orgID)
