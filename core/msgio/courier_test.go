@@ -53,7 +53,6 @@ func TestNewCourierMsg(t *testing.T) {
 		[]string{"yes", "no"},
 		flows.NewMsgTemplating(
 			assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"),
-			"tpls",
 			[]*flows.TemplatingComponent{{Type: "body", Name: "body", Variables: map[string]int{"1": 0}}},
 			[]*flows.TemplatingVariable{{Type: "text", Value: "name"}},
 		),
@@ -99,7 +98,7 @@ func TestNewCourierMsg(t *testing.T) {
 			"template": {"uuid": "9c22b594-fcab-4b29-9bcb-ce4404894a80", "name": "revive_issue"},
 			"components": [{"type": "body", "name": "body", "variables": {"1": 0}}],
 			"variables": [{"type": "text", "value": "name"}],
-			"namespace": "tpls",
+			"namespace": "2d40b45c_25cd_4965_9019_f05d0124c5fa",
 			"external_id": "eng1",
 			"language": "en_US"			
 		},

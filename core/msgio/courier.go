@@ -53,6 +53,7 @@ type FlowRef struct {
 
 type Templating struct {
 	*flows.MsgTemplating
+	Namespace  string `json:"namespace"`
 	ExternalID string `json:"external_id"`
 	Language   string `json:"language"`
 }
@@ -145,6 +146,7 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 			if tt != nil {
 				msg.Templating = &Templating{
 					MsgTemplating: m.Templating().MsgTemplating,
+					Namespace:     tt.Namespace(),
 					ExternalID:    tt.ExternalID(),
 					Language:      tt.ExternalLocale(), // i.e. en_US
 				}
