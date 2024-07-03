@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/msgio"
 	"github.com/nyaruka/mailroom/core/tasks"
@@ -36,7 +35,7 @@ func (s *SyncAndroidChannelsCron) Run(ctx context.Context, rt *runtime.Runtime) 
 		s.FCMClient = msgio.CreateFCMClient(ctx, rt.Config)
 	}
 
-	oldSeenAndroidChannels, err := getOldSeenAndroidChannels(ctx, rt.DB)
+	oldSeenAndroidChannels, err := models.GetOldSeenAndroidChannels(ctx, rt.DB)
 	if err != nil {
 		return nil, fmt.Errorf("error loading old seen android channels: %w", err)
 	}
@@ -58,37 +57,3 @@ func (s *SyncAndroidChannelsCron) Run(ctx context.Context, rt *runtime.Runtime) 
 	return map[string]any{"synced": syncedCount, "errored": erroredCount}, nil
 
 }
-
-func getOldSeenAndroidChannels(ctx context.Context, db models.DBorTx) ([]models.Channel, error) {
-	now := dates.Now()
-	start := now.AddDate(0, 0, -7)
-	end := now.Add(-time.Minute * 15)
-
-	rows, err := db.QueryContext(ctx, sqlSelectOldSeenAndroidChannels)
-	if err != nil {
-		return nil, fmt.Errorf("error querying old seen android channels: from %s to %s: %w", start.String(), end.String(), err)
-	}
-
-	return models.ScanJSONRows(rows, func() models.Channel { return models.Channel{} })
-}
-
-const sqlSelectOldSeenAndroidChannels = `
-SELECT ROW_TO_JSON(r) FROM (SELECT
-	c.id as id,
-	c.uuid as uuid,
-	c.org_id as org_id,
-	c.name as name,
-	c.channel_type as channel_type,
-	COALESCE(c.tps, 10) as tps,
-	c.address as address,
-	c.config as config
-FROM 
-	channels_channel c
-WHERE
-	c.channel_type = 'A' AND 
-	c.last_seen >= NOW() - INTERVAL '7 days' AND 
-	c.last_seen <  NOW() - INTERVAL '15 minutes' AND
-	c.is_active = TRUE
-ORDER BY
-	c.last_seen DESC, c.id DESC
-) r;`

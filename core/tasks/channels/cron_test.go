@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSyncOldSeenAndroidChannels(t *testing.T) {
+func TestSyncAndroidChannelsCron(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
 	rt.Config.AndroidFCMServiceAccountFile = `testdata/android.json`
