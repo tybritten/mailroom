@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/lib/pq"
+	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/null/v3"
@@ -121,23 +121,24 @@ func (c *Channel) Reference() *assets.ChannelReference {
 	return assets.NewChannelReference(c.UUID(), c.Name())
 }
 
-// GetChannelsByID fetches channels by ID - NOTE these are "lite" channels and only include fields for sending, and
-// that this function will return deleted channels.
-func GetChannelsByID(ctx context.Context, db *sql.DB, ids []ChannelID) ([]*Channel, error) {
-	rows, err := db.QueryContext(ctx, sqlSelectChannelsByID, pq.Array(ids))
-	if err != nil {
-		return nil, fmt.Errorf("error querying channels by id: %w", err)
-	}
-	defer rows.Close()
+// GetChannelByID fetches a channel by ID - NOTE this will return a "lite" channels and only include fields for sending,
+// and that this function will return deleted channels.
+func GetChannelByID(ctx context.Context, db *sql.DB, id ChannelID) (*Channel, error) {
+	row := db.QueryRowContext(ctx, sqlSelectChannelByID, id)
+	ch := &Channel{}
 
-	return ScanJSONRows(rows, func() *Channel { return &Channel{} })
+	if err := dbutil.ScanJSON(row, ch); err != nil {
+		return nil, fmt.Errorf("error fetching channel by id %d: %w", id, err)
+	}
+
+	return ch, nil
 }
 
-const sqlSelectChannelsByID = `
+const sqlSelectChannelByID = `
 SELECT ROW_TO_JSON(r) FROM (
-    SELECT c.id as id, c.uuid as uuid, c.org_id as org_id, c.name as name, c.channel_type as channel_type, COALESCE(c.tps, 10) as tps, c.config as config
+    SELECT c.id, c.uuid, c.org_id, c.name, c.channel_type, COALESCE(c.tps, 10) AS tps, c.config
       FROM channels_channel c
-     WHERE c.id = ANY($1)
+     WHERE c.id = $1
 ) r;`
 
 // loadChannels loads all the channels for the passed in org

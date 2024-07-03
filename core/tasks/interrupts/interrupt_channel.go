@@ -38,12 +38,10 @@ func (t *InterruptChannelTask) Perform(ctx context.Context, rt *runtime.Runtime,
 	defer rc.Close()
 
 	// load channel from db instead of assets because it may already be released
-	channels, err := models.GetChannelsByID(ctx, db.DB, []models.ChannelID{t.ChannelID})
+	channel, err := models.GetChannelByID(ctx, db.DB, t.ChannelID)
 	if err != nil {
-		return fmt.Errorf("error getting channels: %w", err)
+		return fmt.Errorf("error getting channel: %w", err)
 	}
-
-	channel := channels[0]
 
 	if err := models.InterruptSessionsForChannel(ctx, db, t.ChannelID); err != nil {
 		return fmt.Errorf("error interrupting sessions: %w", err)

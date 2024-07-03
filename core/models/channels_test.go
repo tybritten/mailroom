@@ -85,3 +85,18 @@ func TestChannels(t *testing.T) {
 		assert.Equal(t, tc.AllowInternational, channel.AllowInternational())
 	}
 }
+
+func TestGetChannelByID(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetAll)
+
+	ch, err := models.GetChannelByID(ctx, rt.DB.DB, testdata.TwilioChannel.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, testdata.TwilioChannel.ID, ch.ID())
+	assert.Equal(t, testdata.TwilioChannel.UUID, ch.UUID())
+
+	_, err = models.GetChannelByID(ctx, rt.DB.DB, 1234567890)
+	assert.EqualError(t, err, "error fetching channel by id 1234567890: error scanning row JSON: sql: no rows in result set")
+
+}
