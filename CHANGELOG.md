@@ -1,3 +1,8 @@
+v9.1.75 (2024-07-03)
+-------------------------
+ * Update to latest goflow which removes namespace from assets.TemplateTranslation
+ * Remove deprecated Broadcast.template_state
+
 v9.1.74 (2024-07-03)
 -------------------------
  * Deprecate broadcast.template_state and add broadcast.expressions
