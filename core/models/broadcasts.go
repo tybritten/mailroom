@@ -23,14 +23,6 @@ type BroadcastID int
 // NilBroadcastID is our constant for a nil broadcast id
 const NilBroadcastID = BroadcastID(0)
 
-// TemplateState represents what state are templates are in, either already evaluated or unevaluated
-type TemplateState string
-
-const (
-	TemplateStateEvaluated   = TemplateState("evaluated")
-	TemplateStateUnevaluated = TemplateState("unevaluated")
-)
-
 // Broadcast represents a broadcast that needs to be sent
 type Broadcast struct {
 	ID                BroadcastID                 `json:"broadcast_id,omitempty"`
@@ -49,7 +41,6 @@ type Broadcast struct {
 	CreatedByID       UserID                      `json:"created_by_id,omitempty"`
 	ScheduleID        ScheduleID                  `json:"schedule_id,omitempty"`
 	ParentID          BroadcastID                 `json:"parent_id,omitempty"`
-	TemplateState     TemplateState               `json:"template_state"` // deprecated
 }
 
 type dbBroadcast struct {
@@ -74,24 +65,18 @@ var ErrNoRecipients = errors.New("can't create broadcast with no recipients")
 func NewBroadcast(orgID OrgID, translations flows.BroadcastTranslations,
 	baseLanguage i18n.Language, expressions bool, optInID OptInID, groupIDs []GroupID, contactIDs []ContactID, urns []urns.URN, query string, exclude Exclusions, createdByID UserID) *Broadcast {
 
-	templateState := TemplateStateEvaluated
-	if expressions {
-		templateState = TemplateStateUnevaluated
-	}
-
 	return &Broadcast{
-		OrgID:         orgID,
-		Translations:  translations,
-		BaseLanguage:  baseLanguage,
-		Expressions:   expressions,
-		OptInID:       optInID,
-		GroupIDs:      groupIDs,
-		ContactIDs:    contactIDs,
-		URNs:          urns,
-		Query:         query,
-		Exclusions:    exclude,
-		CreatedByID:   createdByID,
-		TemplateState: templateState, // deprecated
+		OrgID:        orgID,
+		Translations: translations,
+		BaseLanguage: baseLanguage,
+		Expressions:  expressions,
+		OptInID:      optInID,
+		GroupIDs:     groupIDs,
+		ContactIDs:   contactIDs,
+		URNs:         urns,
+		Query:        query,
+		Exclusions:   exclude,
+		CreatedByID:  createdByID,
 	}
 }
 
@@ -117,16 +102,15 @@ func NewBroadcastFromEvent(ctx context.Context, tx DBorTx, oa *OrgAssets, event 
 
 func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastBatch {
 	return &BroadcastBatch{
-		BroadcastID:   b.ID,
-		OrgID:         b.OrgID,
-		Translations:  b.Translations,
-		BaseLanguage:  b.BaseLanguage,
-		Expressions:   b.Expressions,
-		OptInID:       b.OptInID,
-		CreatedByID:   b.CreatedByID,
-		ContactIDs:    contactIDs,
-		IsLast:        isLast,
-		TemplateState: b.TemplateState, // deprecated
+		BroadcastID:  b.ID,
+		OrgID:        b.OrgID,
+		Translations: b.Translations,
+		BaseLanguage: b.BaseLanguage,
+		Expressions:  b.Expressions,
+		OptInID:      b.OptInID,
+		CreatedByID:  b.CreatedByID,
+		ContactIDs:   contactIDs,
+		IsLast:       isLast,
 	}
 }
 
@@ -217,7 +201,6 @@ func InsertChildBroadcast(ctx context.Context, db DBorTx, parent *Broadcast) (*B
 		Exclusions:        parent.Exclusions,
 		CreatedByID:       parent.CreatedByID,
 		ParentID:          parent.ID,
-		TemplateState:     parent.TemplateState, // deprecated
 	}
 
 	return child, InsertBroadcast(ctx, db, child)
@@ -255,7 +238,6 @@ type BroadcastBatch struct {
 	ContactIDs        []ContactID                 `json:"contact_ids"`
 	CreatedByID       UserID                      `json:"created_by_id"`
 	IsLast            bool                        `json:"is_last"`
-	TemplateState     TemplateState               `json:"template_state"` // deprecated
 }
 
 func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets) ([]*Msg, error) {
@@ -300,7 +282,7 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 	attachments := trans.Attachments
 	quickReplies := trans.QuickReplies
 
-	if b.Expressions || b.TemplateState == TemplateStateUnevaluated {
+	if b.Expressions {
 		// build up the minimum viable context for templates
 		templateCtx := types.NewXObject(map[string]types.XValue{
 			"contact": flows.Context(oa.Env(), contact),

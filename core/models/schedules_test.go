@@ -138,7 +138,6 @@ func TestGetExpired(t *testing.T) {
 	assert.Equal(t, testdata.Org1.ID, bcast.OrgID)
 	assert.Equal(t, []models.ContactID{testdata.Cathy.ID, testdata.George.ID}, bcast.ContactIDs)
 	assert.Equal(t, []models.GroupID{testdata.DoctorsGroup.ID}, bcast.GroupIDs)
-	assert.Equal(t, models.TemplateStateUnevaluated, bcast.TemplateState) // deprecated
 }
 
 func TestGetNextFire(t *testing.T) {

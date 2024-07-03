@@ -293,10 +293,11 @@ SELECT ROW_TO_JSON(s) FROM (
                 b.id AS broadcast_id,
                 s.org_id,
                 b.translations,
-                'unevaluated' AS template_state,
                 b.base_language,
-				TRUE AS expressions,
+                TRUE AS expressions,
                 b.optin_id,
+                b.template_id,
+                b.template_variables,
                 (SELECT ARRAY_AGG(bc.contact_id) FROM (SELECT contact_id FROM msgs_broadcast_contacts WHERE broadcast_id = b.id) bc) AS contact_ids,
                 (SELECT ARRAY_AGG(bg.contactgroup_id) FROM (SELECT contactgroup_id FROM msgs_broadcast_groups WHERE broadcast_id = b.id) bg) AS group_ids
             FROM

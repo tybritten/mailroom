@@ -108,7 +108,6 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 	assert.Equal(t, testdata.Org1.ID, bcast.OrgID)
 	assert.Equal(t, i18n.Language("eng"), bcast.BaseLanguage)
 	assert.Equal(t, translations, bcast.Translations)
-	assert.Equal(t, models.TemplateStateUnevaluated, bcast.TemplateState)
 	assert.Equal(t, optIn.ID, bcast.OptInID)
 	assert.Equal(t, []models.GroupID{testdata.DoctorsGroup.ID}, bcast.GroupIDs)
 	assert.Equal(t, []models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID, testdata.Cathy.ID}, bcast.ContactIDs)
@@ -122,7 +121,6 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 	assert.Equal(t, testdata.Org1.ID, batch.OrgID)
 	assert.Equal(t, i18n.Language("eng"), batch.BaseLanguage)
 	assert.Equal(t, translations, batch.Translations)
-	assert.Equal(t, models.TemplateStateUnevaluated, batch.TemplateState)
 	assert.Equal(t, optIn.ID, batch.OptInID)
 	assert.Equal(t, []models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID}, batch.ContactIDs)
 
@@ -157,7 +155,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 		contactLanguage      i18n.Language
 		translations         flows.BroadcastTranslations
 		baseLanguage         i18n.Language
-		templateState        models.TemplateState
+		expressions          bool
 		optInID              models.OptInID
 		expectedText         string
 		expectedAttachments  []utils.Attachment
@@ -169,7 +167,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			contactLanguage:      i18n.NilLanguage,
 			translations:         flows.BroadcastTranslations{"eng": {Text: "Hi @Cathy"}},
 			baseLanguage:         "eng",
-			templateState:        models.TemplateStateEvaluated,
+			expressions:          false,
 			expectedText:         "Hi @Cathy",
 			expectedAttachments:  []utils.Attachment{},
 			expectedQuickReplies: nil,
@@ -179,7 +177,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			contactLanguage:      i18n.NilLanguage,
 			translations:         flows.BroadcastTranslations{"eng": {Text: "Hello @contact.name"}, "spa": {Text: "Hola @contact.name"}},
 			baseLanguage:         "eng",
-			templateState:        models.TemplateStateUnevaluated,
+			expressions:          true,
 			expectedText:         "Hello Cathy",
 			expectedAttachments:  []utils.Attachment{},
 			expectedQuickReplies: nil,
@@ -189,7 +187,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			contactLanguage:      "spa",
 			translations:         flows.BroadcastTranslations{"eng": {Text: "Hello @contact.name"}, "spa": {Text: "Hola @contact.name"}},
 			baseLanguage:         "eng",
-			templateState:        models.TemplateStateUnevaluated,
+			expressions:          true,
 			expectedText:         "Hello Cathy",
 			expectedAttachments:  []utils.Attachment{},
 			expectedQuickReplies: nil,
@@ -202,7 +200,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 				"fra": {Text: "Bonjour @contact.name", Attachments: []utils.Attachment{"audio/mp3:http://test.fr.mp3"}, QuickReplies: []string{"oui", "no"}},
 			},
 			baseLanguage:         "eng",
-			templateState:        models.TemplateStateUnevaluated,
+			expressions:          true,
 			expectedText:         "Bonjour Cathy",
 			expectedAttachments:  []utils.Attachment{"audio/mp3:http://test.fr.mp3"},
 			expectedQuickReplies: []string{"oui", "no"},
@@ -212,7 +210,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			contactLanguage:      i18n.NilLanguage,
 			translations:         flows.BroadcastTranslations{"eng": {Text: "Hi @Cathy"}},
 			baseLanguage:         "eng",
-			templateState:        models.TemplateStateEvaluated,
+			expressions:          true,
 			optInID:              polls.ID,
 			expectedText:         "Hi @Cathy",
 			expectedAttachments:  []utils.Attachment{},
@@ -223,13 +221,13 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 
 	for i, tc := range tcs {
 		batch := &models.BroadcastBatch{
-			BroadcastID:   bcastID,
-			OrgID:         testdata.Org1.ID,
-			Translations:  tc.translations,
-			BaseLanguage:  tc.baseLanguage,
-			TemplateState: tc.templateState,
-			OptInID:       tc.optInID,
-			ContactIDs:    []models.ContactID{testdata.Cathy.ID},
+			BroadcastID:  bcastID,
+			OrgID:        testdata.Org1.ID,
+			Translations: tc.translations,
+			BaseLanguage: tc.baseLanguage,
+			Expressions:  tc.expressions,
+			OptInID:      tc.optInID,
+			ContactIDs:   []models.ContactID{testdata.Cathy.ID},
 		}
 
 		rt.DB.MustExec(`UPDATE contacts_contact SET language = $2 WHERE id = $1`, testdata.Cathy.ID, tc.contactLanguage)
