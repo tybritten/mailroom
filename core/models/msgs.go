@@ -770,7 +770,7 @@ func FailChannelMessages(ctx context.Context, db *sql.DB, orgID OrgID, channelID
 	return nil
 }
 
-func NewMsgOut(oa *OrgAssets, c *flows.Contact, text string, atts []utils.Attachment, qrs []string, locale i18n.Locale) (*flows.MsgOut, *Channel) {
+func NewMsgOut(oa *OrgAssets, c *flows.Contact, content *flows.MsgContent, templating *flows.MsgTemplating, locale i18n.Locale) (*flows.MsgOut, *Channel) {
 	// resolve URN + channel for this contact
 	urn := urns.NilURN
 	var channel *Channel
@@ -790,7 +790,7 @@ func NewMsgOut(oa *OrgAssets, c *flows.Contact, text string, atts []utils.Attach
 		unsendableReason = flows.UnsendableReasonNoDestination
 	}
 
-	return flows.NewMsgOut(urn, channelRef, text, atts, qrs, nil, flows.NilMsgTopic, locale, unsendableReason), channel
+	return flows.NewMsgOut(urn, channelRef, content, templating, flows.NilMsgTopic, locale, unsendableReason), channel
 }
 
 const sqlUpdateMsgDeletedBySender = `

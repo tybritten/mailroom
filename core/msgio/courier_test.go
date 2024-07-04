@@ -48,9 +48,11 @@ func TestNewCourierMsg(t *testing.T) {
 	flowMsg1 := flows.NewMsgOut(
 		cathyURN,
 		assets.NewChannelReference(testdata.TwilioChannel.UUID, "Test Channel"),
-		"Hi there",
-		[]utils.Attachment{utils.Attachment("image/jpeg:https://dl-foo.com/image.jpg")},
-		[]string{"yes", "no"},
+		&flows.MsgContent{
+			Text:         "Hi there",
+			Attachments:  []utils.Attachment{utils.Attachment("image/jpeg:https://dl-foo.com/image.jpg")},
+			QuickReplies: []string{"yes", "no"},
+		},
 		flows.NewMsgTemplating(
 			assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"),
 			[]*flows.TemplatingComponent{{Type: "body", Name: "body", Variables: map[string]int{"1": 0}}},
@@ -113,8 +115,8 @@ func TestNewCourierMsg(t *testing.T) {
 	flowMsg2 := flows.NewMsgOut(
 		cathyURN,
 		assets.NewChannelReference(testdata.TwilioChannel.UUID, "Test Channel"),
-		"Hi there",
-		nil, nil, nil,
+		&flows.MsgContent{Text: "Hi there"},
+		nil,
 		flows.NilMsgTopic,
 		i18n.NilLocale,
 		flows.NilUnsendableReason,
@@ -149,7 +151,7 @@ func TestNewCourierMsg(t *testing.T) {
 
 	// try a broadcast message which won't have session and flow fields set and won't be high priority
 	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Blast"}, nil, models.NilScheduleID, []*testdata.Contact{testFred}, nil)
-	bcastMsg1 := flows.NewMsgOut(fredURN, assets.NewChannelReference(testdata.TwilioChannel.UUID, "Test Channel"), "Blast", nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
+	bcastMsg1 := flows.NewMsgOut(fredURN, assets.NewChannelReference(testdata.TwilioChannel.UUID, "Test Channel"), &flows.MsgContent{Text: "Blast"}, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
 	msg3, err := models.NewOutgoingBroadcastMsg(rt, oa.Org(), channel, fred, bcastMsg1, &models.BroadcastBatch{BroadcastID: bcastID, OptInID: optInID, CreatedByID: testdata.Admin.ID})
 	require.NoError(t, err)
 

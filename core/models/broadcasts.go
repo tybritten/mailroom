@@ -277,12 +277,11 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 		return nil, fmt.Errorf("error creating flow contact for broadcast message: %w", err)
 	}
 
-	trans, locale := b.Translations.ForContact(oa.Env(), contact, b.BaseLanguage)
-	text := trans.Text
-	attachments := trans.Attachments
-	quickReplies := trans.QuickReplies
+	content, locale := b.Translations.ForContact(oa.Env(), contact, b.BaseLanguage)
 
 	if b.Expressions {
+		ev := goflow.Engine(rt).Evaluator()
+
 		// build up the minimum viable context for templates
 		templateCtx := types.NewXObject(map[string]types.XValue{
 			"contact": flows.Context(oa.Env(), contact),
@@ -291,25 +290,24 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 			"urns":    flows.ContextFunc(oa.Env(), contact.URNs().MapContext),
 		})
 
-		ev := goflow.Engine(rt).Evaluator()
-		text, _, _ = ev.Template(oa.Env(), templateCtx, text, nil)
+		content.Text, _, _ = ev.Template(oa.Env(), templateCtx, content.Text, nil)
 
-		for i := range attachments {
-			evaluated, _, _ := ev.Template(oa.Env(), templateCtx, string(attachments[i]), nil)
-			attachments[i] = utils.Attachment(evaluated)
+		for i := range content.Attachments {
+			evaluated, _, _ := ev.Template(oa.Env(), templateCtx, string(content.Attachments[i]), nil)
+			content.Attachments[i] = utils.Attachment(evaluated)
 		}
-		for i := range quickReplies {
-			quickReplies[i], _, _ = ev.Template(oa.Env(), templateCtx, quickReplies[i], nil)
+		for i := range content.QuickReplies {
+			content.QuickReplies[i], _, _ = ev.Template(oa.Env(), templateCtx, content.QuickReplies[i], nil)
 		}
 	}
 
 	// don't create a message if we have no content
-	if text == "" && len(attachments) == 0 && len(trans.QuickReplies) == 0 {
+	if content.Empty() {
 		return nil, nil
 	}
 
 	// create our outgoing message
-	out, ch := NewMsgOut(oa, contact, text, attachments, quickReplies, locale)
+	out, ch := NewMsgOut(oa, contact, content, nil, locale)
 
 	msg, err := NewOutgoingBroadcastMsg(rt, oa.Org(), ch, contact, out, b)
 	if err != nil {
