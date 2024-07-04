@@ -35,14 +35,12 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 
 	tcs := []struct {
 		Channel      *testdata.Channel
-		Text         string
 		Contact      *testdata.Contact
 		URN          urns.URN
 		URNID        models.URNID
-		Attachments  []utils.Attachment
-		QuickReplies []string
-		Locale       i18n.Locale
+		Content      *flows.MsgContent
 		Templating   *flows.MsgTemplating
+		Locale       i18n.Locale
 		Topic        flows.MsgTopic
 		Unsendable   flows.UnsendableReason
 		Flow         *testdata.Flow
@@ -55,12 +53,12 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		ExpectedMsgCount     int
 		ExpectedPriority     bool
 	}{
-		{ // 0
+		{ // 0: missing URN ID
 			Channel:              testdata.TwilioChannel,
-			Text:                 "missing urn id",
 			Contact:              testdata.Cathy,
 			URN:                  urns.URN("tel:+250700000001"),
 			URNID:                models.URNID(0),
+			Content:              &flows.MsgContent{Text: "hello"},
 			Flow:                 testdata.Favorites,
 			ResponseTo:           models.MsgID(123425),
 			ExpectedStatus:       models.MsgStatusQueued,
@@ -70,18 +68,17 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			ExpectedPriority:     true,
 		},
 		{ // 1
-			Channel:      testdata.TwilioChannel,
-			Text:         "test outgoing",
-			Contact:      testdata.Cathy,
-			URN:          urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)),
-			URNID:        testdata.Cathy.URNID,
-			QuickReplies: []string{"yes", "no"},
-			Locale:       "eng-US",
+			Channel: testdata.TwilioChannel,
+			Contact: testdata.Cathy,
+			URN:     urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)),
+			URNID:   testdata.Cathy.URNID,
+			Content: &flows.MsgContent{Text: "test outgoing", QuickReplies: []string{"yes", "no"}},
 			Templating: flows.NewMsgTemplating(
 				assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"),
 				[]*flows.TemplatingComponent{{Type: "body", Name: "body", Variables: map[string]int{"1": 0}}},
 				[]*flows.TemplatingVariable{{Type: "text", Value: "name"}},
 			),
+			Locale:               "eng-US",
 			Topic:                flows.MsgTopicPurchase,
 			Flow:                 testdata.SingleMessage,
 			ExpectedStatus:       models.MsgStatusQueued,
@@ -90,13 +87,12 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			ExpectedMsgCount:     1,
 			ExpectedPriority:     false,
 		},
-		{
+		{ // 2
 			Channel:              testdata.TwilioChannel,
-			Text:                 "test outgoing",
 			Contact:              testdata.Cathy,
 			URN:                  urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)),
 			URNID:                testdata.Cathy.URNID,
-			Attachments:          []utils.Attachment{utils.Attachment("image/jpeg:https://dl-foo.com/image.jpg")},
+			Content:              &flows.MsgContent{Text: "test outgoing", Attachments: []utils.Attachment{utils.Attachment("image/jpeg:https://dl-foo.com/image.jpg")}},
 			Flow:                 testdata.Favorites,
 			ExpectedStatus:       models.MsgStatusQueued,
 			ExpectedFailedReason: models.NilMsgFailedReason,
@@ -104,12 +100,12 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			ExpectedMsgCount:     2,
 			ExpectedPriority:     false,
 		},
-		{
+		{ // 3: suspended org
 			Channel:              testdata.TwilioChannel,
-			Text:                 "suspended org",
 			Contact:              testdata.Cathy,
 			URN:                  urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)),
 			URNID:                testdata.Cathy.URNID,
+			Content:              &flows.MsgContent{Text: "hello"},
 			Flow:                 testdata.Favorites,
 			SuspendedOrg:         true,
 			ExpectedStatus:       models.MsgStatusFailed,
@@ -118,12 +114,12 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			ExpectedMsgCount:     1,
 			ExpectedPriority:     false,
 		},
-		{
+		{ // 4: no destination
 			Channel:              nil,
-			Text:                 "no destination",
 			Contact:              testdata.Cathy,
 			URN:                  urns.NilURN,
 			URNID:                models.URNID(0),
+			Content:              &flows.MsgContent{Text: "hello"},
 			Unsendable:           flows.UnsendableReasonNoDestination,
 			Flow:                 testdata.Favorites,
 			ExpectedStatus:       models.MsgStatusFailed,
@@ -132,12 +128,12 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			ExpectedMsgCount:     1,
 			ExpectedPriority:     false,
 		},
-		{
+		{ // 5: blocked contact
 			Channel:              testdata.TwilioChannel,
-			Text:                 "blocked contact",
 			Contact:              blake,
 			URN:                  urns.URN(fmt.Sprintf("tel:+250700000007?id=%d", blakeURNID)),
 			URNID:                blakeURNID,
+			Content:              &flows.MsgContent{Text: "hello"},
 			Unsendable:           flows.UnsendableReasonContactStatus,
 			Flow:                 testdata.Favorites,
 			ExpectedStatus:       models.MsgStatusFailed,
@@ -172,12 +168,12 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			session.SetIncomingMsg(tc.ResponseTo, null.NullString)
 		}
 
-		flowMsg := flows.NewMsgOut(tc.URN, chRef, tc.Text, tc.Attachments, tc.QuickReplies, tc.Templating, tc.Topic, tc.Locale, tc.Unsendable)
+		flowMsg := flows.NewMsgOut(tc.URN, chRef, tc.Content, tc.Templating, tc.Topic, tc.Locale, tc.Unsendable)
 		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), ch, session, flow, flowMsg, dates.Now())
 
 		assert.NoError(t, err)
 
-		expectedAttachments := tc.Attachments
+		expectedAttachments := tc.Content.Attachments
 		if expectedAttachments == nil {
 			expectedAttachments = []utils.Attachment{}
 		}
@@ -185,10 +181,10 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg})
 		assert.NoError(t, err)
 		assert.Equal(t, oa.OrgID(), msg.OrgID())
-		assert.Equal(t, tc.Text, msg.Text(), "%d: text mismatch", i)
+		assert.Equal(t, tc.Content.Text, msg.Text(), "%d: text mismatch", i)
 		assert.Equal(t, models.MsgTypeText, msg.Type(), "%d: type mismatch", i)
 		assert.Equal(t, expectedAttachments, msg.Attachments(), "%d: attachments mismatch", i)
-		assert.Equal(t, tc.QuickReplies, msg.QuickReplies(), "%d: quick replies mismatch", i)
+		assert.Equal(t, tc.Content.QuickReplies, msg.QuickReplies(), "%d: quick replies mismatch", i)
 		assert.Equal(t, tc.Locale, msg.Locale(), "%d: locale mismatch", i)
 
 		if tc.Templating != nil {
@@ -230,7 +226,8 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 
 	// check that msg loop detection triggers after 20 repeats of the same text
 	newOutgoing := func(text string) *models.Msg {
-		flowMsg := flows.NewMsgOut(urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)), assets.NewChannelReference(testdata.TwilioChannel.UUID, "Twilio"), text, nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
+		content := &flows.MsgContent{Text: text}
+		flowMsg := flows.NewMsgOut(urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)), assets.NewChannelReference(testdata.TwilioChannel.UUID, "Twilio"), content, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
 		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg, dates.Now())
 		require.NoError(t, err)
 		return msg
@@ -397,10 +394,10 @@ func TestGetMsgRepetitions(t *testing.T) {
 	_, cathy, _ := testdata.Cathy.Load(rt, oa)
 	_, george, _ := testdata.George.Load(rt, oa)
 
-	msg1 := flows.NewMsgOut(testdata.Cathy.URN, nil, "foo", nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-	msg2 := flows.NewMsgOut(testdata.Cathy.URN, nil, "FOO", nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-	msg3 := flows.NewMsgOut(testdata.Cathy.URN, nil, "bar", nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-	msg4 := flows.NewMsgOut(testdata.George.URN, nil, "foo", nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
+	msg1 := flows.NewMsgOut(testdata.Cathy.URN, nil, &flows.MsgContent{Text: "foo"}, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
+	msg2 := flows.NewMsgOut(testdata.Cathy.URN, nil, &flows.MsgContent{Text: "FOO"}, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
+	msg3 := flows.NewMsgOut(testdata.Cathy.URN, nil, &flows.MsgContent{Text: "bar"}, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
+	msg4 := flows.NewMsgOut(testdata.George.URN, nil, &flows.MsgContent{Text: "foo"}, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
 
 	assertRepetitions := func(contact *flows.Contact, m *flows.MsgOut, expected int) {
 		count, err := models.GetMsgRepetitions(rt.RP, contact, m)
@@ -525,7 +522,7 @@ func TestNewMsgOut(t *testing.T) {
 
 	_, cathy, _ := testdata.Cathy.Load(rt, oa)
 
-	out, ch := models.NewMsgOut(oa, cathy, "hello", nil, nil, `eng-US`)
+	out, ch := models.NewMsgOut(oa, cathy, &flows.MsgContent{Text: "hello"}, nil, `eng-US`)
 	assert.Equal(t, "hello", out.Text())
 	assert.Equal(t, urns.URN("tel:+16055741111?id=10000"), out.URN())
 	assert.Equal(t, assets.NewChannelReference("74729f45-7f29-4868-9dc4-90e491e3c7d8", "Twilio"), out.Channel())
@@ -534,7 +531,7 @@ func TestNewMsgOut(t *testing.T) {
 
 	cathy.SetStatus(flows.ContactStatusBlocked)
 
-	out, ch = models.NewMsgOut(oa, cathy, "hello", nil, nil, `eng-US`)
+	out, ch = models.NewMsgOut(oa, cathy, &flows.MsgContent{Text: "hello"}, nil, `eng-US`)
 	assert.Equal(t, urns.URN("tel:+16055741111?id=10000"), out.URN())
 	assert.Equal(t, assets.NewChannelReference("74729f45-7f29-4868-9dc4-90e491e3c7d8", "Twilio"), out.Channel())
 	assert.Equal(t, "Twilio", ch.Name())
@@ -543,7 +540,7 @@ func TestNewMsgOut(t *testing.T) {
 	cathy.SetStatus(flows.ContactStatusActive)
 	cathy.ClearURNs()
 
-	out, ch = models.NewMsgOut(oa, cathy, "hello", nil, nil, `eng-US`)
+	out, ch = models.NewMsgOut(oa, cathy, &flows.MsgContent{Text: "hello"}, nil, `eng-US`)
 	assert.Equal(t, urns.NilURN, out.URN())
 	assert.Nil(t, out.Channel())
 	assert.Nil(t, ch)
@@ -568,12 +565,12 @@ func TestMsgTemplating(t *testing.T) {
 	)
 
 	// create a message with templating
-	out1 := flows.NewMsgOut(testdata.Cathy.URN, chRef, "Hello", nil, nil, templating1, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
+	out1 := flows.NewMsgOut(testdata.Cathy.URN, chRef, &flows.MsgContent{Text: "Hello"}, templating1, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
 	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out1, dates.Now())
 	require.NoError(t, err)
 
 	// create a message without templating
-	out2 := flows.NewMsgOut(testdata.Cathy.URN, chRef, "Hello", nil, nil, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
+	out2 := flows.NewMsgOut(testdata.Cathy.URN, chRef, &flows.MsgContent{Text: "Hello"}, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
 	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out2, dates.Now())
 	require.NoError(t, err)
 
