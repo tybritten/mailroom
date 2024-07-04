@@ -142,7 +142,7 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 	if m.Templating() != nil {
 		tpl := oa.TemplateByUUID(m.Templating().Template.UUID)
 		if tpl != nil {
-			tt := tpl.FindTranslation(m.Locale())
+			tt := tpl.FindTranslation(ch, m.Locale())
 			if tt != nil {
 				msg.Templating = &Templating{
 					MsgTemplating: m.Templating().MsgTemplating,

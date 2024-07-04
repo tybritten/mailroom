@@ -55,7 +55,7 @@ func handleSend(ctx context.Context, rt *runtime.Runtime, r *sendRequest) (any, 
 
 	content := &flows.MsgContent{Text: r.Text, Attachments: r.Attachments}
 
-	out, ch := models.NewMsgOut(oa, contact, content, nil, contact.Locale(oa.Env()))
+	out, ch := models.CreateMsgOut(rt, oa, contact, content, models.NilTemplateID, nil, contact.Locale(oa.Env()), nil)
 	var msg *models.Msg
 
 	if r.TicketID != models.NilTicketID {

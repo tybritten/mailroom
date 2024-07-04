@@ -514,33 +514,54 @@ func TestNewOutgoingIVR(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT text, status, msg_type FROM msgs_msg WHERE uuid = $1`, dbMsg.UUID()).Columns(map[string]any{"text": "Hello", "status": "W", "msg_type": "V"})
 }
 
-func TestNewMsgOut(t *testing.T) {
+func TestCreateMsgOut(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetData)
 
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
 
+	// give Cathy a new facebook URN
+	testdata.InsertContactURN(rt, testdata.Org1, testdata.Cathy, "facebook:123456789", 1001, nil)
+
+	_, bob, _ := testdata.Bob.Load(rt, oa)
 	_, cathy, _ := testdata.Cathy.Load(rt, oa)
 
-	out, ch := models.NewMsgOut(oa, cathy, &flows.MsgContent{Text: "hello"}, nil, `eng-US`)
+	out, ch := models.CreateMsgOut(rt, oa, bob, &flows.MsgContent{Text: "hello"}, models.NilTemplateID, nil, `eng`, nil)
 	assert.Equal(t, "hello", out.Text())
-	assert.Equal(t, urns.URN("tel:+16055741111?id=10000"), out.URN())
+	assert.Equal(t, urns.URN("tel:+16055742222?id=10001"), out.URN())
 	assert.Equal(t, assets.NewChannelReference("74729f45-7f29-4868-9dc4-90e491e3c7d8", "Twilio"), out.Channel())
-	assert.Equal(t, i18n.Locale(`eng-US`), out.Locale())
+	assert.Equal(t, i18n.Locale(`eng`), out.Locale())
+	assert.Nil(t, out.Templating())
 	assert.Equal(t, "Twilio", ch.Name())
 
-	cathy.SetStatus(flows.ContactStatusBlocked)
+	out, ch = models.CreateMsgOut(rt, oa, cathy, &flows.MsgContent{Text: "hello"}, testdata.ReviveTemplate.ID, []string{"Bob", "mice"}, `eng`, nil)
+	assert.Equal(t, "Hi Bob, are you still experiencing problems with mice?", out.Text())
+	assert.Equal(t, urns.URN("facebook:123456789?id=30000"), out.URN())
+	assert.Equal(t, assets.NewChannelReference("0f661e8b-ea9d-4bd3-9953-d368340acf91", "Facebook"), out.Channel())
+	assert.Equal(t, i18n.Locale(`eng-US`), out.Locale())
+	assert.Equal(t, &flows.MsgTemplating{
+		Template: assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"),
+		Components: []*flows.TemplatingComponent{
+			{Name: "body", Type: "body/text", Variables: map[string]int{"1": 0, "2": 1}},
+		},
+		Variables: []*flows.TemplatingVariable{{Type: "text", Value: "Bob"}, {Type: "text", Value: "mice"}},
+	}, out.Templating())
+	assert.Equal(t, "Facebook", ch.Name())
 
-	out, ch = models.NewMsgOut(oa, cathy, &flows.MsgContent{Text: "hello"}, nil, `eng-US`)
-	assert.Equal(t, urns.URN("tel:+16055741111?id=10000"), out.URN())
+	bob.SetStatus(flows.ContactStatusBlocked)
+
+	out, ch = models.CreateMsgOut(rt, oa, bob, &flows.MsgContent{Text: "hello"}, models.NilTemplateID, nil, `eng-US`, nil)
+	assert.Equal(t, urns.URN("tel:+16055742222?id=10001"), out.URN())
 	assert.Equal(t, assets.NewChannelReference("74729f45-7f29-4868-9dc4-90e491e3c7d8", "Twilio"), out.Channel())
 	assert.Equal(t, "Twilio", ch.Name())
 	assert.Equal(t, flows.UnsendableReasonContactStatus, out.UnsendableReason())
 
-	cathy.SetStatus(flows.ContactStatusActive)
-	cathy.ClearURNs()
+	bob.SetStatus(flows.ContactStatusActive)
+	bob.ClearURNs()
 
-	out, ch = models.NewMsgOut(oa, cathy, &flows.MsgContent{Text: "hello"}, nil, `eng-US`)
+	out, ch = models.CreateMsgOut(rt, oa, bob, &flows.MsgContent{Text: "hello"}, models.NilTemplateID, nil, `eng-US`, nil)
 	assert.Equal(t, urns.NilURN, out.URN())
 	assert.Nil(t, out.Channel())
 	assert.Nil(t, ch)
