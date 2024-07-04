@@ -1,3 +1,7 @@
+v9.1.76 (2024-07-04)
+-------------------------
+ * Add support for templates on broadcasts
+
 v9.1.75 (2024-07-03)
 -------------------------
  * Update to latest goflow which removes namespace from assets.TemplateTranslation
