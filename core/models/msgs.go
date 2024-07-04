@@ -20,8 +20,10 @@ import (
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/excellent/types"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/utils"
+	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
 )
@@ -770,7 +772,8 @@ func FailChannelMessages(ctx context.Context, db *sql.DB, orgID OrgID, channelID
 	return nil
 }
 
-func NewMsgOut(oa *OrgAssets, c *flows.Contact, content *flows.MsgContent, templating *flows.MsgTemplating, locale i18n.Locale) (*flows.MsgOut, *Channel) {
+// CreateMsgOut creates a new outgoing message to the given contact, resolving the destination etc
+func CreateMsgOut(rt *runtime.Runtime, oa *OrgAssets, c *flows.Contact, content *flows.MsgContent, templateID TemplateID, templateVariables []string, locale i18n.Locale, expressionsContext *types.XObject) (*flows.MsgOut, *Channel) {
 	// resolve URN + channel for this contact
 	urn := urns.NilURN
 	var channel *Channel
@@ -780,6 +783,51 @@ func NewMsgOut(oa *OrgAssets, c *flows.Contact, content *flows.MsgContent, templ
 		channel = oa.ChannelByUUID(dest.Channel.UUID())
 		channelRef = dest.Channel.Reference()
 		break
+	}
+
+	// if there's an expressions context, evaluate text etc
+	if expressionsContext != nil {
+		ev := goflow.Engine(rt).Evaluator()
+
+		content.Text, _, _ = ev.Template(oa.Env(), expressionsContext, content.Text, nil)
+
+		for i := range content.Attachments {
+			evaluated, _, _ := ev.Template(oa.Env(), expressionsContext, string(content.Attachments[i]), nil)
+			content.Attachments[i] = utils.Attachment(evaluated)
+		}
+		for i := range content.QuickReplies {
+			content.QuickReplies[i], _, _ = ev.Template(oa.Env(), expressionsContext, content.QuickReplies[i], nil)
+		}
+		for i := range templateVariables {
+			templateVariables[i], _, _ = ev.Template(oa.Env(), expressionsContext, templateVariables[i], nil)
+		}
+	}
+
+	// if we have a template, try to generate templating
+	var templating *flows.MsgTemplating
+	if templateID != NilTemplateID && channel != nil {
+		template := oa.TemplateByID(templateID)
+		if template != nil {
+			flowTemplate := flows.NewTemplate(template)
+			flowChannel := flows.NewChannel(channel)
+
+			// look for a translation in the contact's locale, or the org's default locale
+			locales := make([]i18n.Locale, 0, 2)
+			if c.Language() != "" {
+				locales = append(locales, c.Locale(oa.Env()))
+			}
+			locales = append(locales, oa.Env().DefaultLocale())
+
+			trans := flowTemplate.FindTranslation(flowChannel, locales)
+			if trans != nil {
+				translation := flows.NewTemplateTranslation(trans)
+				templating = flows.NewTemplate(template).Templating(translation, templateVariables)
+
+				// override message content to be a preview of template message and override locale to match the template translation
+				content = translation.Preview(templating.Variables)
+				locale = translation.Locale()
+			}
+		}
 	}
 
 	// is this message sendable?

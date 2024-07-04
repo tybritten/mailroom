@@ -55,10 +55,12 @@ func TestTemplates(t *testing.T) {
 		assert.Equal(t, map[string]int{"1": 0, "2": 1}, c1.Variables())
 	}
 
+	fb := oa.ChannelByUUID(testdata.FacebookChannel.UUID)
+
 	mt := oa.TemplateByUUID("3b8dd151-1a91-411f-90cb-dd9065bb7a71")
 	assert.NotNil(t, mt)
-	assert.NotNil(t, mt.FindTranslation("fra"))
-	assert.Nil(t, mt.FindTranslation("eng"))
+	assert.NotNil(t, mt.FindTranslation(fb, "fra"))
+	assert.Nil(t, mt.FindTranslation(fb, "eng"))
 
 	assert.Nil(t, oa.TemplateByUUID("f67e498e-08fa-44e0-8acd-4c10122de714"))
 }

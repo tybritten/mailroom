@@ -39,7 +39,8 @@ func TestNewCourierMsg(t *testing.T) {
 	_, cathy, cathyURNs := testdata.Cathy.Load(rt, oa)
 	_, fred, fredURNs := testFred.Load(rt, oa)
 
-	channel := oa.ChannelByUUID(testdata.TwilioChannel.UUID)
+	twilio := oa.ChannelByUUID(testdata.TwilioChannel.UUID)
+	facebook := oa.ChannelByUUID(testdata.FacebookChannel.UUID)
 	flow, _ := oa.FlowByID(testdata.Favorites.ID)
 	optIn := oa.OptInByID(optInID)
 	cathyURN, _ := cathyURNs[0].AsURN(oa)
@@ -47,14 +48,14 @@ func TestNewCourierMsg(t *testing.T) {
 
 	flowMsg1 := flows.NewMsgOut(
 		cathyURN,
-		assets.NewChannelReference(testdata.TwilioChannel.UUID, "Test Channel"),
+		assets.NewChannelReference(testdata.FacebookChannel.UUID, "Facebook"),
 		&flows.MsgContent{
 			Text:         "Hi there",
 			Attachments:  []utils.Attachment{utils.Attachment("image/jpeg:https://dl-foo.com/image.jpg")},
 			QuickReplies: []string{"yes", "no"},
 		},
 		flows.NewMsgTemplating(
-			assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"),
+			assets.NewTemplateReference(testdata.ReviveTemplate.UUID, "revive_issue"),
 			[]*flows.TemplatingComponent{{Type: "body", Name: "body", Variables: map[string]int{"1": 0}}},
 			[]*flows.TemplatingVariable{{Type: "text", Value: "name"}},
 		),
@@ -68,7 +69,7 @@ func TestNewCourierMsg(t *testing.T) {
 	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, cathy)
 	require.NoError(t, err)
 
-	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg1, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
+	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), facebook, session, flow, flowMsg1, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	require.NoError(t, err)
 
 	// insert to db so that it gets an id and time field values
@@ -79,7 +80,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"attachments": [
 			"image/jpeg:https://dl-foo.com/image.jpg"
 		],
-		"channel_uuid": "74729f45-7f29-4868-9dc4-90e491e3c7d8",
+		"channel_uuid": "0f661e8b-ea9d-4bd3-9953-d368340acf91",
 		"contact_id": 10000,
 		"contact_urn_id": 10000,
 		"created_on": "2021-11-09T14:03:30Z",
@@ -123,7 +124,7 @@ func TestNewCourierMsg(t *testing.T) {
 	)
 	in1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "test", models.MsgStatusHandled)
 	session.SetIncomingMsg(in1.ID, null.String("EX123"))
-	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg2, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
+	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), twilio, session, flow, flowMsg2, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	require.NoError(t, err)
 
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg2})
@@ -152,7 +153,7 @@ func TestNewCourierMsg(t *testing.T) {
 	// try a broadcast message which won't have session and flow fields set and won't be high priority
 	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Blast"}, nil, models.NilScheduleID, []*testdata.Contact{testFred}, nil)
 	bcastMsg1 := flows.NewMsgOut(fredURN, assets.NewChannelReference(testdata.TwilioChannel.UUID, "Test Channel"), &flows.MsgContent{Text: "Blast"}, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-	msg3, err := models.NewOutgoingBroadcastMsg(rt, oa.Org(), channel, fred, bcastMsg1, &models.BroadcastBatch{BroadcastID: bcastID, OptInID: optInID, CreatedByID: testdata.Admin.ID})
+	msg3, err := models.NewOutgoingBroadcastMsg(rt, oa.Org(), twilio, fred, bcastMsg1, &models.BroadcastBatch{BroadcastID: bcastID, OptInID: optInID, CreatedByID: testdata.Admin.ID})
 	require.NoError(t, err)
 
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg3})
@@ -175,7 +176,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"uuid": "%s"
 	}`, msg3.CreatedOn().Format(time.RFC3339Nano), msg3.UUID()))
 
-	msg4 := models.NewOutgoingOptInMsg(rt, session, flow, optIn, channel, "tel:+16055741111?id=10000", time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
+	msg4 := models.NewOutgoingOptInMsg(rt, session, flow, optIn, twilio, "tel:+16055741111?id=10000", time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg4})
 	require.NoError(t, err)
 

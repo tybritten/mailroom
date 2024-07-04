@@ -11,8 +11,6 @@ import (
 	"github.com/nyaruka/goflow/excellent/types"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
-	"github.com/nyaruka/goflow/utils"
-	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
 )
@@ -279,26 +277,14 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 
 	content, locale := b.Translations.ForContact(oa.Env(), contact, b.BaseLanguage)
 
+	var expressionsContext *types.XObject
 	if b.Expressions {
-		ev := goflow.Engine(rt).Evaluator()
-
-		// build up the minimum viable context for templates
-		templateCtx := types.NewXObject(map[string]types.XValue{
+		expressionsContext = types.NewXObject(map[string]types.XValue{
 			"contact": flows.Context(oa.Env(), contact),
 			"fields":  flows.Context(oa.Env(), contact.Fields()),
 			"globals": flows.Context(oa.Env(), oa.SessionAssets().Globals()),
 			"urns":    flows.ContextFunc(oa.Env(), contact.URNs().MapContext),
 		})
-
-		content.Text, _, _ = ev.Template(oa.Env(), templateCtx, content.Text, nil)
-
-		for i := range content.Attachments {
-			evaluated, _, _ := ev.Template(oa.Env(), templateCtx, string(content.Attachments[i]), nil)
-			content.Attachments[i] = utils.Attachment(evaluated)
-		}
-		for i := range content.QuickReplies {
-			content.QuickReplies[i], _, _ = ev.Template(oa.Env(), templateCtx, content.QuickReplies[i], nil)
-		}
 	}
 
 	// don't create a message if we have no content
@@ -307,7 +293,7 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 	}
 
 	// create our outgoing message
-	out, ch := NewMsgOut(oa, contact, content, nil, locale)
+	out, ch := CreateMsgOut(rt, oa, contact, content, b.TemplateID, b.TemplateVariables, locale, expressionsContext)
 
 	msg, err := NewOutgoingBroadcastMsg(rt, oa.Org(), ch, contact, out, b)
 	if err != nil {

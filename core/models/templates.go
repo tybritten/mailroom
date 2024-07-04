@@ -32,9 +32,9 @@ func (t *Template) UUID() assets.TemplateUUID                  { return t.UUID_ 
 func (t *Template) Name() string                               { return t.Name_ }
 func (t *Template) Translations() []assets.TemplateTranslation { return t.translations }
 
-func (t *Template) FindTranslation(l i18n.Locale) *TemplateTranslation {
+func (t *Template) FindTranslation(ch *Channel, l i18n.Locale) *TemplateTranslation {
 	for _, tt := range t.Translations_ {
-		if tt.Locale() == l {
+		if tt.Channel().UUID == ch.UUID() && tt.Locale() == l {
 			return tt
 		}
 	}

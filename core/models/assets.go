@@ -89,6 +89,7 @@ type OrgAssets struct {
 	optInsByUUID map[assets.OptInUUID]*OptIn
 
 	templates       []assets.Template
+	templatesByID   map[TemplateID]*Template
 	templatesByUUID map[assets.TemplateUUID]*Template
 
 	topics       []assets.Topic
@@ -323,12 +324,15 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 		if err != nil {
 			return nil, fmt.Errorf("error loading templates for org %d: %w", orgID, err)
 		}
+		oa.templatesByID = make(map[TemplateID]*Template)
 		oa.templatesByUUID = make(map[assets.TemplateUUID]*Template)
 		for _, t := range oa.templates {
+			oa.templatesByID[t.(*Template).ID()] = t.(*Template)
 			oa.templatesByUUID[t.UUID()] = t.(*Template)
 		}
 	} else {
 		oa.templates = prev.templates
+		oa.templatesByID = prev.templatesByID
 		oa.templatesByUUID = prev.templatesByUUID
 	}
 
@@ -666,6 +670,10 @@ func (a *OrgAssets) ResthookBySlug(slug string) *Resthook {
 
 func (a *OrgAssets) Templates() ([]assets.Template, error) {
 	return a.templates, nil
+}
+
+func (a *OrgAssets) TemplateByID(id TemplateID) *Template {
+	return a.templatesByID[id]
 }
 
 func (a *OrgAssets) TemplateByUUID(uuid assets.TemplateUUID) *Template {
