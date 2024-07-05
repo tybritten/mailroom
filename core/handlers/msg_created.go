@@ -44,7 +44,7 @@ func handlePreMsgCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	}
 
 	// android channels get normal timeouts
-	if channel.Type() == models.ChannelTypeAndroid {
+	if channel.IsAndroid() {
 		return nil
 	}
 

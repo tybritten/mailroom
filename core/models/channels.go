@@ -68,6 +68,9 @@ func (c *Channel) Name() string { return c.Name_ }
 // Type returns the channel type for this channel
 func (c *Channel) Type() ChannelType { return c.Type_ }
 
+// Type returns the channel type for this channel
+func (c *Channel) IsAndroid() bool { return c.Type_ == ChannelTypeAndroid }
+
 // TPS returns the max number of transactions per second this channel supports
 func (c *Channel) TPS() int { return c.TPS_ }
 

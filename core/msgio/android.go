@@ -24,7 +24,7 @@ func SyncAndroidChannel(ctx context.Context, fc FCMClient, channel *models.Chann
 		return errors.New("instance has no FCM configuration")
 	}
 
-	assert(channel.Type() == models.ChannelTypeAndroid, "can't sync a non-android channel")
+	assert(channel.IsAndroid(), "can't sync a non-android channel")
 
 	// no FCM ID for this channel, noop, we can't trigger a sync
 	fcmID := channel.ConfigValue(models.ChannelConfigFCMID, "")

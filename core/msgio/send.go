@@ -102,7 +102,7 @@ func tryToQueueForOrg(ctx context.Context, rt *runtime.Runtime, fc FCMClient, oa
 		channel := oa.ChannelByID(s.Msg.ChannelID())
 
 		if channel != nil {
-			if channel.Type() == models.ChannelTypeAndroid {
+			if channel.IsAndroid() {
 				androidMsgs[channel] = append(androidMsgs[channel], s.Msg)
 			} else {
 				cc := contactAndChannel{s.Msg.ContactID(), channel}
