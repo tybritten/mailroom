@@ -143,6 +143,7 @@ type Msg struct {
 		Direction    MsgDirection  `db:"direction"`
 		Status       MsgStatus     `db:"status"`
 		Visibility   MsgVisibility `db:"visibility"`
+		IsAndroid    bool          `db:"is_android"`
 		MsgType      MsgType       `db:"msg_type"`
 		MsgCount     int           `db:"msg_count"`
 		CreatedOn    time.Time     `db:"created_on"`
@@ -202,8 +203,10 @@ func (m *Msg) ContactURNID() *URNID { return m.m.ContactURNID }
 func (m *Msg) SetChannel(channel *Channel) {
 	if channel != nil {
 		m.m.ChannelID = channel.ID()
+		m.m.IsAndroid = channel.IsAndroid()
 	} else {
 		m.m.ChannelID = NilChannelID
+		m.m.IsAndroid = false
 	}
 }
 
@@ -247,6 +250,7 @@ func NewIncomingAndroid(orgID OrgID, channelID ChannelID, contactID ContactID, u
 	m.Status = MsgStatusPending
 	m.Visibility = VisibilityVisible
 	m.MsgType = MsgTypeText
+	m.IsAndroid = true
 	m.CreatedOn = dates.Now()
 	m.SentOn = &receivedOn
 	return msg
@@ -618,10 +622,10 @@ func InsertMessages(ctx context.Context, tx DBorTx, msgs []*Msg) error {
 const sqlInsertMsgSQL = `
 INSERT INTO
 msgs_msg(uuid, text, attachments, quick_replies, locale, templating, high_priority, created_on, modified_on, sent_on, direction, status, metadata,
-		 visibility, msg_type, msg_count, error_count, next_attempt, failed_reason, channel_id,
+		 visibility, msg_type, msg_count, error_count, next_attempt, failed_reason, channel_id, is_android,
 		 contact_id, contact_urn_id, org_id, flow_id, broadcast_id, ticket_id, optin_id, created_by_id)
   VALUES(:uuid, :text, :attachments, :quick_replies, :locale, :templating, :high_priority, :created_on, now(), :sent_on, :direction, :status, :metadata,
-		 :visibility, :msg_type, :msg_count, :error_count, :next_attempt, :failed_reason, :channel_id,
+		 :visibility, :msg_type, :msg_count, :error_count, :next_attempt, :failed_reason, :channel_id, :is_android,
 		 :contact_id, :contact_urn_id, :org_id, :flow_id, :broadcast_id, :ticket_id, :optin_id, :created_by_id)
 RETURNING id, modified_on`
 
