@@ -1,3 +1,7 @@
+v9.1.77 (2024-07-05)
+-------------------------
+ * Start populating Msg.is_android for new messages
+
 v9.1.76 (2024-07-04)
 -------------------------
  * Add support for templates on broadcasts
