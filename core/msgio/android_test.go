@@ -31,13 +31,13 @@ func TestSyncAndroidChannel(t *testing.T) {
 	channel2 := oa.ChannelByID(testChannel2.ID)
 	channel3 := oa.ChannelByID(testChannel3.ID)
 
-	err = msgio.SyncAndroidChannel(ctx, rt, nil, channel1, "")
+	err = msgio.SyncAndroidChannel(ctx, rt, nil, channel1)
 	assert.EqualError(t, err, "instance has no FCM configuration")
-	err = msgio.SyncAndroidChannel(ctx, rt, fc, channel1, "")
+	err = msgio.SyncAndroidChannel(ctx, rt, fc, channel1)
 	assert.NoError(t, err)
-	err = msgio.SyncAndroidChannel(ctx, rt, fc, channel2, "")
+	err = msgio.SyncAndroidChannel(ctx, rt, fc, channel2)
 	assert.EqualError(t, err, "error syncing channel: 401 error: 401 Unauthorized")
-	err = msgio.SyncAndroidChannel(ctx, rt, fc, channel3, "")
+	err = msgio.SyncAndroidChannel(ctx, rt, fc, channel3)
 	assert.NoError(t, err)
 
 	// check that we try to sync the 2 channels with FCM IDs, even tho one fails

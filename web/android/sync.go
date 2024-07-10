@@ -16,8 +16,7 @@ func init() {
 }
 
 type syncRequest struct {
-	ChannelID      models.ChannelID `json:"channel_id"   validate:"required"`
-	RegistrationID string           `json:"registration_id"`
+	ChannelID models.ChannelID `json:"channel_id"   validate:"required"`
 }
 
 func handleSync(ctx context.Context, rt *runtime.Runtime, r *syncRequest) (any, int, error) {
@@ -27,12 +26,12 @@ func handleSync(ctx context.Context, rt *runtime.Runtime, r *syncRequest) (any, 
 	}
 
 	channelFCMID := channel.ConfigValue(models.ChannelConfigFCMID, "")
-	if channelFCMID == "" && r.RegistrationID == "" {
+	if channelFCMID == "" {
 		return nil, 0, fmt.Errorf("missing android channel registration id")
 	}
 
 	fc := msgio.CreateFCMClient(ctx, rt.Config)
-	err = msgio.SyncAndroidChannel(ctx, rt, fc, channel, r.RegistrationID)
+	err = msgio.SyncAndroidChannel(ctx, rt, fc, channel)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error syncing android channel: %w", err)
 	}
