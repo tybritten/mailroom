@@ -8,6 +8,7 @@ import (
 	"time"
 
 	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/auth"
 	"firebase.google.com/go/v4/messaging"
 	fcm "github.com/appleboy/go-fcm"
 	"google.golang.org/api/option"
@@ -80,10 +81,12 @@ func VerifyTokenIDs(ctx context.Context, rt *runtime.Runtime, channel *models.Ch
 	// verify the FCM ID
 	_, err = firebaseAuthClient.VerifyIDToken(ctx, fcmID)
 	if err != nil {
-		// clear the FCM ID in the DB
-		_, errDB := rt.DB.ExecContext(ctx, `UPDATE channels_channel SET config = config || '{"FCM_ID": ""}'::jsonb WHERE uuid = $1`, channel.UUID())
-		if errDB != nil {
-			return errDB
+		if auth.IsIDTokenRevoked(err) || auth.IsUserDisabled(err) {
+			// clear the FCM ID in the DB
+			_, errDB := rt.DB.ExecContext(ctx, `UPDATE channels_channel SET config = config || '{"FCM_ID": ""}'::jsonb WHERE uuid = $1`, channel.UUID())
+			if errDB != nil {
+				return errDB
+			}
 		}
 
 		return err
