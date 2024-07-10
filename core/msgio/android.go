@@ -19,7 +19,7 @@ type FCMClient interface {
 }
 
 // SyncAndroidChannel tries to trigger sync of the given Android channel via FCM
-func SyncAndroidChannel(ctx context.Context, fc FCMClient, channel *models.Channel) error {
+func SyncAndroidChannel(ctx context.Context, fc FCMClient, channel *models.Channel, registrationID string) error {
 	if fc == nil {
 		return errors.New("instance has no FCM configuration")
 	}
@@ -28,6 +28,9 @@ func SyncAndroidChannel(ctx context.Context, fc FCMClient, channel *models.Chann
 
 	// no FCM ID for this channel, noop, we can't trigger a sync
 	fcmID := channel.ConfigValue(models.ChannelConfigFCMID, "")
+	if registrationID != "" {
+		fcmID = registrationID
+	}
 	if fcmID == "" {
 		return nil
 	}
