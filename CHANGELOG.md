@@ -1,3 +1,7 @@
+v9.1.78 (2024-07-10)
+-------------------------
+ * Stop reading from TemplateTranslation.is_active which we're going to drop
+
 v9.1.77 (2024-07-05)
 -------------------------
  * Start populating Msg.is_android for new messages
