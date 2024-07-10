@@ -58,7 +58,7 @@ const (
 	ContactStatusArchived ContactStatus = "V"
 )
 
-var contactToModelStatus = map[flows.ContactStatus]ContactStatus{
+var ContactToModelStatus = map[flows.ContactStatus]ContactStatus{
 	flows.ContactStatusActive:   ContactStatusActive,
 	flows.ContactStatusBlocked:  ContactStatusBlocked,
 	flows.ContactStatusStopped:  ContactStatusStopped,
@@ -604,7 +604,7 @@ WHERE
 `
 
 // CreateContact creates a new contact for the passed in org with the passed in URNs
-func CreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, name string, language i18n.Language, urnz []urns.URN) (*Contact, *flows.Contact, error) {
+func CreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, name string, language i18n.Language, status ContactStatus, urnz []urns.URN) (*Contact, *flows.Contact, error) {
 	// ensure all URNs are normalized and valid
 	urnz, err := nornalizeAndValidateURNs(urnz)
 	if err != nil {
@@ -623,7 +623,7 @@ func CreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, nam
 		}
 	}
 
-	contactID, err := tryInsertContactAndURNs(ctx, db, oa.OrgID(), userID, name, language, urnz, NilChannelID)
+	contactID, err := tryInsertContactAndURNs(ctx, db, oa.OrgID(), userID, name, language, status, urnz, NilChannelID)
 	if err != nil {
 		// always possible that another thread created a contact with these URNs after we checked above
 		if dbutil.IsUniqueViolation(err) {
@@ -803,7 +803,7 @@ func getOrCreateContact(ctx context.Context, db DB, orgID OrgID, urnz []urns.URN
 		return uniqueOwners[0], false, nil
 	}
 
-	contactID, err := tryInsertContactAndURNs(ctx, db, orgID, UserID(1), "", i18n.NilLanguage, urnz, channelID)
+	contactID, err := tryInsertContactAndURNs(ctx, db, orgID, UserID(1), "", i18n.NilLanguage, ContactStatusActive, urnz, channelID)
 	if err == nil {
 		return contactID, true, nil
 	}
@@ -845,13 +845,13 @@ func uniqueContactIDs(urnMap map[urns.URN]ContactID) []ContactID {
 // Tries to create a new contact for the passed in org with the passed in validated URNs. Returned error can be tested
 // with `dbutil.IsUniqueViolation` to determine if problem was one or more of the URNs already exist and are assigned to
 // other contacts.
-func tryInsertContactAndURNs(ctx context.Context, db DB, orgID OrgID, userID UserID, name string, language i18n.Language, urnz []urns.URN, channelID ChannelID) (ContactID, error) {
+func tryInsertContactAndURNs(ctx context.Context, db DB, orgID OrgID, userID UserID, name string, language i18n.Language, status ContactStatus, urnz []urns.URN, channelID ChannelID) (ContactID, error) {
 	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
 		return NilContactID, fmt.Errorf("error beginning transaction: %w", err)
 	}
 
-	contactID, err := insertContactAndURNs(ctx, tx, orgID, userID, name, language, urnz, channelID)
+	contactID, err := insertContactAndURNs(ctx, tx, orgID, userID, name, language, status, urnz, channelID)
 	if err != nil {
 		tx.Rollback()
 		return NilContactID, err
@@ -866,7 +866,7 @@ func tryInsertContactAndURNs(ctx context.Context, db DB, orgID OrgID, userID Use
 	return contactID, nil
 }
 
-func insertContactAndURNs(ctx context.Context, db DBorTx, orgID OrgID, userID UserID, name string, language i18n.Language, urnz []urns.URN, channelID ChannelID) (ContactID, error) {
+func insertContactAndURNs(ctx context.Context, db DBorTx, orgID OrgID, userID UserID, name string, language i18n.Language, status ContactStatus, urnz []urns.URN, channelID ChannelID) (ContactID, error) {
 	if userID == NilUserID {
 		userID = UserID(1)
 	}
@@ -874,10 +874,10 @@ func insertContactAndURNs(ctx context.Context, db DBorTx, orgID OrgID, userID Us
 	// first insert our contact
 	var contactID ContactID
 	err := db.GetContext(ctx, &contactID,
-		`INSERT INTO contacts_contact (org_id, is_active, status, uuid, name, language, ticket_count, created_on, modified_on, created_by_id, modified_by_id) 
-		VALUES($1, TRUE, 'A', $2, $3, $4, 0, $5, $5, $6, $6)
+		`INSERT INTO contacts_contact (org_id, is_active, uuid, name, language, status, ticket_count, created_on, modified_on, created_by_id, modified_by_id) 
+		VALUES($1, TRUE, $2, $3, $4, $5, 0, $6, $6, $7, $7)
 		RETURNING id`,
-		orgID, uuids.New(), null.String(name), null.String(string(language)), dates.Now(), userID,
+		orgID, uuids.New(), null.String(name), null.String(string(language)), status, dates.Now(), userID,
 	)
 	if err != nil {
 		return NilContactID, fmt.Errorf("error inserting new contact: %w", err)
@@ -1372,7 +1372,7 @@ func UpdateContactStatus(ctx context.Context, db DBorTx, changes []*ContactStatu
 	for _, ch := range changes {
 		blocked := ch.Status == flows.ContactStatusBlocked
 		stopped := ch.Status == flows.ContactStatusStopped
-		status := contactToModelStatus[ch.Status]
+		status := ContactToModelStatus[ch.Status]
 
 		if blocked || stopped {
 			archiveTriggersForContactIDs = append(archiveTriggersForContactIDs, ch.ContactID)

@@ -148,20 +148,22 @@ func TestCreateContact(t *testing.T) {
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
 
-	contact, flowContact, err := models.CreateContact(ctx, rt.DB, oa, models.UserID(1), "Rich", `kin`, []urns.URN{urns.URN("telegram:200001"), urns.URN("telegram:200002")})
-	require.NoError(t, err)
+	contact, flowContact, err := models.CreateContact(ctx, rt.DB, oa, models.UserID(1), "Rich", `kin`, models.ContactStatusActive, []urns.URN{urns.URN("telegram:200001"), urns.URN("telegram:200002")})
+	assert.NoError(t, err)
 
 	assert.Equal(t, "Rich", contact.Name())
 	assert.Equal(t, i18n.Language(`kin`), contact.Language())
+	assert.Equal(t, models.ContactStatusActive, contact.Status())
 	assert.Equal(t, []urns.URN{"telegram:200001?id=30001", "telegram:200002?id=30000"}, contact.URNs())
 
 	assert.Equal(t, "Rich", flowContact.Name())
 	assert.Equal(t, i18n.Language(`kin`), flowContact.Language())
+	assert.Equal(t, flows.ContactStatusActive, flowContact.Status())
 	assert.Equal(t, []urns.URN{"telegram:200001?id=30001", "telegram:200002?id=30000"}, flowContact.URNs().RawURNs())
 	assert.Len(t, flowContact.Groups().All(), 1)
 	assert.Equal(t, assets.GroupUUID("d636c966-79c1-4417-9f1c-82ad629773a2"), flowContact.Groups().All()[0].UUID())
 
-	_, _, err = models.CreateContact(ctx, rt.DB, oa, models.UserID(1), "Rich", `kin`, []urns.URN{urns.URN("telegram:200001")})
+	_, _, err = models.CreateContact(ctx, rt.DB, oa, models.UserID(1), "Rich", `kin`, models.ContactStatusActive, []urns.URN{urns.URN("telegram:200001")})
 	assert.EqualError(t, err, "URN 0 in use by other contacts")
 
 	var uerr *models.URNError
@@ -169,6 +171,13 @@ func TestCreateContact(t *testing.T) {
 		assert.Equal(t, "taken", uerr.Code)
 		assert.Equal(t, 0, uerr.Index)
 	}
+
+	// new blocked contact won't be added to smart groups
+	contact, flowContact, err = models.CreateContact(ctx, rt.DB, oa, models.UserID(1), "Bob", `kin`, models.ContactStatusBlocked, []urns.URN{urns.URN("telegram:200003")})
+	assert.NoError(t, err)
+	assert.Equal(t, models.ContactStatusBlocked, contact.Status())
+	assert.Equal(t, flows.ContactStatusBlocked, flowContact.Status())
+	assert.Len(t, flowContact.Groups().All(), 0)
 }
 
 func TestCreateContactRace(t *testing.T) {
@@ -192,7 +201,7 @@ func TestCreateContactRace(t *testing.T) {
 	var errs [2]error
 
 	test.RunConcurrently(2, func(i int) {
-		contacts[i], _, errs[i] = models.CreateContact(ctx, mdb, oa, models.UserID(1), "", i18n.NilLanguage, []urns.URN{urns.URN("telegram:100007")})
+		contacts[i], _, errs[i] = models.CreateContact(ctx, mdb, oa, models.UserID(1), "", i18n.NilLanguage, models.ContactStatusActive, []urns.URN{urns.URN("telegram:100007")})
 	})
 
 	// one should return a contact, the other should error

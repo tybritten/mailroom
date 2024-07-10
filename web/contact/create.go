@@ -46,7 +46,7 @@ func handleCreate(ctx context.Context, rt *runtime.Runtime, r *createRequest) (a
 		return err, http.StatusBadRequest, nil
 	}
 
-	_, contact, err := models.CreateContact(ctx, rt.DB, oa, r.UserID, c.Name, c.Language, c.URNs)
+	_, contact, err := models.CreateContact(ctx, rt.DB, oa, r.UserID, c.Name, c.Language, c.Status, c.URNs)
 	if err != nil {
 		return nil, 0, err
 	}
