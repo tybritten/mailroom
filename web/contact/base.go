@@ -15,6 +15,7 @@ import (
 type Creation struct {
 	Name     string
 	Language i18n.Language
+	Status   models.ContactStatus
 	URNs     []urns.URN
 	Mods     []flows.Modifier
 }
@@ -33,6 +34,12 @@ func SpecToCreation(s *models.ContactSpec, env envs.Environment, sa flows.Sessio
 		if err != nil {
 			return nil, fmt.Errorf("invalid language: %w", err)
 		}
+	}
+
+	if s.Status != "" {
+		validated.Status = models.ContactToModelStatus[s.Status]
+	} else {
+		validated.Status = models.ContactStatusActive
 	}
 
 	validated.URNs = make([]urns.URN, len(s.URNs))
