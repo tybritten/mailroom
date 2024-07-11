@@ -47,7 +47,7 @@ func SyncAndroidChannel(ctx context.Context, rt *runtime.Runtime, fc FCMClient, 
 	start := time.Now()
 
 	if _, err := fc.Send(ctx, sync); err != nil {
-		VerifyTokenIDs(ctx, rt, channel, fcmID)
+		VerifyFCMID(ctx, rt, channel, fcmID)
 
 		return fmt.Errorf("error syncing channel: %w", err)
 	}
@@ -68,7 +68,7 @@ func CreateFCMClient(ctx context.Context, cfg *runtime.Config) *fcm.Client {
 	return client
 }
 
-func VerifyTokenIDs(ctx context.Context, rt *runtime.Runtime, channel *models.Channel, fcmID string) error {
+func VerifyFCMID(ctx context.Context, rt *runtime.Runtime, channel *models.Channel, fcmID string) error {
 	app, err := firebase.NewApp(ctx, nil, option.WithCredentialsFile(rt.Config.AndroidFCMServiceAccountFile))
 	if err != nil {
 		return err
