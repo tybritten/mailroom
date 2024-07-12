@@ -1,3 +1,8 @@
+v9.1.79 (2024-07-12)
+-------------------------
+ * Add FCM token IDs verification
+ * Add android sync endpoint
+
 v9.1.78 (2024-07-10)
 -------------------------
  * Stop reading from TemplateTranslation.is_active which we're going to drop
