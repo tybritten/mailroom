@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/appleboy/go-fcm"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/jmoiron/sqlx"
@@ -82,6 +83,15 @@ func (mr *Mailroom) Start() error {
 		log.Info("redis ok")
 	}
 
+	if c.AndroidFCMServiceAccountFile != "" {
+		mr.rt.FCM, err = fcm.NewClient(mr.ctx, fcm.WithCredentialsFile(c.AndroidFCMServiceAccountFile))
+		if err != nil {
+			log.Error("unable to create FCM client", "error", err)
+		}
+	} else {
+		log.Warn("fcm not configured, no android syncing")
+	}
+
 	// create our storage (S3 or file system)
 	if mr.rt.Config.AWSAccessKeyID != "" || mr.rt.Config.AWSUseCredChain {
 		s3config := &storage.S3Options{
@@ -131,11 +141,6 @@ func (mr *Mailroom) Start() error {
 		log.Error("elastic search not available", "error", err)
 	} else {
 		log.Info("elastic ok")
-	}
-
-	// warn if we won't be doing FCM syncing
-	if c.AndroidFCMServiceAccountFile == "" {
-		log.Warn("fcm not configured, no android syncing")
 	}
 
 	// if we have a librato token, configure it

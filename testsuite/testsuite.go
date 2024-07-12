@@ -76,6 +76,7 @@ func Runtime() (context.Context, *runtime.Runtime) {
 		ReadonlyDB:        dbx.DB,
 		RP:                getRP(),
 		ES:                getES(),
+		FCM:               &MockFCMClient{ValidTokens: []string{"FCMID3", "FCMID4", "FCMID5"}},
 		AttachmentStorage: storage.NewFS(attachmentStorageDir, 0766),
 		SessionStorage:    storage.NewFS(sessionStorageDir, 0766),
 		LogStorage:        storage.NewFS(logStorageDir, 0766),

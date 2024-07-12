@@ -30,8 +30,7 @@ func handleSync(ctx context.Context, rt *runtime.Runtime, r *syncRequest) (any, 
 		return nil, 0, fmt.Errorf("missing android channel registration id")
 	}
 
-	fc := msgio.CreateFCMClient(ctx, rt.Config)
-	err = msgio.SyncAndroidChannel(ctx, rt, fc, channel)
+	err = msgio.SyncAndroidChannel(ctx, rt, channel)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error syncing android channel: %w", err)
 	}

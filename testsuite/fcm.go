@@ -3,33 +3,17 @@ package testsuite
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"firebase.google.com/go/v4/messaging"
-	"github.com/nyaruka/goflow/utils"
 )
 
-type MockFCMService struct {
-	tokens []string
-
-	// log of messages sent to this endpoint
-	Messages []*messaging.Message
-}
-
-func (m *MockFCMService) Client(ctx context.Context, androidFCMServiceAccountFile string) *MockFCMClient {
-	return &MockFCMClient{FCMService: m}
-}
-
-func (m *MockFCMService) GetClient(ctx context.Context) *MockFCMClient {
-	return m.Client(ctx, "testfiles/android.json")
-}
-
-func NewMockFCMService(tokens ...string) *MockFCMService {
-	mock := &MockFCMService{tokens: tokens}
-	return mock
-}
-
 type MockFCMClient struct {
-	FCMService *MockFCMService
+	// list of valid FCM tokens
+	ValidTokens []string
+
+	// log of messages sent to this client
+	Messages []*messaging.Message
 }
 
 func (fc *MockFCMClient) Send(ctx context.Context, messages ...*messaging.Message) (*messaging.BatchResponse, error) {
@@ -39,9 +23,9 @@ func (fc *MockFCMClient) Send(ctx context.Context, messages ...*messaging.Messag
 	var err error
 
 	for _, message := range messages {
-		fc.FCMService.Messages = append(fc.FCMService.Messages, message)
+		fc.Messages = append(fc.Messages, message)
 
-		if utils.StringSliceContains(fc.FCMService.tokens, message.Token, false) {
+		if slices.Contains(fc.ValidTokens, message.Token) {
 			successCount += 1
 			sendResponses = append(sendResponses, &messaging.SendResponse{Success: true})
 		} else {
