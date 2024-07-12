@@ -1,8 +1,10 @@
 package runtime
 
 import (
+	"context"
 	"database/sql"
 
+	"firebase.google.com/go/v4/messaging"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
@@ -16,8 +18,14 @@ type Runtime struct {
 	ReadonlyDB        *sql.DB
 	RP                *redis.Pool
 	ES                *elasticsearch.TypedClient
+	FCM               FCMClient
 	AttachmentStorage storage.Storage
 	SessionStorage    storage.Storage
 	LogStorage        storage.Storage
 	Config            *Config
+}
+
+// FCMClient is an interface to allow mocking in tests
+type FCMClient interface {
+	Send(ctx context.Context, message ...*messaging.Message) (*messaging.BatchResponse, error)
 }

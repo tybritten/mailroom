@@ -10,20 +10,15 @@ import (
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
 	"firebase.google.com/go/v4/messaging"
-	fcm "github.com/appleboy/go-fcm"
 	"google.golang.org/api/option"
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-type FCMClient interface {
-	Send(ctx context.Context, message ...*messaging.Message) (*messaging.BatchResponse, error)
-}
-
 // SyncAndroidChannel tries to trigger sync of the given Android channel via FCM
-func SyncAndroidChannel(ctx context.Context, rt *runtime.Runtime, fc FCMClient, channel *models.Channel) error {
-	if fc == nil {
+func SyncAndroidChannel(ctx context.Context, rt *runtime.Runtime, channel *models.Channel) error {
+	if rt.FCM == nil {
 		return errors.New("instance has no FCM configuration")
 	}
 
@@ -46,7 +41,7 @@ func SyncAndroidChannel(ctx context.Context, rt *runtime.Runtime, fc FCMClient, 
 
 	start := time.Now()
 
-	if _, err := fc.Send(ctx, sync); err != nil {
+	if _, err := rt.FCM.Send(ctx, sync); err != nil {
 		VerifyFCMID(ctx, rt, channel, fcmID)
 
 		return fmt.Errorf("error syncing channel: %w", err)
@@ -54,18 +49,6 @@ func SyncAndroidChannel(ctx context.Context, rt *runtime.Runtime, fc FCMClient, 
 
 	slog.Debug("android sync complete", "elapsed", time.Since(start), "channel_uuid", channel.UUID())
 	return nil
-}
-
-// CreateFCMClient creates an FCM client based on the configured FCM API key
-func CreateFCMClient(ctx context.Context, cfg *runtime.Config) *fcm.Client {
-	if cfg.AndroidFCMServiceAccountFile == "" {
-		return nil
-	}
-	client, err := fcm.NewClient(ctx, fcm.WithCredentialsFile(cfg.AndroidFCMServiceAccountFile))
-	if err != nil {
-		panic(fmt.Errorf("unable to create FCM client: %w", err))
-	}
-	return client
 }
 
 func VerifyFCMID(ctx context.Context, rt *runtime.Runtime, channel *models.Channel, fcmID string) error {

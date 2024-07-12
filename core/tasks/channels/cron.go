@@ -17,7 +17,6 @@ func init() {
 }
 
 type SyncAndroidChannelsCron struct {
-	FCMClient msgio.FCMClient
 }
 
 func (s *SyncAndroidChannelsCron) AllInstances() bool {
@@ -30,11 +29,6 @@ func (s *SyncAndroidChannelsCron) Next(last time.Time) time.Time {
 }
 
 func (s *SyncAndroidChannelsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
-
-	if s.FCMClient == nil {
-		s.FCMClient = msgio.CreateFCMClient(ctx, rt.Config)
-	}
-
 	oldSeenAndroidChannels, err := models.GetAndroidChannelsToSync(ctx, rt.DB)
 	if err != nil {
 		return nil, fmt.Errorf("error loading old seen android channels: %w", err)
@@ -44,7 +38,7 @@ func (s *SyncAndroidChannelsCron) Run(ctx context.Context, rt *runtime.Runtime) 
 	syncedCount := 0
 
 	for _, channel := range oldSeenAndroidChannels {
-		err := msgio.SyncAndroidChannel(ctx, rt, s.FCMClient, &channel)
+		err := msgio.SyncAndroidChannel(ctx, rt, &channel)
 		if err != nil {
 			slog.Error("error syncing messages", "error", err, "channel_uuid", channel.UUID())
 			erroredCount += 1
