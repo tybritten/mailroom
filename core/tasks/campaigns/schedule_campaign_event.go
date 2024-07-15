@@ -35,7 +35,7 @@ func (t *ScheduleCampaignEventTask) Timeout() time.Duration {
 }
 
 func (t *ScheduleCampaignEventTask) WithAssets() models.Refresh {
-	return models.RefreshCampaigns
+	return models.RefreshCampaigns | models.RefreshFields
 }
 
 // Perform creates the actual event fires to schedule the given campaign event
