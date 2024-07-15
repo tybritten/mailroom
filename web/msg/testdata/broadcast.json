@@ -30,8 +30,7 @@
                     "text": "Anyone?"
                 }
             },
-            "base_language": "eng",
-            "node_uuid": "4d662a8b-c8fe-4c9b-8234-5d4e1f07b45b"
+            "base_language": "eng"
         },
         "status": 422,
         "response": {
@@ -111,11 +110,7 @@
         },
         "db_assertions": [
             {
-                "query": "SELECT count(*) FROM msgs_broadcast WHERE translations->'eng'->>'text' = 'Hurry up!' AND base_language = 'eng'",
-                "count": 1
-            },
-            {
-                "query": "SELECT count(*) FROM msgs_broadcast_contacts WHERE broadcast_id = 2",
+                "query": "SELECT count(*) FROM msgs_broadcast WHERE translations->'eng'->>'text' = 'Hurry up!' AND base_language = 'eng' AND node_uuid = 'dd79811e-a88a-4e67-bb47-a132fe8ce3f2'",
                 "count": 1
             }
         ]

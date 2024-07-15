@@ -67,17 +67,7 @@ func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastReque
 		return nil, 0, fmt.Errorf("unable to load org assets: %w", err)
 	}
 
-	// if a node is specified, get all the contacts at that node
-	if r.NodeUUID != "" {
-		contactIDs, err := models.GetContactIDsAtNode(ctx, rt, r.OrgID, r.NodeUUID)
-		if err != nil {
-			return nil, 0, fmt.Errorf("error getting contacts at node %s: %w", r.NodeUUID, err)
-		}
-
-		r.ContactIDs = append(r.ContactIDs, contactIDs...)
-	}
-
-	if len(r.ContactIDs) == 0 && len(r.GroupIDs) == 0 && len(r.URNs) == 0 && r.Query == "" {
+	if len(r.ContactIDs) == 0 && len(r.GroupIDs) == 0 && len(r.URNs) == 0 && r.Query == "" && r.NodeUUID == "" {
 		return nil, 0, models.ErrNoRecipients
 	}
 
@@ -86,9 +76,22 @@ func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastReque
 		return nil, 0, fmt.Errorf("error beginning transaction: %w", err)
 	}
 
-	bcast := models.NewBroadcast(r.OrgID, r.Translations, r.BaseLanguage, true, r.OptInID, r.GroupIDs, r.ContactIDs, r.URNs, r.Query, r.Exclude, r.UserID)
-	bcast.TemplateID = r.TemplateID
-	bcast.TemplateVariables = r.TemplateVariables
+	bcast := &models.Broadcast{
+		OrgID:             r.OrgID,
+		Translations:      r.Translations,
+		BaseLanguage:      r.BaseLanguage,
+		Expressions:       true,
+		OptInID:           r.OptInID,
+		TemplateID:        r.TemplateID,
+		TemplateVariables: r.TemplateVariables,
+		GroupIDs:          r.GroupIDs,
+		ContactIDs:        r.ContactIDs,
+		URNs:              r.URNs,
+		Query:             r.Query,
+		NodeUUID:          r.NodeUUID,
+		Exclusions:        r.Exclude,
+		CreatedByID:       r.UserID,
+	}
 
 	if r.Schedule != nil {
 		sched, err := models.NewSchedule(oa, r.Schedule.Start, r.Schedule.RepeatPeriod, r.Schedule.RepeatDaysOfWeek)

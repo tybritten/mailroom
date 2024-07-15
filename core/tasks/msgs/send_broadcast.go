@@ -73,6 +73,16 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		return fmt.Errorf("error resolving broadcast recipients: %w", err)
 	}
 
+	// if a node is specified, add all the contacts at that node
+	if bcast.NodeUUID != "" {
+		nodeContactIDs, err := models.GetContactIDsAtNode(ctx, rt, oa.OrgID(), bcast.NodeUUID)
+		if err != nil {
+			return fmt.Errorf("error getting contacts at node %s: %w", bcast.NodeUUID, err)
+		}
+
+		contactIDs = append(contactIDs, nodeContactIDs...)
+	}
+
 	// if there are no contacts to send to, mark our broadcast as sent, we are done
 	if len(contactIDs) == 0 {
 		if bcast.ID != models.NilBroadcastID {
