@@ -1,3 +1,7 @@
+v9.1.80 (2024-07-15)
+-------------------------
+ * Use new boolean fields on template translations
+
 v9.1.79 (2024-07-12)
 -------------------------
  * Add FCM token IDs verification
