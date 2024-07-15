@@ -111,7 +111,7 @@ SELECT ROW_TO_JSON(r) FROM (
          SELECT JSON_BUILD_OBJECT('uuid', c.uuid, 'name', c.name) as channel, tr.locale, tr.components, tr.variables, tr.external_id, tr.external_locale, tr.namespace
            FROM templates_templatetranslation tr
            JOIN channels_channel c ON tr.channel_id = c.id
-          WHERE tr.status = 'A' AND tr.template_id = t.id AND c.is_active = TRUE
+          WHERE tr.template_id = t.id AND c.is_active = TRUE AND tr.status = 'A' AND tr.is_supported AND tr.is_compatible
          ) tr) as translations
        FROM templates_template t
       WHERE org_id = $1 
