@@ -1,3 +1,7 @@
+v9.1.82 (2024-07-15)
+-------------------------
+ * Refresh fields when running schedule campaign events task
+
 v9.1.81 (2024-07-15)
 -------------------------
  * Update deps
