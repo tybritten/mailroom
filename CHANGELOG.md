@@ -1,3 +1,7 @@
+v9.1.83 (2024-07-15)
+-------------------------
+ * Fix creating broadcasts to a flow node so that we don't save all contact ids onto the broadcast
+
 v9.1.82 (2024-07-15)
 -------------------------
  * Refresh fields when running schedule campaign events task
