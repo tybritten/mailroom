@@ -1,3 +1,7 @@
+v9.1.81 (2024-07-15)
+-------------------------
+ * Update deps
+
 v9.1.80 (2024-07-15)
 -------------------------
  * Use new boolean fields on template translations
