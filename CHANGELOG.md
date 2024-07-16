@@ -1,3 +1,7 @@
+v9.1.87 (2024-07-16)
+-------------------------
+ * Update goflow which adds validation of attachments in flow definitions
+
 v9.1.86 (2024-07-16)
 -------------------------
  * Update goflow
