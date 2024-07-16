@@ -1,3 +1,7 @@
+v9.1.84 (2024-07-16)
+-------------------------
+ * Remove special error case for broadcast with no recipients since this is no longer a thing we can resolve at request time
+
 v9.1.83 (2024-07-15)
 -------------------------
  * Fix creating broadcasts to a flow node so that we don't save all contact ids onto the broadcast
