@@ -32,10 +32,9 @@
             },
             "base_language": "eng"
         },
-        "status": 422,
+        "status": 400,
         "response": {
-            "error": "can't create broadcast with no recipients",
-            "code": "broadcast:no_recipients"
+            "error": "can't create broadcast with no recipients"
         },
         "db_assertions": [
             {
