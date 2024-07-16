@@ -2,6 +2,7 @@ package msg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -68,7 +69,7 @@ func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastReque
 	}
 
 	if len(r.ContactIDs) == 0 && len(r.GroupIDs) == 0 && len(r.URNs) == 0 && r.Query == "" && r.NodeUUID == "" {
-		return nil, 0, models.ErrNoRecipients
+		return errors.New("can't create broadcast with no recipients"), http.StatusBadRequest, nil
 	}
 
 	tx, err := rt.DB.BeginTxx(ctx, nil)
