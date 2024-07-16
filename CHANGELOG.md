@@ -1,3 +1,7 @@
+v9.1.85 (2024-07-16)
+-------------------------
+ * Fix sending broadcast with template
+
 v9.1.84 (2024-07-16)
 -------------------------
  * Remove special error case for broadcast with no recipients since this is no longer a thing we can resolve at request time
