@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
+	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/utils"
 	"github.com/nyaruka/mailroom/core/models"
@@ -137,10 +138,7 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 func TestBroadcastBatchCreateMessage(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
-	defer func() {
-		rt.DB.MustExec(`UPDATE contacts_contact SET language = NULL WHERE id = $1`, testdata.Cathy.ID)
-		testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
-	}()
+	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 
 	polls := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
 
@@ -152,10 +150,13 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 
 	tcs := []struct {
 		contactLanguage      i18n.Language
+		contactURN           urns.URN
 		translations         flows.BroadcastTranslations
 		baseLanguage         i18n.Language
 		expressions          bool
 		optInID              models.OptInID
+		templateID           models.TemplateID
+		templateVariables    []string
 		expectedText         string
 		expectedAttachments  []utils.Attachment
 		expectedQuickReplies []string
@@ -163,36 +164,40 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 		expectedError        string
 	}{
 		{ // 0
+			contactURN:           "tel:+593979000000",
 			contactLanguage:      i18n.NilLanguage,
-			translations:         flows.BroadcastTranslations{"eng": {Text: "Hi @Cathy"}},
+			translations:         flows.BroadcastTranslations{"eng": {Text: "Hi @contact"}},
 			baseLanguage:         "eng",
 			expressions:          false,
-			expectedText:         "Hi @Cathy",
+			expectedText:         "Hi @contact",
 			expectedAttachments:  []utils.Attachment{},
 			expectedQuickReplies: nil,
-			expectedLocale:       "eng-US",
+			expectedLocale:       "eng-EC",
 		},
 		{ // 1: contact language not set, uses base language
+			contactURN:           "tel:+593979000001",
 			contactLanguage:      i18n.NilLanguage,
 			translations:         flows.BroadcastTranslations{"eng": {Text: "Hello @contact.name"}, "spa": {Text: "Hola @contact.name"}},
 			baseLanguage:         "eng",
 			expressions:          true,
-			expectedText:         "Hello Cathy",
+			expectedText:         "Hello Felix",
 			expectedAttachments:  []utils.Attachment{},
 			expectedQuickReplies: nil,
-			expectedLocale:       "eng-US",
+			expectedLocale:       "eng-EC",
 		},
 		{ // 2: contact language iggnored if it isn't a valid org language, even if translation exists
+			contactURN:           "tel:+593979000002",
 			contactLanguage:      "spa",
 			translations:         flows.BroadcastTranslations{"eng": {Text: "Hello @contact.name"}, "spa": {Text: "Hola @contact.name"}},
 			baseLanguage:         "eng",
 			expressions:          true,
-			expectedText:         "Hello Cathy",
+			expectedText:         "Hello Felix",
 			expectedAttachments:  []utils.Attachment{},
 			expectedQuickReplies: nil,
-			expectedLocale:       "eng-US",
+			expectedLocale:       "eng-EC",
 		},
 		{ // 3: contact language used
+			contactURN:      "tel:+593979000003",
 			contactLanguage: "fra",
 			translations: flows.BroadcastTranslations{
 				"eng": {Text: "Hello @contact.name", Attachments: []utils.Attachment{"audio/mp3:http://test.en.mp3"}, QuickReplies: []string{"yes", "no"}},
@@ -200,18 +205,32 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			},
 			baseLanguage:         "eng",
 			expressions:          true,
-			expectedText:         "Bonjour Cathy",
+			expectedText:         "Bonjour Felix",
 			expectedAttachments:  []utils.Attachment{"audio/mp3:http://test.fr.mp3"},
 			expectedQuickReplies: []string{"oui", "no"},
-			expectedLocale:       "fra-US",
+			expectedLocale:       "fra-EC",
 		},
 		{ // 5: broadcast with optin
+			contactURN:           "facebook:1000000000001",
 			contactLanguage:      i18n.NilLanguage,
-			translations:         flows.BroadcastTranslations{"eng": {Text: "Hi @Cathy"}},
+			translations:         flows.BroadcastTranslations{"eng": {Text: "Hi @contact"}},
 			baseLanguage:         "eng",
 			expressions:          true,
 			optInID:              polls.ID,
-			expectedText:         "Hi @Cathy",
+			expectedText:         "Hi Felix",
+			expectedAttachments:  []utils.Attachment{},
+			expectedQuickReplies: nil,
+			expectedLocale:       "eng",
+		},
+		{ // 6: broadcast with template
+			contactURN:           "facebook:1000000000002",
+			contactLanguage:      "eng",
+			translations:         flows.BroadcastTranslations{"eng": {Text: "Hi @contact"}},
+			baseLanguage:         "eng",
+			expressions:          true,
+			templateID:           testdata.ReviveTemplate.ID,
+			templateVariables:    []string{"@contact.name", "mice"},
+			expectedText:         "Hi Felix, are you still experiencing problems with mice?",
 			expectedAttachments:  []utils.Attachment{},
 			expectedQuickReplies: nil,
 			expectedLocale:       "eng-US",
@@ -219,17 +238,20 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 	}
 
 	for i, tc := range tcs {
-		batch := &models.BroadcastBatch{
-			BroadcastID:  bcastID,
-			OrgID:        testdata.Org1.ID,
-			Translations: tc.translations,
-			BaseLanguage: tc.baseLanguage,
-			Expressions:  tc.expressions,
-			OptInID:      tc.optInID,
-			ContactIDs:   []models.ContactID{testdata.Cathy.ID},
-		}
+		contact := testdata.InsertContact(rt, testdata.Org1, flows.ContactUUID(uuids.New()), "Felix", tc.contactLanguage, models.ContactStatusActive)
+		testdata.InsertContactURN(rt, testdata.Org1, contact, tc.contactURN, 1000, nil)
 
-		rt.DB.MustExec(`UPDATE contacts_contact SET language = $2 WHERE id = $1`, testdata.Cathy.ID, tc.contactLanguage)
+		batch := &models.BroadcastBatch{
+			BroadcastID:       bcastID,
+			OrgID:             testdata.Org1.ID,
+			Translations:      tc.translations,
+			BaseLanguage:      tc.baseLanguage,
+			Expressions:       tc.expressions,
+			OptInID:           tc.optInID,
+			TemplateID:        tc.templateID,
+			TemplateVariables: tc.templateVariables,
+			ContactIDs:        []models.ContactID{contact.ID},
+		}
 
 		msgs, err := batch.CreateMessages(ctx, rt, oa)
 		if tc.expectedError != "" {

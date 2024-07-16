@@ -102,15 +102,17 @@ func NewBroadcastFromEvent(ctx context.Context, tx DBorTx, oa *OrgAssets, event 
 
 func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastBatch {
 	return &BroadcastBatch{
-		BroadcastID:  b.ID,
-		OrgID:        b.OrgID,
-		Translations: b.Translations,
-		BaseLanguage: b.BaseLanguage,
-		Expressions:  b.Expressions,
-		OptInID:      b.OptInID,
-		CreatedByID:  b.CreatedByID,
-		ContactIDs:   contactIDs,
-		IsLast:       isLast,
+		BroadcastID:       b.ID,
+		OrgID:             b.OrgID,
+		Translations:      b.Translations,
+		BaseLanguage:      b.BaseLanguage,
+		Expressions:       b.Expressions,
+		OptInID:           b.OptInID,
+		TemplateID:        b.TemplateID,
+		TemplateVariables: b.TemplateVariables,
+		CreatedByID:       b.CreatedByID,
+		ContactIDs:        contactIDs,
+		IsLast:            isLast,
 	}
 }
 
