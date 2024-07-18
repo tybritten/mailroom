@@ -16,22 +16,24 @@ func init() {
 	web.RegisterRoute(http.MethodPost, "/mr/contact/search", web.RequireAuthToken(web.JSONPayload(handleSearch)))
 }
 
-// Searches the contacts for an org
+// Searches the contacts in an org
 //
 //	{
 //	  "org_id": 1,
 //	  "group_id": 234,
 //	  "query": "age > 10",
-//	  "sort": "-age"
+//	  "sort": "-age",
+//	  "offset": 0,
+//	  "limit": 50
 //	}
 type searchRequest struct {
 	OrgID      models.OrgID       `json:"org_id"      validate:"required"`
 	GroupID    models.GroupID     `json:"group_id"    validate:"required"`
 	ExcludeIDs []models.ContactID `json:"exclude_ids"`
 	Query      string             `json:"query"`
-	Limit      int                `json:"limit"`
-	Offset     int                `json:"offset"`
 	Sort       string             `json:"sort"`
+	Offset     int                `json:"offset"`
+	Limit      int                `json:"limit"`
 }
 
 // Response for a contact search
