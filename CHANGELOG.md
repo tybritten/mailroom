@@ -1,3 +1,7 @@
+v9.2.1 (2024-07-18)
+-------------------------
+ * Fix ignoring limit on contact search endpoint and improve tests
+
 v9.2.0 (2024-07-17)
 -------------------------
  * Update README
