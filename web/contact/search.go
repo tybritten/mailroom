@@ -47,7 +47,7 @@ type searchRequest struct {
 //	    "allow_as_group": true
 //	  }
 //	}
-type SearchResponse struct {
+type searchResponse struct {
 	Query      string                `json:"query"`
 	ContactIDs []models.ContactID    `json:"contact_ids"`
 	Total      int64                 `json:"total"`
@@ -82,7 +82,7 @@ func handleSearch(ctx context.Context, rt *runtime.Runtime, r *searchRequest) (a
 	}
 
 	// build our response
-	response := &SearchResponse{
+	response := &searchResponse{
 		Query:      normalized,
 		ContactIDs: hits,
 		Total:      total,
