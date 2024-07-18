@@ -31,7 +31,7 @@ type searchRequest struct {
 	GroupUUID  assets.GroupUUID   `json:"group_uuid"` // deprecated
 	ExcludeIDs []models.ContactID `json:"exclude_ids"`
 	Query      string             `json:"query"`
-	PageSize   int                `json:"page_size"`
+	Limit      int                `json:"limit"`
 	Offset     int                `json:"offset"`
 	Sort       string             `json:"sort"`
 }
@@ -69,7 +69,7 @@ func handleSearch(ctx context.Context, rt *runtime.Runtime, r *searchRequest) (a
 	group := oa.GroupByID(r.GroupID)
 
 	// perform our search
-	parsed, hits, total, err := search.GetContactIDsForQueryPage(ctx, rt, oa, group, r.ExcludeIDs, r.Query, r.Sort, r.Offset, 50)
+	parsed, hits, total, err := search.GetContactIDsForQueryPage(ctx, rt, oa, group, r.ExcludeIDs, r.Query, r.Sort, r.Offset, r.Limit)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error searching page: %w", err)
 	}
