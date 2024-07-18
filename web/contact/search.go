@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/contactql"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/search"
@@ -26,9 +25,8 @@ func init() {
 //	  "sort": "-age"
 //	}
 type searchRequest struct {
-	OrgID      models.OrgID       `json:"org_id"     validate:"required"`
-	GroupID    models.GroupID     `json:"group_id"`
-	GroupUUID  assets.GroupUUID   `json:"group_uuid"` // deprecated
+	OrgID      models.OrgID       `json:"org_id"      validate:"required"`
+	GroupID    models.GroupID     `json:"group_id"    validate:"required"`
 	ExcludeIDs []models.ContactID `json:"exclude_ids"`
 	Query      string             `json:"query"`
 	Limit      int                `json:"limit"`
@@ -42,7 +40,6 @@ type searchRequest struct {
 //	  "query": "age > 10",
 //	  "contact_ids": [5,10,15],
 //	  "total": 3,
-//	  "offset": 0,
 //	  "metadata": {
 //	    "fields": [
 //	      {"key": "age", "name": "Age"}
@@ -54,8 +51,6 @@ type SearchResponse struct {
 	Query      string                `json:"query"`
 	ContactIDs []models.ContactID    `json:"contact_ids"`
 	Total      int64                 `json:"total"`
-	Offset     int                   `json:"offset"`
-	Sort       string                `json:"sort"`
 	Metadata   *contactql.Inspection `json:"metadata,omitempty"`
 }
 
@@ -67,6 +62,9 @@ func handleSearch(ctx context.Context, rt *runtime.Runtime, r *searchRequest) (a
 	}
 
 	group := oa.GroupByID(r.GroupID)
+	if r.Limit == 0 {
+		r.Limit = 50
+	}
 
 	// perform our search
 	parsed, hits, total, err := search.GetContactIDsForQueryPage(ctx, rt, oa, group, r.ExcludeIDs, r.Query, r.Sort, r.Offset, r.Limit)
@@ -88,8 +86,6 @@ func handleSearch(ctx context.Context, rt *runtime.Runtime, r *searchRequest) (a
 		Query:      normalized,
 		ContactIDs: hits,
 		Total:      total,
-		Offset:     r.Offset,
-		Sort:       r.Sort,
 		Metadata:   metadata,
 	}
 
