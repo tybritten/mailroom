@@ -52,7 +52,7 @@ func SyncAndroidChannel(ctx context.Context, rt *runtime.Runtime, channel *model
 }
 
 func VerifyFCMID(ctx context.Context, rt *runtime.Runtime, channel *models.Channel, fcmID string) error {
-	app, err := firebase.NewApp(ctx, nil, option.WithCredentialsFile(rt.Config.AndroidFCMServiceAccountFile))
+	app, err := firebase.NewApp(ctx, nil, option.WithCredentialsFile(rt.Config.AndroidCredentialsFile))
 	if err != nil {
 		return err
 	}
