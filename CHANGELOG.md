@@ -1,3 +1,8 @@
+v9.2.2 (2024-07-23)
+-------------------------
+ * Simplify config param name to configure FCM relayer syncing
+ * Fix search endpoint docs
+
 v9.2.1 (2024-07-18)
 -------------------------
  * Fix ignoring limit on contact search endpoint and improve tests
