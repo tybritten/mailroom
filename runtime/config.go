@@ -74,7 +74,7 @@ type Config struct {
 	LibratoUsername  string `help:"the username that will be used to authenticate to Librato"`
 	LibratoToken     string `help:"the token that will be used to authenticate to Librato"`
 
-	AndroidFCMServiceAccountFile string `help:"the FCM Service Account Credentials JSON File path used to notify Android relayers to sync"`
+	AndroidCredentialsFile string `help:"path to JSON file with FCM service account credentials used to sync Android relayers"`
 
 	InstanceID string     `help:"the unique identifier of this instance, defaults to hostname"`
 	LogLevel   slog.Level `help:"the logging level courier should use"`

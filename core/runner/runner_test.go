@@ -25,7 +25,7 @@ import (
 
 func TestStartFlowBatch(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
-	rt.Config.AndroidFCMServiceAccountFile = `testdata/android.json`
+	rt.Config.AndroidCredentialsFile = `testdata/android.json`
 
 	defer testsuite.Reset(testsuite.ResetAll)
 

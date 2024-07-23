@@ -83,8 +83,8 @@ func (mr *Mailroom) Start() error {
 		log.Info("redis ok")
 	}
 
-	if c.AndroidFCMServiceAccountFile != "" {
-		mr.rt.FCM, err = fcm.NewClient(mr.ctx, fcm.WithCredentialsFile(c.AndroidFCMServiceAccountFile))
+	if c.AndroidCredentialsFile != "" {
+		mr.rt.FCM, err = fcm.NewClient(mr.ctx, fcm.WithCredentialsFile(c.AndroidCredentialsFile))
 		if err != nil {
 			log.Error("unable to create FCM client", "error", err)
 		}
