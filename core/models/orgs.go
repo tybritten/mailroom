@@ -157,8 +157,6 @@ func (o *Org) AirtimeService(httpClient *http.Client, httpRetries *httpx.RetryCo
 
 // StoreAttachment saves an attachment to storage
 func (o *Org) StoreAttachment(ctx context.Context, rt *runtime.Runtime, filename string, contentType string, content io.ReadCloser) (utils.Attachment, error) {
-	prefix := rt.Config.S3AttachmentsPrefix
-
 	// read the content
 	contentBytes, err := io.ReadAll(content)
 	if err != nil {
@@ -171,7 +169,7 @@ func (o *Org) StoreAttachment(ctx context.Context, rt *runtime.Runtime, filename
 		contentType, _, _ = mime.ParseMediaType(contentType)
 	}
 
-	path := o.attachmentPath(prefix, filename)
+	path := o.attachmentPath("attachments", filename)
 
 	url, err := rt.AttachmentStorage.Put(ctx, path, contentType, contentBytes)
 	if err != nil {
