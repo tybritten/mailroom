@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
@@ -25,10 +26,6 @@ const elasticURL = "http://localhost:9200"
 const elasticContactsIndex = "test_contacts"
 const postgresContainerName = "textit-postgres-1"
 
-const attachmentStorageDir = "_test_attachments_storage"
-const sessionStorageDir = "_test_session_storage"
-const logStorageDir = "_test_log_storage"
-
 // Refresh is our type for the pieces of org assets we want fresh (not cached)
 type ResetFlag int
 
@@ -38,7 +35,6 @@ const (
 	ResetDB      = ResetFlag(1 << 1)
 	ResetData    = ResetFlag(1 << 2)
 	ResetRedis   = ResetFlag(1 << 3)
-	ResetStorage = ResetFlag(1 << 4)
 	ResetElastic = ResetFlag(1 << 5)
 )
 
@@ -54,9 +50,6 @@ func Reset(what ResetFlag) {
 	if what&ResetRedis > 0 {
 		resetRedis()
 	}
-	if what&ResetStorage > 0 {
-		resetStorage()
-	}
 	if what&ResetElastic > 0 {
 		resetElastic(ctx)
 	}
@@ -67,8 +60,23 @@ func Reset(what ResetFlag) {
 // Runtime returns the various runtime things a test might need
 func Runtime() (context.Context, *runtime.Runtime) {
 	cfg := runtime.NewDefaultConfig()
-	cfg.ElasticContactsIndex = elasticContactsIndex
 	cfg.Port = 8091
+	cfg.ElasticContactsIndex = elasticContactsIndex
+	cfg.AWSAccessKeyID = "root"
+	cfg.AWSSecretAccessKey = "tembatemba"
+	cfg.S3Endpoint = "http://localhost:9000"
+	cfg.S3ForcePathStyle = true
+
+	s3config := &storage.S3Options{
+		AWSAccessKeyID:     cfg.AWSAccessKeyID,
+		AWSSecretAccessKey: cfg.AWSSecretAccessKey,
+		Region:             cfg.AWSRegion,
+		Endpoint:           cfg.S3Endpoint,
+		ForcePathStyle:     cfg.S3ForcePathStyle,
+		MaxRetries:         3,
+	}
+	s3Client, err := storage.NewS3Client(s3config)
+	noError(err)
 
 	dbx := getDB()
 	rt := &runtime.Runtime{
@@ -77,9 +85,9 @@ func Runtime() (context.Context, *runtime.Runtime) {
 		RP:                getRP(),
 		ES:                getES(),
 		FCM:               &MockFCMClient{ValidTokens: []string{"FCMID3", "FCMID4", "FCMID5"}},
-		AttachmentStorage: storage.NewFS(attachmentStorageDir, 0766),
-		SessionStorage:    storage.NewFS(sessionStorageDir, 0766),
-		LogStorage:        storage.NewFS(logStorageDir, 0766),
+		AttachmentStorage: storage.NewS3(s3Client, cfg.S3AttachmentsBucket, cfg.AWSRegion, s3.BucketCannedACLPublicRead, 32),
+		SessionStorage:    storage.NewS3(s3Client, cfg.S3SessionsBucket, cfg.AWSRegion, s3.ObjectCannedACLPrivate, 32),
+		LogStorage:        storage.NewS3(s3Client, cfg.S3LogsBucket, cfg.AWSRegion, s3.ObjectCannedACLPrivate, 32),
 		Config:            cfg,
 	}
 
@@ -189,13 +197,6 @@ func absPath(p string) string {
 // resets our redis database
 func resetRedis() {
 	assertredis.FlushDB()
-}
-
-// clears our storage for tests
-func resetStorage() {
-	must(os.RemoveAll(attachmentStorageDir))
-	must(os.RemoveAll(sessionStorageDir))
-	must(os.RemoveAll(logStorageDir))
 }
 
 // clears indexed data in Elastic

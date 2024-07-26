@@ -83,7 +83,7 @@ func TestStartFlowBatch(t *testing.T) {
 func TestResume(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
-	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetStorage)
+	defer testsuite.Reset(testsuite.ResetData)
 
 	// write sessions to s3 storage
 	rt.Config.SessionStorage = "s3"

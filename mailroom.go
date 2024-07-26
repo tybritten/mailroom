@@ -92,31 +92,21 @@ func (mr *Mailroom) Start() error {
 		log.Warn("fcm not configured, no android syncing")
 	}
 
-	// create our storage (S3 or file system)
-	if mr.rt.Config.AWSAccessKeyID != "" || mr.rt.Config.AWSUseCredChain {
-		s3config := &storage.S3Options{
-			Endpoint:       c.S3Endpoint,
-			Region:         c.S3Region,
-			DisableSSL:     c.S3DisableSSL,
-			ForcePathStyle: c.S3ForcePathStyle,
-			MaxRetries:     3,
-		}
-		if mr.rt.Config.AWSAccessKeyID != "" && !mr.rt.Config.AWSUseCredChain {
-			s3config.AWSAccessKeyID = c.AWSAccessKeyID
-			s3config.AWSSecretAccessKey = c.AWSSecretAccessKey
-		}
-		s3Client, err := storage.NewS3Client(s3config)
-		if err != nil {
-			return err
-		}
-		mr.rt.AttachmentStorage = storage.NewS3(s3Client, mr.rt.Config.S3AttachmentsBucket, c.S3Region, s3.BucketCannedACLPublicRead, 32)
-		mr.rt.SessionStorage = storage.NewS3(s3Client, mr.rt.Config.S3SessionsBucket, c.S3Region, s3.ObjectCannedACLPrivate, 32)
-		mr.rt.LogStorage = storage.NewS3(s3Client, mr.rt.Config.S3LogsBucket, c.S3Region, s3.ObjectCannedACLPrivate, 32)
-	} else {
-		mr.rt.AttachmentStorage = storage.NewFS("_storage/attachments", 0766)
-		mr.rt.SessionStorage = storage.NewFS("_storage/sessions", 0766)
-		mr.rt.LogStorage = storage.NewFS("_storage/logs", 0766)
+	s3config := &storage.S3Options{
+		AWSAccessKeyID:     c.AWSAccessKeyID,
+		AWSSecretAccessKey: c.AWSSecretAccessKey,
+		Region:             c.AWSRegion,
+		Endpoint:           c.S3Endpoint,
+		ForcePathStyle:     c.S3ForcePathStyle,
+		MaxRetries:         3,
 	}
+	s3Client, err := storage.NewS3Client(s3config)
+	if err != nil {
+		return err
+	}
+	mr.rt.AttachmentStorage = storage.NewS3(s3Client, mr.rt.Config.S3AttachmentsBucket, c.AWSRegion, s3.BucketCannedACLPublicRead, 32)
+	mr.rt.SessionStorage = storage.NewS3(s3Client, mr.rt.Config.S3SessionsBucket, c.AWSRegion, s3.ObjectCannedACLPrivate, 32)
+	mr.rt.LogStorage = storage.NewS3(s3Client, mr.rt.Config.S3LogsBucket, c.AWSRegion, s3.ObjectCannedACLPrivate, 32)
 
 	// check our storages
 	if err := checkStorage(mr.rt.AttachmentStorage); err != nil {
