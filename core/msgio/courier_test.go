@@ -66,7 +66,7 @@ func TestNewCourierMsg(t *testing.T) {
 
 	// create a non-priority flow message.. i.e. the session isn't responding to an incoming message
 	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), time.Now(), false, nil)
-	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, rt.SessionStorage, oa, models.FlowTypeMessaging, cathy)
+	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, models.FlowTypeMessaging, cathy)
 	require.NoError(t, err)
 
 	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), facebook, session, flow, flowMsg1, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))

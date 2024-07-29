@@ -8,11 +8,10 @@ import (
 	"os/exec"
 	"path"
 
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
-	"github.com/nyaruka/gocommon/storage"
+	"github.com/nyaruka/gocommon/s3x"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx/assertredis"
@@ -35,12 +34,13 @@ const (
 	ResetDB      = ResetFlag(1 << 1)
 	ResetData    = ResetFlag(1 << 2)
 	ResetRedis   = ResetFlag(1 << 3)
+	ResetStorage = ResetFlag(1 << 4)
 	ResetElastic = ResetFlag(1 << 5)
 )
 
 // Reset clears out both our database and redis DB
 func Reset(what ResetFlag) {
-	ctx := context.TODO()
+	ctx, rt := Runtime() // TODO pass rt from test?
 
 	if what&ResetDB > 0 {
 		resetDB()
@@ -50,8 +50,11 @@ func Reset(what ResetFlag) {
 	if what&ResetRedis > 0 {
 		resetRedis()
 	}
+	if what&ResetStorage > 0 {
+		resetStorage(ctx, rt)
+	}
 	if what&ResetElastic > 0 {
-		resetElastic(ctx)
+		resetElastic(ctx, rt)
 	}
 
 	models.FlushCache()
@@ -65,30 +68,23 @@ func Runtime() (context.Context, *runtime.Runtime) {
 	cfg.AWSAccessKeyID = "root"
 	cfg.AWSSecretAccessKey = "tembatemba"
 	cfg.S3Endpoint = "http://localhost:9000"
-	cfg.S3ForcePathStyle = true
+	cfg.S3AttachmentsBucket = "test-attachments"
+	cfg.S3SessionsBucket = "test-sessions"
+	cfg.S3LogsBucket = "test-logs"
+	cfg.S3Minio = true
 
-	s3config := &storage.S3Options{
-		AWSAccessKeyID:     cfg.AWSAccessKeyID,
-		AWSSecretAccessKey: cfg.AWSSecretAccessKey,
-		Region:             cfg.AWSRegion,
-		Endpoint:           cfg.S3Endpoint,
-		ForcePathStyle:     cfg.S3ForcePathStyle,
-		MaxRetries:         3,
-	}
-	s3Client, err := storage.NewS3Client(s3config)
+	s3svc, err := s3x.NewService(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.S3Endpoint, cfg.S3Minio)
 	noError(err)
 
 	dbx := getDB()
 	rt := &runtime.Runtime{
-		DB:                dbx,
-		ReadonlyDB:        dbx.DB,
-		RP:                getRP(),
-		ES:                getES(),
-		FCM:               &MockFCMClient{ValidTokens: []string{"FCMID3", "FCMID4", "FCMID5"}},
-		AttachmentStorage: storage.NewS3(s3Client, cfg.S3AttachmentsBucket, cfg.AWSRegion, s3.BucketCannedACLPublicRead, 32),
-		SessionStorage:    storage.NewS3(s3Client, cfg.S3SessionsBucket, cfg.AWSRegion, s3.ObjectCannedACLPrivate, 32),
-		LogStorage:        storage.NewS3(s3Client, cfg.S3LogsBucket, cfg.AWSRegion, s3.ObjectCannedACLPrivate, 32),
-		Config:            cfg,
+		DB:         dbx,
+		ReadonlyDB: dbx.DB,
+		RP:         getRP(),
+		ES:         getES(),
+		S3:         s3svc,
+		FCM:        &MockFCMClient{ValidTokens: []string{"FCMID3", "FCMID4", "FCMID5"}},
+		Config:     cfg,
 	}
 
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
@@ -199,21 +195,25 @@ func resetRedis() {
 	assertredis.FlushDB()
 }
 
-// clears indexed data in Elastic
-func resetElastic(ctx context.Context) {
-	es := getES()
+func resetStorage(ctx context.Context, rt *runtime.Runtime) {
+	rt.S3.EmptyBucket(ctx, rt.Config.S3AttachmentsBucket)
+	rt.S3.EmptyBucket(ctx, rt.Config.S3SessionsBucket)
+	rt.S3.EmptyBucket(ctx, rt.Config.S3LogsBucket)
+}
 
-	exists, err := es.Indices.ExistsAlias(elasticContactsIndex).Do(ctx)
+// clears indexed data in Elastic
+func resetElastic(ctx context.Context, rt *runtime.Runtime) {
+	exists, err := rt.ES.Indices.ExistsAlias(elasticContactsIndex).Do(ctx)
 	noError(err)
 
 	if exists {
 		// get any indexes for the contacts alias
-		ar, err := es.Indices.GetAlias().Name(elasticContactsIndex).Do(ctx)
+		ar, err := rt.ES.Indices.GetAlias().Name(elasticContactsIndex).Do(ctx)
 		noError(err)
 
 		// and delete them
 		for _, index := range maps.Keys(ar) {
-			_, err := es.Indices.Delete(index).Do(ctx)
+			_, err := rt.ES.Indices.Delete(index).Do(ctx)
 			noError(err)
 		}
 	}

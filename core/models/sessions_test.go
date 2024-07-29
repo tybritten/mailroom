@@ -474,7 +474,7 @@ func TestClearWaitTimeout(t *testing.T) {
 	timeoutOn := time.Now().Add(time.Minute)
 	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), expiresOn, true, &timeoutOn)
 
-	session, err := models.FindWaitingSessionForContact(ctx, rt.DB, nil, oa, models.FlowTypeMessaging, cathy)
+	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, models.FlowTypeMessaging, cathy)
 	require.NoError(t, err)
 
 	// can be called without db connection to clear without updating db

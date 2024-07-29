@@ -32,7 +32,7 @@ jobs:
         env:
           MINIO_ROOT_USER: root
           MINIO_ROOT_PASSWORD: tembatemba
-          MINIO_DEFAULT_BUCKETS: temba-attachments,temba-sessions,temba-logs
+          MINIO_DEFAULT_BUCKETS: test-attachments,test-sessions,test-logs
         ports:
           - 9000:9000     
         options: --health-cmd "mc ready local" --health-interval 10s --health-timeout 5s --health-retries 5
