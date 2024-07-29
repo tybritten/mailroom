@@ -65,7 +65,7 @@ type Config struct {
 	S3AttachmentsBucket string `help:"S3 bucket to write attachments to"`
 	S3SessionsBucket    string `help:"S3 bucket to write flow sessions to"`
 	S3LogsBucket        string `help:"S3 bucket to write channel logs to"`
-	S3ForcePathStyle    bool   `help:"S3 should used /bucket/path style URLs"`
+	S3Minio             bool   `help:"S3 is actually Minio or other compatible service"`
 
 	CourierAuthToken string `help:"the authentication token used for requests to Courier"`
 	LibratoUsername  string `help:"the username that will be used to authenticate to Librato"`

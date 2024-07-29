@@ -9,11 +9,10 @@ import (
 	"time"
 
 	"github.com/appleboy/go-fcm"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/analytics"
-	"github.com/nyaruka/gocommon/storage"
+	"github.com/nyaruka/gocommon/s3x"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
@@ -92,37 +91,27 @@ func (mr *Mailroom) Start() error {
 		log.Warn("fcm not configured, no android syncing")
 	}
 
-	s3config := &storage.S3Options{
-		AWSAccessKeyID:     c.AWSAccessKeyID,
-		AWSSecretAccessKey: c.AWSSecretAccessKey,
-		Region:             c.AWSRegion,
-		Endpoint:           c.S3Endpoint,
-		ForcePathStyle:     c.S3ForcePathStyle,
-		MaxRetries:         3,
-	}
-	s3Client, err := storage.NewS3Client(s3config)
+	// setup S3 storage
+	mr.rt.S3, err = s3x.NewService(c.AWSAccessKeyID, c.AWSSecretAccessKey, c.AWSRegion, c.S3Endpoint, c.S3Minio)
 	if err != nil {
 		return err
 	}
-	mr.rt.AttachmentStorage = storage.NewS3(s3Client, mr.rt.Config.S3AttachmentsBucket, c.AWSRegion, s3.BucketCannedACLPublicRead, 32)
-	mr.rt.SessionStorage = storage.NewS3(s3Client, mr.rt.Config.S3SessionsBucket, c.AWSRegion, s3.ObjectCannedACLPrivate, 32)
-	mr.rt.LogStorage = storage.NewS3(s3Client, mr.rt.Config.S3LogsBucket, c.AWSRegion, s3.ObjectCannedACLPrivate, 32)
 
-	// check our storages
-	if err := checkStorage(mr.rt.AttachmentStorage); err != nil {
-		log.Error(mr.rt.AttachmentStorage.Name()+" attachment storage not available", "error", err)
+	// check buckets
+	if err := mr.rt.S3.Test(mr.ctx, c.S3AttachmentsBucket); err != nil {
+		log.Error("attachments bucket not accessible", "error", err)
 	} else {
-		log.Info(mr.rt.AttachmentStorage.Name() + " attachment storage ok")
+		log.Info("attachments bucket ok")
 	}
-	if err := checkStorage(mr.rt.SessionStorage); err != nil {
-		log.Error(mr.rt.SessionStorage.Name()+" session storage not available", "error", err)
+	if err := mr.rt.S3.Test(mr.ctx, c.S3SessionsBucket); err != nil {
+		log.Error("sessions bucket not accessible", "error", err)
 	} else {
-		log.Info(mr.rt.SessionStorage.Name() + " session storage ok")
+		log.Info("sessions bucket ok")
 	}
-	if err := checkStorage(mr.rt.LogStorage); err != nil {
-		log.Error(mr.rt.LogStorage.Name()+" log storage not available", "error", err)
+	if err := mr.rt.S3.Test(mr.ctx, c.S3LogsBucket); err != nil {
+		log.Error("logs bucket not accessible", "error", err)
 	} else {
-		log.Info(mr.rt.LogStorage.Name() + " log storage ok")
+		log.Info("logs bucket ok")
 	}
 
 	// initialize our elastic client
@@ -192,11 +181,4 @@ func openAndCheckDBConnection(url string, maxOpenConns int) (*sql.DB, *sqlx.DB, 
 	cancel()
 
 	return db.DB, db, err
-}
-
-func checkStorage(s storage.Storage) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	err := s.Test(ctx)
-	cancel()
-	return err
 }

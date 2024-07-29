@@ -11,10 +11,11 @@ import (
 	"path"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"github.com/nyaruka/gocommon/storage"
+	"github.com/nyaruka/gocommon/s3x"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/envs"
@@ -751,8 +752,8 @@ LIMIT 1
 `
 
 // FindWaitingSessionForContact returns the waiting session for the passed in contact, if any
-func FindWaitingSessionForContact(ctx context.Context, db *sqlx.DB, st storage.Storage, oa *OrgAssets, sessionType FlowType, contact *flows.Contact) (*Session, error) {
-	rows, err := db.QueryxContext(ctx, sqlSelectWaitingSessionForContact, sessionType, contact.ID())
+func FindWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, sessionType FlowType, contact *flows.Contact) (*Session, error) {
+	rows, err := rt.DB.QueryxContext(ctx, sqlSelectWaitingSessionForContact, sessionType, contact.ID())
 	if err != nil {
 		return nil, fmt.Errorf("error selecting waiting session: %w", err)
 	}
@@ -783,7 +784,7 @@ func FindWaitingSessionForContact(ctx context.Context, db *sqlx.DB, st storage.S
 
 		start := time.Now()
 
-		_, output, err := st.Get(ctx, u.Path)
+		_, output, err := rt.S3.GetObject(ctx, rt.Config.S3SessionsBucket, u.Path)
 		if err != nil {
 			return nil, fmt.Errorf("error reading session from storage: %s: %w", session.OutputURL(), err)
 		}
@@ -800,16 +801,18 @@ func FindWaitingSessionForContact(ctx context.Context, db *sqlx.DB, st storage.S
 func WriteSessionOutputsToStorage(ctx context.Context, rt *runtime.Runtime, sessions []*Session) error {
 	start := time.Now()
 
-	uploads := make([]*storage.Upload, len(sessions))
+	uploads := make([]*s3x.Upload, len(sessions))
 	for i, s := range sessions {
-		uploads[i] = &storage.Upload{
-			Path:        s.StoragePath(),
+		uploads[i] = &s3x.Upload{
+			Bucket:      rt.Config.S3SessionsBucket,
+			Key:         s.StoragePath(),
 			Body:        []byte(s.Output()),
 			ContentType: "application/json",
+			ACL:         s3.ObjectCannedACLPrivate,
 		}
 	}
 
-	err := rt.SessionStorage.BatchPut(ctx, uploads)
+	err := rt.S3.BatchPut(ctx, uploads, 32)
 	if err != nil {
 		return fmt.Errorf("error writing sessions to storage: %w", err)
 	}
