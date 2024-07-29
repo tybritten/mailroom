@@ -1,3 +1,8 @@
+v9.3.0 (2024-07-29)
+-------------------------
+ * Add S3 to runtime, replace storages
+ * Use minio for local dev and tests
+
 v9.2.2 (2024-07-23)
 -------------------------
  * Simplify config param name to configure FCM relayer syncing
