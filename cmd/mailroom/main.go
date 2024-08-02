@@ -81,7 +81,7 @@ func main() {
 	log.Info("starting mailroom", "version", version, "released", date)
 
 	if config.UUIDSeed != 0 {
-		uuids.SetGenerator(uuids.NewSeededGenerator(int64(config.UUIDSeed)))
+		uuids.SetGenerator(uuids.NewSeededGenerator(int64(config.UUIDSeed), time.Now))
 		log.Warn("using seeded UUID generation", "uuid-seed", config.UUIDSeed)
 	}
 

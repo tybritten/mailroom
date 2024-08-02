@@ -17,8 +17,8 @@ func TestQueues(t *testing.T) {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	dates.SetNowSource(dates.NewSequentialNowSource(time.Date(2022, 1, 1, 12, 1, 2, 123456789, time.UTC)))
-	defer dates.SetNowSource(dates.DefaultNowSource)
+	dates.SetNowFunc(dates.NewSequentialNow(time.Date(2022, 1, 1, 12, 1, 2, 123456789, time.UTC), time.Second))
+	defer dates.SetNowFunc(time.Now)
 
 	defer testsuite.Reset(testsuite.ResetRedis)
 

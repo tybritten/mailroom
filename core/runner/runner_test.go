@@ -126,7 +126,7 @@ func TestResume(t *testing.T) {
 	session := sessions[0]
 	for i, tc := range tcs {
 		// answer our first question
-		msg := flows.NewMsgIn(flows.MsgUUID(uuids.New()), testdata.Cathy.URN, nil, tc.Message, nil)
+		msg := flows.NewMsgIn(flows.MsgUUID(uuids.NewV4()), testdata.Cathy.URN, nil, tc.Message, nil)
 		msg.SetID(10)
 		resume := resumes.NewMsg(oa.Env(), flowContact, msg)
 
@@ -172,7 +172,7 @@ func TestStartFlowConcurrency(t *testing.T) {
 	// create a lot of contacts...
 	contacts := make([]*testdata.Contact, 100)
 	for i := range contacts {
-		contacts[i] = testdata.InsertContact(rt, testdata.Org1, flows.ContactUUID(uuids.New()), "Jim", i18n.NilLanguage, models.ContactStatusActive)
+		contacts[i] = testdata.InsertContact(rt, testdata.Org1, flows.ContactUUID(uuids.NewV4()), "Jim", i18n.NilLanguage, models.ContactStatusActive)
 	}
 
 	options := &runner.StartOptions{

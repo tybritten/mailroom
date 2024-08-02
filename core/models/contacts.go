@@ -877,7 +877,7 @@ func insertContactAndURNs(ctx context.Context, db DBorTx, orgID OrgID, userID Us
 		`INSERT INTO contacts_contact (org_id, is_active, uuid, name, language, status, ticket_count, created_on, modified_on, created_by_id, modified_by_id) 
 		VALUES($1, TRUE, $2, $3, $4, $5, 0, $6, $6, $7, $7)
 		RETURNING id`,
-		orgID, uuids.New(), null.String(name), null.String(string(language)), status, dates.Now(), userID,
+		orgID, uuids.NewV4(), null.String(name), null.String(string(language)), status, dates.Now(), userID,
 	)
 	if err != nil {
 		return NilContactID, fmt.Errorf("error inserting new contact: %w", err)

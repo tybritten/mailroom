@@ -2,6 +2,7 @@ package goflow_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/Masterminds/semver"
 	"github.com/nyaruka/gocommon/i18n"
@@ -43,7 +44,7 @@ func TestReadFlow(t *testing.T) {
 }
 
 func TestCloneDefinition(t *testing.T) {
-	uuids.SetGenerator(uuids.NewSeededGenerator(12345))
+	uuids.SetGenerator(uuids.NewSeededGenerator(12345, time.Now))
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 
 	cloned, err := goflow.CloneDefinition([]byte(`{"uuid": "502c3ee4-3249-4dee-8e71-c62070667d52", "name": "New", "spec_version": "13.0.0", "type": "messaging", "language": "eng", "nodes": []}`), nil)
@@ -54,7 +55,7 @@ func TestCloneDefinition(t *testing.T) {
 func TestMigrateDefinition(t *testing.T) {
 	_, rt := testsuite.Runtime()
 
-	uuids.SetGenerator(uuids.NewSeededGenerator(12345))
+	uuids.SetGenerator(uuids.NewSeededGenerator(12345, time.Now))
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 
 	v13_0_0 := testsuite.ReadFile("testdata/migrate/13.0.0.json")

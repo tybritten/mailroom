@@ -240,7 +240,7 @@ func (m *Msg) Attachments() []utils.Attachment {
 func NewIncomingAndroid(orgID OrgID, channelID ChannelID, contactID ContactID, urnID URNID, text string, receivedOn time.Time) *Msg {
 	msg := &Msg{}
 	m := &msg.m
-	m.UUID = flows.MsgUUID(uuids.New())
+	m.UUID = flows.MsgUUID(uuids.NewV4())
 	m.OrgID = orgID
 	m.ChannelID = channelID
 	m.ContactID = contactID
@@ -321,7 +321,7 @@ func NewOutgoingIVR(cfg *runtime.Config, orgID OrgID, call *Call, out *flows.Msg
 func NewOutgoingOptInMsg(rt *runtime.Runtime, session *Session, flow *Flow, optIn *OptIn, channel *Channel, urn urns.URN, createdOn time.Time) *Msg {
 	msg := &Msg{}
 	m := &msg.m
-	m.UUID = flows.MsgUUID(uuids.New())
+	m.UUID = flows.MsgUUID(uuids.NewV4())
 	m.OrgID = session.OrgID()
 	m.ContactID = session.ContactID()
 	m.HighPriority = session.IncomingMsgID() != NilMsgID

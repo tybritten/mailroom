@@ -44,7 +44,7 @@ func InsertClosedTicket(rt *runtime.Runtime, org *Org, contact *Contact, topic *
 }
 
 func insertTicket(rt *runtime.Runtime, org *Org, contact *Contact, status models.TicketStatus, topic *Topic, body string, openedOn time.Time, assignee *User) *Ticket {
-	uuid := flows.TicketUUID(uuids.New())
+	uuid := flows.TicketUUID(uuids.NewV4())
 
 	lastActivityOn := openedOn
 	var closedOn *time.Time
