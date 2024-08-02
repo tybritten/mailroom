@@ -1,3 +1,7 @@
+v9.3.1 (2024-08-02)
+-------------------------
+ * Update to latest goflow/gocommon
+
 v9.3.0 (2024-07-29)
 -------------------------
  * Add S3 to runtime, replace storages
