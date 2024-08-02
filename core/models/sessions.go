@@ -513,7 +513,7 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 
 	uuid := fs.UUID()
 	if uuid == "" {
-		uuid = flows.SessionUUID(uuids.New())
+		uuid = flows.SessionUUID(uuids.NewV4())
 	}
 
 	// create our session object

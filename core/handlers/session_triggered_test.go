@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
@@ -36,7 +37,7 @@ func TestSessionTriggered(t *testing.T) {
 		UUID: testdata.TestersGroup.UUID,
 	}
 
-	uuids.SetGenerator(uuids.NewSeededGenerator(1234567))
+	uuids.SetGenerator(uuids.NewSeededGenerator(1234567, time.Now))
 	defer uuids.SetGenerator(uuids.DefaultGenerator)
 
 	tcs := []handlers.TestCase{

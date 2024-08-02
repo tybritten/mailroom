@@ -238,7 +238,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 	}
 
 	for i, tc := range tcs {
-		contact := testdata.InsertContact(rt, testdata.Org1, flows.ContactUUID(uuids.New()), "Felix", tc.contactLanguage, models.ContactStatusActive)
+		contact := testdata.InsertContact(rt, testdata.Org1, flows.ContactUUID(uuids.NewV4()), "Felix", tc.contactLanguage, models.ContactStatusActive)
 		testdata.InsertContactURN(rt, testdata.Org1, contact, tc.contactURN, 1000, nil)
 
 		batch := &models.BroadcastBatch{

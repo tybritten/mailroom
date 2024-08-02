@@ -27,7 +27,7 @@ func TestResponseForSprint(t *testing.T) {
 
 	urn := urns.URN("tel:+12067799294")
 	expiresOn := time.Now().Add(time.Hour)
-	channelRef := assets.NewChannelReference(assets.ChannelUUID(uuids.New()), "Twilio Channel")
+	channelRef := assets.NewChannelReference(assets.ChannelUUID(uuids.NewV4()), "Twilio Channel")
 	env := envs.NewBuilder().WithAllowedLanguages("eng", "spa").WithDefaultCountry("US").Build()
 
 	resumeURL := "http://temba.io/resume?session=1"

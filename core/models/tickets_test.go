@@ -95,8 +95,8 @@ func TestUpdateTicketLastActivity(t *testing.T) {
 
 	now := time.Date(2021, 6, 22, 15, 59, 30, 123456000, time.UTC)
 
-	defer dates.SetNowSource(dates.DefaultNowSource)
-	dates.SetNowSource(dates.NewFixedNowSource(now))
+	defer dates.SetNowFunc(time.Now)
+	dates.SetNowFunc(dates.NewFixedNow(now))
 
 	ticket := testdata.InsertOpenTicket(rt, testdata.Org1, testdata.Cathy, testdata.DefaultTopic, "Where my shoes", time.Now(), nil)
 	modelTicket := ticket.Load(rt)

@@ -70,7 +70,7 @@ func NewChannelLogForIncoming(t ChannelLogType, ch *Channel, r *httpx.Recorder, 
 
 func newChannelLog(t ChannelLogType, ch *Channel, r *httpx.Recorder, redactVals []string) *ChannelLog {
 	return &ChannelLog{
-		uuid:      ChannelLogUUID(uuids.New()),
+		uuid:      ChannelLogUUID(uuids.NewV4()),
 		type_:     t,
 		channel:   ch,
 		httpLogs:  []*httpx.Log{},
@@ -173,7 +173,7 @@ func InsertChannelLogs(ctx context.Context, rt *runtime.Runtime, logs []*Channel
 		} else {
 			// otherwise write to database so it's retrievable
 			unattached = append(unattached, &dbChannelLog{
-				UUID:      ChannelLogUUID(uuids.New()),
+				UUID:      ChannelLogUUID(uuids.NewV4()),
 				ChannelID: l.channel.ID(),
 				Type:      l.type_,
 				HTTPLogs:  jsonx.MustMarshal(l.httpLogs),

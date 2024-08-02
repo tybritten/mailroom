@@ -531,7 +531,7 @@ func buildMsgResume(
 	svc Service, channel *models.Channel, contact *flows.Contact, urn urns.URN,
 	call *models.Call, oa *models.OrgAssets, r *http.Request, resume InputResume) (flows.Resume, error, error) {
 	// our msg UUID
-	msgUUID := flows.MsgUUID(uuids.New())
+	msgUUID := flows.MsgUUID(uuids.NewV4())
 
 	// we have an attachment, download it locally
 	if resume.Attachment != NilAttachment {
