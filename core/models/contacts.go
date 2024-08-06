@@ -393,7 +393,7 @@ func LoadContacts(ctx context.Context, db Queryer, oa *OrgAssets, ids []ContactI
 		// grab the last opened open ticket
 		if len(e.Tickets) > 0 {
 			t := e.Tickets[0]
-			contact.ticket = NewTicket(t.UUID, oa.OrgID(), NilUserID, NilFlowID, contact.ID(), t.TopicID, t.Body, t.AssigneeID)
+			contact.ticket = NewTicket(t.UUID, oa.OrgID(), NilUserID, NilFlowID, contact.ID(), t.TopicID, t.AssigneeID)
 		}
 
 		contacts = append(contacts, contact)
