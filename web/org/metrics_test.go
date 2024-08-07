@@ -20,10 +20,7 @@ func TestMetrics(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetAll)
 
 	promToken := "2d26a50841ff48237238bbdd021150f6a33a4196"
-	rt.DB.MustExec(`INSERT INTO api_apitoken(is_active, org_id, created, key, role_id, user_id) VALUES(TRUE, $1, NOW(), $2, $3, 1);`, testdata.Org1.ID, promToken, testdata.AuthGroupIDs["Prometheus"])
-
-	adminToken := "5c26a50841ff48237238bbdd021150f6a33a4199"
-	rt.DB.MustExec(`INSERT INTO api_apitoken(is_active, org_id, created, key, role_id, user_id) VALUES(TRUE, $1, NOW(), $2, $3, 1);`, testdata.Org1.ID, adminToken, testdata.AuthGroupIDs["Administrators"])
+	rt.DB.MustExec(`UPDATE orgs_org SET prometheus_token = $1 WHERE id = $2`, promToken, testdata.Org1.ID)
 
 	wg := &sync.WaitGroup{}
 	server := web.NewServer(ctx, rt, wg)
@@ -42,42 +39,35 @@ func TestMetrics(t *testing.T) {
 		Contains []string
 	}{
 		{
-			Label:    "no username",
+			Label:    "no auth provided",
 			URL:      fmt.Sprintf("http://localhost:8091/mr/org/%s/metrics", testdata.Org1.UUID),
 			Username: "",
 			Password: "",
 			Response: `{"error": "invalid authentication"}`,
 		},
 		{
-			Label:    "invalid password",
+			Label:    "invalid password (token)",
 			URL:      fmt.Sprintf("http://localhost:8091/mr/org/%s/metrics", testdata.Org1.UUID),
 			Username: "metrics",
 			Password: "invalid",
 			Response: `{"error": "invalid authentication"}`,
 		},
 		{
-			Label:    "invalid username",
+			Label:    "invalid username (always metrics)",
 			URL:      fmt.Sprintf("http://localhost:8091/mr/org/%s/metrics", testdata.Org1.UUID),
 			Username: "invalid",
 			Password: promToken,
 			Response: `{"error": "invalid authentication"}`,
 		},
 		{
-			Label:    "valid login, wrong org",
+			Label:    "valid token but wrong org",
 			URL:      fmt.Sprintf("http://localhost:8091/mr/org/%s/metrics", testdata.Org2.UUID),
 			Username: "metrics",
 			Password: promToken,
 			Response: `{"error": "invalid authentication"}`,
 		},
 		{
-			Label:    "valid login, invalid user",
-			URL:      fmt.Sprintf("http://localhost:8091/mr/org/%s/metrics", testdata.Org1.UUID),
-			Username: "metrics",
-			Password: adminToken,
-			Response: `{"error": "invalid authentication"}`,
-		},
-		{
-			Label:    "valid",
+			Label:    "valid auth",
 			URL:      fmt.Sprintf("http://localhost:8091/mr/org/%s/metrics", testdata.Org1.UUID),
 			Username: "metrics",
 			Password: promToken,
