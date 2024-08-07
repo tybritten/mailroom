@@ -32,7 +32,6 @@ func TestLoadUsers(t *testing.T) {
 		{id: testdata.Admin.ID, email: testdata.Admin.Email, name: "Andy Admin", role: models.UserRoleAdministrator, team: office},
 		{id: testdata.Agent.ID, email: testdata.Agent.Email, name: "Ann D'Agent", role: models.UserRoleAgent, team: partners},
 		{id: testdata.Editor.ID, email: testdata.Editor.Email, name: "Ed McEditor", role: models.UserRoleEditor, team: office},
-		{id: testdata.Surveyor.ID, email: testdata.Surveyor.Email, name: "Steve Surveys", role: models.UserRoleSurveyor, team: nil},
 		{id: testdata.Viewer.ID, email: testdata.Viewer.Email, name: "Veronica Views", role: models.UserRoleViewer, team: nil},
 	}
 
