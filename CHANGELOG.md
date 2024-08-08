@@ -1,3 +1,8 @@
+v9.3.2 (2024-08-08)
+-------------------------
+ * Update test database
+ * Replace ticket bodies with notes on the open event
+
 v9.3.1 (2024-08-02)
 -------------------------
  * Update to latest goflow/gocommon
