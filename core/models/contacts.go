@@ -531,7 +531,6 @@ type contactEnvelope struct {
 	Tickets  []struct {
 		UUID       flows.TicketUUID `json:"uuid"`
 		TopicID    TopicID          `json:"topic_id"`
-		Body       string           `json:"body"`
 		AssigneeID UserID           `json:"assignee_id"`
 	} `json:"tickets"`
 	CreatedOn     time.Time  `json:"created_on"`
@@ -587,7 +586,7 @@ LEFT JOIN (
 	SELECT
 		contact_id,
 		array_agg(
-			json_build_object('uuid', t.uuid, 'body', t.body, 'topic_id', t.topic_id, 'assignee_id', t.assignee_id) ORDER BY t.opened_on DESC, t.id DESC
+			json_build_object('uuid', t.uuid, 'topic_id', t.topic_id, 'assignee_id', t.assignee_id) ORDER BY t.opened_on DESC, t.id DESC
 		) as tickets
 	FROM
 		tickets_ticket t
