@@ -1,3 +1,8 @@
+v9.3.3 (2024-08-08)
+-------------------------
+ * Don't try to load ticket body when loading tickets with a contact
+ * Authenticate metrics endpoint using org.prometheus_token instead of an API token
+
 v9.3.2 (2024-08-08)
 -------------------------
  * Update test database
