@@ -21,7 +21,6 @@ var Admin = &User{3, "admin1@nyaruka.com"}
 var Editor = &User{4, "editor1@nyaruka.com"}
 var Viewer = &User{5, "viewer1@nyaruka.com"}
 var Agent = &User{6, "agent1@nyaruka.com"}
-var Surveyor = &User{7, "surveyor1@nyaruka.com"}
 
 var TwilioChannel = &Channel{10000, "74729f45-7f29-4868-9dc4-90e491e3c7d8", "T"}
 var VonageChannel = &Channel{10001, "19012bfd-3ce3-4cae-9bb9-76cf92c73d49", "NX"}
