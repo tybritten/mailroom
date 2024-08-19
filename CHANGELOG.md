@@ -1,3 +1,7 @@
+v9.3.4 (2024-08-19)
+-------------------------
+ * Update to latest goflow
+
 v9.3.3 (2024-08-08)
 -------------------------
  * Don't try to load ticket body when loading tickets with a contact
