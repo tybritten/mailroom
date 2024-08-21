@@ -1,3 +1,7 @@
+v9.3.6 (2024-08-21)
+-------------------------
+ * Update to latest goflow (with phone parsing workaround)
+
 v9.3.5 (2024-08-19)
 -------------------------
  * Fix ticket modifier test
