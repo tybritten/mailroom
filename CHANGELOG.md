@@ -1,3 +1,8 @@
+v9.3.7 (2024-08-22)
+-------------------------
+ * Delete unused test-smtp command
+ * Update to aws-sdk-go-v2
+
 v9.3.6 (2024-08-21)
 -------------------------
  * Update to latest goflow (with phone parsing workaround)
