@@ -1,3 +1,7 @@
+v9.3.8 (2024-08-22)
+-------------------------
+ * Add Dynamo client to runtime
+
 v9.3.7 (2024-08-22)
 -------------------------
  * Delete unused test-smtp command
