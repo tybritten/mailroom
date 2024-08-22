@@ -1,3 +1,7 @@
+v9.3.10 (2024-08-22)
+-------------------------
+ * Tweak error message when loading session from S3
+
 v9.3.9 (2024-08-22)
 -------------------------
  * Add test of dynamodb reachability to mailroom startup
