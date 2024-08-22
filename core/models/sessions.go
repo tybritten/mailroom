@@ -11,11 +11,11 @@ import (
 	"path"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"github.com/nyaruka/gocommon/s3x"
+	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/envs"
@@ -808,7 +808,7 @@ func WriteSessionOutputsToStorage(ctx context.Context, rt *runtime.Runtime, sess
 			Key:         s.StoragePath(),
 			Body:        []byte(s.Output()),
 			ContentType: "application/json",
-			ACL:         s3.ObjectCannedACLPrivate,
+			ACL:         types.ObjectCannedACLPrivate,
 		}
 	}
 

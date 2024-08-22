@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -184,7 +184,7 @@ func (o *Org) StoreAttachment(ctx context.Context, rt *runtime.Runtime, filename
 
 	path := o.attachmentPath("attachments", filename)
 
-	url, err := rt.S3.PutObject(ctx, rt.Config.S3AttachmentsBucket, path, contentType, contentBytes, s3.BucketCannedACLPublicRead)
+	url, err := rt.S3.PutObject(ctx, rt.Config.S3AttachmentsBucket, path, contentType, contentBytes, types.ObjectCannedACLPublicRead)
 	if err != nil {
 		return "", fmt.Errorf("unable to store attachment content: %w", err)
 	}
