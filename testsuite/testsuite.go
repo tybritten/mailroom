@@ -3,15 +3,19 @@ package testsuite
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
+	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx/assertredis"
@@ -36,6 +40,7 @@ const (
 	ResetRedis   = ResetFlag(1 << 3)
 	ResetStorage = ResetFlag(1 << 4)
 	ResetElastic = ResetFlag(1 << 5)
+	ResetDynamo  = ResetFlag(1 << 6)
 )
 
 // Reset clears out both our database and redis DB
@@ -56,6 +61,9 @@ func Reset(what ResetFlag) {
 	if what&ResetElastic > 0 {
 		resetElastic(ctx, rt)
 	}
+	if what&ResetDynamo > 0 {
+		resetDynamo(ctx, rt)
+	}
 
 	models.FlushCache()
 }
@@ -72,6 +80,11 @@ func Runtime() (context.Context, *runtime.Runtime) {
 	cfg.S3SessionsBucket = "test-sessions"
 	cfg.S3LogsBucket = "test-logs"
 	cfg.S3Minio = true
+	cfg.DynamoEndpoint = "http://localhost:6000"
+	cfg.DynamoTablePrefix = "Test"
+
+	dyna, err := dynamo.NewService(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.DynamoEndpoint, cfg.DynamoTablePrefix)
+	noError(err)
 
 	s3svc, err := s3x.NewService(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.S3Endpoint, cfg.S3Minio)
 	noError(err)
@@ -81,8 +94,9 @@ func Runtime() (context.Context, *runtime.Runtime) {
 		DB:         dbx,
 		ReadonlyDB: dbx.DB,
 		RP:         getRP(),
-		ES:         getES(),
+		Dynamo:     dyna,
 		S3:         s3svc,
+		ES:         getES(),
 		FCM:        &MockFCMClient{ValidTokens: []string{"FCMID3", "FCMID4", "FCMID5"}},
 		Config:     cfg,
 	}
@@ -157,7 +171,7 @@ func resetDB() {
 }
 
 func loadTestDump() {
-	dump, err := os.Open(absPath("./mailroom_test.dump"))
+	dump, err := os.Open(absPath("./testsuite/testfiles/postgres.dump"))
 	must(err)
 	defer dump.Close()
 
@@ -219,6 +233,29 @@ func resetElastic(ctx context.Context, rt *runtime.Runtime) {
 	}
 
 	ReindexElastic(ctx)
+}
+
+func resetDynamo(ctx context.Context, rt *runtime.Runtime) {
+	tablesFile, err := os.Open(absPath("./testsuite/testfiles/dynamo.json"))
+	must(err)
+	defer tablesFile.Close()
+
+	tablesJSON, err := io.ReadAll(tablesFile)
+	must(err)
+
+	inputs := []*dynamodb.CreateTableInput{}
+	jsonx.MustUnmarshal(tablesJSON, &inputs)
+
+	for _, input := range inputs {
+		// delete table if it exists
+		if _, err := rt.Dynamo.Client.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: input.TableName}); err == nil {
+			_, err := rt.Dynamo.Client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: input.TableName})
+			must(err)
+		}
+
+		_, err := rt.Dynamo.Client.CreateTable(ctx, input)
+		must(err)
+	}
 }
 
 var sqlResetTestData = `

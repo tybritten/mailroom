@@ -54,6 +54,11 @@ jobs:
           psql -h localhost -U postgres --no-password -c "ALTER ROLE mailroom_test WITH SUPERUSER;"
           psql -h localhost -U postgres --no-password -c "CREATE DATABASE mailroom_test;"
 
+      - name: Install and start DynamoDB
+        uses: rrainn/dynamodb-action@v2.0.1
+        with:
+          port: 6000
+
       - name: Install Go
         uses: actions/setup-go@v5
         with:
