@@ -7,11 +7,11 @@ import (
 	"path"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
-	"github.com/nyaruka/gocommon/s3x"
 	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
@@ -193,7 +193,7 @@ func InsertChannelLogs(ctx context.Context, rt *runtime.Runtime, logs []*Channel
 				Key:         l.path(),
 				ContentType: "application/json",
 				Body:        jsonx.MustMarshal(l),
-				ACL:         s3.ObjectCannedACLPrivate,
+				ACL:         types.ObjectCannedACLPrivate,
 			}
 		}
 		if err := rt.S3.BatchPut(ctx, uploads, 32); err != nil {
