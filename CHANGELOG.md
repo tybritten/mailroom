@@ -1,3 +1,7 @@
+v9.3.11 (2024-08-22)
+-------------------------
+ * Always strip / from session object keys
+
 v9.3.10 (2024-08-22)
 -------------------------
  * Tweak error message when loading session from S3
