@@ -786,7 +786,7 @@ func FindWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *
 
 		_, output, err := rt.S3.GetObject(ctx, rt.Config.S3SessionsBucket, u.Path)
 		if err != nil {
-			return nil, fmt.Errorf("error reading session from storage: %s: %w", session.OutputURL(), err)
+			return nil, fmt.Errorf("error reading session from s3 bucket=%s key=%s: %w", rt.Config.S3SessionsBucket, u.Path, err)
 		}
 
 		slog.Debug("loaded session from storage", "elapsed", time.Since(start), "output_url", session.OutputURL())
