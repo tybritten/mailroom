@@ -12,6 +12,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
@@ -89,6 +90,12 @@ func (mr *Mailroom) Start() error {
 		}
 	} else {
 		log.Warn("fcm not configured, no android syncing")
+	}
+
+	// setup DynamoDB
+	mr.rt.Dynamo, err = dynamo.NewService(c.AWSAccessKeyID, c.AWSSecretAccessKey, c.AWSRegion, c.S3Endpoint, c.DynamoTablePrefix)
+	if err != nil {
+		return err
 	}
 
 	// setup S3 storage

@@ -3,15 +3,19 @@ package testsuite
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
+	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx/assertredis"
@@ -79,6 +83,9 @@ func Runtime() (context.Context, *runtime.Runtime) {
 	cfg.DynamoEndpoint = "http://localhost:6000"
 	cfg.DynamoTablePrefix = "Test"
 
+	dyna, err := dynamo.NewService(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.DynamoEndpoint, cfg.DynamoTablePrefix)
+	noError(err)
+
 	s3svc, err := s3x.NewService(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.S3Endpoint, cfg.S3Minio)
 	noError(err)
 
@@ -87,8 +94,9 @@ func Runtime() (context.Context, *runtime.Runtime) {
 		DB:         dbx,
 		ReadonlyDB: dbx.DB,
 		RP:         getRP(),
-		ES:         getES(),
+		Dynamo:     dyna,
 		S3:         s3svc,
+		ES:         getES(),
 		FCM:        &MockFCMClient{ValidTokens: []string{"FCMID3", "FCMID4", "FCMID5"}},
 		Config:     cfg,
 	}
@@ -163,7 +171,7 @@ func resetDB() {
 }
 
 func loadTestDump() {
-	dump, err := os.Open(absPath("./testdata/data/postgres.dump"))
+	dump, err := os.Open(absPath("./testsuite/testfiles/postgres.dump"))
 	must(err)
 	defer dump.Close()
 
@@ -228,7 +236,26 @@ func resetElastic(ctx context.Context, rt *runtime.Runtime) {
 }
 
 func resetDynamo(ctx context.Context, rt *runtime.Runtime) {
+	tablesFile, err := os.Open(absPath("./testsuite/testfiles/dynamo.json"))
+	must(err)
+	defer tablesFile.Close()
 
+	tablesJSON, err := io.ReadAll(tablesFile)
+	must(err)
+
+	inputs := []*dynamodb.CreateTableInput{}
+	jsonx.MustUnmarshal(tablesJSON, &inputs)
+
+	for _, input := range inputs {
+		// delete table if it exists
+		if _, err := rt.Dynamo.Client.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: input.TableName}); err == nil {
+			_, err := rt.Dynamo.Client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: input.TableName})
+			must(err)
+		}
+
+		_, err := rt.Dynamo.Client.CreateTable(ctx, input)
+		must(err)
+	}
 }
 
 var sqlResetTestData = `
