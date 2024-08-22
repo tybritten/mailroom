@@ -67,6 +67,9 @@ type Config struct {
 	S3LogsBucket        string `help:"S3 bucket to write channel logs to"`
 	S3Minio             bool   `help:"S3 is actually Minio or other compatible service"`
 
+	DynamoEndpoint    string `help:"DynamoDB service endpoint, e.g. https://dynamodb.us-east-1.amazonaws.com"`
+	DynamoTablePrefix string `help:"prefix to use for DynamoDB tables"`
+
 	CourierAuthToken string `help:"the authentication token used for requests to Courier"`
 	LibratoUsername  string `help:"the username that will be used to authenticate to Librato"`
 	LibratoToken     string `help:"the token that will be used to authenticate to Librato"`
@@ -123,6 +126,9 @@ func NewDefaultConfig() *Config {
 		S3AttachmentsBucket: "temba-attachments",
 		S3SessionsBucket:    "temba-sessions",
 		S3LogsBucket:        "temba-logs",
+
+		DynamoEndpoint:    "", // let library generate it
+		DynamoTablePrefix: "Temba",
 
 		InstanceID: hostname,
 		LogLevel:   slog.LevelWarn,

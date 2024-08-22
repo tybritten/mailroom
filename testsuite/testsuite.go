@@ -36,6 +36,7 @@ const (
 	ResetRedis   = ResetFlag(1 << 3)
 	ResetStorage = ResetFlag(1 << 4)
 	ResetElastic = ResetFlag(1 << 5)
+	ResetDynamo  = ResetFlag(1 << 6)
 )
 
 // Reset clears out both our database and redis DB
@@ -56,6 +57,9 @@ func Reset(what ResetFlag) {
 	if what&ResetElastic > 0 {
 		resetElastic(ctx, rt)
 	}
+	if what&ResetDynamo > 0 {
+		resetDynamo(ctx, rt)
+	}
 
 	models.FlushCache()
 }
@@ -72,6 +76,8 @@ func Runtime() (context.Context, *runtime.Runtime) {
 	cfg.S3SessionsBucket = "test-sessions"
 	cfg.S3LogsBucket = "test-logs"
 	cfg.S3Minio = true
+	cfg.DynamoEndpoint = "http://localhost:6000"
+	cfg.DynamoTablePrefix = "Test"
 
 	s3svc, err := s3x.NewService(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.S3Endpoint, cfg.S3Minio)
 	noError(err)
@@ -157,7 +163,7 @@ func resetDB() {
 }
 
 func loadTestDump() {
-	dump, err := os.Open(absPath("./mailroom_test.dump"))
+	dump, err := os.Open(absPath("./testdata/data/postgres.dump"))
 	must(err)
 	defer dump.Close()
 
@@ -219,6 +225,10 @@ func resetElastic(ctx context.Context, rt *runtime.Runtime) {
 	}
 
 	ReindexElastic(ctx)
+}
+
+func resetDynamo(ctx context.Context, rt *runtime.Runtime) {
+
 }
 
 var sqlResetTestData = `
