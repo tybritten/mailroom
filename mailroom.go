@@ -93,9 +93,14 @@ func (mr *Mailroom) Start() error {
 	}
 
 	// setup DynamoDB
-	mr.rt.Dynamo, err = dynamo.NewService(c.AWSAccessKeyID, c.AWSSecretAccessKey, c.AWSRegion, c.S3Endpoint, c.DynamoTablePrefix)
+	mr.rt.Dynamo, err = dynamo.NewService(c.AWSAccessKeyID, c.AWSSecretAccessKey, c.AWSRegion, c.DynamoEndpoint, c.DynamoTablePrefix)
 	if err != nil {
 		return err
+	}
+	if err := mr.rt.Dynamo.Test(mr.ctx, "ChannelLogsAttached"); err != nil {
+		log.Error("dynamodb not reachable", "error", err)
+	} else {
+		log.Info("dynamodb ok")
 	}
 
 	// setup S3 storage
