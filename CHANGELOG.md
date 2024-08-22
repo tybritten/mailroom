@@ -1,3 +1,7 @@
+v9.3.9 (2024-08-22)
+-------------------------
+ * Add test of dynamodb reachability to mailroom startup
+
 v9.3.8 (2024-08-22)
 -------------------------
  * Add Dynamo client to runtime
