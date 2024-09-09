@@ -39,6 +39,7 @@ func TestLoadOrg(t *testing.T) {
 	assert.Equal(t, models.OrgID(1), org.ID())
 	assert.False(t, org.Suspended())
 	assert.Equal(t, "smtp://foo:bar", org.FlowSMTP())
+	assert.Equal(t, 0, org.OutboxCount())
 	assert.Equal(t, envs.DateFormatDayMonthYear, org.Environment().DateFormat())
 	assert.Equal(t, envs.TimeFormatHourMinute, org.Environment().TimeFormat())
 	assert.Equal(t, envs.RedactionPolicyNone, org.Environment().RedactionPolicy())
