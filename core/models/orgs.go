@@ -81,6 +81,7 @@ type Org struct {
 		FlowSMTP        null.String   `json:"flow_smtp"`
 		PrometheusToken null.String   `json:"prometheus_token"`
 		Config          null.Map[any] `json:"config"`
+		OutboxCount     int           `json:"outbox_count"`
 	}
 	env envs.Environment
 }
@@ -102,6 +103,8 @@ func (o *Org) PrometheusToken() string { return string(o.o.PrometheusToken) }
 
 // Environment returns this org as an engine environment
 func (o *Org) Environment() envs.Environment { return o.env }
+
+func (o *Org) OutboxCount() int { return o.o.OutboxCount }
 
 // MarshalJSON is our custom marshaller so that our inner env get output
 func (o *Org) MarshalJSON() ([]byte, error) {
@@ -236,7 +239,8 @@ SELECT ROW_TO_JSON(o) FROM (SELECT
 			WHERE c.org_id = o.id AND c.is_active = TRUE AND c.country IS NOT NULL
 			GROUP BY c.country ORDER BY count(c.country) desc, country LIMIT 1
 	    ), ''
-	) AS default_country
+	) AS default_country,
+	(SELECT SUM(count) FROM msgs_systemlabelcount WHERE org_id = $1 AND label_type = 'O') AS outbox_count
 	FROM orgs_org o
 	WHERE id = $1
 ) o`

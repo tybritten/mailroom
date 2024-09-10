@@ -65,6 +65,21 @@ func (q *FairSorted) Push(rc redis.Conn, taskType string, ownerID int, task any,
 	return err
 }
 
+func (q *FairSorted) Owners(rc redis.Conn) ([]int, error) {
+	strs, err := redis.Strings(rc.Do("ZRANGE", q.activeKey(), 0, -1))
+	if err != nil {
+		return nil, err
+	}
+
+	actual := make([]int, len(strs))
+	for i, s := range strs {
+		owner, _ := strconv.ParseInt(s, 10, 64)
+		actual[i] = int(owner)
+	}
+
+	return actual, nil
+}
+
 func (q *FairSorted) activeKey() string {
 	return fmt.Sprintf("%s:active", q.keyBase)
 }
