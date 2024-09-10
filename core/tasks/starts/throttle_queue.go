@@ -16,11 +16,11 @@ const (
 )
 
 func init() {
-	tasks.RegisterCron("trottle_queue", &ThrottleQueueCron{queue: tasks.StartsQueue})
+	tasks.RegisterCron("throttle_queue", &ThrottleQueueCron{Queue: tasks.StartsQueue})
 }
 
 type ThrottleQueueCron struct {
-	queue *queues.FairSorted
+	Queue *queues.FairSorted
 }
 
 func (c *ThrottleQueueCron) Next(last time.Time) time.Time {
@@ -36,24 +36,24 @@ func (c *ThrottleQueueCron) Run(ctx context.Context, rt *runtime.Runtime) (map[s
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	owners, err := c.queue.Owners(rc)
+	owners, err := c.Queue.Owners(rc)
 	if err != nil {
 		return nil, fmt.Errorf("error getting task owners: %w", err)
 	}
 
 	numPaused, numResumed := 0, 0
 
-	for ownerID := range owners {
+	for _, ownerID := range owners {
 		oa, err := models.GetOrgAssets(ctx, rt, models.OrgID(ownerID))
 		if err != nil {
 			return nil, fmt.Errorf("error org assets for org #%d: %w", ownerID, err)
 		}
 
 		if oa.Org().OutboxCount() >= outboxThreshold {
-			c.queue.Pause(rc, ownerID)
+			c.Queue.Pause(rc, ownerID)
 			numPaused++
 		} else {
-			c.queue.Resume(rc, ownerID)
+			c.Queue.Resume(rc, ownerID)
 			numResumed++
 		}
 	}
