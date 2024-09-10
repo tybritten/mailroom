@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"os"
 	"os/exec"
 	"path"
@@ -20,7 +21,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx/assertredis"
 	"github.com/nyaruka/rp-indexer/v9/indexers"
-	"golang.org/x/exp/maps"
 )
 
 var _db *sqlx.DB
@@ -226,7 +226,7 @@ func resetElastic(ctx context.Context, rt *runtime.Runtime) {
 		noError(err)
 
 		// and delete them
-		for _, index := range maps.Keys(ar) {
+		for index := range maps.Keys(ar) {
 			_, err := rt.ES.Indices.Delete(index).Do(ctx)
 			noError(err)
 		}

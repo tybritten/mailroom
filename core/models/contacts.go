@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"slices"
 	"strconv"
 	"time"
 
@@ -1183,7 +1184,7 @@ func updateURNChannel(urn urns.URN, channel *Channel) (urns.URN, error) {
 
 // UpdateContactModifiedOn updates modified_on the passed in contacts
 func UpdateContactModifiedOn(ctx context.Context, db DBorTx, contactIDs []ContactID) error {
-	for _, idBatch := range ChunkSlice(contactIDs, 100) {
+	for idBatch := range slices.Chunk(contactIDs, 100) {
 		_, err := db.ExecContext(ctx, `UPDATE contacts_contact SET modified_on = NOW() WHERE id = ANY($1)`, pq.Array(idBatch))
 		if err != nil {
 			return fmt.Errorf("error updating modified_on for contact batch: %w", err)

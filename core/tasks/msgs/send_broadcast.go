@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/nyaruka/goflow/contactql"
@@ -104,7 +105,7 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 	defer rc.Close()
 
 	// create tasks for batches of contacts
-	idBatches := models.ChunkSlice(contactIDs, startBatchSize)
+	idBatches := slices.Collect(slices.Chunk(contactIDs, startBatchSize))
 	for i, idBatch := range idBatches {
 		isLast := (i == len(idBatches)-1)
 

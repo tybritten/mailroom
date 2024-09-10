@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
-	"golang.org/x/exp/maps"
 )
 
 // TypeFireCampaignEvent is the type of the fire event task
@@ -173,18 +173,19 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 	}
 
 	// mark the skipped fires as skipped and record as handled
-	err = models.MarkEventsFired(ctx, rt.DB, maps.Values(firesToSkip), time.Now(), models.FireResultSkipped)
+	skipped := slices.Collect(maps.Values(firesToSkip))
+	err = models.MarkEventsFired(ctx, rt.DB, skipped, time.Now(), models.FireResultSkipped)
 	if err != nil {
 		return nil, fmt.Errorf("error marking events skipped: %w", err)
 	}
 
-	handled := maps.Values(firesToSkip)
+	handled := skipped
 
 	// if this is an ivr flow, we need to create a task to perform the start there
 	if dbFlow.FlowType() == models.FlowTypeVoice {
-		fired := maps.Values(firesToFire)
+		fired := slices.Collect(maps.Values(firesToFire))
 
-		err := handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), dbFlow.ID(), maps.Keys(firesToFire), func(ctx context.Context, tx *sqlx.Tx) error {
+		err := handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), dbFlow.ID(), slices.Collect(maps.Keys(firesToFire)), func(ctx context.Context, tx *sqlx.Tx) error {
 			return models.MarkEventsFired(ctx, tx, fired, time.Now(), models.FireResultFired)
 		})
 		if err != nil {
@@ -226,7 +227,7 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 		CommitHook: markFired,
 	}
 
-	_, err = runner.StartFlow(ctx, rt, oa, dbFlow, maps.Keys(firesToFire), options)
+	_, err = runner.StartFlow(ctx, rt, oa, dbFlow, slices.Collect(maps.Keys(firesToFire)), options)
 	if err != nil {
 		slog.Error("error starting flow for campaign event", "error", err, "event", eventUUID)
 	}

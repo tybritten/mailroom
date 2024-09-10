@@ -1,11 +1,12 @@
 module github.com/nyaruka/mailroom
 
-go 1.22
+go 1.23
 
 require (
 	firebase.google.com/go/v4 v4.14.1
 	github.com/Masterminds/semver v1.5.0
 	github.com/appleboy/go-fcm v1.2.1
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.34.5
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.60.0
 	github.com/buger/jsonparser v1.1.1
 	github.com/elastic/go-elasticsearch/v8 v8.14.0
@@ -31,7 +32,6 @@ require (
 	github.com/samber/slog-sentry v1.2.2
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa
 	google.golang.org/api v0.193.0
 )
 
@@ -56,7 +56,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.16 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.1 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.16 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.34.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.3.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.9.17 // indirect
@@ -101,6 +100,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	golang.org/x/crypto v0.26.0 // indirect
+	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect

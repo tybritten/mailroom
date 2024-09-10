@@ -3,6 +3,7 @@ package campaigns
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -12,7 +13,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/nyaruka/redisx"
-	"golang.org/x/exp/slog"
 )
 
 const (
