@@ -134,3 +134,23 @@ var scriptFSSize = redis.NewScript(1, luaFSSize)
 func (q *FairSorted) Size(rc redis.Conn) (int, error) {
 	return redis.Int(scriptFSSize.Do(rc, q.activeKey(), q.keyBase))
 }
+
+//go:embed lua/fair_sorted_pause.lua
+var luaFSPause string
+var scriptFSPause = redis.NewScript(1, luaFSPause)
+
+// Pause marks the given task owner as paused so their tasks are not popped.
+func (q *FairSorted) Pause(rc redis.Conn, ownerID int) error {
+	_, err := scriptFSPause.Do(rc, q.activeKey(), strconv.FormatInt(int64(ownerID), 10))
+	return err
+}
+
+//go:embed lua/fair_sorted_resume.lua
+var luaFSResume string
+var scriptFSResume = redis.NewScript(1, luaFSResume)
+
+// Resume marks the given task owner as active so their tasks will be popped.
+func (q *FairSorted) Resume(rc redis.Conn, ownerID int) error {
+	_, err := scriptFSResume.Do(rc, q.activeKey(), strconv.FormatInt(int64(ownerID), 10))
+	return err
+}
