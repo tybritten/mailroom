@@ -1,3 +1,7 @@
+v9.3.12 (2024-09-10)
+-------------------------
+ * Add dedicated starts queue and a cron to throttle it based on outbox counts
+
 v9.3.11 (2024-08-22)
 -------------------------
  * Always strip / from session object keys
