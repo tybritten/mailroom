@@ -29,8 +29,9 @@ type Mailroom struct {
 	wg   *sync.WaitGroup
 	quit chan bool
 
-	batchForeman   *Foreman
 	handlerForeman *Foreman
+	batchForeman   *Foreman
+	startsForeman  *Foreman
 
 	webserver *web.Server
 }
@@ -43,8 +44,10 @@ func NewMailroom(config *runtime.Config) *Mailroom {
 		wg:   &sync.WaitGroup{},
 	}
 	mr.ctx, mr.cancel = context.WithCancel(context.Background())
-	mr.batchForeman = NewForeman(mr.rt, mr.wg, tasks.BatchQueue, config.BatchWorkers)
+
 	mr.handlerForeman = NewForeman(mr.rt, mr.wg, tasks.HandlerQueue, config.HandlerWorkers)
+	mr.batchForeman = NewForeman(mr.rt, mr.wg, tasks.BatchQueue, config.BatchWorkers)
+	mr.startsForeman = NewForeman(mr.rt, mr.wg, tasks.StartsQueue, config.BatchWorkers)
 
 	return mr
 }
@@ -142,8 +145,9 @@ func (mr *Mailroom) Start() error {
 	analytics.Start()
 
 	// init our foremen and start it
-	mr.batchForeman.Start()
 	mr.handlerForeman.Start()
+	mr.batchForeman.Start()
+	mr.startsForeman.Start()
 
 	// start our web server
 	mr.webserver = web.NewServer(mr.ctx, mr.rt, mr.wg)
@@ -161,8 +165,10 @@ func (mr *Mailroom) Stop() error {
 	log := slog.With("comp", "mailroom")
 	log.Info("mailroom stopping")
 
-	mr.batchForeman.Stop()
 	mr.handlerForeman.Stop()
+	mr.batchForeman.Stop()
+	mr.startsForeman.Stop()
+
 	analytics.Stop()
 	close(mr.quit)
 	mr.cancel()

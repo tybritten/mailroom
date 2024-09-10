@@ -68,15 +68,17 @@ func FlushTasks(t *testing.T, rt *runtime.Runtime) map[string]int {
 	var err error
 	counts := make(map[string]int)
 
-	for {
-		// look for a task on the handler queue
-		task, err = tasks.HandlerQueue.Pop(rc)
-		require.NoError(t, err)
+	qs := []*queues.FairSorted{tasks.HandlerQueue, tasks.BatchQueue, tasks.StartsQueue}
 
-		if task == nil {
-			// look for a task on the batch queue
-			task, err = tasks.BatchQueue.Pop(rc)
+	for {
+		// look for a task in the queues
+		for _, q := range qs {
+			task, err = q.Pop(rc)
 			require.NoError(t, err)
+
+			if task != nil {
+				break
+			}
 		}
 
 		if task == nil { // all done

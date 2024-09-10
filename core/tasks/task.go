@@ -15,6 +15,7 @@ import (
 
 var HandlerQueue = queues.NewFairSorted("handler")
 var BatchQueue = queues.NewFairSorted("batch")
+var StartsQueue = queues.NewFairSorted("starts")
 
 var registeredTypes = map[string](func() Task){}
 
