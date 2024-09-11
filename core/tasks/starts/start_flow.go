@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/nyaruka/gocommon/i18n"
@@ -111,14 +112,14 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		return nil
 	}
 
-	// split the contact ids into batches to become batch tasks
-	idBatches := models.ChunkSlice(contactIDs, startBatchSize)
-
 	// by default we start in the starts queue unless we have two or fewer contacts
 	q := tasks.StartsQueue
 	if len(contactIDs) <= 2 {
 		q = tasks.HandlerQueue
 	}
+
+	// split the contact ids into batches to become batch tasks
+	idBatches := slices.Collect(slices.Chunk(contactIDs, startBatchSize))
 
 	rc := rt.RP.Get()
 	defer rc.Close()

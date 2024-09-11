@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -16,7 +18,6 @@ import (
 	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -264,7 +265,7 @@ func tryToStartWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 	if err != nil {
 		return nil, nil, err
 	}
-	locked := maps.Keys(locks)
+	locked := slices.Collect(maps.Keys(locks))
 
 	// whatever happens, we need to unlock the contacts
 	defer models.UnlockContacts(rt, oa.OrgID(), locks)

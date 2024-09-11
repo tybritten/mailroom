@@ -3,6 +3,8 @@ package models_test
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 	"testing"
 	"time"
@@ -20,7 +22,6 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/maps"
 )
 
 func TestContacts(t *testing.T) {
@@ -420,7 +421,7 @@ func TestGetOrCreateContactIDsFromURNs(t *testing.T) {
 		fetched, created, err := models.GetOrCreateContactsFromURNs(ctx, rt.DB, oa, tc.urns)
 		assert.NoError(t, err, "%d: error getting contact ids", i)
 		assert.Equal(t, tc.fetched, fetched, "%d: fetched contacts mismatch", i)
-		assert.Equal(t, tc.created, maps.Keys(created), "%d: created contacts mismatch", i)
+		assert.Equal(t, tc.created, slices.AppendSeq([]urns.URN{}, maps.Keys(created)), "%d: created contacts mismatch", i)
 	}
 }
 
@@ -656,7 +657,7 @@ func TestLockContacts(t *testing.T) {
 	// try to get locks for 101, 102, 103
 	locks, skipped, err := models.LockContacts(ctx, rt, testdata.Org1.ID, []models.ContactID{101, 102, 103}, time.Second)
 	assert.NoError(t, err)
-	assert.ElementsMatch(t, []models.ContactID{101, 103}, maps.Keys(locks))
+	assert.ElementsMatch(t, []models.ContactID{101, 103}, slices.Collect(maps.Keys(locks)))
 	assert.Equal(t, []models.ContactID{102}, skipped) // because it's already locked
 
 	assertredis.Exists(t, rc, "lock:c:1:101")
