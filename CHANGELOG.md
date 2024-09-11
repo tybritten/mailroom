@@ -1,3 +1,8 @@
+v9.3.13 (2024-09-11)
+-------------------------
+ * Fix throttle queue task
+ * Update to go 1.23
+
 v9.3.12 (2024-09-10)
 -------------------------
  * Add dedicated starts queue and a cron to throttle it based on outbox counts
