@@ -1,6 +1,6 @@
 [
     {
-        "TableName": "ChannelLogsAttached",
+        "TableName": "ChannelLogs",
         "KeySchema": [
             {
                 "AttributeName": "UUID",

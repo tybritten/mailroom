@@ -100,7 +100,7 @@ func (mr *Mailroom) Start() error {
 	if err != nil {
 		return err
 	}
-	if err := mr.rt.Dynamo.Test(mr.ctx, "ChannelLogsAttached"); err != nil {
+	if err := mr.rt.Dynamo.Test(mr.ctx, "ChannelLogs"); err != nil {
 		log.Error("dynamodb not reachable", "error", err)
 	} else {
 		log.Info("dynamodb ok")
