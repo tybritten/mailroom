@@ -48,7 +48,7 @@ func NewMailroom(config *runtime.Config) *Mailroom {
 
 	mr.handlerForeman = NewForeman(mr.rt, mr.wg, tasks.HandlerQueue, config.HandlerWorkers)
 	mr.batchForeman = NewForeman(mr.rt, mr.wg, tasks.BatchQueue, config.BatchWorkers)
-	mr.throttledForeman = NewForeman(mr.rt, mr.wg, tasks.StartsQueue, config.BatchWorkers)
+	mr.throttledForeman = NewForeman(mr.rt, mr.wg, tasks.ThrottledQueue, config.BatchWorkers)
 	mr.startsForeman = NewForeman(mr.rt, mr.wg, tasks.StartsQueue, config.BatchWorkers)
 
 	return mr

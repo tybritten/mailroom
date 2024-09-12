@@ -15,7 +15,7 @@ import (
 
 var HandlerQueue = queues.NewFairSorted("handler")
 var BatchQueue = queues.NewFairSorted("batch")
-var ThrottledQueue = queues.NewFairSorted("throttled")
+var ThrottledQueue = queues.NewFairSorted("tasks:throttled")
 
 // TODO remove once starts are using throttled
 var StartsQueue = queues.NewFairSorted("starts")
