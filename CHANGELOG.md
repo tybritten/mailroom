@@ -1,3 +1,8 @@
+v9.3.15 (2024-09-12)
+-------------------------
+ * Add new prefixed queues for batch and handler whilst retaining previous ones
+ * Remove starts queue that was replaced by tasks:throttled
+
 v9.3.14 (2024-09-12)
 -------------------------
  * Throttle broadcasts by outbox size too
