@@ -68,7 +68,7 @@ func FlushTasks(t *testing.T, rt *runtime.Runtime) map[string]int {
 	var err error
 	counts := make(map[string]int)
 
-	qs := []*queues.FairSorted{tasks.HandlerQueue, tasks.BatchQueue, tasks.StartsQueue}
+	qs := []*queues.FairSorted{tasks.HandlerQueue, tasks.BatchQueue, tasks.ThrottledQueue}
 
 	for {
 		// look for a task in the queues

@@ -112,9 +112,9 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		return nil
 	}
 
-	// by default we start in the starts queue unless we have two or fewer contacts
-	q := tasks.StartsQueue
-	if len(contactIDs) <= 2 {
+	// batches will be processed in the throttled queue unless we're a single contact
+	q := tasks.ThrottledQueue
+	if len(contactIDs) == 1 {
 		q = tasks.HandlerQueue
 	}
 

@@ -29,9 +29,10 @@ type Mailroom struct {
 	wg   *sync.WaitGroup
 	quit chan bool
 
-	handlerForeman *Foreman
-	batchForeman   *Foreman
-	startsForeman  *Foreman
+	handlerForeman   *Foreman
+	batchForeman     *Foreman
+	throttledForeman *Foreman
+	startsForeman    *Foreman // TODO remove once starts are using throttled
 
 	webserver *web.Server
 }
@@ -47,6 +48,7 @@ func NewMailroom(config *runtime.Config) *Mailroom {
 
 	mr.handlerForeman = NewForeman(mr.rt, mr.wg, tasks.HandlerQueue, config.HandlerWorkers)
 	mr.batchForeman = NewForeman(mr.rt, mr.wg, tasks.BatchQueue, config.BatchWorkers)
+	mr.throttledForeman = NewForeman(mr.rt, mr.wg, tasks.StartsQueue, config.BatchWorkers)
 	mr.startsForeman = NewForeman(mr.rt, mr.wg, tasks.StartsQueue, config.BatchWorkers)
 
 	return mr
@@ -147,6 +149,7 @@ func (mr *Mailroom) Start() error {
 	// init our foremen and start it
 	mr.handlerForeman.Start()
 	mr.batchForeman.Start()
+	mr.throttledForeman.Start()
 	mr.startsForeman.Start()
 
 	// start our web server
@@ -167,6 +170,7 @@ func (mr *Mailroom) Stop() error {
 
 	mr.handlerForeman.Stop()
 	mr.batchForeman.Stop()
+	mr.throttledForeman.Stop()
 	mr.startsForeman.Stop()
 
 	analytics.Stop()
