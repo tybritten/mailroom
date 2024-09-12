@@ -1,3 +1,7 @@
+v9.3.14 (2024-09-12)
+-------------------------
+ * Throttle broadcasts by outbox size too
+
 v9.3.13 (2024-09-11)
 -------------------------
  * Fix throttle queue task
