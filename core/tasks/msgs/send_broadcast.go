@@ -95,9 +95,9 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		return nil
 	}
 
-	// two or fewer contacts? queue to our handler queue for sending
-	q := tasks.BatchQueue
-	if len(contactIDs) <= 2 {
+	// batches will be processed in the throttled queue unless we're a single contact
+	q := tasks.ThrottledQueue
+	if len(contactIDs) == 1 {
 		q = tasks.HandlerQueue
 	}
 

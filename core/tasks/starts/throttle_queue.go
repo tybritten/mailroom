@@ -16,7 +16,10 @@ const (
 )
 
 func init() {
-	tasks.RegisterCron("throttle_queue", &ThrottleQueueCron{Queue: tasks.StartsQueue})
+	tasks.RegisterCron("throttle_queue", &ThrottleQueueCron{Queue: tasks.ThrottledQueue})
+
+	// TODO remove once starts are using throttled
+	tasks.RegisterCron("throttle_starts", &ThrottleQueueCron{Queue: tasks.StartsQueue})
 }
 
 type ThrottleQueueCron struct {
