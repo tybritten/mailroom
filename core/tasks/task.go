@@ -13,12 +13,12 @@ import (
 	"github.com/nyaruka/mailroom/utils/queues"
 )
 
-var HandlerQueue = queues.NewFairSorted("handler")
-var BatchQueue = queues.NewFairSorted("batch")
+var HandlerQueue = queues.NewFairSorted("tasks:handler")
+var BatchQueue = queues.NewFairSorted("tasks:batch")
 var ThrottledQueue = queues.NewFairSorted("tasks:throttled")
 
-// TODO remove once starts are using throttled
-var StartsQueue = queues.NewFairSorted("starts")
+var OldHandlerQueue = queues.NewFairSorted("handler")
+var OldBatchQueue = queues.NewFairSorted("batch")
 
 var registeredTypes = map[string](func() Task){}
 

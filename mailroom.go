@@ -32,7 +32,10 @@ type Mailroom struct {
 	handlerForeman   *Foreman
 	batchForeman     *Foreman
 	throttledForeman *Foreman
-	startsForeman    *Foreman // TODO remove once starts are using throttled
+
+	// TODO once queues have moved
+	oldHandlerForeman *Foreman
+	oldBatchForeman   *Foreman
 
 	webserver *web.Server
 }
@@ -49,7 +52,9 @@ func NewMailroom(config *runtime.Config) *Mailroom {
 	mr.handlerForeman = NewForeman(mr.rt, mr.wg, tasks.HandlerQueue, config.HandlerWorkers)
 	mr.batchForeman = NewForeman(mr.rt, mr.wg, tasks.BatchQueue, config.BatchWorkers)
 	mr.throttledForeman = NewForeman(mr.rt, mr.wg, tasks.ThrottledQueue, config.BatchWorkers)
-	mr.startsForeman = NewForeman(mr.rt, mr.wg, tasks.StartsQueue, config.BatchWorkers)
+
+	mr.oldHandlerForeman = NewForeman(mr.rt, mr.wg, tasks.OldHandlerQueue, config.HandlerWorkers)
+	mr.oldBatchForeman = NewForeman(mr.rt, mr.wg, tasks.OldBatchQueue, config.BatchWorkers)
 
 	return mr
 }
@@ -150,7 +155,9 @@ func (mr *Mailroom) Start() error {
 	mr.handlerForeman.Start()
 	mr.batchForeman.Start()
 	mr.throttledForeman.Start()
-	mr.startsForeman.Start()
+
+	mr.oldHandlerForeman.Start()
+	mr.oldBatchForeman.Start()
 
 	// start our web server
 	mr.webserver = web.NewServer(mr.ctx, mr.rt, mr.wg)
@@ -171,7 +178,9 @@ func (mr *Mailroom) Stop() error {
 	mr.handlerForeman.Stop()
 	mr.batchForeman.Stop()
 	mr.throttledForeman.Stop()
-	mr.startsForeman.Stop()
+
+	mr.oldHandlerForeman.Stop()
+	mr.oldBatchForeman.Stop()
 
 	analytics.Stop()
 	close(mr.quit)
