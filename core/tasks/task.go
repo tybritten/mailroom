@@ -17,9 +17,6 @@ var HandlerQueue = queues.NewFairSorted("tasks:handler")
 var BatchQueue = queues.NewFairSorted("tasks:batch")
 var ThrottledQueue = queues.NewFairSorted("tasks:throttled")
 
-var OldHandlerQueue = queues.NewFairSorted("handler")
-var OldBatchQueue = queues.NewFairSorted("batch")
-
 var registeredTypes = map[string](func() Task){}
 
 // RegisterType registers a new type of task
