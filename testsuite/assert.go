@@ -67,7 +67,7 @@ func AssertBatchTasks(t *testing.T, orgID models.OrgID, expected map[string]int,
 	rc := getRC()
 	defer rc.Close()
 
-	tasks, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("batch:%d", orgID), 0, -1))
+	tasks, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("tasks:batch:%d", orgID), 0, -1))
 	require.NoError(t, err)
 
 	actual := make(map[string]int, 5)

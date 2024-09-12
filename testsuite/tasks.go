@@ -38,12 +38,12 @@ func CurrentTasks(t *testing.T, rt *runtime.Runtime, qname string) map[models.Or
 	defer rc.Close()
 
 	// get all active org queues
-	active, err := redis.Ints(rc.Do("ZRANGE", fmt.Sprintf("%s:active", qname), 0, -1))
+	active, err := redis.Ints(rc.Do("ZRANGE", fmt.Sprintf("tasks:%s:active", qname), 0, -1))
 	require.NoError(t, err)
 
 	tasks := make(map[models.OrgID][]*queues.Task)
 	for _, orgID := range active {
-		orgTasksEncoded, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("%s:%d", qname, orgID), 0, -1))
+		orgTasksEncoded, err := redis.Strings(rc.Do("ZRANGE", fmt.Sprintf("tasks:%s:%d", qname, orgID), 0, -1))
 		require.NoError(t, err)
 
 		orgTasks := make([]*queues.Task, len(orgTasksEncoded))
