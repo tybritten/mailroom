@@ -1,3 +1,7 @@
+v9.3.16 (2024-09-12)
+-------------------------
+ * Remove old task queues
+
 v9.3.15 (2024-09-12)
 -------------------------
  * Add new prefixed queues for batch and handler whilst retaining previous ones
