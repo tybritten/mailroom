@@ -1,3 +1,9 @@
+v9.3.17 (2024-09-13)
+-------------------------
+ * Move core channel log stuff into clogs utility package we could potentially share with courier
+ * Start writing channel logs to DynamoDB
+ * Fix go version in DockerFile
+
 v9.3.16 (2024-09-12)
 -------------------------
  * Remove old task queues
