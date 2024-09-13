@@ -5,12 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
-	"slices"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	dytypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/httpx"
@@ -106,26 +102,13 @@ func (l *stChannelLog) path() string {
 
 // InsertChannelLogs writes the given channel logs to the db
 func InsertChannelLogs(ctx context.Context, rt *runtime.Runtime, logs []*ChannelLog) error {
-	// write in batches to DynamoDB
-	for batch := range slices.Chunk(logs, 25) {
-		writeReqs := make([]dytypes.WriteRequest, len(batch))
-
-		for i, l := range batch {
-			dl := clogs.NewDynamoLog(l.Log)
-
-			item, err := attributevalue.MarshalMap(dl)
-			if err != nil {
-				return fmt.Errorf("error marshalling channel log: %w", err)
-			}
-			writeReqs[i] = dytypes.WriteRequest{PutRequest: &dytypes.PutRequest{Item: item}}
-		}
-
-		_, err := rt.Dynamo.Client.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
-			RequestItems: map[string][]dytypes.WriteRequest{rt.Dynamo.TableName("ChannelLogs"): writeReqs},
-		})
-		if err != nil {
-			return fmt.Errorf("error writing channel logs: %w", err)
-		}
+	// write all logs to DynamoDB
+	cls := make([]*clogs.Log, len(logs))
+	for i, l := range logs {
+		cls[i] = l.Log
+	}
+	if err := clogs.BulkPut(ctx, rt.Dynamo, cls); err != nil {
+		return fmt.Errorf("error writing channel logs: %w", err)
 	}
 
 	attached := make([]*stChannelLog, 0, len(logs))
