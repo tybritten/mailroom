@@ -1,13 +1,19 @@
 package models
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
 	"path"
+	"slices"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	dytypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
@@ -153,8 +159,54 @@ func (l *stChannelLog) path() string {
 	return path.Join("channels", string(l.ChannelUUID), string(l.UUID[:4]), fmt.Sprintf("%s.json", l.UUID))
 }
 
+// channel log to be written to DynamoDB
+type dyChannelLog struct {
+	UUID      ChannelLogUUID `dynamodbav:"UUID"`
+	Type      ChannelLogType `dynamodbav:"Type"`
+	DataGZ    []byte         `dynamodbav:"DataGZ,omitempty"`
+	ElapsedMS int            `dynamodbav:"ElapsedMS"`
+	CreatedOn time.Time      `dynamodbav:"CreatedOn,unixtime"`
+	ExpiresOn time.Time      `dynamodbav:"ExpiresOn,unixtime"`
+}
+
 // InsertChannelLogs writes the given channel logs to the db
 func InsertChannelLogs(ctx context.Context, rt *runtime.Runtime, logs []*ChannelLog) error {
+	// write in batches to DynamoDB
+	for batch := range slices.Chunk(logs, 25) {
+		writeReqs := make([]dytypes.WriteRequest, len(batch))
+
+		for i, l := range batch {
+			// save http logs and errors as gzipped JSON
+			data := jsonx.MustMarshal(map[string]any{"http_logs": l.httpLogs, "errors": l.errors})
+			buf := &bytes.Buffer{}
+			w := gzip.NewWriter(buf)
+			w.Write(data)
+			w.Close()
+
+			dl := &dyChannelLog{
+				UUID:      l.UUID(),
+				Type:      l.type_,
+				DataGZ:    buf.Bytes(),
+				ElapsedMS: int(l.elapsed / time.Millisecond),
+				CreatedOn: l.createdOn,
+				ExpiresOn: l.createdOn.Add(14 * 24 * time.Hour),
+			}
+
+			item, err := attributevalue.MarshalMap(dl)
+			if err != nil {
+				return fmt.Errorf("error marshalling channel log: %w", err)
+			}
+			writeReqs[i] = dytypes.WriteRequest{PutRequest: &dytypes.PutRequest{Item: item}}
+		}
+
+		_, err := rt.Dynamo.Client.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
+			RequestItems: map[string][]dytypes.WriteRequest{rt.Dynamo.TableName("ChannelLogs"): writeReqs},
+		})
+		if err != nil {
+			return fmt.Errorf("error writing channel logs: %w", err)
+		}
+	}
+
 	attached := make([]*stChannelLog, 0, len(logs))
 	unattached := make([]*dbChannelLog, 0, len(logs))
 
@@ -193,7 +245,7 @@ func InsertChannelLogs(ctx context.Context, rt *runtime.Runtime, logs []*Channel
 				Key:         l.path(),
 				ContentType: "application/json",
 				Body:        jsonx.MustMarshal(l),
-				ACL:         types.ObjectCannedACLPrivate,
+				ACL:         s3types.ObjectCannedACLPrivate,
 			}
 		}
 		if err := rt.S3.BatchPut(ctx, uploads, 32); err != nil {

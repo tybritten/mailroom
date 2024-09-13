@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gomodule/redigo/redis"
@@ -247,6 +248,8 @@ func resetDynamo(ctx context.Context, rt *runtime.Runtime) {
 	jsonx.MustUnmarshal(tablesJSON, &inputs)
 
 	for _, input := range inputs {
+		input.TableName = aws.String(rt.Dynamo.TableName(*input.TableName))
+
 		// delete table if it exists
 		if _, err := rt.Dynamo.Client.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: input.TableName}); err == nil {
 			_, err := rt.Dynamo.Client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: input.TableName})
