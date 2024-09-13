@@ -25,6 +25,7 @@ import (
 	"github.com/nyaruka/mailroom/services/ivr/vonage"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
+	"github.com/nyaruka/mailroom/utils/clogs"
 	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/nyaruka/mailroom/web"
 	"github.com/stretchr/testify/assert"
@@ -640,7 +641,7 @@ func TestVonageIVR(t *testing.T) {
 }
 
 func getCallLogs(t *testing.T, rt *runtime.Runtime, channelUUID assets.ChannelUUID) [][]byte {
-	var logUUIDs []models.ChannelLogUUID
+	var logUUIDs []clogs.LogUUID
 	err := rt.DB.Select(&logUUIDs, `SELECT unnest(log_uuids) FROM ivr_call ORDER BY id`)
 	require.NoError(t, err)
 
