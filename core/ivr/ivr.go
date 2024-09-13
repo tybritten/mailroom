@@ -27,6 +27,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
+	"github.com/nyaruka/mailroom/utils/clogs"
 	"github.com/nyaruka/null/v3"
 )
 
@@ -128,7 +129,7 @@ func HangupCall(ctx context.Context, rt *runtime.Runtime, call *models.Call) (*m
 		clog.HTTP(trace)
 	}
 	if err != nil {
-		clog.Error(err)
+		clog.Error(clogs.NewLogError("", "", err.Error()))
 	}
 
 	if err := call.AttachLog(ctx, rt.DB, clog); err != nil {
@@ -260,7 +261,7 @@ func RequestStartForCall(ctx context.Context, rt *runtime.Runtime, channel *mode
 		clog.HTTP(trace)
 	}
 	if err != nil {
-		clog.Error(err)
+		clog.Error(clogs.NewLogError("", "", err.Error()))
 
 		// set our status as errored
 		err := call.UpdateStatus(ctx, rt.DB, models.CallStatusFailed, 0, time.Now())
