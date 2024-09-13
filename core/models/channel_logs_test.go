@@ -1,7 +1,6 @@
 package models_test
 
 import (
-	"errors"
 	"net/http"
 	"testing"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
+	"github.com/nyaruka/mailroom/utils/clogs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +49,7 @@ func TestChannelLogsOutgoing(t *testing.T) {
 	require.NoError(t, err)
 
 	clog2.HTTP(trace2)
-	clog2.Error(errors.New("oops"))
+	clog2.Error(clogs.NewLogError("", "", "oops"))
 	clog2.End()
 
 	err = models.InsertChannelLogs(ctx, rt, []*models.ChannelLog{clog1, clog2})
@@ -63,9 +63,9 @@ func TestChannelLogsOutgoing(t *testing.T) {
 	resp, err := rt.Dynamo.Client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(rt.Dynamo.TableName("ChannelLogs")),
 		Key: map[string]types.AttributeValue{
-			"UUID": &types.AttributeValueMemberS{Value: string(clog1.UUID())},
+			"UUID": &types.AttributeValueMemberS{Value: string(clog1.UUID)},
 		},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, string(clog1.UUID()), resp.Item["UUID"].(*types.AttributeValueMemberS).Value)
+	assert.Equal(t, string(clog1.UUID), resp.Item["UUID"].(*types.AttributeValueMemberS).Value)
 }
