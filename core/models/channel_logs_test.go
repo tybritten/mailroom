@@ -4,9 +4,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/mailroom/core/models"
@@ -60,12 +57,9 @@ func TestChannelLogsOutgoing(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM channels_channellog WHERE log_type = 'ivr_hangup' AND http_logs -> 0 ->> 'url' = 'http://ivr.com/hangup' AND is_error = TRUE AND channel_id = $1`, channel.ID()).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM channels_channellog WHERE http_logs::text LIKE '%sesame%'`).Returns(0)
 
-	resp, err := rt.Dynamo.Client.GetItem(ctx, &dynamodb.GetItemInput{
-		TableName: aws.String(rt.Dynamo.TableName("ChannelLogs")),
-		Key: map[string]types.AttributeValue{
-			"UUID": &types.AttributeValueMemberS{Value: string(clog1.UUID)},
-		},
-	})
+	// read log back from DynamoDB
+	log, err := clogs.Get(ctx, rt.Dynamo, clog1.UUID)
 	require.NoError(t, err)
-	assert.Equal(t, string(clog1.UUID), resp.Item["UUID"].(*types.AttributeValueMemberS).Value)
+	assert.Equal(t, clog1.UUID, log.UUID)
+	assert.Equal(t, models.ChannelLogTypeIVRStart, log.Type)
 }
