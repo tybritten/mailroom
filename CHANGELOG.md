@@ -1,3 +1,8 @@
+v9.3.19 (2024-09-16)
+-------------------------
+ * Rework clogs util package based on latest gocommon
+ * Fix error handling on contact batch import
+
 v9.3.18 (2024-09-16)
 -------------------------
  * Rework clogs package to provide get/put DynamoDB operations
