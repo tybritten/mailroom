@@ -1,3 +1,7 @@
+v9.3.18 (2024-09-16)
+-------------------------
+ * Rework clogs package to provide get/put DynamoDB operations
+
 v9.3.17 (2024-09-13)
 -------------------------
  * Move core channel log stuff into clogs utility package we could potentially share with courier
