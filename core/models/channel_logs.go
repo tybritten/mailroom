@@ -107,7 +107,7 @@ func InsertChannelLogs(ctx context.Context, rt *runtime.Runtime, logs []*Channel
 	for i, l := range logs {
 		cls[i] = l.Log
 	}
-	if err := clogs.BulkPut(ctx, rt.Dynamo, cls); err != nil {
+	if err := clogs.BatchPut(ctx, rt.Dynamo, "ChannelLogs", cls); err != nil {
 		return fmt.Errorf("error writing channel logs: %w", err)
 	}
 
