@@ -410,7 +410,7 @@ func StartFlowForContacts(
 			err = tx.Commit()
 			if err != nil {
 				tx.Rollback()
-				log.Error("error comitting session to db", "error", err, "contact_uuid", session.Contact().UUID())
+				log.Error("error committing session to db", "error", err, "contact_uuid", session.Contact().UUID())
 				continue
 			}
 

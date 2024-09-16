@@ -391,6 +391,13 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 	m.CreatedOn = createdOn
 	m.Metadata = null.Map[any](buildMsgMetadata(out))
 
+	// TODO: temporary fix for invalid locales
+	if len(m.Locale) > 6 {
+		m.Locale = "eng"
+
+		slog.Error("invalid locale, defaulting to eng-US", "locale", m.Locale)
+	}
+
 	if out.Templating() != nil {
 		m.Templating = &Templating{MsgTemplating: out.Templating()}
 	}

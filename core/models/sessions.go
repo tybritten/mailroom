@@ -716,7 +716,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 	// gather all our pre commit events, group them by hook
 	err = ApplyEventPreCommitHooks(ctx, rt, tx, oa, scenes)
 	if err != nil {
-		return nil, fmt.Errorf("error applying pre commit hook: %T: %w", hook, err)
+		return nil, fmt.Errorf("error applying session pre commit hook: %T: %w", hook, err)
 	}
 
 	// return our session
