@@ -1,3 +1,7 @@
+v9.3.20 (2024-09-16)
+-------------------------
+ * Tweak error messages and add temp workaround for invalid msg locales
+
 v9.3.19 (2024-09-16)
 -------------------------
  * Rework clogs util package based on latest gocommon
