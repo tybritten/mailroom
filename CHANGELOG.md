@@ -1,3 +1,7 @@
+v9.3.21 (2024-09-17)
+-------------------------
+ * Update deps including goflow
+
 v9.3.20 (2024-09-16)
 -------------------------
  * Tweak error messages and add temp workaround for invalid msg locales
