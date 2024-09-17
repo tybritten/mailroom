@@ -36,10 +36,29 @@ func (t *StartFlowBatchTask) WithAssets() models.Refresh {
 }
 
 func (t *StartFlowBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
+	// fetch the start that this batch is part of
+	start, err := models.GetFlowStartByID(ctx, rt.DB, t.StartID)
+	if err != nil {
+		return fmt.Errorf("error loading flow start for batch: %w", err)
+	}
+
+	// if this start was interrupted, we're done
+	if start.Status == models.StartStatusInterrupted {
+		return nil
+	}
+
 	// start these contacts in our flow
-	_, err := runner.StartFlowBatch(ctx, rt, oa, t.FlowStartBatch)
+	_, err = runner.StartFlowBatch(ctx, rt, oa, start, t.FlowStartBatch)
 	if err != nil {
 		return fmt.Errorf("error starting flow batch: %w", err)
 	}
+
+	// if this is our last batch, mark start as done
+	if t.IsLast {
+		if err := models.MarkStartComplete(ctx, rt.DB, start.ID); err != nil {
+			return fmt.Errorf("error marking start #%d as complete: %w", start.ID, err)
+		}
+	}
+
 	return nil
 }
