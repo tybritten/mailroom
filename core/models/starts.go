@@ -158,27 +158,27 @@ func (s *FlowStart) WithParams(params json.RawMessage) *FlowStart {
 	return s
 }
 
-// MarkStartStarted sets the status for the passed in flow start to S and updates the contact count on it
+// MarkStartStarted sets the status of the given start to STARTED, if it's not already set to INTERRUPTED
 func MarkStartStarted(ctx context.Context, db DBorTx, startID StartID, contactCount int) error {
-	_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'S', contact_count = $2, modified_on = NOW() WHERE id = $1", startID, contactCount)
+	_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'S', contact_count = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", startID, contactCount)
 	if err != nil {
 		return fmt.Errorf("error setting start as started: %w", err)
 	}
 	return nil
 }
 
-// MarkStartComplete sets the status for the passed in flow start
+// MarkStartComplete sets the status of the given start to COMPLETE, if it's not already set to INTERRUPTED
 func MarkStartComplete(ctx context.Context, db DBorTx, startID StartID) error {
-	_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'C', modified_on = NOW() WHERE id = $1", startID)
+	_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'C', modified_on = NOW() WHERE id = $1 AND status != 'I'", startID)
 	if err != nil {
 		return fmt.Errorf("error marking flow start as complete: %w", err)
 	}
 	return nil
 }
 
-// MarkStartFailed sets the status for the passed in flow start to F
+// MarkStartFailed sets the status of the given start to FAILED, if it's not already set to INTERRUPTED
 func MarkStartFailed(ctx context.Context, db DBorTx, startID StartID) error {
-	_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'F', modified_on = NOW() WHERE id = $1", startID)
+	_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'F', modified_on = NOW() WHERE id = $1 AND status != 'I'", startID)
 	if err != nil {
 		return fmt.Errorf("error setting flow start as failed: %w", err)
 	}

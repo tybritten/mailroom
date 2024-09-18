@@ -284,6 +284,7 @@ DELETE FROM flows_flowpathcount;
 DELETE FROM flows_flownodecount;
 DELETE FROM flows_flowrunstatuscount;
 DELETE FROM flows_flowcategorycount;
+DELETE FROM flows_flowstartcount;
 DELETE FROM flows_flowstart_contacts;
 DELETE FROM flows_flowstart_groups;
 DELETE FROM flows_flowstart;
