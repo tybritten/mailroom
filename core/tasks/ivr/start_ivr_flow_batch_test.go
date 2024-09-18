@@ -21,7 +21,7 @@ import (
 )
 
 func TestIVR(t *testing.T) {
-	_, rt := testsuite.Runtime()
+	ctx, rt := testsuite.Runtime()
 	rc := rt.RP.Get()
 	defer rc.Close()
 
@@ -36,10 +36,12 @@ func TestIVR(t *testing.T) {
 	// create a flow start for cathy
 	start := models.NewFlowStart(testdata.Org1.ID, models.StartTypeTrigger, testdata.IVRFlow.ID).
 		WithContactIDs([]models.ContactID{testdata.Cathy.ID})
+	err := models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start})
+	require.NoError(t, err)
 
 	service.callError = fmt.Errorf("unable to create call")
 
-	err := tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
 	require.NoError(t, err)
 
 	testsuite.FlushTasks(t, rt)

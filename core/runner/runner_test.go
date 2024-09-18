@@ -25,9 +25,8 @@ import (
 
 func TestStartFlowBatch(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
-	rt.Config.AndroidCredentialsFile = `testdata/android.json`
 
-	defer testsuite.Reset(testsuite.ResetAll)
+	defer testsuite.Reset(testsuite.ResetAll) // because it changes contacts
 
 	oa := testdata.Org1.Load(rt)
 
@@ -37,11 +36,10 @@ func TestStartFlowBatch(t *testing.T) {
 	err := models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start1})
 	require.NoError(t, err)
 
-	batch1 := start1.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, models.FlowTypeBackground, false, 4)
-	batch2 := start1.CreateBatch([]models.ContactID{testdata.George.ID, testdata.Alexandria.ID}, models.FlowTypeBackground, true, 4)
+	batch1 := start1.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, false, 4)
 
 	// start the first batch...
-	sessions, err := runner.StartFlowBatch(ctx, rt, oa, batch1)
+	sessions, err := runner.StartFlowBatch(ctx, rt, oa, start1, batch1)
 	require.NoError(t, err)
 	assert.Len(t, sessions, 2)
 
@@ -57,23 +55,17 @@ func TestStartFlowBatch(t *testing.T) {
 		AND direction = 'O' AND msg_type = 'T'`, pq.Array([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID})).
 		Returns(2)
 
-	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowstart WHERE id = $1`, start1.ID).Returns("P")
-
-	// start the second batch...
-	sessions, err = runner.StartFlowBatch(ctx, rt, oa, batch2)
-	require.NoError(t, err)
-	assert.Len(t, sessions, 2)
-
-	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowstart WHERE id = $1`, start1.ID).Returns("C")
-
 	// create a start object with params
-	testdata.InsertFlowStart(rt, testdata.Org1, testdata.IncomingExtraFlow, nil)
+	testdata.InsertFlowStart(rt, testdata.Org1, testdata.Admin, testdata.IncomingExtraFlow, nil)
 	start2 := models.NewFlowStart(models.OrgID(1), models.StartTypeManual, testdata.IncomingExtraFlow.ID).
 		WithContactIDs([]models.ContactID{testdata.Cathy.ID}).
 		WithParams([]byte(`{"name":"Fred", "age":33}`))
-	batch3 := start2.CreateBatch([]models.ContactID{testdata.Cathy.ID}, models.FlowTypeMessaging, true, 1)
+	err = models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start2})
+	require.NoError(t, err)
 
-	sessions, err = runner.StartFlowBatch(ctx, rt, oa, batch3)
+	batch2 := start2.CreateBatch([]models.ContactID{testdata.Cathy.ID}, true, 1)
+
+	sessions, err = runner.StartFlowBatch(ctx, rt, oa, start2, batch2)
 	require.NoError(t, err)
 	assert.Len(t, sessions, 1)
 

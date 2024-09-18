@@ -123,49 +123,37 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 }
 
 // StartFlowBatch starts the flow for the passed in org, contacts and flow
-func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, batch *models.FlowStartBatch) ([]*models.Session, error) {
-	start := time.Now()
-
-	// if this is our last start, no matter what try to set the start as complete as a last step
-	if batch.IsLast {
-		defer func() {
-			err := models.MarkStartComplete(ctx, rt.DB, batch.StartID)
-			if err != nil {
-				slog.Error("error marking start as complete", "error", err, "start_id", batch.StartID)
-			}
-		}()
-	}
-
+func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, start *models.FlowStart, batch *models.FlowStartBatch) ([]*models.Session, error) {
 	// try to load our flow
-	flow, err := oa.FlowByID(batch.FlowID)
+	flow, err := oa.FlowByID(start.FlowID)
 	if err == models.ErrNotFound {
-		slog.Info("skipping flow start, flow no longer active or archived", "flow_id", batch.FlowID)
+		slog.Info("skipping flow start, flow no longer active or archived", "flow_id", start.FlowID)
 		return nil, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("error loading campaign flow: %d: %w", batch.FlowID, err)
+		return nil, fmt.Errorf("error loading flow: %d: %w", start.FlowID, err)
 	}
 
 	// get the user that created this flow start if there was one
 	var flowUser *flows.User
-	if batch.CreatedByID != models.NilUserID {
-		user := oa.UserByID(batch.CreatedByID)
+	if start.CreatedByID != models.NilUserID {
+		user := oa.UserByID(start.CreatedByID)
 		if user != nil {
 			flowUser = oa.SessionAssets().Users().Get(user.Email())
 		}
 	}
 
 	var params *types.XObject
-	if !batch.Params.IsNull() {
-		params, err = types.ReadXObject(batch.Params)
+	if !start.Params.IsNull() {
+		params, err = types.ReadXObject(start.Params)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read JSON from flow start params: %w", err)
 		}
 	}
 
 	var history *flows.SessionHistory
-	if !batch.SessionHistory.IsNull() {
-		history, err = models.ReadSessionHistory(batch.SessionHistory)
+	if !start.SessionHistory.IsNull() {
+		history, err = models.ReadSessionHistory(start.SessionHistory)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read JSON from flow start history: %w", err)
 		}
@@ -176,8 +164,8 @@ func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 
 	// this will build our trigger for each contact started
 	triggerBuilder := func(contact *flows.Contact) flows.Trigger {
-		if !batch.ParentSummary.IsNull() {
-			tb := triggers.NewBuilder(oa.Env(), flow.Reference(), contact).FlowAction(history, json.RawMessage(batch.ParentSummary))
+		if !start.ParentSummary.IsNull() {
+			tb := triggers.NewBuilder(oa.Env(), flow.Reference(), contact).FlowAction(history, json.RawMessage(start.ParentSummary))
 			if batchStart {
 				tb = tb.AsBatch()
 			}
@@ -185,13 +173,13 @@ func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 		}
 
 		tb := triggers.NewBuilder(oa.Env(), flow.Reference(), contact).Manual()
-		if !batch.Params.IsNull() {
+		if !start.Params.IsNull() {
 			tb = tb.WithParams(params)
 		}
 		if batchStart {
 			tb = tb.AsBatch()
 		}
-		return tb.WithUser(flowUser).WithOrigin(startTypeToOrigin[batch.StartType]).Build()
+		return tb.WithUser(flowUser).WithOrigin(startTypeToOrigin[start.StartType]).Build()
 	}
 
 	// before committing our runs we want to set the start they are associated with
@@ -215,10 +203,6 @@ func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	if err != nil {
 		return nil, fmt.Errorf("error starting flow batch: %w", err)
 	}
-
-	// log both our total and average
-	analytics.Gauge("mr.flow_batch_start_elapsed", float64(time.Since(start))/float64(time.Second))
-	analytics.Gauge("mr.flow_batch_start_count", float64(len(sessions)))
 
 	return sessions, nil
 }

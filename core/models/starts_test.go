@@ -24,7 +24,7 @@ func TestStarts(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	startID := testdata.InsertFlowStart(rt, testdata.Org1, testdata.SingleMessage, []*testdata.Contact{testdata.Cathy, testdata.Bob})
+	startID := testdata.InsertFlowStart(rt, testdata.Org1, testdata.Admin, testdata.SingleMessage, []*testdata.Contact{testdata.Cathy, testdata.Bob})
 
 	startJSON := []byte(fmt.Sprintf(`{
 		"start_id": %d,
@@ -69,20 +69,13 @@ func TestStarts(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowstart WHERE id = $1 AND status = 'S' AND contact_count = 2`, startID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowstart_contacts WHERE flowstart_id = $1`, startID).Returns(2)
 
-	batch := start.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, models.FlowTypeMessaging, false, 3)
+	batch := start.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, false, 3)
 	assert.Equal(t, startID, batch.StartID)
-	assert.Equal(t, models.StartTypeManual, batch.StartType)
-	assert.Equal(t, testdata.SingleMessage.ID, batch.FlowID)
 	assert.Equal(t, []models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, batch.ContactIDs)
-	assert.Equal(t, testdata.Admin.ID, batch.CreatedByID)
 	assert.False(t, batch.IsLast)
 	assert.Equal(t, 3, batch.TotalContacts)
 
-	assert.Equal(t, null.JSON(`{"uuid": "b65b1a22-db6d-4f5a-9b3d-7302368a82e6"}`), batch.ParentSummary)
-	assert.Equal(t, null.JSON(`{"parent_uuid": "532a3899-492f-4ffe-aed7-e75ad524efab", "ancestors": 3, "ancestors_since_input": 1}`), batch.SessionHistory)
-	assert.Equal(t, null.JSON(`{"foo": "bar"}`), batch.Params)
-
-	history, err := models.ReadSessionHistory(batch.SessionHistory)
+	history, err := models.ReadSessionHistory(start.SessionHistory)
 	assert.NoError(t, err)
 	assert.Equal(t, flows.SessionUUID("532a3899-492f-4ffe-aed7-e75ad524efab"), history.ParentUUID)
 
@@ -93,6 +86,16 @@ func TestStarts(t *testing.T) {
 	require.NoError(t, err)
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowstart WHERE id = $1 AND status = 'C'`, startID).Returns(1)
+
+	// try fetching a start from the database (won't load all fields)
+	start, err = models.GetFlowStartByID(ctx, rt.DB, start.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, startID, start.ID)
+	assert.Equal(t, testdata.Org1.ID, start.OrgID)
+	assert.Equal(t, models.StartStatusComplete, start.Status)
+	assert.Equal(t, models.StartTypeManual, start.StartType)
+	assert.Equal(t, testdata.Admin.ID, start.CreatedByID)
+	assert.Equal(t, testdata.SingleMessage.ID, start.FlowID)
 }
 
 func TestStartsBuilding(t *testing.T) {
