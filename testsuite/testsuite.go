@@ -79,7 +79,6 @@ func Runtime() (context.Context, *runtime.Runtime) {
 	cfg.S3Endpoint = "http://localhost:9000"
 	cfg.S3AttachmentsBucket = "test-attachments"
 	cfg.S3SessionsBucket = "test-sessions"
-	cfg.S3LogsBucket = "test-logs"
 	cfg.S3Minio = true
 	cfg.DynamoEndpoint = "http://localhost:6000"
 	cfg.DynamoTablePrefix = "Test"
@@ -213,7 +212,6 @@ func resetRedis() {
 func resetStorage(ctx context.Context, rt *runtime.Runtime) {
 	rt.S3.EmptyBucket(ctx, rt.Config.S3AttachmentsBucket)
 	rt.S3.EmptyBucket(ctx, rt.Config.S3SessionsBucket)
-	rt.S3.EmptyBucket(ctx, rt.Config.S3LogsBucket)
 }
 
 // clears indexed data in Elastic
@@ -279,6 +277,7 @@ DELETE FROM triggers_trigger WHERE id >= 30000;
 DELETE FROM channels_channel WHERE id >= 30000;
 DELETE FROM channels_channelcount;
 DELETE FROM channels_channelevent;
+DELETE FROM channels_channellog;
 DELETE FROM msgs_msg;
 DELETE FROM flows_flowrun;
 DELETE FROM flows_flowpathcount;
