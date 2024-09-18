@@ -269,6 +269,15 @@ func (s *FlowStart) CreateBatch(contactIDs []ContactID, last bool, totalContacts
 		ContactIDs:    contactIDs,
 		IsLast:        last,
 		TotalContacts: totalContacts,
+
+		// TODO remove these fields once all nodes using new task format
+		StartType:      s.StartType,
+		OrgID:          s.OrgID,
+		FlowID:         s.FlowID,
+		ParentSummary:  s.ParentSummary,
+		SessionHistory: s.SessionHistory,
+		Params:         s.Params,
+		CreatedByID:    s.CreatedByID,
 	}
 }
 
@@ -278,6 +287,16 @@ type FlowStartBatch struct {
 	ContactIDs    []ContactID `json:"contact_ids"`
 	IsLast        bool        `json:"is_last,omitempty"`
 	TotalContacts int         `json:"total_contacts"`
+
+	// TODO remove these fields once all nodes using new task format
+	StartType      StartType `json:"start_type"`
+	OrgID          OrgID     `json:"org_id"`
+	CreatedByID    UserID    `json:"created_by_id"`
+	FlowID         FlowID    `json:"flow_id"`
+	FlowType       FlowType  `json:"flow_type"`
+	Params         null.JSON `json:"params,omitempty"`
+	ParentSummary  null.JSON `json:"parent_summary,omitempty"`
+	SessionHistory null.JSON `json:"session_history,omitempty"`
 }
 
 // ReadSessionHistory reads a session history from the given JSON
