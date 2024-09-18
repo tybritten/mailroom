@@ -67,7 +67,6 @@ type Config struct {
 	S3Endpoint          string `help:"S3 service endpoint, e.g. https://s3.amazonaws.com"`
 	S3AttachmentsBucket string `help:"S3 bucket to write attachments to"`
 	S3SessionsBucket    string `help:"S3 bucket to write flow sessions to"`
-	S3LogsBucket        string `help:"S3 bucket to write channel logs to"`
 	S3Minio             bool   `help:"S3 is actually Minio or other compatible service"`
 
 	CourierAuthToken string `help:"the authentication token used for requests to Courier"`
@@ -128,7 +127,6 @@ func NewDefaultConfig() *Config {
 		S3Endpoint:          "https://s3.amazonaws.com",
 		S3AttachmentsBucket: "temba-attachments",
 		S3SessionsBucket:    "temba-sessions",
-		S3LogsBucket:        "temba-logs",
 
 		InstanceID: hostname,
 		LogLevel:   slog.LevelWarn,
