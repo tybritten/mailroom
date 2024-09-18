@@ -4,14 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path"
 	"time"
 
-	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
-	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/clogs"
 )
@@ -85,21 +81,6 @@ type dbChannelLog struct {
 	CreatedOn time.Time       `db:"created_on"`
 }
 
-// channel log to be written to logs storage
-type stChannelLog struct {
-	UUID        clogs.LogUUID      `json:"uuid"`
-	Type        clogs.LogType      `json:"type"`
-	HTTPLogs    []*httpx.Log       `json:"http_logs"`
-	Errors      []*clogs.LogError  `json:"errors"`
-	ElapsedMS   int                `json:"elapsed_ms"`
-	CreatedOn   time.Time          `json:"created_on"`
-	ChannelUUID assets.ChannelUUID `json:"-"`
-}
-
-func (l *stChannelLog) path() string {
-	return path.Join("channels", string(l.ChannelUUID), string(l.UUID[:4]), fmt.Sprintf("%s.json", l.UUID))
-}
-
 // InsertChannelLogs writes the given channel logs to the db
 func InsertChannelLogs(ctx context.Context, rt *runtime.Runtime, logs []*ChannelLog) error {
 	// write all logs to DynamoDB
@@ -111,23 +92,11 @@ func InsertChannelLogs(ctx context.Context, rt *runtime.Runtime, logs []*Channel
 		return fmt.Errorf("error writing channel logs: %w", err)
 	}
 
-	attached := make([]*stChannelLog, 0, len(logs))
 	unattached := make([]*dbChannelLog, 0, len(logs))
 
 	for _, l := range logs {
-		if l.attached {
-			// if log is attached to a call or message, only write to storage
-			attached = append(attached, &stChannelLog{
-				UUID:        l.UUID,
-				Type:        l.Type,
-				HTTPLogs:    l.HttpLogs,
-				Errors:      l.Errors,
-				ElapsedMS:   int(l.Elapsed / time.Millisecond),
-				CreatedOn:   l.CreatedOn,
-				ChannelUUID: l.channel.UUID(),
-			})
-		} else {
-			// otherwise write to database so it's retrievable
+		if !l.attached {
+			// if log isn't attached to a message or call we need to write it to the db so that it's retrievable
 			unattached = append(unattached, &dbChannelLog{
 				UUID:      l.UUID,
 				ChannelID: l.channel.ID(),
@@ -138,22 +107,6 @@ func InsertChannelLogs(ctx context.Context, rt *runtime.Runtime, logs []*Channel
 				CreatedOn: l.CreatedOn,
 				ElapsedMS: int(l.Elapsed / time.Millisecond),
 			})
-		}
-	}
-
-	if len(attached) > 0 {
-		uploads := make([]*s3x.Upload, len(attached))
-		for i, l := range attached {
-			uploads[i] = &s3x.Upload{
-				Bucket:      rt.Config.S3LogsBucket,
-				Key:         l.path(),
-				ContentType: "application/json",
-				Body:        jsonx.MustMarshal(l),
-				ACL:         s3types.ObjectCannedACLPrivate,
-			}
-		}
-		if err := rt.S3.BatchPut(ctx, uploads, 32); err != nil {
-			return fmt.Errorf("error writing attached channel logs to storage: %w", err)
 		}
 	}
 

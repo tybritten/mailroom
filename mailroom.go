@@ -123,11 +123,6 @@ func (mr *Mailroom) Start() error {
 	} else {
 		log.Info("sessions bucket ok")
 	}
-	if err := mr.rt.S3.Test(mr.ctx, c.S3LogsBucket); err != nil {
-		log.Error("logs bucket not accessible", "error", err)
-	} else {
-		log.Info("logs bucket ok")
-	}
 
 	// initialize our elastic client
 	mr.rt.ES, err = elasticsearch.NewTypedClient(elasticsearch.Config{Addresses: []string{c.Elastic}, Username: c.ElasticUsername, Password: c.ElasticPassword})

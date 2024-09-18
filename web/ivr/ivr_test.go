@@ -13,8 +13,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
-	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/goflow/test"
 	_ "github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
@@ -330,10 +331,12 @@ func TestTwilioIVR(t *testing.T) {
 		AND ((status = 'H' AND direction = 'I') OR (status = 'W' AND direction = 'O'))`, testdata.Bob.ID).Returns(2)
 
 	// check the generated channel logs
-	logs := getCallLogs(t, rt, testdata.TwilioChannel.UUID)
+	logs := getCallLogs(t, ctx, rt)
 	assert.Len(t, logs, 17)
 	for _, log := range logs {
-		assert.NotContains(t, string(log), "sesame") // auth token redacted
+		for _, httpLog := range log.HttpLogs {
+			assert.NotContains(t, string(jsonx.MustMarshal(httpLog)), "sesame") // auth token redacted
+		}
 	}
 }
 
@@ -629,10 +632,12 @@ func TestVonageIVR(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM ivr_call WHERE status = 'D' AND contact_id = $1`, testdata.George.ID).Returns(1)
 
 	// check the generated channel logs
-	logs := getCallLogs(t, rt, testdata.VonageChannel.UUID)
+	logs := getCallLogs(t, ctx, rt)
 	assert.Len(t, logs, 16)
 	for _, log := range logs {
-		assert.NotContains(t, string(log), "BEGIN PRIVATE KEY") // private key redacted
+		for _, httpLog := range log.HttpLogs {
+			assert.NotContains(t, string(jsonx.MustMarshal(httpLog)), "BEGIN PRIVATE KEY") // private key redacted
+		}
 	}
 
 	// and 2 unattached logs in the database
@@ -640,17 +645,19 @@ func TestVonageIVR(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT array_agg(log_type ORDER BY id) FROM channels_channellog WHERE channel_id = $1`, testdata.VonageChannel.ID).Returns([]byte(`{ivr_status,ivr_status}`))
 }
 
-func getCallLogs(t *testing.T, rt *runtime.Runtime, channelUUID assets.ChannelUUID) [][]byte {
+func getCallLogs(t *testing.T, ctx context.Context, rt *runtime.Runtime) []*clogs.Log {
 	var logUUIDs []clogs.LogUUID
 	err := rt.DB.Select(&logUUIDs, `SELECT unnest(log_uuids) FROM ivr_call ORDER BY id`)
 	require.NoError(t, err)
 
-	logs := make([][]byte, len(logUUIDs))
+	logs := make([]*clogs.Log, len(logUUIDs))
 
 	for i, logUUID := range logUUIDs {
-		_, body, err := rt.S3.GetObject(context.Background(), rt.Config.S3LogsBucket, fmt.Sprintf("channels/%s/%s/%s.json", channelUUID, logUUID[0:4], logUUID))
+		log := &clogs.Log{}
+		err = rt.Dynamo.GetItem(ctx, "ChannelLogs", map[string]types.AttributeValue{"UUID": &types.AttributeValueMemberS{Value: string(logUUID)}}, log)
 		require.NoError(t, err)
-		logs[i] = body
+		logs[i] = log
 	}
+
 	return logs
 }
