@@ -4,8 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"slices"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/runtime"
@@ -84,12 +88,27 @@ type dbChannelLog struct {
 // InsertChannelLogs writes the given channel logs to the db
 func InsertChannelLogs(ctx context.Context, rt *runtime.Runtime, logs []*ChannelLog) error {
 	// write all logs to DynamoDB
-	cls := make([]*clogs.Log, len(logs))
-	for i, l := range logs {
-		cls[i] = l.Log
-	}
-	if err := clogs.BatchPut(ctx, rt.Dynamo, "ChannelLogs", cls); err != nil {
-		return fmt.Errorf("error writing channel logs: %w", err)
+	for batch := range slices.Chunk(logs, 25) {
+		writeReqs := make([]types.WriteRequest, len(batch))
+
+		for i, l := range batch {
+			d, err := l.MarshalDynamo()
+			if err != nil {
+				return fmt.Errorf("error marshalling log: %w", err)
+			}
+			writeReqs[i] = types.WriteRequest{PutRequest: &types.PutRequest{Item: d}}
+		}
+
+		resp, err := rt.Dynamo.Client.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
+			RequestItems: map[string][]types.WriteRequest{rt.Dynamo.TableName("ChannelLogs"): writeReqs},
+		})
+		if err != nil {
+			return fmt.Errorf("error writing logs to dynamo: %w", err)
+		}
+		if len(resp.UnprocessedItems) > 0 {
+			// TODO shouldn't happend.. but need to figure out how we would retry these
+			slog.Error("unprocessed items writing logs to dynamo", "count", len(resp.UnprocessedItems))
+		}
 	}
 
 	unattached := make([]*dbChannelLog, 0, len(logs))
