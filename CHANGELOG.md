@@ -1,3 +1,7 @@
+v9.3.23 (2024-09-18)
+-------------------------
+ * Rework flow start batch processing so that we check the start status in case it's interrupted
+
 v9.3.22 (2024-09-18)
 -------------------------
  * Change channel log TTL to be 1 week
