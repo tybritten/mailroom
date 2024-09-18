@@ -1,3 +1,8 @@
+v9.3.22 (2024-09-18)
+-------------------------
+ * Change channel log TTL to be 1 week
+ * Stop writing channel logs to S3
+
 v9.3.21 (2024-09-17)
 -------------------------
  * Update deps including goflow
