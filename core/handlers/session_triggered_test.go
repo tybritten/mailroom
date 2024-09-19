@@ -53,20 +53,9 @@ func TestSessionTriggered(t *testing.T) {
 					Args:  []any{testdata.Cathy.ID},
 					Count: 1,
 				},
-				{
-					SQL:   "select count(*) from flows_flowstart where org_id = 1 AND start_type = 'F' AND flow_id = $1 AND status = 'P' AND parent_summary IS NOT NULL AND session_history IS NOT NULL;",
-					Args:  []any{testdata.SingleMessage.ID},
-					Count: 1,
-				},
-				{
-					SQL:   "select count(*) from flows_flowstart_contacts where id = 1 AND contact_id = $1",
-					Args:  []any{testdata.George.ID},
-					Count: 1,
-				},
-				{
-					SQL:   "select count(*) from flows_flowstart_groups where id = 1 AND contactgroup_id = $1",
-					Args:  []any{testdata.TestersGroup.ID},
-					Count: 1,
+				{ // check we don't create a start in the database
+					SQL:   "select count(*) from flows_flowstart where org_id = 1",
+					Count: 0,
 				},
 			},
 			Assertions: []handlers.Assertion{
@@ -110,13 +99,6 @@ func TestQuerySessionTriggered(t *testing.T) {
 			Actions: handlers.ContactActionMap{
 				testdata.Cathy: []flows.Action{
 					actions.NewStartSession(handlers.NewActionUUID(), favoriteFlow.Reference(), nil, nil, "name ~ @contact.name", nil, nil, true),
-				},
-			},
-			SQLAssertions: []handlers.SQLAssertion{
-				{
-					SQL:   `select count(*) from flows_flowstart where flow_id = $1 AND start_type = 'F' AND status = 'P' AND query = 'name ~ "Cathy"' AND parent_summary IS NOT NULL;`,
-					Args:  []any{testdata.Favorites.ID},
-					Count: 1,
 				},
 			},
 			Assertions: []handlers.Assertion{

@@ -67,11 +67,6 @@ func (h *createStartsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *s
 				WithParentSummary(event.RunSummary).
 				WithSessionHistory(historyJSON)
 
-			// TODO rework start batch handling to not require a persisted start
-			if err := models.InsertFlowStarts(ctx, tx, []*models.FlowStart{start}); err != nil {
-				return fmt.Errorf("error inserting flow starts for scene triggers: %w", err)
-			}
-
 			err = tasks.Queue(rc, tasks.BatchQueue, oa.OrgID(), &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
 			if err != nil {
 				return fmt.Errorf("error queuing flow start: %w", err)
