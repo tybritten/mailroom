@@ -54,7 +54,7 @@ func TestBroadcasts(t *testing.T) {
 
 	err = bcast.SetComplete(ctx, rt.DB)
 	assert.NoError(t, err)
-	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_broadcast WHERE id = $1`, bcast.ID).Returns("S")
+	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_broadcast WHERE id = $1`, bcast.ID).Returns("C")
 
 	err = bcast.SetFailed(ctx, rt.DB)
 	assert.NoError(t, err)
