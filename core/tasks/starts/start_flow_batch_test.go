@@ -23,7 +23,7 @@ func TestStartFlowBatchTask(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	// create a start object
+	// create a start
 	start1 := models.NewFlowStart(models.OrgID(1), models.StartTypeManual, testdata.SingleMessage.ID).
 		WithContactIDs([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID, testdata.George.ID, testdata.Alexandria.ID})
 	err := models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start1})
@@ -56,5 +56,34 @@ func TestStartFlowBatchTask(t *testing.T) {
 	assert.NoError(t, err)
 	testsuite.FlushTasks(t, rt)
 
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE start_id = $1`, start1.ID).Returns(4)
 	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowstart WHERE id = $1`, start1.ID).Returns("C")
+
+	// create a second start
+	start2 := models.NewFlowStart(models.OrgID(1), models.StartTypeManual, testdata.SingleMessage.ID).
+		WithContactIDs([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID, testdata.George.ID, testdata.Alexandria.ID})
+	err = models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start2})
+	require.NoError(t, err)
+
+	start2Batch1 := start2.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, false, 4)
+	start2Batch2 := start2.CreateBatch([]models.ContactID{testdata.George.ID, testdata.Alexandria.ID}, true, 4)
+
+	// start the first batch...
+	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: start2Batch1}, queues.DefaultPriority)
+	assert.NoError(t, err)
+	testsuite.FlushTasks(t, rt)
+
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE start_id = $1`, start2.ID).Returns(2)
+
+	// interrupt the start
+	rt.DB.MustExec(`UPDATE flows_flowstart SET status = 'I' WHERE id = $1`, start2.ID)
+
+	// start the second batch...
+	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: start2Batch2}, queues.DefaultPriority)
+	assert.NoError(t, err)
+	testsuite.FlushTasks(t, rt)
+
+	// check that second batch didn't create any runs and start status is still interrupted
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE start_id = $1`, start2.ID).Returns(2)
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowstart WHERE id = $1`, start2.ID).Returns("I")
 }
