@@ -23,7 +23,7 @@ const NilBroadcastID = BroadcastID(0)
 
 // Broadcast represents a broadcast that needs to be sent
 type Broadcast struct {
-	ID                BroadcastID                 `json:"broadcast_id,omitempty"`
+	ID                BroadcastID                 `json:"broadcast_id,omitempty"` // null for non-persisted tasks used by flow actions
 	OrgID             OrgID                       `json:"org_id"`
 	Translations      flows.BroadcastTranslations `json:"translations"`
 	BaseLanguage      i18n.Language               `json:"base_language"`
@@ -116,20 +116,24 @@ func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastB
 	}
 }
 
-// MarkBroadcastSent marks the given broadcast as sent
-func MarkBroadcastSent(ctx context.Context, db DBorTx, id BroadcastID) error {
-	_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'S', modified_on = now() WHERE id = $1`, id)
-	if err != nil {
-		return fmt.Errorf("error marking broadcast #%d as sent: %w", id, err)
+// SetComplete sets the status of this broadcast to SENT
+func (b *Broadcast) SetComplete(ctx context.Context, db DBorTx) error {
+	if b.ID != NilBroadcastID {
+		_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'S', modified_on = now() WHERE id = $1`, b.ID)
+		if err != nil {
+			return fmt.Errorf("error marking broadcast #%d as sent: %w", b.ID, err)
+		}
 	}
 	return nil
 }
 
-// MarkBroadcastFailed marks the given broadcast as failed
-func MarkBroadcastFailed(ctx context.Context, db DBorTx, id BroadcastID) error {
-	_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'S', modified_on = now() WHERE id = $1`, id)
-	if err != nil {
-		return fmt.Errorf("error marking broadcast #%d as failed: %w", id, err)
+// SetFailed sets the status of this broadcast to FAILED, if it's not already set to INTERRUPTED
+func (b *Broadcast) SetFailed(ctx context.Context, db DBorTx) error {
+	if b.ID != NilBroadcastID {
+		_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'F', modified_on = now() WHERE id = $1`, b.ID)
+		if err != nil {
+			return fmt.Errorf("error marking broadcast #%d as failed: %w", b.ID, err)
+		}
 	}
 	return nil
 }

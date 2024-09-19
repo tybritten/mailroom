@@ -37,10 +37,17 @@ func (t *StartIVRFlowBatchTask) WithAssets() models.Refresh {
 }
 
 func (t *StartIVRFlowBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
-	// fetch the start that this batch is part of
-	start, err := models.GetFlowStartByID(ctx, rt.DB, t.StartID)
-	if err != nil {
-		return fmt.Errorf("error loading flow start for batch: %w", err)
+	var start *models.FlowStart
+	var err error
+
+	// if this batch belongs to a persisted start, fetch it
+	if t.StartID != models.NilStartID {
+		start, err = models.GetFlowStartByID(ctx, rt.DB, t.StartID)
+		if err != nil {
+			return fmt.Errorf("error loading flow start for batch: %w", err)
+		}
+	} else {
+		start = t.Start // otherwise use start from the task
 	}
 
 	// if this start was interrupted, we're done
@@ -72,8 +79,8 @@ func (t *StartIVRFlowBatchTask) Perform(ctx context.Context, rt *runtime.Runtime
 
 	// if this is a last batch, mark our start as started
 	if t.IsLast {
-		if err := models.MarkStartComplete(ctx, rt.DB, start.ID); err != nil {
-			return fmt.Errorf("error trying to set batch as complete: %w", err)
+		if err := start.SetComplete(ctx, rt.DB); err != nil {
+			return fmt.Errorf("error marking start as complete: %w", err)
 		}
 	}
 

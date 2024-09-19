@@ -254,3 +254,21 @@ func TestStartFlowTask(t *testing.T) {
 		}
 	}
 }
+
+func TestStartFlowTaskNonPersistedStart(t *testing.T) {
+	_, rt := testsuite.Runtime()
+	rc := rt.RP.Get()
+	defer rc.Close()
+
+	defer testsuite.Reset(testsuite.ResetData)
+
+	// create a start and start it...
+	start := models.NewFlowStart(models.OrgID(1), models.StartTypeManual, testdata.SingleMessage.ID).
+		WithContactIDs([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID})
+
+	err := tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
+	assert.NoError(t, err)
+	testsuite.FlushTasks(t, rt)
+
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun`).Returns(2)
+}

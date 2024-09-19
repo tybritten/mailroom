@@ -87,3 +87,24 @@ func TestStartFlowBatchTask(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE start_id = $1`, start2.ID).Returns(2)
 	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowstart WHERE id = $1`, start2.ID).Returns("I")
 }
+
+func TestStartFlowBatchTaskNonPersistedStart(t *testing.T) {
+	_, rt := testsuite.Runtime()
+	rc := rt.RP.Get()
+	defer rc.Close()
+
+	defer testsuite.Reset(testsuite.ResetData)
+
+	// create a start
+	start := models.NewFlowStart(models.OrgID(1), models.StartTypeManual, testdata.SingleMessage.ID).
+		WithContactIDs([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID, testdata.George.ID, testdata.Alexandria.ID})
+
+	batch := start.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, true, 2)
+
+	// start the first batch...
+	err := tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: batch}, queues.DefaultPriority)
+	assert.NoError(t, err)
+	testsuite.FlushTasks(t, rt)
+
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun`).Returns(2)
+}
