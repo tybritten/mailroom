@@ -42,7 +42,7 @@ func TestBroadcastCreated(t *testing.T) {
 					rc := rt.RP.Get()
 					defer rc.Close()
 
-					task, err := tasks.HandlerQueue.Pop(rc)
+					task, err := tasks.BatchQueue.Pop(rc)
 					assert.NoError(t, err)
 					assert.NotNil(t, task)
 					bcast := models.Broadcast{}
