@@ -21,10 +21,21 @@ type BroadcastID int
 // NilBroadcastID is our constant for a nil broadcast id
 const NilBroadcastID = BroadcastID(0)
 
+// BroadcastStatus is the type for the status of a broadcast
+type BroadcastStatus string
+
+// start status constants
+const (
+	BroadcastStatusComplete    = BroadcastStatus("C")
+	BroadcastStatusFailed      = BroadcastStatus("F")
+	BroadcastStatusInterrupted = BroadcastStatus("I")
+)
+
 // Broadcast represents a broadcast that needs to be sent
 type Broadcast struct {
 	ID                BroadcastID                 `json:"broadcast_id,omitempty"` // null for non-persisted tasks used by flow actions
 	OrgID             OrgID                       `json:"org_id"`
+	Status            BroadcastStatus             `json:"status"`
 	Translations      flows.BroadcastTranslations `json:"translations"`
 	BaseLanguage      i18n.Language               `json:"base_language"`
 	Expressions       bool                        `json:"expressions"`
@@ -116,12 +127,15 @@ func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastB
 	}
 }
 
-// SetComplete sets the status of this broadcast to SENT
+// SetComplete sets the status of this broadcast to COMPLETE, if it's not already set to INTERRUPTED
 func (b *Broadcast) SetComplete(ctx context.Context, db DBorTx) error {
+	if b.Status != BroadcastStatusInterrupted {
+		b.Status = BroadcastStatusComplete
+	}
 	if b.ID != NilBroadcastID {
-		_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'S', modified_on = now() WHERE id = $1`, b.ID)
+		_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'C', modified_on = now() WHERE id = $1`, b.ID)
 		if err != nil {
-			return fmt.Errorf("error marking broadcast #%d as sent: %w", b.ID, err)
+			return fmt.Errorf("error marking broadcast #%d as complete: %w", b.ID, err)
 		}
 	}
 	return nil
@@ -129,6 +143,9 @@ func (b *Broadcast) SetComplete(ctx context.Context, db DBorTx) error {
 
 // SetFailed sets the status of this broadcast to FAILED, if it's not already set to INTERRUPTED
 func (b *Broadcast) SetFailed(ctx context.Context, db DBorTx) error {
+	if b.Status != BroadcastStatusInterrupted {
+		b.Status = BroadcastStatusFailed
+	}
 	if b.ID != NilBroadcastID {
 		_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'F', modified_on = now() WHERE id = $1`, b.ID)
 		if err != nil {
