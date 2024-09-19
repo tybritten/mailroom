@@ -47,9 +47,7 @@ func (t *SendBroadcastTask) WithAssets() models.Refresh {
 // Perform handles sending the broadcast by creating batches of broadcast sends for all the unique contacts
 func (t *SendBroadcastTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	if err := createBroadcastBatches(ctx, rt, oa, t.Broadcast); err != nil {
-		if t.Broadcast.ID != models.NilBroadcastID {
-			models.MarkBroadcastFailed(ctx, rt.DB, t.Broadcast.ID)
-		}
+		t.Broadcast.SetFailed(ctx, rt.DB)
 
 		// if error is user created query error.. don't escalate error to sentry
 		isQueryError, _ := contactql.IsQueryError(err)
@@ -86,11 +84,8 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 
 	// if there are no contacts to send to, mark our broadcast as sent, we are done
 	if len(contactIDs) == 0 {
-		if bcast.ID != models.NilBroadcastID {
-			err = models.MarkBroadcastSent(ctx, rt.DB, bcast.ID)
-			if err != nil {
-				return fmt.Errorf("error marking broadcast as sent: %w", err)
-			}
+		if err := bcast.SetComplete(ctx, rt.DB); err != nil {
+			return fmt.Errorf("error marking broadcast as sent: %w", err)
 		}
 		return nil
 	}

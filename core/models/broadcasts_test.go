@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestInsertBroadcast(t *testing.T) {
+func TestBroadcasts(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
 	defer testsuite.Reset(testsuite.ResetData)
@@ -51,6 +51,14 @@ func TestInsertBroadcast(t *testing.T) {
 	})
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_broadcast_groups WHERE broadcast_id = $1`, bcast.ID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_broadcast_contacts WHERE broadcast_id = $1`, bcast.ID).Returns(3)
+
+	err = bcast.SetComplete(ctx, rt.DB)
+	assert.NoError(t, err)
+	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_broadcast WHERE id = $1`, bcast.ID).Returns("S")
+
+	err = bcast.SetFailed(ctx, rt.DB)
+	assert.NoError(t, err)
+	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_broadcast WHERE id = $1`, bcast.ID).Returns("F")
 }
 
 func TestInsertChildBroadcast(t *testing.T) {

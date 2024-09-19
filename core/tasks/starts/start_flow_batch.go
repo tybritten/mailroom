@@ -61,9 +61,9 @@ func (t *StartFlowBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	}
 
 	// if this is our last batch, mark start as done
-	if t.IsLast && start.ID != models.NilStartID {
-		if err := models.MarkStartComplete(ctx, rt.DB, start.ID); err != nil {
-			return fmt.Errorf("error marking start #%d as complete: %w", start.ID, err)
+	if t.IsLast {
+		if err := start.SetComplete(ctx, rt.DB); err != nil {
+			return fmt.Errorf("error marking start as complete: %w", err)
 		}
 	}
 

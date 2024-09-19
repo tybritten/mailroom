@@ -77,7 +77,7 @@ func (e Exclusions) Value() (driver.Value, error) { return json.Marshal(e) }
 
 // FlowStart represents the top level flow start in our system
 type FlowStart struct {
-	ID          StartID     `json:"start_id"      db:"id"` // null for non-persisted start tasks used by flow actions
+	ID          StartID     `json:"start_id"      db:"id"` // null for non-persisted tasks used by flow actions
 	UUID        uuids.UUID  `json:"-"             db:"uuid"`
 	OrgID       OrgID       `json:"org_id"        db:"org_id"`
 	Status      StartStatus `json:"-"             db:"status"`
@@ -158,29 +158,44 @@ func (s *FlowStart) WithParams(params json.RawMessage) *FlowStart {
 	return s
 }
 
-// MarkStartStarted sets the status of the given start to STARTED, if it's not already set to INTERRUPTED
-func MarkStartStarted(ctx context.Context, db DBorTx, startID StartID, contactCount int) error {
-	_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'S', contact_count = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", startID, contactCount)
-	if err != nil {
-		return fmt.Errorf("error setting start as started: %w", err)
+// SetStarting sets the status of this start to STARTING, if it's not already set to INTERRUPTED
+func (s *FlowStart) SetStarting(ctx context.Context, db DBorTx, contactCount int) error {
+	if s.Status != StartStatusInterrupted {
+		s.Status = StartStatusStarting
+	}
+	if s.ID != NilStartID {
+		_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'S', contact_count = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", s.ID, contactCount)
+		if err != nil {
+			return fmt.Errorf("error setting start #%d as starting: %w", s.ID, err)
+		}
 	}
 	return nil
 }
 
-// MarkStartComplete sets the status of the given start to COMPLETE, if it's not already set to INTERRUPTED
-func MarkStartComplete(ctx context.Context, db DBorTx, startID StartID) error {
-	_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'C', modified_on = NOW() WHERE id = $1 AND status != 'I'", startID)
-	if err != nil {
-		return fmt.Errorf("error marking flow start as complete: %w", err)
+// SetComplete sets the status of this start to COMPLETE, if it's not already set to INTERRUPTED
+func (s *FlowStart) SetComplete(ctx context.Context, db DBorTx) error {
+	if s.Status != StartStatusInterrupted {
+		s.Status = StartStatusComplete
+	}
+	if s.ID != NilStartID {
+		_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'C', modified_on = NOW() WHERE id = $1 AND status != 'I'", s.ID)
+		if err != nil {
+			return fmt.Errorf("error marking flow start #%d as complete: %w", s.ID, err)
+		}
 	}
 	return nil
 }
 
-// MarkStartFailed sets the status of the given start to FAILED, if it's not already set to INTERRUPTED
-func MarkStartFailed(ctx context.Context, db DBorTx, startID StartID) error {
-	_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'F', modified_on = NOW() WHERE id = $1 AND status != 'I'", startID)
-	if err != nil {
-		return fmt.Errorf("error setting flow start as failed: %w", err)
+// SetFailed sets the status of this start to FAILED, if it's not already set to INTERRUPTED
+func (s *FlowStart) SetFailed(ctx context.Context, db DBorTx) error {
+	if s.Status != StartStatusInterrupted {
+		s.Status = StartStatusFailed
+	}
+	if s.ID != NilStartID {
+		_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'F', modified_on = NOW() WHERE id = $1 AND status != 'I'", s.ID)
+		if err != nil {
+			return fmt.Errorf("error setting flow start #%d as failed: %w", s.ID, err)
+		}
 	}
 	return nil
 }

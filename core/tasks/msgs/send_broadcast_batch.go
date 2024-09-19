@@ -3,7 +3,6 @@ package msgs
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/nyaruka/mailroom/core/models"
@@ -37,16 +36,6 @@ func (t *SendBroadcastBatchTask) WithAssets() models.Refresh {
 }
 
 func (t *SendBroadcastBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
-	// always set our broadcast as sent if it is our last
-	defer func() {
-		if t.BroadcastBatch.IsLast && t.BroadcastBatch.BroadcastID != models.NilBroadcastID {
-			err := models.MarkBroadcastSent(ctx, rt.DB, t.BroadcastBatch.BroadcastID)
-			if err != nil {
-				slog.Error("error marking broadcast as sent", "error", err)
-			}
-		}
-	}()
-
 	// create this batch of messages
 	msgs, err := t.BroadcastBatch.CreateMessages(ctx, rt, oa)
 	if err != nil {
@@ -54,5 +43,13 @@ func (t *SendBroadcastBatchTask) Perform(ctx context.Context, rt *runtime.Runtim
 	}
 
 	msgio.QueueMessages(ctx, rt, rt.DB, msgs)
+
+	// if this is our last batch, mark broadcast as done
+	if t.IsLast {
+		if err := (&models.Broadcast{ID: t.BroadcastBatch.BroadcastID}).SetComplete(ctx, rt.DB); err != nil {
+			return fmt.Errorf("error marking broadcast as complete: %w", err)
+		}
+	}
+
 	return nil
 }

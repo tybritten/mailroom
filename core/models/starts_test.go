@@ -63,11 +63,11 @@ func TestStarts(t *testing.T) {
 	assert.Equal(t, null.JSON(`{"parent_uuid": "532a3899-492f-4ffe-aed7-e75ad524efab", "ancestors": 3, "ancestors_since_input": 1}`), start.SessionHistory)
 	assert.Equal(t, null.JSON(`{"foo": "bar"}`), start.Params)
 
-	err = models.MarkStartStarted(ctx, rt.DB, startID, 2)
-	require.NoError(t, err)
-
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowstart WHERE id = $1 AND status = 'S' AND contact_count = 2`, startID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowstart_contacts WHERE flowstart_id = $1`, startID).Returns(2)
+
+	err = start.SetStarting(ctx, rt.DB, 2)
+	assert.NoError(t, err)
+	assertdb.Query(t, rt.DB, `SELECT status, contact_count FROM flows_flowstart WHERE id = $1`, startID).Columns(map[string]any{"status": "S", "contact_count": int64(2)})
 
 	batch := start.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, false, 3)
 	assert.Equal(t, startID, batch.StartID)
@@ -82,17 +82,20 @@ func TestStarts(t *testing.T) {
 	_, err = models.ReadSessionHistory([]byte(`{`))
 	assert.EqualError(t, err, "unexpected end of JSON input")
 
-	err = models.MarkStartComplete(ctx, rt.DB, startID)
+	err = start.SetComplete(ctx, rt.DB)
 	require.NoError(t, err)
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowstart WHERE id = $1`, startID).Returns("C")
 
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowstart WHERE id = $1 AND status = 'C'`, startID).Returns(1)
+	err = start.SetFailed(ctx, rt.DB)
+	require.NoError(t, err)
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowstart WHERE id = $1`, startID).Returns("F")
 
 	// try fetching a start from the database (won't load all fields)
 	start, err = models.GetFlowStartByID(ctx, rt.DB, start.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, startID, start.ID)
 	assert.Equal(t, testdata.Org1.ID, start.OrgID)
-	assert.Equal(t, models.StartStatusComplete, start.Status)
+	assert.Equal(t, models.StartStatusFailed, start.Status)
 	assert.Equal(t, models.StartTypeManual, start.StartType)
 	assert.Equal(t, testdata.Admin.ID, start.CreatedByID)
 	assert.Equal(t, testdata.SingleMessage.ID, start.FlowID)
