@@ -1,3 +1,8 @@
+v9.3.25 (2024-09-19)
+-------------------------
+ * Stop creating starts in the database for trigger_session flow actions
+ * Use status=(C)OMPLETE for sent broadcasts instead of (S)ENT
+
 v9.3.24 (2024-09-19)
 -------------------------
  * Rework broadcasts to follow more similar pattern as starts
