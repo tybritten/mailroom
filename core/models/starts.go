@@ -77,7 +77,7 @@ func (e Exclusions) Value() (driver.Value, error) { return json.Marshal(e) }
 
 // FlowStart represents the top level flow start in our system
 type FlowStart struct {
-	ID          StartID     `json:"start_id"      db:"id"`
+	ID          StartID     `json:"start_id"      db:"id"` // null for non-persisted start tasks used by flow actions
 	UUID        uuids.UUID  `json:"-"             db:"uuid"`
 	OrgID       OrgID       `json:"org_id"        db:"org_id"`
 	Status      StartStatus `json:"-"             db:"status"`
@@ -264,17 +264,27 @@ INSERT INTO flows_flowstart_groups(flowstart_id, contactgroup_id) VALUES(:flowst
 
 // CreateBatch creates a batch for this start using the passed in contact ids
 func (s *FlowStart) CreateBatch(contactIDs []ContactID, last bool, totalContacts int) *FlowStartBatch {
-	return &FlowStartBatch{
-		StartID:       s.ID,
+	b := &FlowStartBatch{
 		ContactIDs:    contactIDs,
 		IsLast:        last,
 		TotalContacts: totalContacts,
 	}
+
+	if s.ID != NilStartID {
+		b.StartID = s.ID
+	} else {
+		b.Start = s
+	}
+
+	return b
 }
 
 // FlowStartBatch represents a single flow batch that needs to be started
 type FlowStartBatch struct {
-	StartID       StartID     `json:"start_id"`
+	// for persisted starts start_id is set, for non-persisted starts like flow actions, start is set
+	StartID StartID    `json:"start_id,omitempty"`
+	Start   *FlowStart `json:"start,omitempty"`
+
 	ContactIDs    []ContactID `json:"contact_ids"`
 	IsLast        bool        `json:"is_last,omitempty"`
 	TotalContacts int         `json:"total_contacts"`

@@ -47,7 +47,9 @@ func (t *StartFlowTask) WithAssets() models.Refresh {
 
 func (t *StartFlowTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	if err := createFlowStartBatches(ctx, rt, oa, t.FlowStart); err != nil {
-		models.MarkStartFailed(ctx, rt.DB, t.FlowStart.ID)
+		if t.FlowStart.ID != models.NilStartID {
+			models.MarkStartFailed(ctx, rt.DB, t.FlowStart.ID)
+		}
 
 		// if error is user created query error.. don't escalate error to sentry
 		isQueryError, _ := contactql.IsQueryError(err)
@@ -98,16 +100,20 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 	}
 
 	// mark our start as starting, last task will mark as complete
-	err = models.MarkStartStarted(ctx, rt.DB, start.ID, len(contactIDs))
-	if err != nil {
-		return fmt.Errorf("error marking start as started: %w", err)
+	if start.ID != models.NilStartID {
+		err = models.MarkStartStarted(ctx, rt.DB, start.ID, len(contactIDs))
+		if err != nil {
+			return fmt.Errorf("error marking start as started: %w", err)
+		}
 	}
 
 	// if there are no contacts to start, mark our start as complete, we are done
 	if len(contactIDs) == 0 {
-		err = models.MarkStartComplete(ctx, rt.DB, start.ID)
-		if err != nil {
-			return fmt.Errorf("error marking start as complete: %w", err)
+		if start.ID != models.NilStartID {
+			err = models.MarkStartComplete(ctx, rt.DB, start.ID)
+			if err != nil {
+				return fmt.Errorf("error marking start as complete: %w", err)
+			}
 		}
 		return nil
 	}

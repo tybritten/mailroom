@@ -182,21 +182,24 @@ func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 		return tb.WithUser(flowUser).WithOrigin(startTypeToOrigin[start.StartType]).Build()
 	}
 
-	// before committing our runs we want to set the start they are associated with
-	updateStartID := func(ctx context.Context, tx *sqlx.Tx, rp *redis.Pool, oa *models.OrgAssets, sessions []*models.Session) error {
-		// for each run in our sessions, set the start id
-		for _, s := range sessions {
-			for _, r := range s.Runs() {
-				r.SetStartID(batch.StartID)
+	// if we have a persisted start, we need to set its id on runs before they are saved
+	var commitHook models.SessionCommitHook
+	if start.ID != models.NilStartID {
+		commitHook = func(ctx context.Context, tx *sqlx.Tx, rp *redis.Pool, oa *models.OrgAssets, sessions []*models.Session) error {
+			// for each run in our sessions, set the start id
+			for _, s := range sessions {
+				for _, r := range s.Runs() {
+					r.SetStartID(batch.StartID)
+				}
 			}
+			return nil
 		}
-		return nil
 	}
 
 	options := &StartOptions{
 		Interrupt:      flow.FlowType().Interrupts(),
 		TriggerBuilder: triggerBuilder,
-		CommitHook:     updateStartID,
+		CommitHook:     commitHook,
 	}
 
 	sessions, err := StartFlow(ctx, rt, oa, flow, batch.ContactIDs, options)
