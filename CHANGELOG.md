@@ -1,3 +1,8 @@
+v9.3.24 (2024-09-19)
+-------------------------
+ * Rework broadcasts to follow more similar pattern as starts
+ * Add support for non-persisted starts
+
 v9.3.23 (2024-09-18)
 -------------------------
  * Rework flow start batch processing so that we check the start status in case it's interrupted
