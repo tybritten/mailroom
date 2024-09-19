@@ -27,7 +27,7 @@ func TestBroadcastCreated(t *testing.T) {
 		{
 			Actions: handlers.ContactActionMap{
 				testdata.Cathy: []flows.Action{
-					actions.NewSendBroadcast(handlers.NewActionUUID(), "hello world", nil, nil, []urns.URN{urns.URN("tel:+12065551212")}, nil, nil, nil),
+					actions.NewSendBroadcast(handlers.NewActionUUID(), "hello world", nil, nil, nil, nil, "", []urns.URN{urns.URN("tel:+12065551212")}, nil),
 				},
 			},
 			SQLAssertions: []handlers.SQLAssertion{
