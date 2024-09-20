@@ -1,3 +1,7 @@
+v9.3.26 (2024-09-20)
+-------------------------
+ * Add warning for non-persistent broadcasts to more than 100 contacts
+
 v9.3.25 (2024-09-19)
 -------------------------
  * Stop creating starts in the database for trigger_session flow actions
