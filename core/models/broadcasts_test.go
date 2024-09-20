@@ -126,10 +126,7 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 	batch := bcast.CreateBatch([]models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID}, false)
 
 	assert.Equal(t, models.NilBroadcastID, batch.BroadcastID)
-	assert.Equal(t, testdata.Org1.ID, batch.OrgID)
-	assert.Equal(t, i18n.Language("eng"), batch.BaseLanguage)
-	assert.Equal(t, translations, batch.Translations)
-	assert.Equal(t, optIn.ID, batch.OptInID)
+	assert.NotNil(t, testdata.Org1.ID, batch.Broadcast)
 	assert.Equal(t, []models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID}, batch.ContactIDs)
 
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
@@ -152,9 +149,6 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 
 	oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, testdata.Org1.ID, models.RefreshOptIns)
 	require.NoError(t, err)
-
-	// we need a broadcast id to insert messages but the content here is ignored
-	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, "eng", map[i18n.Language]string{"eng": "Test"}, nil, models.NilScheduleID, nil, nil)
 
 	tcs := []struct {
 		contactLanguage      i18n.Language
@@ -249,8 +243,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 		contact := testdata.InsertContact(rt, testdata.Org1, flows.ContactUUID(uuids.NewV4()), "Felix", tc.contactLanguage, models.ContactStatusActive)
 		testdata.InsertContactURN(rt, testdata.Org1, contact, tc.contactURN, 1000, nil)
 
-		batch := &models.BroadcastBatch{
-			BroadcastID:       bcastID,
+		bcast := &models.Broadcast{
 			OrgID:             testdata.Org1.ID,
 			Translations:      tc.translations,
 			BaseLanguage:      tc.baseLanguage,
@@ -258,7 +251,15 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			OptInID:           tc.optInID,
 			TemplateID:        tc.templateID,
 			TemplateVariables: tc.templateVariables,
-			ContactIDs:        []models.ContactID{contact.ID},
+		}
+		err = models.InsertBroadcast(ctx, rt.DB, bcast)
+		require.NoError(t, err)
+
+		batch := &models.BroadcastBatch{
+			BroadcastID: bcast.ID,
+			Broadcast:   bcast,
+			ContactIDs:  []models.ContactID{contact.ID},
+			IsLast:      true,
 		}
 
 		msgs, err := batch.CreateMessages(ctx, rt, oa)

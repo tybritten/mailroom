@@ -36,6 +36,24 @@ func (t *SendBroadcastBatchTask) WithAssets() models.Refresh {
 }
 
 func (t *SendBroadcastBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
+	var bcast *models.Broadcast
+	var err error
+
+	// if this batch belongs to a persisted broadcast, fetch it
+	if t.BroadcastID != models.NilBroadcastID {
+		bcast, err = models.GetBroadcastByID(ctx, rt.DB, t.BroadcastID)
+		if err != nil {
+			return fmt.Errorf("error loading flow start for batch: %w", err)
+		}
+	} else {
+		bcast = t.Broadcast // otherwise use broadcast from the task
+	}
+
+	// if this broadcast was interrupted, we're done
+	if bcast.Status == models.BroadcastStatusInterrupted {
+		return nil
+	}
+
 	// create this batch of messages
 	msgs, err := t.BroadcastBatch.CreateMessages(ctx, rt, oa)
 	if err != nil {
@@ -46,7 +64,7 @@ func (t *SendBroadcastBatchTask) Perform(ctx context.Context, rt *runtime.Runtim
 
 	// if this is our last batch, mark broadcast as done
 	if t.IsLast {
-		if err := (&models.Broadcast{ID: t.BroadcastBatch.BroadcastID}).SetCompleted(ctx, rt.DB); err != nil {
+		if err := bcast.SetCompleted(ctx, rt.DB); err != nil {
 			return fmt.Errorf("error marking broadcast as complete: %w", err)
 		}
 	}

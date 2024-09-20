@@ -355,8 +355,8 @@ func NewOutgoingFlowMsg(rt *runtime.Runtime, org *Org, channel *Channel, session
 }
 
 // NewOutgoingBroadcastMsg creates an outgoing message which is part of a broadcast
-func NewOutgoingBroadcastMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, bb *BroadcastBatch) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, bb.BroadcastID, NilTicketID, bb.OptInID, bb.CreatedByID, dates.Now())
+func NewOutgoingBroadcastMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, b *Broadcast) (*Msg, error) {
+	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, b.ID, NilTicketID, b.OptInID, b.CreatedByID, dates.Now())
 }
 
 // NewOutgoingTicketMsg creates an outgoing message from a ticket
