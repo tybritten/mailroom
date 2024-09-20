@@ -112,8 +112,11 @@ func NewBroadcastFromEvent(ctx context.Context, tx DBorTx, oa *OrgAssets, event 
 }
 
 func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastBatch {
-	return &BroadcastBatch{
-		BroadcastID:       b.ID,
+	bb := &BroadcastBatch{
+		ContactIDs: contactIDs,
+		IsLast:     isLast,
+
+		// TODO remove
 		OrgID:             b.OrgID,
 		Translations:      b.Translations,
 		BaseLanguage:      b.BaseLanguage,
@@ -122,9 +125,15 @@ func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastB
 		TemplateID:        b.TemplateID,
 		TemplateVariables: b.TemplateVariables,
 		CreatedByID:       b.CreatedByID,
-		ContactIDs:        contactIDs,
-		IsLast:            isLast,
 	}
+
+	if b.ID != NilBroadcastID {
+		bb.BroadcastID = b.ID
+	} else {
+		bb.Broadcast = b
+	}
+
+	return bb
 }
 
 // SetCompleted sets the status of this broadcast to COMPLETED, if it's not already set to INTERRUPTED
@@ -251,7 +260,14 @@ const sqlInsertBroadcastGroups = `INSERT INTO msgs_broadcast_groups(broadcast_id
 
 // BroadcastBatch represents a batch of contacts that need messages sent for
 type BroadcastBatch struct {
-	BroadcastID       BroadcastID                 `json:"broadcast_id,omitempty"`
+	// for persisted starts broadcast_id is set, for non-persisted broadcasts like flow actions, broadcast is set
+	BroadcastID BroadcastID `json:"broadcast_id,omitempty"`
+	Broadcast   *Broadcast  `json:"broadcast,omitempty"`
+
+	ContactIDs []ContactID `json:"contact_ids"`
+	IsLast     bool        `json:"is_last"`
+
+	// TODO remove
 	OrgID             OrgID                       `json:"org_id"`
 	Translations      flows.BroadcastTranslations `json:"translations"`
 	BaseLanguage      i18n.Language               `json:"base_language"`
@@ -259,9 +275,7 @@ type BroadcastBatch struct {
 	OptInID           OptInID                     `json:"optin_id,omitempty"`
 	TemplateID        TemplateID                  `json:"template_id,omitempty"`
 	TemplateVariables []string                    `json:"template_variables,omitempty"`
-	ContactIDs        []ContactID                 `json:"contact_ids"`
 	CreatedByID       UserID                      `json:"created_by_id"`
-	IsLast            bool                        `json:"is_last"`
 }
 
 func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets) ([]*Msg, error) {
