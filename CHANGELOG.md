@@ -1,3 +1,7 @@
+v9.3.27 (2024-09-20)
+-------------------------
+ * Add .broadcast field to broadcast batch tasks
+
 v9.3.26 (2024-09-20)
 -------------------------
  * Add warning for non-persistent broadcasts to more than 100 contacts
