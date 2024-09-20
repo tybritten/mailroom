@@ -90,8 +90,9 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		return nil
 	}
 
+	// TODO remove once we decide whether to not add an actual limit
 	if bcast.ID == models.NilBroadcastID && len(contactIDs) > 100 {
-		slog.Error("non-persistent broadcast to more than 100 contacts", "count", len(contactIDs))
+		slog.Error("non-persistent broadcast to more than 100 contacts", "count", len(contactIDs), "org_id", bcast.OrgID)
 	}
 
 	// batches will be processed in the throttled queue unless we're a single contact
