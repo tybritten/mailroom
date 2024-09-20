@@ -65,7 +65,7 @@ func TestStarts(t *testing.T) {
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowstart_contacts WHERE flowstart_id = $1`, startID).Returns(2)
 
-	err = start.SetStarting(ctx, rt.DB, 2)
+	err = start.SetStarted(ctx, rt.DB, 2)
 	assert.NoError(t, err)
 	assertdb.Query(t, rt.DB, `SELECT status, contact_count FROM flows_flowstart WHERE id = $1`, startID).Columns(map[string]any{"status": "S", "contact_count": int64(2)})
 
@@ -82,7 +82,7 @@ func TestStarts(t *testing.T) {
 	_, err = models.ReadSessionHistory([]byte(`{`))
 	assert.EqualError(t, err, "unexpected end of JSON input")
 
-	err = start.SetComplete(ctx, rt.DB)
+	err = start.SetCompleted(ctx, rt.DB)
 	require.NoError(t, err)
 	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowstart WHERE id = $1`, startID).Returns("C")
 

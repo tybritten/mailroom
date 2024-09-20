@@ -44,7 +44,7 @@ type StartStatus string
 const (
 	StartStatusPending     = StartStatus("P")
 	StartStatusStarting    = StartStatus("S")
-	StartStatusComplete    = StartStatus("C")
+	StartStatusCompleted   = StartStatus("C")
 	StartStatusFailed      = StartStatus("F")
 	StartStatusInterrupted = StartStatus("I")
 )
@@ -158,29 +158,29 @@ func (s *FlowStart) WithParams(params json.RawMessage) *FlowStart {
 	return s
 }
 
-// SetStarting sets the status of this start to STARTING, if it's not already set to INTERRUPTED
-func (s *FlowStart) SetStarting(ctx context.Context, db DBorTx, contactCount int) error {
+// SetStarted sets the status of this start to STARTED, if it's not already set to INTERRUPTED
+func (s *FlowStart) SetStarted(ctx context.Context, db DBorTx, contactCount int) error {
 	if s.Status != StartStatusInterrupted {
 		s.Status = StartStatusStarting
 	}
 	if s.ID != NilStartID {
 		_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'S', contact_count = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", s.ID, contactCount)
 		if err != nil {
-			return fmt.Errorf("error setting start #%d as starting: %w", s.ID, err)
+			return fmt.Errorf("error setting start #%d as started: %w", s.ID, err)
 		}
 	}
 	return nil
 }
 
-// SetComplete sets the status of this start to COMPLETE, if it's not already set to INTERRUPTED
-func (s *FlowStart) SetComplete(ctx context.Context, db DBorTx) error {
+// SetCompleted sets the status of this start to COMPLETED, if it's not already set to INTERRUPTED
+func (s *FlowStart) SetCompleted(ctx context.Context, db DBorTx) error {
 	if s.Status != StartStatusInterrupted {
-		s.Status = StartStatusComplete
+		s.Status = StartStatusCompleted
 	}
 	if s.ID != NilStartID {
 		_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'C', modified_on = NOW() WHERE id = $1 AND status != 'I'", s.ID)
 		if err != nil {
-			return fmt.Errorf("error marking flow start #%d as complete: %w", s.ID, err)
+			return fmt.Errorf("error marking flow start #%d as completed: %w", s.ID, err)
 		}
 	}
 	return nil

@@ -46,7 +46,7 @@ func (t *SendBroadcastBatchTask) Perform(ctx context.Context, rt *runtime.Runtim
 
 	// if this is our last batch, mark broadcast as done
 	if t.IsLast {
-		if err := (&models.Broadcast{ID: t.BroadcastBatch.BroadcastID}).SetComplete(ctx, rt.DB); err != nil {
+		if err := (&models.Broadcast{ID: t.BroadcastBatch.BroadcastID}).SetCompleted(ctx, rt.DB); err != nil {
 			return fmt.Errorf("error marking broadcast as complete: %w", err)
 		}
 	}

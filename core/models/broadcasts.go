@@ -26,7 +26,7 @@ type BroadcastStatus string
 
 // start status constants
 const (
-	BroadcastStatusComplete    = BroadcastStatus("C")
+	BroadcastStatusCompleted   = BroadcastStatus("C")
 	BroadcastStatusFailed      = BroadcastStatus("F")
 	BroadcastStatusInterrupted = BroadcastStatus("I")
 )
@@ -127,15 +127,15 @@ func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastB
 	}
 }
 
-// SetComplete sets the status of this broadcast to COMPLETE, if it's not already set to INTERRUPTED
-func (b *Broadcast) SetComplete(ctx context.Context, db DBorTx) error {
+// SetCompleted sets the status of this broadcast to COMPLETED, if it's not already set to INTERRUPTED
+func (b *Broadcast) SetCompleted(ctx context.Context, db DBorTx) error {
 	if b.Status != BroadcastStatusInterrupted {
-		b.Status = BroadcastStatusComplete
+		b.Status = BroadcastStatusCompleted
 	}
 	if b.ID != NilBroadcastID {
 		_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'C', modified_on = now() WHERE id = $1`, b.ID)
 		if err != nil {
-			return fmt.Errorf("error marking broadcast #%d as complete: %w", b.ID, err)
+			return fmt.Errorf("error marking broadcast #%d as completed: %w", b.ID, err)
 		}
 	}
 	return nil

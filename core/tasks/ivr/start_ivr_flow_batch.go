@@ -79,7 +79,7 @@ func (t *StartIVRFlowBatchTask) Perform(ctx context.Context, rt *runtime.Runtime
 
 	// if this is a last batch, mark our start as started
 	if t.IsLast {
-		if err := start.SetComplete(ctx, rt.DB); err != nil {
+		if err := start.SetCompleted(ctx, rt.DB); err != nil {
 			return fmt.Errorf("error marking start as complete: %w", err)
 		}
 	}

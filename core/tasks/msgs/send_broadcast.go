@@ -84,7 +84,7 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 
 	// if there are no contacts to send to, mark our broadcast as sent, we are done
 	if len(contactIDs) == 0 {
-		if err := bcast.SetComplete(ctx, rt.DB); err != nil {
+		if err := bcast.SetCompleted(ctx, rt.DB); err != nil {
 			return fmt.Errorf("error marking broadcast as sent: %w", err)
 		}
 		return nil

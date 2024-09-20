@@ -52,7 +52,7 @@ func TestBroadcasts(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_broadcast_groups WHERE broadcast_id = $1`, bcast.ID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_broadcast_contacts WHERE broadcast_id = $1`, bcast.ID).Returns(3)
 
-	err = bcast.SetComplete(ctx, rt.DB)
+	err = bcast.SetCompleted(ctx, rt.DB)
 	assert.NoError(t, err)
 	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_broadcast WHERE id = $1`, bcast.ID).Returns("C")
 
