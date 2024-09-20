@@ -43,7 +43,7 @@ type StartStatus string
 // start status constants
 const (
 	StartStatusPending     = StartStatus("P")
-	StartStatusStarting    = StartStatus("S")
+	StartStatusStarted     = StartStatus("S")
 	StartStatusCompleted   = StartStatus("C")
 	StartStatusFailed      = StartStatus("F")
 	StartStatusInterrupted = StartStatus("I")
@@ -161,7 +161,7 @@ func (s *FlowStart) WithParams(params json.RawMessage) *FlowStart {
 // SetStarted sets the status of this start to STARTED, if it's not already set to INTERRUPTED
 func (s *FlowStart) SetStarted(ctx context.Context, db DBorTx, contactCount int) error {
 	if s.Status != StartStatusInterrupted {
-		s.Status = StartStatusStarting
+		s.Status = StartStatusStarted
 	}
 	if s.ID != NilStartID {
 		_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'S', contact_count = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", s.ID, contactCount)
