@@ -1,3 +1,7 @@
+v9.3.29 (2024-09-22)
+-------------------------
+ * Fix trigger_session actions with IVR flows
+
 v9.3.28 (2024-09-20)
 -------------------------
  * Add more info to error log when writing ivr channel log fails
