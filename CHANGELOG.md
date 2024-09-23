@@ -1,3 +1,7 @@
+v9.3.32 (2024-09-23)
+-------------------------
+ * Fix broadcast endpoint creating broadcasts with empty status
+
 v9.3.31 (2024-09-23)
 -------------------------
  * Mark broadcasts as started once recipients are known and update contact_count
