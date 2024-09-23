@@ -23,16 +23,6 @@ func TestSessionTriggered(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetAll)
 
-	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
-	assert.NoError(t, err)
-
-	simpleFlow, err := oa.FlowByID(testdata.SingleMessage.ID)
-	assert.NoError(t, err)
-
-	contactRef := &flows.ContactReference{
-		UUID: testdata.George.UUID,
-	}
-
 	groupRef := &assets.GroupReference{
 		UUID: testdata.TestersGroup.UUID,
 	}
@@ -44,7 +34,7 @@ func TestSessionTriggered(t *testing.T) {
 		{
 			Actions: handlers.ContactActionMap{
 				testdata.Cathy: []flows.Action{
-					actions.NewStartSession(handlers.NewActionUUID(), simpleFlow.Reference(), []*assets.GroupReference{groupRef}, []*flows.ContactReference{contactRef}, "", nil, nil, true),
+					actions.NewStartSession(handlers.NewActionUUID(), testdata.SingleMessage.Reference(), []*assets.GroupReference{groupRef}, []*flows.ContactReference{testdata.George.Reference()}, "", nil, nil, true),
 				},
 			},
 			SQLAssertions: []handlers.SQLAssertion{
@@ -72,9 +62,23 @@ func TestSessionTriggered(t *testing.T) {
 					assert.True(t, start.CreateContact)
 					assert.Equal(t, []models.ContactID{testdata.George.ID}, start.ContactIDs)
 					assert.Equal(t, []models.GroupID{testdata.TestersGroup.ID}, start.GroupIDs)
-					assert.Equal(t, simpleFlow.ID(), start.FlowID)
-					assert.JSONEq(t, `{"parent_uuid":"39a9f95e-3641-4d19-95e0-ed866f27c829", "ancestors":1, "ancestors_since_input":1}`, string(start.SessionHistory))
+					assert.Equal(t, testdata.SingleMessage.ID, start.FlowID)
+					assert.JSONEq(t, `{"parent_uuid":"36284611-ea19-4f1f-8611-9bc48e206654", "ancestors":1, "ancestors_since_input":1}`, string(start.SessionHistory))
 					return nil
+				},
+			},
+		},
+		{
+			Actions: handlers.ContactActionMap{
+				testdata.Bob: []flows.Action{
+					actions.NewStartSession(handlers.NewActionUUID(), testdata.IVRFlow.Reference(), nil, []*flows.ContactReference{testdata.Alexandria.Reference()}, "", nil, nil, true),
+				},
+			},
+			SQLAssertions: []handlers.SQLAssertion{
+				{ // check that we do have a start in the database because it's an IVR flow
+					SQL:   "select count(*) from flows_flowstart where org_id = 1 AND flow_id = $1",
+					Args:  []any{testdata.IVRFlow.ID},
+					Count: 1,
 				},
 			},
 		},
