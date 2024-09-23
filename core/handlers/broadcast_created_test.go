@@ -51,6 +51,7 @@ func TestBroadcastCreated(t *testing.T) {
 					assert.Nil(t, bcast.ContactIDs)
 					assert.Nil(t, bcast.GroupIDs)
 					assert.Equal(t, 1, len(bcast.URNs))
+					assert.False(t, bcast.Expressions) // engine already evaluated expressions
 					return nil
 				},
 			},
