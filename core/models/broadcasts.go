@@ -258,6 +258,20 @@ RETURNING id`
 const sqlInsertBroadcastContacts = `INSERT INTO msgs_broadcast_contacts(broadcast_id, contact_id) VALUES(:broadcast_id, :contact_id)`
 const sqlInsertBroadcastGroups = `INSERT INTO msgs_broadcast_groups(broadcast_id, contactgroup_id) VALUES(:broadcast_id, :contactgroup_id)`
 
+const sqlGetBroadcastByID = `
+SELECT id, org_id, status, translations, base_language, expressions, optin_id, template_id, template_variables, created_by_id
+  FROM msgs_broadcast 
+ WHERE id = $1`
+
+// GetBroadcastByID gets a broadcast by it's ID - NOTE this does not load all attributes of the broadcast
+func GetBroadcastByID(ctx context.Context, db DBorTx, bcastID BroadcastID) (*Broadcast, error) {
+	b := &Broadcast{}
+	if err := db.GetContext(ctx, b, sqlGetBroadcastByID, bcastID); err != nil {
+		return nil, fmt.Errorf("error loading broadcast #%d: %w", bcastID, err)
+	}
+	return b, nil
+}
+
 // BroadcastBatch represents a batch of contacts that need messages sent for
 type BroadcastBatch struct {
 	// for persisted starts broadcast_id is set, for non-persisted broadcasts like flow actions, broadcast is set
@@ -315,10 +329,10 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 		return nil, fmt.Errorf("error creating flow contact for broadcast message: %w", err)
 	}
 
-	content, locale := b.Translations.ForContact(oa.Env(), contact, b.BaseLanguage)
+	content, locale := b.Broadcast.Translations.ForContact(oa.Env(), contact, b.Broadcast.BaseLanguage)
 
 	var expressionsContext *types.XObject
-	if b.Expressions {
+	if b.Broadcast.Expressions {
 		expressionsContext = types.NewXObject(map[string]types.XValue{
 			"contact": flows.Context(oa.Env(), contact),
 			"fields":  flows.Context(oa.Env(), contact.Fields()),
@@ -333,9 +347,9 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 	}
 
 	// create our outgoing message
-	out, ch := CreateMsgOut(rt, oa, contact, content, b.TemplateID, b.TemplateVariables, locale, expressionsContext)
+	out, ch := CreateMsgOut(rt, oa, contact, content, b.Broadcast.TemplateID, b.Broadcast.TemplateVariables, locale, expressionsContext)
 
-	msg, err := NewOutgoingBroadcastMsg(rt, oa.Org(), ch, contact, out, b)
+	msg, err := NewOutgoingBroadcastMsg(rt, oa.Org(), ch, contact, out, b.Broadcast)
 	if err != nil {
 		return nil, fmt.Errorf("error creating outgoing message: %w", err)
 	}
