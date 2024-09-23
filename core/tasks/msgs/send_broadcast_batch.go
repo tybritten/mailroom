@@ -55,7 +55,7 @@ func (t *SendBroadcastBatchTask) Perform(ctx context.Context, rt *runtime.Runtim
 	}
 
 	// create this batch of messages
-	msgs, err := t.BroadcastBatch.CreateMessages(ctx, rt, oa, bcast)
+	msgs, err := bcast.CreateMessages(ctx, rt, oa, t.BroadcastBatch)
 	if err != nil {
 		return fmt.Errorf("error creating broadcast messages: %w", err)
 	}

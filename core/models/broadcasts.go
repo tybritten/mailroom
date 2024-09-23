@@ -115,6 +115,26 @@ func NewBroadcastFromEvent(ctx context.Context, tx DBorTx, oa *OrgAssets, event 
 	return NewBroadcast(oa.OrgID(), event.Translations, event.BaseLanguage, false, NilOptInID, groupIDs, contactIDs, event.URNs, event.ContactQuery, NoExclusions, NilUserID), nil
 }
 
+// BroadcastBatch represents a batch of contacts that need messages sent for
+type BroadcastBatch struct {
+	// for persisted starts broadcast_id is set, for non-persisted broadcasts like flow actions, broadcast is set
+	BroadcastID BroadcastID `json:"broadcast_id,omitempty"`
+	Broadcast   *Broadcast  `json:"broadcast,omitempty"`
+
+	ContactIDs []ContactID `json:"contact_ids"`
+	IsLast     bool        `json:"is_last"`
+
+	// TODO remove
+	OrgID             OrgID                       `json:"org_id"`
+	Translations      flows.BroadcastTranslations `json:"translations"`
+	BaseLanguage      i18n.Language               `json:"base_language"`
+	Expressions       bool                        `json:"expressions"`
+	OptInID           OptInID                     `json:"optin_id,omitempty"`
+	TemplateID        TemplateID                  `json:"template_id,omitempty"`
+	TemplateVariables []string                    `json:"template_variables,omitempty"`
+	CreatedByID       UserID                      `json:"created_by_id"`
+}
+
 func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastBatch {
 	bb := &BroadcastBatch{
 		ContactIDs: contactIDs,
@@ -289,29 +309,9 @@ func GetBroadcastByID(ctx context.Context, db DBorTx, bcastID BroadcastID) (*Bro
 	}, nil
 }
 
-// BroadcastBatch represents a batch of contacts that need messages sent for
-type BroadcastBatch struct {
-	// for persisted starts broadcast_id is set, for non-persisted broadcasts like flow actions, broadcast is set
-	BroadcastID BroadcastID `json:"broadcast_id,omitempty"`
-	Broadcast   *Broadcast  `json:"broadcast,omitempty"`
-
-	ContactIDs []ContactID `json:"contact_ids"`
-	IsLast     bool        `json:"is_last"`
-
-	// TODO remove
-	OrgID             OrgID                       `json:"org_id"`
-	Translations      flows.BroadcastTranslations `json:"translations"`
-	BaseLanguage      i18n.Language               `json:"base_language"`
-	Expressions       bool                        `json:"expressions"`
-	OptInID           OptInID                     `json:"optin_id,omitempty"`
-	TemplateID        TemplateID                  `json:"template_id,omitempty"`
-	TemplateVariables []string                    `json:"template_variables,omitempty"`
-	CreatedByID       UserID                      `json:"created_by_id"`
-}
-
-func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, bcast *Broadcast) ([]*Msg, error) {
+func (b *Broadcast) CreateMessages(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, batch *BroadcastBatch) ([]*Msg, error) {
 	// load all our contacts
-	contacts, err := LoadContacts(ctx, rt.DB, oa, b.ContactIDs)
+	contacts, err := LoadContacts(ctx, rt.DB, oa, batch.ContactIDs)
 	if err != nil {
 		return nil, fmt.Errorf("error loading contacts for broadcast: %w", err)
 	}
@@ -321,7 +321,7 @@ func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime
 
 	// run through all our contacts to create our messages
 	for _, c := range contacts {
-		msg, err := bcast.createMessage(rt, oa, c)
+		msg, err := b.createMessage(rt, oa, c)
 		if err != nil {
 			return nil, fmt.Errorf("error creating broadcast message: %w", err)
 		}

@@ -132,7 +132,7 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
 
-	msgs, err := batch.CreateMessages(ctx, rt, oa, bcast)
+	msgs, err := bcast.CreateMessages(ctx, rt, oa, batch)
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, len(msgs))
@@ -262,7 +262,7 @@ func TestBroadcastBatchCreateMessage(t *testing.T) {
 			IsLast:      true,
 		}
 
-		msgs, err := batch.CreateMessages(ctx, rt, oa, bcast)
+		msgs, err := bcast.CreateMessages(ctx, rt, oa, batch)
 		if tc.expectedError != "" {
 			assert.EqualError(t, err, tc.expectedError, "error mismatch in test case %d", i)
 		} else {
