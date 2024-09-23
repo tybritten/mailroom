@@ -82,6 +82,11 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		contactIDs = append(contactIDs, nodeContactIDs...)
 	}
 
+	// mark our broadcast as started, last task will mark as complete
+	if err := bcast.SetStarted(ctx, rt.DB, len(contactIDs)); err != nil {
+		return fmt.Errorf("error marking broadcast as started: %w", err)
+	}
+
 	// if there are no contacts to send to, mark our broadcast as sent, we are done
 	if len(contactIDs) == 0 {
 		if err := bcast.SetCompleted(ctx, rt.DB); err != nil {
