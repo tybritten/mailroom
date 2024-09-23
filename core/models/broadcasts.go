@@ -26,6 +26,8 @@ type BroadcastStatus string
 
 // start status constants
 const (
+	BroadcastStatusPending     = BroadcastStatus("P")
+	BroadcastStatusStarted     = BroadcastStatus("S")
 	BroadcastStatusCompleted   = BroadcastStatus("C")
 	BroadcastStatusFailed      = BroadcastStatus("F")
 	BroadcastStatusInterrupted = BroadcastStatus("I")
@@ -56,6 +58,7 @@ type Broadcast struct {
 type dbBroadcast struct {
 	ID                BroadcastID                        `db:"id"`
 	OrgID             OrgID                              `db:"org_id"`
+	Status            BroadcastStatus                    `db:"status"`
 	Translations      JSONB[flows.BroadcastTranslations] `db:"translations"`
 	BaseLanguage      i18n.Language                      `db:"base_language"`
 	OptInID           OptInID                            `db:"optin_id"`
@@ -78,6 +81,7 @@ func NewBroadcast(orgID OrgID, translations flows.BroadcastTranslations,
 
 	return &Broadcast{
 		OrgID:        orgID,
+		Status:       BroadcastStatusPending,
 		Translations: translations,
 		BaseLanguage: baseLanguage,
 		Expressions:  expressions,
@@ -108,7 +112,7 @@ func NewBroadcastFromEvent(ctx context.Context, tx DBorTx, oa *OrgAssets, event 
 		}
 	}
 
-	return NewBroadcast(oa.OrgID(), event.Translations, event.BaseLanguage, true, NilOptInID, groupIDs, contactIDs, event.URNs, event.ContactQuery, NoExclusions, NilUserID), nil
+	return NewBroadcast(oa.OrgID(), event.Translations, event.BaseLanguage, false, NilOptInID, groupIDs, contactIDs, event.URNs, event.ContactQuery, NoExclusions, NilUserID), nil
 }
 
 func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastBatch {
@@ -169,6 +173,7 @@ func InsertBroadcast(ctx context.Context, db DBorTx, bcast *Broadcast) error {
 	dbb := &dbBroadcast{
 		ID:                bcast.ID,
 		OrgID:             bcast.OrgID,
+		Status:            bcast.Status,
 		Translations:      JSONB[flows.BroadcastTranslations]{bcast.Translations},
 		BaseLanguage:      bcast.BaseLanguage,
 		OptInID:           bcast.OptInID,
@@ -221,6 +226,7 @@ func InsertBroadcast(ctx context.Context, db DBorTx, bcast *Broadcast) error {
 func InsertChildBroadcast(ctx context.Context, db DBorTx, parent *Broadcast) (*Broadcast, error) {
 	child := &Broadcast{
 		OrgID:             parent.OrgID,
+		Status:            BroadcastStatusPending,
 		Translations:      parent.Translations,
 		BaseLanguage:      parent.BaseLanguage,
 		Expressions:       parent.Expressions,
@@ -251,25 +257,36 @@ type broadcastGroup struct {
 
 const sqlInsertBroadcast = `
 INSERT INTO
-	msgs_broadcast( org_id,  parent_id, created_on, modified_on, status,  translations,  base_language,  template_id,  template_variables,  urns,  query,  node_uuid,  exclusions,  optin_id,  schedule_id, is_active)
-			VALUES(:org_id, :parent_id, NOW()     , NOW(),       'Q',    :translations, :base_language, :template_id, :template_variables, :urns, :query, :node_uuid, :exclusions, :optin_id, :schedule_id,      TRUE)
+	msgs_broadcast( org_id,  parent_id, created_on, modified_on,  status,  translations,  base_language,  template_id,  template_variables,  urns,  query,  node_uuid,  exclusions,  optin_id,  schedule_id, is_active)
+			VALUES(:org_id, :parent_id, NOW()     , NOW(),       :status, :translations, :base_language, :template_id, :template_variables, :urns, :query, :node_uuid, :exclusions, :optin_id, :schedule_id,      TRUE)
 RETURNING id`
 
 const sqlInsertBroadcastContacts = `INSERT INTO msgs_broadcast_contacts(broadcast_id, contact_id) VALUES(:broadcast_id, :contact_id)`
 const sqlInsertBroadcastGroups = `INSERT INTO msgs_broadcast_groups(broadcast_id, contactgroup_id) VALUES(:broadcast_id, :contactgroup_id)`
 
 const sqlGetBroadcastByID = `
-SELECT id, org_id, status, translations, base_language, expressions, optin_id, template_id, template_variables, created_by_id
+SELECT id, org_id, status, translations, base_language, optin_id, template_id, template_variables, created_by_id
   FROM msgs_broadcast 
  WHERE id = $1`
 
 // GetBroadcastByID gets a broadcast by it's ID - NOTE this does not load all attributes of the broadcast
 func GetBroadcastByID(ctx context.Context, db DBorTx, bcastID BroadcastID) (*Broadcast, error) {
-	b := &Broadcast{}
+	b := &dbBroadcast{}
 	if err := db.GetContext(ctx, b, sqlGetBroadcastByID, bcastID); err != nil {
 		return nil, fmt.Errorf("error loading broadcast #%d: %w", bcastID, err)
 	}
-	return b, nil
+	return &Broadcast{
+		ID:                b.ID,
+		OrgID:             b.OrgID,
+		Status:            b.Status,
+		Translations:      b.Translations.V,
+		BaseLanguage:      b.BaseLanguage,
+		Expressions:       true,
+		OptInID:           b.OptInID,
+		TemplateID:        b.TemplateID,
+		TemplateVariables: b.TemplateVariables,
+		CreatedByID:       b.CreatedByID,
+	}, nil
 }
 
 // BroadcastBatch represents a batch of contacts that need messages sent for
@@ -292,7 +309,7 @@ type BroadcastBatch struct {
 	CreatedByID       UserID                      `json:"created_by_id"`
 }
 
-func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets) ([]*Msg, error) {
+func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, bcast *Broadcast) ([]*Msg, error) {
 	// load all our contacts
 	contacts, err := LoadContacts(ctx, rt.DB, oa, b.ContactIDs)
 	if err != nil {
@@ -304,7 +321,7 @@ func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime
 
 	// run through all our contacts to create our messages
 	for _, c := range contacts {
-		msg, err := b.createMessage(rt, oa, c)
+		msg, err := bcast.createMessage(rt, oa, c)
 		if err != nil {
 			return nil, fmt.Errorf("error creating broadcast message: %w", err)
 		}
@@ -323,16 +340,16 @@ func (b *BroadcastBatch) CreateMessages(ctx context.Context, rt *runtime.Runtime
 }
 
 // creates an outgoing message for the given contact - can return nil if resultant message has no content and thus is a noop
-func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Contact) (*Msg, error) {
+func (b *Broadcast) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Contact) (*Msg, error) {
 	contact, err := c.FlowContact(oa)
 	if err != nil {
 		return nil, fmt.Errorf("error creating flow contact for broadcast message: %w", err)
 	}
 
-	content, locale := b.Broadcast.Translations.ForContact(oa.Env(), contact, b.Broadcast.BaseLanguage)
+	content, locale := b.Translations.ForContact(oa.Env(), contact, b.BaseLanguage)
 
 	var expressionsContext *types.XObject
-	if b.Broadcast.Expressions {
+	if b.Expressions {
 		expressionsContext = types.NewXObject(map[string]types.XValue{
 			"contact": flows.Context(oa.Env(), contact),
 			"fields":  flows.Context(oa.Env(), contact.Fields()),
@@ -347,9 +364,9 @@ func (b *BroadcastBatch) createMessage(rt *runtime.Runtime, oa *OrgAssets, c *Co
 	}
 
 	// create our outgoing message
-	out, ch := CreateMsgOut(rt, oa, contact, content, b.Broadcast.TemplateID, b.Broadcast.TemplateVariables, locale, expressionsContext)
+	out, ch := CreateMsgOut(rt, oa, contact, content, b.TemplateID, b.TemplateVariables, locale, expressionsContext)
 
-	msg, err := NewOutgoingBroadcastMsg(rt, oa.Org(), ch, contact, out, b.Broadcast)
+	msg, err := NewOutgoingBroadcastMsg(rt, oa.Org(), ch, contact, out, b)
 	if err != nil {
 		return nil, fmt.Errorf("error creating outgoing message: %w", err)
 	}
