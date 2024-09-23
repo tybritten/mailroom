@@ -160,6 +160,20 @@ func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastB
 	return bb
 }
 
+// SetStarted sets the status of this broadcast to STARTED, if it's not already set to INTERRUPTED
+func (b *Broadcast) SetStarted(ctx context.Context, db DBorTx, contactCount int) error {
+	if b.Status != BroadcastStatusInterrupted {
+		b.Status = BroadcastStatusStarted
+	}
+	if b.ID != NilBroadcastID {
+		_, err := db.ExecContext(ctx, "UPDATE msgs_broadcast SET status = 'S', contact_count = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", b.ID, contactCount)
+		if err != nil {
+			return fmt.Errorf("error setting broadcast #%d as started: %w", b.ID, err)
+		}
+	}
+	return nil
+}
+
 // SetCompleted sets the status of this broadcast to COMPLETED, if it's not already set to INTERRUPTED
 func (b *Broadcast) SetCompleted(ctx context.Context, db DBorTx) error {
 	if b.Status != BroadcastStatusInterrupted {

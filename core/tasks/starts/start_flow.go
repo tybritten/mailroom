@@ -97,7 +97,7 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		}
 	}
 
-	// mark our start as starting, last task will mark as complete
+	// mark our start as started, last task will mark as complete
 	if err := start.SetStarted(ctx, rt.DB, len(contactIDs)); err != nil {
 		return fmt.Errorf("error marking start as started: %w", err)
 	}
