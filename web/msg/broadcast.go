@@ -79,6 +79,7 @@ func handleBroadcast(ctx context.Context, rt *runtime.Runtime, r *broadcastReque
 
 	bcast := &models.Broadcast{
 		OrgID:             r.OrgID,
+		Status:            models.BroadcastStatusPending,
 		Translations:      r.Translations,
 		BaseLanguage:      r.BaseLanguage,
 		Expressions:       true,
