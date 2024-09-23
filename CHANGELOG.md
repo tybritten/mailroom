@@ -1,3 +1,7 @@
+v9.3.30 (2024-09-23)
+-------------------------
+ * Use broadcast field on batch tasks
+
 v9.3.29 (2024-09-22)
 -------------------------
  * Fix trigger_session actions with IVR flows
