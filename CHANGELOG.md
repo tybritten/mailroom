@@ -1,3 +1,8 @@
+v9.3.31 (2024-09-23)
+-------------------------
+ * Mark broadcasts as started once recipients are known and update contact_count
+ * Fix loading broadcasts from batch tasks
+
 v9.3.30 (2024-09-23)
 -------------------------
  * Use broadcast field on batch tasks
