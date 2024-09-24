@@ -567,6 +567,8 @@ func TestUpdateContactURNs(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetAll)
 
+	testdata.InsertContactGroup(rt, testdata.Org1, "e3374234-8131-4f65-9c51-ce84fd7f3bb5", "No URN", `urn = ""`)
+
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
 	assert.NoError(t, err)
 
@@ -576,8 +578,20 @@ func TestUpdateContactURNs(t *testing.T) {
 	assertContactURNs := func(contactID models.ContactID, expected []string) {
 		var actual []string
 		err = rt.DB.Select(&actual, `SELECT identity FROM contacts_contacturn WHERE contact_id = $1 ORDER BY priority DESC`, contactID)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expected, actual, "URNs mismatch for contact %d", contactID)
+	}
+	assertModifiedOnUpdated := func(contactID models.ContactID, greaterThan time.Time) {
+		var modifiedOn time.Time
+		err = rt.DB.Get(&modifiedOn, `SELECT modified_on FROM contacts_contact WHERE id = $1`, contactID)
+		require.NoError(t, err)
+		assert.Greater(t, modifiedOn, greaterThan, "URNs mismatch for contact %d", contactID)
+	}
+	assertGroups := func(contactID models.ContactID, expected []string) {
+		var actual []string
+		err = rt.DB.Select(&actual, `SELECT g.name FROM contacts_contactgroup_contacts gc INNER JOIN contacts_contactgroup g ON g.id = gc.contactgroup_id WHERE gc.contact_id = $1`, contactID)
+		require.NoError(t, err)
+		assert.ElementsMatch(t, expected, actual)
 	}
 
 	assertContactURNs(testdata.Cathy.ID, []string{"tel:+16055741111"})
@@ -608,12 +622,20 @@ func TestUpdateContactURNs(t *testing.T) {
 	assertContactURNs(testdata.Cathy.ID, []string{"tel:+16055700001"})
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contacturn WHERE contact_id IS NULL`).Returns(1) // now orphaned
 
+	t1 := time.Now()
+
 	// steal a URN from Bob
-	err = models.UpdateContactURNs(ctx, rt.DB, oa, []*models.ContactURNsChanged{{testdata.Cathy.ID, testdata.Org1.ID, []urns.URN{"tel:+16055700001", "tel:+16055700002"}}})
+	err = models.UpdateContactURNs(ctx, rt.DB, oa, []*models.ContactURNsChanged{
+		{testdata.Cathy.ID, testdata.Org1.ID, []urns.URN{"tel:+16055700001", "tel:+16055700002"}},
+		{testdata.Alexandria.ID, testdata.Org1.ID, []urns.URN{"tel:+16055742222"}},
+	})
 	assert.NoError(t, err)
 
 	assertContactURNs(testdata.Cathy.ID, []string{"tel:+16055700001", "tel:+16055700002"})
-	assertContactURNs(testdata.Bob.ID, []string{"tel:+16055742222"})
+	assertContactURNs(testdata.Alexandria.ID, []string{"tel:+16055742222"})
+	assertContactURNs(testdata.Bob.ID, []string(nil))
+	assertModifiedOnUpdated(testdata.Bob.ID, t1)
+	assertGroups(testdata.Bob.ID, []string{"Active", "No URN"})
 
 	// steal the URN back from Cathy whilst simulataneously adding new URN to Cathy and not-changing anything for George
 	err = models.UpdateContactURNs(ctx, rt.DB, oa, []*models.ContactURNsChanged{

@@ -1289,10 +1289,29 @@ func UpdateContactURNs(ctx context.Context, db DBorTx, oa *OrgAssets, changes []
 			}
 		}
 
-		// finally mark all the orphaned contacts as modified
+		// finally update the contacts who had URNs stolen from them
 		if len(orphanedIDs) > 0 {
-			err := UpdateContactModifiedOn(ctx, db, orphanedIDs)
+			orphans, err := LoadContacts(ctx, db, oa, orphanedIDs)
 			if err != nil {
+				return fmt.Errorf("error loading contacts affecting by URN stealing: %w", err)
+			}
+
+			// turn them into flow contacts..
+			flowOrphans := make([]*flows.Contact, len(orphans))
+			for i, c := range orphans {
+				flowOrphans[i], err = c.FlowContact(oa)
+				if err != nil {
+					return fmt.Errorf("error creating orphan flow contact: %w", err)
+				}
+			}
+
+			// and re-calculate their dynamic groups
+			if err := CalculateDynamicGroups(ctx, db, oa, flowOrphans); err != nil {
+				return fmt.Errorf("error re-calculating dynamic groups for orphaned contacts: %w", err)
+			}
+
+			// and mark them as updated
+			if err := UpdateContactModifiedOn(ctx, db, orphanedIDs); err != nil {
 				return fmt.Errorf("error updating orphaned contacts: %w", err)
 			}
 		}
