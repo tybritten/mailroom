@@ -1,3 +1,8 @@
+v9.3.33 (2024-09-24)
+-------------------------
+ * Re-evaluate dynamic groups of contacts who have had URNs stolen from them
+ * Remove unused broadcast task fields
+
 v9.3.32 (2024-09-23)
 -------------------------
  * Fix broadcast endpoint creating broadcasts with empty status
