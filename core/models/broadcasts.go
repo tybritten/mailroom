@@ -123,32 +123,12 @@ type BroadcastBatch struct {
 
 	ContactIDs []ContactID `json:"contact_ids"`
 	IsLast     bool        `json:"is_last"`
-
-	// TODO remove
-	OrgID             OrgID                       `json:"org_id"`
-	Translations      flows.BroadcastTranslations `json:"translations"`
-	BaseLanguage      i18n.Language               `json:"base_language"`
-	Expressions       bool                        `json:"expressions"`
-	OptInID           OptInID                     `json:"optin_id,omitempty"`
-	TemplateID        TemplateID                  `json:"template_id,omitempty"`
-	TemplateVariables []string                    `json:"template_variables,omitempty"`
-	CreatedByID       UserID                      `json:"created_by_id"`
 }
 
 func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastBatch {
 	bb := &BroadcastBatch{
 		ContactIDs: contactIDs,
 		IsLast:     isLast,
-
-		// TODO remove
-		OrgID:             b.OrgID,
-		Translations:      b.Translations,
-		BaseLanguage:      b.BaseLanguage,
-		Expressions:       b.Expressions,
-		OptInID:           b.OptInID,
-		TemplateID:        b.TemplateID,
-		TemplateVariables: b.TemplateVariables,
-		CreatedByID:       b.CreatedByID,
 	}
 
 	if b.ID != NilBroadcastID {
