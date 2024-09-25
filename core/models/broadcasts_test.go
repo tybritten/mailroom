@@ -52,6 +52,14 @@ func TestBroadcasts(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_broadcast_groups WHERE broadcast_id = $1`, bcast.ID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_broadcast_contacts WHERE broadcast_id = $1`, bcast.ID).Returns(3)
 
+	err = bcast.SetQueued(ctx, rt.DB, 5)
+	assert.NoError(t, err)
+	assertdb.Query(t, rt.DB, `SELECT status, contact_count FROM msgs_broadcast WHERE id = $1`, bcast.ID).Columns(map[string]any{"status": "Q", "contact_count": int64(5)})
+
+	err = bcast.SetStarted(ctx, rt.DB)
+	assert.NoError(t, err)
+	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_broadcast WHERE id = $1`, bcast.ID).Returns("S")
+
 	err = bcast.SetCompleted(ctx, rt.DB)
 	assert.NoError(t, err)
 	assertdb.Query(t, rt.DB, `SELECT status FROM msgs_broadcast WHERE id = $1`, bcast.ID).Returns("C")
@@ -123,7 +131,7 @@ func TestNonPersistentBroadcasts(t *testing.T) {
 	assert.Equal(t, "", bcast.Query)
 	assert.Equal(t, models.NoExclusions, bcast.Exclusions)
 
-	batch := bcast.CreateBatch([]models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID}, false)
+	batch := bcast.CreateBatch([]models.ContactID{testdata.Alexandria.ID, testdata.Bob.ID}, true, false)
 
 	assert.Equal(t, models.NilBroadcastID, batch.BroadcastID)
 	assert.NotNil(t, testdata.Org1.ID, batch.Broadcast)

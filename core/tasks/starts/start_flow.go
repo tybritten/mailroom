@@ -97,9 +97,9 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		}
 	}
 
-	// mark our start as started, last task will mark as complete
-	if err := start.SetStarted(ctx, rt.DB, len(contactIDs)); err != nil {
-		return fmt.Errorf("error marking start as started: %w", err)
+	// mark our start as queued
+	if err := start.SetQueued(ctx, rt.DB, len(contactIDs)); err != nil {
+		return fmt.Errorf("error marking start as queued: %w", err)
 	}
 
 	// if there are no contacts to start, mark our start as complete, we are done
@@ -123,9 +123,10 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 	defer rc.Close()
 
 	for i, idBatch := range idBatches {
+		isFirst := (i == 0)
 		isLast := (i == len(idBatches)-1)
 
-		batch := start.CreateBatch(idBatch, isLast, len(contactIDs))
+		batch := start.CreateBatch(idBatch, isFirst, isLast, len(contactIDs))
 
 		// task is different if we are an IVR flow
 		var batchTask tasks.Task

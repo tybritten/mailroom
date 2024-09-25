@@ -65,11 +65,11 @@ func TestStarts(t *testing.T) {
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowstart_contacts WHERE flowstart_id = $1`, startID).Returns(2)
 
-	err = start.SetStarted(ctx, rt.DB, 2)
-	assert.NoError(t, err)
-	assertdb.Query(t, rt.DB, `SELECT status, contact_count FROM flows_flowstart WHERE id = $1`, startID).Columns(map[string]any{"status": "S", "contact_count": int64(2)})
+	err = start.SetQueued(ctx, rt.DB, 5)
+	require.NoError(t, err)
+	assertdb.Query(t, rt.DB, `SELECT status, contact_count FROM flows_flowstart WHERE id = $1`, startID).Columns(map[string]any{"status": "Q", "contact_count": int64(5)})
 
-	batch := start.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, false, 3)
+	batch := start.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, true, false, 3)
 	assert.Equal(t, startID, batch.StartID)
 	assert.Equal(t, []models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, batch.ContactIDs)
 	assert.False(t, batch.IsLast)
@@ -81,6 +81,10 @@ func TestStarts(t *testing.T) {
 
 	_, err = models.ReadSessionHistory([]byte(`{`))
 	assert.EqualError(t, err, "unexpected end of JSON input")
+
+	err = start.SetStarted(ctx, rt.DB)
+	require.NoError(t, err)
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowstart WHERE id = $1`, startID).Returns("S")
 
 	err = start.SetCompleted(ctx, rt.DB)
 	require.NoError(t, err)

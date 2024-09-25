@@ -43,6 +43,7 @@ type StartStatus string
 // start status constants
 const (
 	StartStatusPending     = StartStatus("P")
+	StartStatusQueued      = StartStatus("Q")
 	StartStatusStarted     = StartStatus("S")
 	StartStatusCompleted   = StartStatus("C")
 	StartStatusFailed      = StartStatus("F")
@@ -158,13 +159,13 @@ func (s *FlowStart) WithParams(params json.RawMessage) *FlowStart {
 	return s
 }
 
-// SetStarted sets the status of this start to STARTED, if it's not already set to INTERRUPTED
-func (s *FlowStart) SetStarted(ctx context.Context, db DBorTx, contactCount int) error {
+// SetQueued sets the status of this start to QUEUED, if it's not already set to INTERRUPTED
+func (s *FlowStart) SetQueued(ctx context.Context, db DBorTx, contactCount int) error {
 	if s.Status != StartStatusInterrupted {
-		s.Status = StartStatusStarted
+		s.Status = StartStatusQueued
 	}
 	if s.ID != NilStartID {
-		_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'S', contact_count = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", s.ID, contactCount)
+		_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'Q', contact_count = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", s.ID, contactCount)
 		if err != nil {
 			return fmt.Errorf("error setting start #%d as started: %w", s.ID, err)
 		}
@@ -172,29 +173,29 @@ func (s *FlowStart) SetStarted(ctx context.Context, db DBorTx, contactCount int)
 	return nil
 }
 
+// SetStarted sets the status of this start to STARTED, if it's not already set to INTERRUPTED
+func (s *FlowStart) SetStarted(ctx context.Context, db DBorTx) error {
+	return s.setStatus(ctx, db, StartStatusStarted)
+}
+
 // SetCompleted sets the status of this start to COMPLETED, if it's not already set to INTERRUPTED
 func (s *FlowStart) SetCompleted(ctx context.Context, db DBorTx) error {
-	if s.Status != StartStatusInterrupted {
-		s.Status = StartStatusCompleted
-	}
-	if s.ID != NilStartID {
-		_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'C', modified_on = NOW() WHERE id = $1 AND status != 'I'", s.ID)
-		if err != nil {
-			return fmt.Errorf("error marking flow start #%d as completed: %w", s.ID, err)
-		}
-	}
-	return nil
+	return s.setStatus(ctx, db, StartStatusCompleted)
 }
 
 // SetFailed sets the status of this start to FAILED, if it's not already set to INTERRUPTED
 func (s *FlowStart) SetFailed(ctx context.Context, db DBorTx) error {
+	return s.setStatus(ctx, db, StartStatusFailed)
+}
+
+func (s *FlowStart) setStatus(ctx context.Context, db DBorTx, status StartStatus) error {
 	if s.Status != StartStatusInterrupted {
-		s.Status = StartStatusFailed
+		s.Status = status
 	}
 	if s.ID != NilStartID {
-		_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = 'F', modified_on = NOW() WHERE id = $1 AND status != 'I'", s.ID)
+		_, err := db.ExecContext(ctx, "UPDATE flows_flowstart SET status = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", s.ID, status)
 		if err != nil {
-			return fmt.Errorf("error setting flow start #%d as failed: %w", s.ID, err)
+			return fmt.Errorf("error updating start #%d with status=%s: %w", s.ID, status, err)
 		}
 	}
 	return nil
@@ -278,10 +279,11 @@ const sqlInsertStartGroup = `
 INSERT INTO flows_flowstart_groups(flowstart_id, contactgroup_id) VALUES(:flowstart_id, :contactgroup_id)`
 
 // CreateBatch creates a batch for this start using the passed in contact ids
-func (s *FlowStart) CreateBatch(contactIDs []ContactID, last bool, totalContacts int) *FlowStartBatch {
+func (s *FlowStart) CreateBatch(contactIDs []ContactID, isFirst, isLast bool, totalContacts int) *FlowStartBatch {
 	b := &FlowStartBatch{
 		ContactIDs:    contactIDs,
-		IsLast:        last,
+		IsFirst:       isFirst,
+		IsLast:        isLast,
 		TotalContacts: totalContacts,
 	}
 
@@ -301,6 +303,7 @@ type FlowStartBatch struct {
 	Start   *FlowStart `json:"start,omitempty"`
 
 	ContactIDs    []ContactID `json:"contact_ids"`
+	IsFirst       bool        `json:"is_first"`
 	IsLast        bool        `json:"is_last,omitempty"`
 	TotalContacts int         `json:"total_contacts"`
 }
