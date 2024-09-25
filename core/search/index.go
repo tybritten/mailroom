@@ -36,8 +36,11 @@ func DeindexContactsByID(ctx context.Context, rt *runtime.Runtime, orgID models.
 }
 
 // DeindexContactsByOrg de-indexes all contacts in the given org from Elastic
-func DeindexContactsByOrg(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) (int, error) {
-	src := map[string]any{"query": elastic.Term("org_id", orgID)}
+func DeindexContactsByOrg(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID, limit int) (int, error) {
+	src := map[string]any{
+		"query":    elastic.Term("org_id", orgID),
+		"max_docs": limit,
+	}
 
 	resp, err := rt.ES.DeleteByQuery(rt.Config.ElasticContactsIndex).Routing(orgID.String()).Raw(bytes.NewReader(jsonx.MustMarshal(src))).Do(ctx)
 	if err != nil {

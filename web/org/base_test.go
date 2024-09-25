@@ -11,8 +11,27 @@ import (
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/nyaruka/mailroom/web"
+	"github.com/nyaruka/redisx/assertredis"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestDeindex(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer func() {
+		rt.DB.MustExec(`UPDATE orgs_org SET is_active = true WHERE id = $1`, testdata.Org1.ID)
+	}()
+
+	rt.DB.MustExec(`UPDATE orgs_org SET is_active = false WHERE id = $1`, testdata.Org1.ID)
+
+	defer testsuite.Reset(testsuite.ResetElastic | testsuite.ResetRedis)
+
+	testsuite.RunWebTests(t, ctx, rt, "testdata/deindex.json", nil)
+
+	rc := rt.RP.Get()
+	defer rc.Close()
+	assertredis.SMembers(t, rc, "deindex:contacts", []string{"1"})
+}
 
 func TestMetrics(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
