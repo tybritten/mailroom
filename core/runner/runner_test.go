@@ -36,7 +36,7 @@ func TestStartFlowBatch(t *testing.T) {
 	err := models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start1})
 	require.NoError(t, err)
 
-	batch1 := start1.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, false, 4)
+	batch1 := start1.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, true, false, 4)
 
 	// start the first batch...
 	sessions, err := runner.StartFlowBatch(ctx, rt, oa, start1, batch1)
@@ -63,7 +63,7 @@ func TestStartFlowBatch(t *testing.T) {
 	err = models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start2})
 	require.NoError(t, err)
 
-	batch2 := start2.CreateBatch([]models.ContactID{testdata.Cathy.ID}, true, 1)
+	batch2 := start2.CreateBatch([]models.ContactID{testdata.Cathy.ID}, false, true, 1)
 
 	sessions, err = runner.StartFlowBatch(ctx, rt, oa, start2, batch2)
 	require.NoError(t, err)

@@ -54,6 +54,13 @@ func (t *SendBroadcastBatchTask) Perform(ctx context.Context, rt *runtime.Runtim
 		return nil
 	}
 
+	// if this is our first batch, mark as started
+	if t.IsFirst {
+		if err := bcast.SetStarted(ctx, rt.DB); err != nil {
+			return fmt.Errorf("error marking broadcast as started: %w", err)
+		}
+	}
+
 	// create this batch of messages
 	msgs, err := bcast.CreateMessages(ctx, rt, oa, t.BroadcastBatch)
 	if err != nil {
