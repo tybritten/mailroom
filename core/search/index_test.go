@@ -17,32 +17,46 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDeindexContactsByID(t *testing.T) {
+func TestDeindexContacts(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
+	defer testsuite.Reset(testsuite.ResetAll)
+
 	testsuite.ReindexElastic(ctx)
+
+	// ensures changes are visible in elastic
+	refreshElastic := func() {
+		_, err := rt.ES.Indices.Refresh().Index(rt.Config.ElasticContactsIndex).Do(ctx)
+		require.NoError(t, err)
+	}
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contact WHERE org_id = $1`, testdata.Org1.ID).Returns(124)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contact WHERE org_id = $1`, testdata.Org2.ID).Returns(121)
 	assertSearchCount(t, rt, elastic.Term("org_id", testdata.Org1.ID), 124)
 	assertSearchCount(t, rt, elastic.Term("org_id", testdata.Org2.ID), 121)
 
-	// try to deindex contacts which aren't deleted
-	deindexed, err := search.DeindexContactsByID(ctx, rt, []models.ContactID{testdata.Bob.ID, testdata.George.ID})
-	assert.NoError(t, err)
-	assert.Equal(t, 0, deindexed)
-
-	assertSearchCount(t, rt, elastic.Term("org_id", testdata.Org1.ID), 124)
-	assertSearchCount(t, rt, elastic.Term("org_id", testdata.Org2.ID), 121)
-
-	rt.DB.MustExec(`UPDATE contacts_contact SET is_active = false WHERE org_id = $1`, testdata.Org1.ID)
-
-	deindexed, err = search.DeindexContactsByID(ctx, rt, []models.ContactID{testdata.Bob.ID, testdata.George.ID})
+	deindexed, err := search.DeindexContactsByID(ctx, rt, testdata.Org1.ID, []models.ContactID{testdata.Bob.ID, testdata.George.ID})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, deindexed)
 
+	refreshElastic()
+
 	assertSearchCount(t, rt, elastic.Term("org_id", testdata.Org1.ID), 122)
 	assertSearchCount(t, rt, elastic.Term("org_id", testdata.Org2.ID), 121)
+
+	deindexed, err = search.DeindexContactsByOrg(ctx, rt, testdata.Org1.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, 122, deindexed)
+
+	refreshElastic()
+
+	assertSearchCount(t, rt, elastic.Term("org_id", testdata.Org1.ID), 0)
+	assertSearchCount(t, rt, elastic.Term("org_id", testdata.Org2.ID), 121)
+
+	// run again, this time nothing to deindex
+	deindexed, err = search.DeindexContactsByOrg(ctx, rt, testdata.Org1.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, deindexed)
 }
 
 func assertSearchCount(t *testing.T, rt *runtime.Runtime, query elastic.Query, expected int) {
