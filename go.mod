@@ -22,7 +22,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
-	github.com/nyaruka/gocommon v1.59.0
+	github.com/nyaruka/gocommon v1.59.1
 	github.com/nyaruka/goflow v0.222.4
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.1

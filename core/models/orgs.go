@@ -10,6 +10,7 @@ import (
 	"mime"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -58,6 +59,10 @@ func airtimeServiceFactory(rt *runtime.Runtime) engine.AirtimeServiceFactory {
 
 // OrgID is our type for org ids
 type OrgID int
+
+func (i OrgID) String() string {
+	return strconv.FormatInt(int64(i), 10)
+}
 
 // OrgUUID is our type for org UUIDs
 type OrgUUID uuids.UUID
