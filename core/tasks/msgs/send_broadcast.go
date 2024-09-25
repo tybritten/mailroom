@@ -82,9 +82,9 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		contactIDs = append(contactIDs, nodeContactIDs...)
 	}
 
-	// mark our broadcast as started, last task will mark as complete
-	if err := bcast.SetStarted(ctx, rt.DB, len(contactIDs)); err != nil {
-		return fmt.Errorf("error marking broadcast as started: %w", err)
+	// mark our broadcast as queued
+	if err := bcast.SetQueued(ctx, rt.DB, len(contactIDs)); err != nil {
+		return fmt.Errorf("error marking broadcast as queued: %w", err)
 	}
 
 	// if there are no contacts to send to, mark our broadcast as sent, we are done
@@ -112,9 +112,10 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 	// create tasks for batches of contacts
 	idBatches := slices.Collect(slices.Chunk(contactIDs, startBatchSize))
 	for i, idBatch := range idBatches {
+		isFirst := (i == 0)
 		isLast := (i == len(idBatches)-1)
 
-		batch := bcast.CreateBatch(idBatch, isLast)
+		batch := bcast.CreateBatch(idBatch, isFirst, isLast)
 		err = tasks.Queue(rc, q, bcast.OrgID, &SendBroadcastBatchTask{BroadcastBatch: batch}, queues.DefaultPriority)
 		if err != nil {
 			if i == 0 {

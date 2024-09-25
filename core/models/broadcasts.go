@@ -27,6 +27,7 @@ type BroadcastStatus string
 // start status constants
 const (
 	BroadcastStatusPending     = BroadcastStatus("P")
+	BroadcastStatusQueued      = BroadcastStatus("Q")
 	BroadcastStatusStarted     = BroadcastStatus("S")
 	BroadcastStatusCompleted   = BroadcastStatus("C")
 	BroadcastStatusFailed      = BroadcastStatus("F")
@@ -122,12 +123,14 @@ type BroadcastBatch struct {
 	Broadcast   *Broadcast  `json:"broadcast,omitempty"`
 
 	ContactIDs []ContactID `json:"contact_ids"`
+	IsFirst    bool        `json:"is_first"`
 	IsLast     bool        `json:"is_last"`
 }
 
-func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastBatch {
+func (b *Broadcast) CreateBatch(contactIDs []ContactID, isFirst, isLast bool) *BroadcastBatch {
 	bb := &BroadcastBatch{
 		ContactIDs: contactIDs,
+		IsFirst:    isFirst,
 		IsLast:     isLast,
 	}
 
@@ -140,43 +143,43 @@ func (b *Broadcast) CreateBatch(contactIDs []ContactID, isLast bool) *BroadcastB
 	return bb
 }
 
-// SetStarted sets the status of this broadcast to STARTED, if it's not already set to INTERRUPTED
-func (b *Broadcast) SetStarted(ctx context.Context, db DBorTx, contactCount int) error {
+// SetStarted sets the status of this broadcast to QUEUED, if it's not already set to INTERRUPTED
+func (b *Broadcast) SetQueued(ctx context.Context, db DBorTx, contactCount int) error {
 	if b.Status != BroadcastStatusInterrupted {
-		b.Status = BroadcastStatusStarted
+		b.Status = BroadcastStatusQueued
 	}
 	if b.ID != NilBroadcastID {
-		_, err := db.ExecContext(ctx, "UPDATE msgs_broadcast SET status = 'S', contact_count = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", b.ID, contactCount)
+		_, err := db.ExecContext(ctx, "UPDATE msgs_broadcast SET status = 'Q', contact_count = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", b.ID, contactCount)
 		if err != nil {
-			return fmt.Errorf("error setting broadcast #%d as started: %w", b.ID, err)
+			return fmt.Errorf("error setting broadcast #%d as queued: %w", b.ID, err)
 		}
 	}
 	return nil
+}
+
+// SetStarted sets the status of this broadcast to STARTED, if it's not already set to INTERRUPTED
+func (b *Broadcast) SetStarted(ctx context.Context, db DBorTx) error {
+	return b.setStatus(ctx, db, BroadcastStatusStarted)
 }
 
 // SetCompleted sets the status of this broadcast to COMPLETED, if it's not already set to INTERRUPTED
 func (b *Broadcast) SetCompleted(ctx context.Context, db DBorTx) error {
-	if b.Status != BroadcastStatusInterrupted {
-		b.Status = BroadcastStatusCompleted
-	}
-	if b.ID != NilBroadcastID {
-		_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'C', modified_on = now() WHERE id = $1`, b.ID)
-		if err != nil {
-			return fmt.Errorf("error marking broadcast #%d as completed: %w", b.ID, err)
-		}
-	}
-	return nil
+	return b.setStatus(ctx, db, BroadcastStatusCompleted)
 }
 
 // SetFailed sets the status of this broadcast to FAILED, if it's not already set to INTERRUPTED
 func (b *Broadcast) SetFailed(ctx context.Context, db DBorTx) error {
+	return b.setStatus(ctx, db, BroadcastStatusFailed)
+}
+
+func (b *Broadcast) setStatus(ctx context.Context, db DBorTx, status BroadcastStatus) error {
 	if b.Status != BroadcastStatusInterrupted {
-		b.Status = BroadcastStatusFailed
+		b.Status = status
 	}
 	if b.ID != NilBroadcastID {
-		_, err := db.ExecContext(ctx, `UPDATE msgs_broadcast SET status = 'F', modified_on = now() WHERE id = $1`, b.ID)
+		_, err := db.ExecContext(ctx, "UPDATE msgs_broadcast SET status = $2, modified_on = NOW() WHERE id = $1 AND status != 'I'", b.ID, status)
 		if err != nil {
-			return fmt.Errorf("error marking broadcast #%d as failed: %w", b.ID, err)
+			return fmt.Errorf("error updating broadcast #%d with status=%s: %w", b.ID, status, err)
 		}
 	}
 	return nil

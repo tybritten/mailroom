@@ -54,6 +54,13 @@ func (t *StartFlowBatchTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 		return nil
 	}
 
+	// if this is our first batch, mark as started
+	if t.IsFirst {
+		if err := start.SetStarted(ctx, rt.DB); err != nil {
+			return fmt.Errorf("error marking start as started: %w", err)
+		}
+	}
+
 	// start these contacts in our flow
 	_, err = runner.StartFlowBatch(ctx, rt, oa, start, t.FlowStartBatch)
 	if err != nil {
