@@ -1,3 +1,7 @@
+v9.3.35 (2024-09-26)
+-------------------------
+ * Add web endpoint to queue org for de-indexing
+
 v9.3.34 (2024-09-25)
 -------------------------
  * Re-introduce queued status for broadcasts and flow starts
