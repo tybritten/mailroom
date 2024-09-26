@@ -30,6 +30,20 @@ func TestCreate(t *testing.T) {
 	testsuite.RunWebTests(t, ctx, rt, "testdata/create.json", nil)
 }
 
+func TestDeindex(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer func() {
+		rt.DB.MustExec(`UPDATE contacts_contact SET is_active = true, modified_on = NOW() WHERE id IN ($1, $2)`, testdata.Bob.ID, testdata.George.ID)
+
+		testsuite.Reset(testsuite.ResetElastic)
+	}()
+
+	rt.DB.MustExec(`UPDATE contacts_contact SET is_active = false, modified_on = NOW() WHERE id IN ($1, $2)`, testdata.Bob.ID, testdata.George.ID)
+
+	testsuite.RunWebTests(t, ctx, rt, "testdata/deindex.json", nil)
+}
+
 func TestExport(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
