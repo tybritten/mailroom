@@ -1366,6 +1366,7 @@ func (i URNID) Value() (driver.Value, error)  { return null.IntValue(i) }
 func (i *URNID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
 func (i URNID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
 
+func (i ContactID) String() string                { return strconv.FormatInt(int64(i), 10) }
 func (i *ContactID) Scan(value any) error         { return null.ScanInt(value, i) }
 func (i ContactID) Value() (driver.Value, error)  { return null.IntValue(i) }
 func (i *ContactID) UnmarshalJSON(b []byte) error { return null.UnmarshalInt(b, i) }
