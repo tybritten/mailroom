@@ -1,3 +1,7 @@
+v9.3.37 (2024-09-26)
+-------------------------
+ * Remove check in deindex contact for contact being inactive.. so that it can be run before deletion actually occurs
+
 v9.3.36 (2024-09-26)
 -------------------------
  * Add endpoint to de-index specific contacts
