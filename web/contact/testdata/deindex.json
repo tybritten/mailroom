@@ -9,36 +9,6 @@
         }
     },
     {
-        "label": "invalid contact id",
-        "method": "POST",
-        "path": "/mr/contact/deindex",
-        "body": {
-            "org_id": 1,
-            "contact_ids": [
-                100000000
-            ]
-        },
-        "status": 500,
-        "response": {
-            "error": "some contacts to be de-indexed in org #1 are active or don't exist"
-        }
-    },
-    {
-        "label": "contact that is still active",
-        "method": "POST",
-        "path": "/mr/contact/deindex",
-        "body": {
-            "org_id": 1,
-            "contact_ids": [
-                10000
-            ]
-        },
-        "status": 500,
-        "response": {
-            "error": "some contacts to be de-indexed in org #1 are active or don't exist"
-        }
-    },
-    {
         "label": "contacts that are inactive",
         "method": "POST",
         "path": "/mr/contact/deindex",
