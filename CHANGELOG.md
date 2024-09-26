@@ -1,3 +1,7 @@
+v9.3.36 (2024-09-26)
+-------------------------
+ * Add endpoint to de-index specific contacts
+
 v9.3.35 (2024-09-26)
 -------------------------
  * Add web endpoint to queue org for de-indexing
