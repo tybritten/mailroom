@@ -1,3 +1,8 @@
+v9.3.38 (2024-09-30)
+-------------------------
+ * Make panic recovery code consistent
+ * Add endpoint for testing error handling and sentry integration
+
 v9.3.37 (2024-09-26)
 -------------------------
  * Remove check in deindex contact for contact being inactive.. so that it can be run before deletion actually occurs
