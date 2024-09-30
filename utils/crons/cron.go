@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -85,7 +86,7 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, allInstances bo
 
 				// ok, got the lock, run our cron function
 				started := time.Now()
-				results, err := fireCron(rt, name, cronFunc, timeout)
+				results, err := fireCron(rt, cronFunc, timeout)
 				if err != nil {
 					log.Error("error while running cron", "error", err)
 				}
@@ -112,7 +113,7 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, allInstances bo
 
 // fireCron is just a wrapper around the cron function we will call for the purposes of
 // catching and logging panics
-func fireCron(rt *runtime.Runtime, name string, cronFunc Function, timeout time.Duration) (map[string]any, error) {
+func fireCron(rt *runtime.Runtime, cronFunc Function, timeout time.Duration) (map[string]any, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -121,7 +122,7 @@ func fireCron(rt *runtime.Runtime, name string, cronFunc Function, timeout time.
 		if panicVal := recover(); panicVal != nil {
 			debug.PrintStack()
 
-			slog.Error("panic running cron", "cron", name, "value", panicVal, "stack", debug.Stack())
+			sentry.CurrentHub().Recover(panicVal)
 		}
 	}()
 

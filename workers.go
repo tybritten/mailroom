@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/queues"
@@ -163,7 +164,7 @@ func (w *Worker) handleTask(task *queues.Task) {
 		if panicVal := recover(); panicVal != nil {
 			debug.PrintStack()
 
-			log.Error("panic handling task", "task", string(task.Task), "value", panicVal, "stack", debug.Stack())
+			sentry.CurrentHub().Recover(panicVal)
 		}
 
 		// mark our task as complete

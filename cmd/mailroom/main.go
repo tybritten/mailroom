@@ -62,7 +62,7 @@ func main() {
 
 	// if we have a DSN entry, try to initialize it
 	if config.SentryDSN != "" {
-		err := sentry.Init(sentry.ClientOptions{Dsn: config.SentryDSN, EnableTracing: false})
+		err := sentry.Init(sentry.ClientOptions{Dsn: config.SentryDSN, AttachStacktrace: true})
 		if err != nil {
 			ulog.Fatalf("error initiating sentry client, error %s, dsn %s", err, config.SentryDSN)
 		}
