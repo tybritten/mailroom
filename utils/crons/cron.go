@@ -121,7 +121,7 @@ func fireCron(rt *runtime.Runtime, name string, cronFunc Function, timeout time.
 		if panicVal := recover(); panicVal != nil {
 			debug.PrintStack()
 
-			slog.Error("panic running cron", "cron", name, "panic", panicVal)
+			slog.Error("panic running cron", "cron", name, "value", panicVal, "stack", debug.Stack())
 		}
 	}()
 

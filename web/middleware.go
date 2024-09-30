@@ -41,7 +41,7 @@ func panicRecovery(next http.Handler) http.Handler {
 			if panicVal := recover(); panicVal != nil {
 				debug.PrintStack()
 
-				slog.Error("panic in web handling", "url", r.URL.String(), "panic", panicVal)
+				slog.Error("panic in web handling", "url", r.URL.String(), "value", panicVal, "stack", debug.Stack())
 
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			}

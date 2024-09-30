@@ -163,7 +163,7 @@ func (w *Worker) handleTask(task *queues.Task) {
 		if panicVal := recover(); panicVal != nil {
 			debug.PrintStack()
 
-			log.Error("panic handling task", "task", string(task.Task), "panic", panicVal)
+			log.Error("panic handling task", "task", string(task.Task), "value", panicVal, "stack", debug.Stack())
 		}
 
 		// mark our task as complete
