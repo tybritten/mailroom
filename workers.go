@@ -160,10 +160,10 @@ func (w *Worker) handleTask(task *queues.Task) {
 
 	defer func() {
 		// catch any panics and recover
-		panicLog := recover()
-		if panicLog != nil {
+		if panicVal := recover(); panicVal != nil {
 			debug.PrintStack()
-			log.Error("panic handling task", "panic", panicLog, "task", string(task.Task))
+
+			log.Error("panic handling task", "task", string(task.Task), "panic", panicVal)
 		}
 
 		// mark our task as complete
