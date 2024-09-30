@@ -50,7 +50,7 @@
     },
     {
         "label": "test errors endpoint noop without params",
-        "method": "GET",
+        "method": "POST",
         "path": "/mr/test_errors",
         "body": {},
         "status": 200,
@@ -58,7 +58,7 @@
     },
     {
         "label": "test errors endpoint with logged error",
-        "method": "GET",
+        "method": "POST",
         "path": "/mr/test_errors",
         "body": {
             "log": "this is a logged error"
@@ -68,7 +68,7 @@
     },
     {
         "label": "test errors endpoint with an error response",
-        "method": "GET",
+        "method": "POST",
         "path": "/mr/test_errors",
         "body": {
             "return": "this is an error response"
@@ -80,7 +80,7 @@
     },
     {
         "label": "test errors endpoint with a panic",
-        "method": "GET",
+        "method": "POST",
         "path": "/mr/test_errors",
         "body": {
             "panic": "this is a panic"

@@ -62,7 +62,7 @@ func NewServer(ctx context.Context, rt *runtime.Runtime, wg *sync.WaitGroup) *Se
 	router.MethodNotAllowed(handle405)
 	router.Get("/", s.WrapHandler(handleIndex))
 	router.Get("/mr/", s.WrapHandler(handleIndex))
-	router.Get("/mr/test_errors", s.WrapHandler(RequireAuthToken(JSONPayload(handleTestErrors))))
+	router.Post("/mr/test_errors", s.WrapHandler(RequireAuthToken(JSONPayload(handleTestErrors))))
 
 	// and all registered routes
 	for _, route := range routes {
