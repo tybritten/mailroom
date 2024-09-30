@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
@@ -41,7 +42,7 @@ func panicRecovery(next http.Handler) http.Handler {
 			if panicVal := recover(); panicVal != nil {
 				debug.PrintStack()
 
-				slog.Error("panic in web handling", "url", r.URL.String(), "value", panicVal, "stack", debug.Stack())
+				sentry.CurrentHub().Recover(panicVal)
 
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			}
