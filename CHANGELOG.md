@@ -1,3 +1,7 @@
+v9.3.39 (2024-09-30)
+-------------------------
+ * Change test_errors endpoint to POST
+
 v9.3.38 (2024-09-30)
 -------------------------
  * Make panic recovery code consistent
