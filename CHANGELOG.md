@@ -1,3 +1,8 @@
+v9.3.41 (2024-09-30)
+-------------------------
+ * Log instances of flows stealing URNs
+ * Call sentry directly from panic recovery
+
 v9.3.40 (2024-09-30)
 -------------------------
  * Include stack explicitly in panic recovery log
