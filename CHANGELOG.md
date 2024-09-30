@@ -1,3 +1,7 @@
+v9.3.40 (2024-09-30)
+-------------------------
+ * Include stack explicitly in panic recovery log
+
 v9.3.39 (2024-09-30)
 -------------------------
  * Change test_errors endpoint to POST
