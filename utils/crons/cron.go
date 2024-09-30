@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -117,9 +118,10 @@ func fireCron(rt *runtime.Runtime, name string, cronFunc Function, timeout time.
 
 	defer func() {
 		// catch any panics and recover
-		panicLog := recover()
-		if panicLog != nil {
-			slog.Error(fmt.Sprintf("panic running cron: %s", panicLog), "cron", name)
+		if panicVal := recover(); panicVal != nil {
+			debug.PrintStack()
+
+			slog.Error("panic running cron", "cron", name, "panic", panicVal)
 		}
 	}()
 

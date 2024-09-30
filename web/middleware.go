@@ -38,9 +38,11 @@ func requestLogger(next http.Handler) http.Handler {
 func panicRecovery(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
-			if rvr := recover(); rvr != nil {
+			if panicVal := recover(); panicVal != nil {
 				debug.PrintStack()
-				slog.Error("recovered from panic in web handling", "error", fmt.Sprint(rvr))
+
+				slog.Error("panic in web handling", "url", r.URL.String(), "panic", panicVal)
+
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			}
 		}()
