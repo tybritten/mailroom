@@ -140,6 +140,14 @@ func RunWebTests(t *testing.T, ctx context.Context, rt *runtime.Runtime, truthFi
 			} else {
 				expectedResponse = tc.Response
 				expectedIsJSON = true
+
+				// if response is a single string.. treat it as a text/plain response
+				if bytes.HasPrefix(expectedResponse, []byte(`"`)) && bytes.HasSuffix(expectedResponse, []byte(`"`)) {
+					var responseText string
+					jsonx.MustUnmarshal(expectedResponse, &responseText)
+					expectedResponse = []byte(responseText)
+					expectedIsJSON = false
+				}
 			}
 
 			if expectedIsJSON {
