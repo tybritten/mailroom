@@ -3,6 +3,7 @@ package hooks
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
@@ -23,9 +24,13 @@ func (h *commitURNChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, t
 		changes = append(changes, sessionChanges[len(sessionChanges)-1].(*models.ContactURNsChanged))
 	}
 
-	err := models.UpdateContactURNs(ctx, tx, oa, changes)
+	affected, err := models.UpdateContactURNs(ctx, tx, oa, changes)
 	if err != nil {
 		return fmt.Errorf("error updating contact urns: %w", err)
+	}
+
+	if len(affected) > 0 {
+		slog.Error("URN changes affected other contacts", "count", len(affected), "org_id", oa.OrgID())
 	}
 
 	return nil
