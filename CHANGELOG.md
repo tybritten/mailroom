@@ -1,3 +1,7 @@
+v9.3.43 (2024-10-01)
+-------------------------
+ * Include flow UUID when logging URN stealing
+
 v9.3.42 (2024-10-01)
 -------------------------
  * Update deps including goflow to get group search fix
