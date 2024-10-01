@@ -1,3 +1,7 @@
+v9.3.42 (2024-10-01)
+-------------------------
+ * Update deps including goflow to get group search fix
+
 v9.3.41 (2024-09-30)
 -------------------------
  * Log instances of flows stealing URNs
