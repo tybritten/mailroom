@@ -265,8 +265,8 @@ func (c *Contact) FlowContact(oa *OrgAssets) (*flows.Contact, error) {
 	// convert our groups to a list of references
 	groups := make([]*assets.GroupReference, 0, len(c.groups))
 	for _, g := range c.groups {
-		// exclude the db-trigger based status groups for now
-		if g.Type() == GroupTypeManual || g.Type() == GroupTypeSmart {
+		// exclude the db-trigger based status groups
+		if g.Visible() {
 			groups = append(groups, assets.NewGroupReference(g.UUID(), g.Name()))
 		}
 	}

@@ -217,16 +217,21 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	}
 
 	if prev == nil || refresh&RefreshGroups > 0 {
-		oa.groups, err = loadAssetType(ctx, db, orgID, "groups", loadGroups)
+		groups, err := loadAssetType(ctx, db, orgID, "groups", loadGroups)
 		if err != nil {
 			return nil, fmt.Errorf("error loading group assets for org %d: %w", orgID, err)
 		}
-		oa.groupsByID = make(map[GroupID]*Group)
-		oa.groupsByUUID = make(map[assets.GroupUUID]*Group)
+		oa.groups = make([]assets.Group, 0, len(groups))
+		oa.groupsByID = make(map[GroupID]*Group, len(groups))
+		oa.groupsByUUID = make(map[assets.GroupUUID]*Group, len(groups))
 		for _, g := range oa.groups {
 			group := g.(*Group)
 			oa.groupsByID[group.ID()] = group
 			oa.groupsByUUID[group.UUID()] = group
+
+			if group.Visible() {
+				oa.groups = append(oa.groups, g)
+			}
 		}
 	} else {
 		oa.groups = prev.groups
