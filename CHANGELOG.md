@@ -1,3 +1,8 @@
+v9.3.44 (2024-10-07)
+-------------------------
+ * Replace status groups with status condition when searching in Elastic
+ * Don't include db-trigger maintained status groups in engine assets or contact groups
+
 v9.3.43 (2024-10-01)
 -------------------------
  * Include flow UUID when logging URN stealing
