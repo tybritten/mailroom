@@ -224,7 +224,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 		oa.groups = make([]assets.Group, 0, len(groups))
 		oa.groupsByID = make(map[GroupID]*Group, len(groups))
 		oa.groupsByUUID = make(map[assets.GroupUUID]*Group, len(groups))
-		for _, g := range oa.groups {
+		for _, g := range groups {
 			group := g.(*Group)
 			oa.groupsByID[group.ID()] = group
 			oa.groupsByUUID[group.UUID()] = group
