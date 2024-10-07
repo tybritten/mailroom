@@ -86,7 +86,14 @@ func GetContactTotal(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAss
 		}
 	}
 
-	eq := BuildElasticQuery(oa, group, models.NilContactStatus, nil, parsed)
+	// if group is a status group, Elastic won't know about it so search by status instead
+	status := models.NilContactStatus
+	if group != nil && !group.Visible() {
+		status = models.ContactStatus(group.Type())
+		group = nil
+	}
+
+	eq := BuildElasticQuery(oa, group, status, nil, parsed)
 	src := map[string]any{"query": eq}
 
 	count, err := rt.ES.Count().Index(rt.Config.ElasticContactsIndex).Routing(oa.OrgID().String()).Raw(bytes.NewReader(jsonx.MustMarshal(src))).Do(ctx)
@@ -116,7 +123,14 @@ func GetContactIDsForQueryPage(ctx context.Context, rt *runtime.Runtime, oa *mod
 		}
 	}
 
-	eq := BuildElasticQuery(oa, group, models.NilContactStatus, excludeIDs, parsed)
+	// if group is a status group, Elastic won't know about it so search by status instead
+	status := models.NilContactStatus
+	if group != nil && !group.Visible() {
+		status = models.ContactStatus(group.Type())
+		group = nil
+	}
+
+	eq := BuildElasticQuery(oa, group, status, excludeIDs, parsed)
 
 	fieldSort, err := es.ToElasticSort(sort, oa.SessionAssets())
 	if err != nil {
@@ -162,6 +176,12 @@ func GetContactIDsForQuery(ctx context.Context, rt *runtime.Runtime, oa *models.
 		if err != nil {
 			return nil, fmt.Errorf("error parsing query: %s: %w", query, err)
 		}
+	}
+
+	// if group is a status group, Elastic won't know about it so search by status instead
+	if group != nil && !group.Visible() {
+		status = models.ContactStatus(group.Type())
+		group = nil
 	}
 
 	eq := BuildElasticQuery(oa, group, status, nil, parsed)
