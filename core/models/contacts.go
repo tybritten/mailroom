@@ -165,16 +165,7 @@ func (c *Contact) Stop(ctx context.Context, db DBorTx, oa *OrgAssets) error {
 		return fmt.Errorf("error marking contact as stopped: %w", err)
 	}
 
-	// they are only in the stopped group
-	newGroups := make([]*Group, 0, 1)
-	for _, g := range oa.groups {
-		if g.(*Group).Type() == GroupTypeDBStopped {
-			newGroups = append(newGroups, g.(*Group))
-			break
-		}
-	}
-
-	c.groups = newGroups
+	c.groups = []*Group{} // currently groups always implicitly exclude non-active contacts
 	c.status = ContactStatusStopped
 	return nil
 }
@@ -349,11 +340,11 @@ func LoadContacts(ctx context.Context, db Queryer, oa *OrgAssets, ids []ContactI
 			currentFlowID: e.CurrentFlowID,
 		}
 
-		// load our real groups
+		// load our real groups (exclude status groups)
 		groups := make([]*Group, 0, len(e.GroupIDs))
 		for _, g := range e.GroupIDs {
 			group := oa.GroupByID(g)
-			if group != nil {
+			if group != nil && group.Visible() {
 				groups = append(groups, group)
 			}
 		}
@@ -560,15 +551,10 @@ SELECT ROW_TO_JSON(r) FROM (SELECT
 FROM
 	contacts_contact c
 LEFT JOIN (
-	SELECT 
-		contact_id, 
-		ARRAY_AGG(contactgroup_id) AS groups 
-	FROM 
-		contacts_contactgroup_contacts g
-	WHERE
-		g.contact_id = ANY($1)		
-	GROUP BY 
-		contact_id
+	SELECT contact_id, ARRAY_AGG(contactgroup_id) AS groups 
+	FROM contacts_contactgroup_contacts g
+	WHERE g.contact_id = ANY($1)		
+	GROUP BY contact_id
 ) g ON c.id = g.contact_id
 LEFT JOIN (
 	SELECT 

@@ -478,9 +478,7 @@ func TestContactStop(t *testing.T) {
 	err := contact.Stop(ctx, rt.DB, oa)
 	assert.NoError(t, err)
 	assert.Equal(t, models.ContactStatusStopped, contact.Status())
-	if assert.Len(t, contact.Groups(), 1) {
-		assert.Equal(t, "Stopped", contact.Groups()[0].Name())
-	}
+	assert.Len(t, contact.Groups(), 0)
 
 	// verify that matches the database state
 	assertdb.Query(t, rt.DB, `SELECT status FROM contacts_contact WHERE id = $1`, testdata.Cathy.ID).Returns("S")
