@@ -1,3 +1,8 @@
+v9.3.45 (2024-10-16)
+-------------------------
+ * Fix metrics endpoint to strip \ from group names
+ * Read user team from orgmembership instead of usersettings
+
 v9.3.44 (2024-10-07)
 -------------------------
  * Replace status groups with status condition when searching in Elastic
