@@ -635,7 +635,7 @@ func TestUpdateContactURNs(t *testing.T) {
 	assertContactURNs(testdata.Alexandria.ID, []string{"tel:+16055742222"})
 	assertContactURNs(testdata.Bob.ID, []string(nil))
 	assertModifiedOnUpdated(testdata.Bob.ID, t1)
-	assertGroups(testdata.Bob.ID, []string{"Active", "No URN"})
+	assertGroups(testdata.Bob.ID, []string{"\\Active", "No URN"})
 
 	// steal the URN back from Alexandria whilst simulataneously adding new URN to Cathy and not-changing anything for George
 	affected, err = models.UpdateContactURNs(ctx, rt.DB, oa, []*models.ContactURNsChanged{

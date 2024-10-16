@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nyaruka/goflow/assets"
@@ -64,7 +65,7 @@ func calculateGroupCounts(ctx context.Context, rt *runtime.Runtime, org *models.
 				Label: []*dto.LabelPair{
 					{
 						Name:  proto.String("group_name"),
-						Value: proto.String(row.Name),
+						Value: proto.String(strings.TrimPrefix(row.Name, "\\")),
 					},
 					{
 						Name:  proto.String("group_uuid"),
