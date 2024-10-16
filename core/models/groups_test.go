@@ -28,8 +28,8 @@ func TestLoadGroups(t *testing.T) {
 		query         string
 		expectedCount int
 	}{
-		{testdata.ActiveGroup, "Active", "", 124},
-		{testdata.BlockedGroup, "Blocked", "", 0},
+		{testdata.ActiveGroup, "\\Active", "", 124},
+		{testdata.BlockedGroup, "\\Blocked", "", 0},
 		{testdata.DoctorsGroup, "Doctors", "", 121},
 		{testdata.OpenTicketsGroup, "Open Tickets", "tickets > 0", 0},
 	}
