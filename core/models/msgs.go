@@ -393,7 +393,7 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 
 	// TODO: temporary fix for invalid locales
 	if len(m.Locale) > 6 {
-		slog.Error("invalid locale, defaulting to eng-US", "locale", m.Locale)
+		slog.Error("invalid locale, defaulting to eng-US", "locale", m.Locale, "urn", out.URN(), "org_id", org.ID())
 
 		m.Locale = "eng"
 	}
