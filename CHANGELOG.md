@@ -1,3 +1,8 @@
+v9.3.46 (2024-11-05)
+-------------------------
+ * More logging for invalid locales
+ * Update deps
+
 v9.3.45 (2024-10-16)
 -------------------------
  * Fix metrics endpoint to strip \ from group names
