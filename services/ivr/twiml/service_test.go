@@ -120,7 +120,7 @@ func TestURNForRequest(t *testing.T) {
 	s := twiml.NewService(http.DefaultClient, "12345", "sesame")
 
 	makeRequest := func(body string) *http.Request {
-		r, _ := http.NewRequest("POST", "http://nyaruka.com/12345/incoming", strings.NewReader(body))
+		r, _ := http.NewRequest("POST", "http://textit.com/12345/incoming", strings.NewReader(body))
 		r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		r.Header.Add("Content-Length", strconv.Itoa(len(body)))
 		return r

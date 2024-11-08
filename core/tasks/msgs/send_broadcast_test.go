@@ -243,7 +243,7 @@ func TestSendBroadcastTask(t *testing.T) {
 			createdByID:     testdata.Agent.ID,
 			queue:           tasks.HandlerQueue,
 			expectedBatches: 1,
-			expectedMsgs:    map[string]int{"hi Cathy from Nyaruka goflow URN: tel:+12065551212 Gender: F": 1},
+			expectedMsgs:    map[string]int{"hi Cathy from TextIt goflow URN: tel:+12065551212 Gender: F": 1},
 		},
 		{
 			translations: flows.BroadcastTranslations{
