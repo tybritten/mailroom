@@ -1,3 +1,7 @@
+v9.3.47 (2024-11-13)
+-------------------------
+ * Update to match goflow changes to airtime transfers
+
 v9.3.46 (2024-11-05)
 -------------------------
  * More logging for invalid locales
