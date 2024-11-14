@@ -11,7 +11,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +34,7 @@ func TestStartFlowBatchTask(t *testing.T) {
 	batch2 := start1.CreateBatch([]models.ContactID{testdata.George.ID, testdata.Alexandria.ID}, false, true, 4)
 
 	// start the first batch...
-	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: batch1}, queues.DefaultPriority)
+	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: batch1}, false)
 	assert.NoError(t, err)
 	testsuite.FlushTasks(t, rt)
 
@@ -54,7 +53,7 @@ func TestStartFlowBatchTask(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowstart WHERE id = $1`, start1.ID).Returns("S")
 
 	// start the second and final batch...
-	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: batch2}, queues.DefaultPriority)
+	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: batch2}, false)
 	assert.NoError(t, err)
 	testsuite.FlushTasks(t, rt)
 
@@ -71,7 +70,7 @@ func TestStartFlowBatchTask(t *testing.T) {
 	start2Batch2 := start2.CreateBatch([]models.ContactID{testdata.George.ID, testdata.Alexandria.ID}, false, true, 4)
 
 	// start the first batch...
-	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: start2Batch1}, queues.DefaultPriority)
+	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: start2Batch1}, false)
 	assert.NoError(t, err)
 	testsuite.FlushTasks(t, rt)
 
@@ -81,7 +80,7 @@ func TestStartFlowBatchTask(t *testing.T) {
 	rt.DB.MustExec(`UPDATE flows_flowstart SET status = 'I' WHERE id = $1`, start2.ID)
 
 	// start the second batch...
-	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: start2Batch2}, queues.DefaultPriority)
+	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: start2Batch2}, false)
 	assert.NoError(t, err)
 	testsuite.FlushTasks(t, rt)
 
@@ -104,7 +103,7 @@ func TestStartFlowBatchTaskNonPersistedStart(t *testing.T) {
 	batch := start.CreateBatch([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID}, true, true, 2)
 
 	// start the first batch...
-	err := tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: batch}, queues.DefaultPriority)
+	err := tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: batch}, false)
 	assert.NoError(t, err)
 	testsuite.FlushTasks(t, rt)
 

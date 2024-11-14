@@ -58,7 +58,7 @@ func TestBroadcastsFromEvents(t *testing.T) {
 		groups             []*assets.GroupReference
 		contacts           []*flows.ContactReference
 		urns               []urns.URN
-		queue              *queues.FairSorted
+		queue              queues.Fair
 		expectedBatchCount int
 		expectedMsgCount   int
 		expectedMsgText    string
@@ -164,7 +164,7 @@ func TestBroadcastsFromEvents(t *testing.T) {
 		bcast, err := models.NewBroadcastFromEvent(ctx, rt.DB, oa, event)
 		assert.NoError(t, err)
 
-		err = tasks.Queue(rc, tc.queue, testdata.Org1.ID, &msgs.SendBroadcastTask{Broadcast: bcast}, queues.DefaultPriority)
+		err = tasks.Queue(rc, tc.queue, testdata.Org1.ID, &msgs.SendBroadcastTask{Broadcast: bcast}, false)
 		assert.NoError(t, err)
 
 		taskCounts := testsuite.FlushTasks(t, rt)
@@ -213,7 +213,7 @@ func TestSendBroadcastTask(t *testing.T) {
 		query           string
 		exclusions      models.Exclusions
 		createdByID     models.UserID
-		queue           *queues.FairSorted
+		queue           queues.Fair
 		expectedBatches int
 		expectedMsgs    map[string]int
 	}{
@@ -288,7 +288,7 @@ func TestSendBroadcastTask(t *testing.T) {
 
 		task := &msgs.SendBroadcastTask{Broadcast: bcast}
 
-		err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, task, queues.DefaultPriority)
+		err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, task, false)
 		assert.NoError(t, err)
 
 		taskCounts := testsuite.FlushTasks(t, rt)

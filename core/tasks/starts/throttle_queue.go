@@ -20,7 +20,7 @@ func init() {
 }
 
 type ThrottleQueueCron struct {
-	Queue *queues.FairSorted
+	Queue queues.Fair
 }
 
 func (c *ThrottleQueueCron) Next(last time.Time) time.Time {

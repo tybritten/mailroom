@@ -14,7 +14,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/ivr"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queues"
 )
 
 const (
@@ -136,7 +135,7 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 			batchTask = &StartFlowBatchTask{FlowStartBatch: batch}
 		}
 
-		err = tasks.Queue(rc, q, start.OrgID, batchTask, queues.DefaultPriority)
+		err = tasks.Queue(rc, q, start.OrgID, batchTask, false)
 		if err != nil {
 			if i == 0 {
 				return fmt.Errorf("error queuing flow start batch: %w", err)

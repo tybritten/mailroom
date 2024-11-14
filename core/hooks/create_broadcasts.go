@@ -10,7 +10,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/msgs"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queues"
 )
 
 // CreateBroadcastsHook is our hook for creating broadcasts
@@ -34,7 +33,7 @@ func (h *createBroadcastsHook) Apply(ctx context.Context, rt *runtime.Runtime, t
 				return fmt.Errorf("error creating broadcast: %w", err)
 			}
 
-			err = tasks.Queue(rc, tasks.BatchQueue, oa.OrgID(), &msgs.SendBroadcastTask{Broadcast: bcast}, queues.DefaultPriority)
+			err = tasks.Queue(rc, tasks.BatchQueue, oa.OrgID(), &msgs.SendBroadcastTask{Broadcast: bcast}, false)
 			if err != nil {
 				return fmt.Errorf("error queuing broadcast task: %w", err)
 			}
