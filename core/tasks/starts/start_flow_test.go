@@ -38,7 +38,7 @@ func TestStartFlowTask(t *testing.T) {
 		query                    string
 		excludeInAFlow           bool
 		excludeStartedPreviously bool
-		queue                    *queues.FairSorted
+		queue                    queues.Fair
 		expectedContactCount     int
 		expectedBatchCount       int
 		expectedTotalCount       int
@@ -229,7 +229,7 @@ func TestStartFlowTask(t *testing.T) {
 		err := models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start})
 		assert.NoError(t, err)
 
-		err = tasks.Queue(rc, tc.queue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
+		err = tasks.Queue(rc, tc.queue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 		assert.NoError(t, err)
 
 		taskCounts := testsuite.FlushTasks(t, rt)
@@ -266,7 +266,7 @@ func TestStartFlowTaskNonPersistedStart(t *testing.T) {
 	start := models.NewFlowStart(models.OrgID(1), models.StartTypeManual, testdata.SingleMessage.ID).
 		WithContactIDs([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID})
 
-	err := tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
+	err := tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	assert.NoError(t, err)
 	testsuite.FlushTasks(t, rt)
 

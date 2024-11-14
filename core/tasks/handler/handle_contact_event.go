@@ -16,7 +16,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/ivr"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queues"
 )
 
 // TypeHandleContactEvent is the task type for flagging that a contact has handler tasks to be handled
@@ -57,7 +56,7 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 	if len(locks) == 0 {
 		rc := rt.RP.Get()
 		defer rc.Close()
-		err = tasks.Queue(rc, tasks.HandlerQueue, oa.OrgID(), &HandleContactEventTask{ContactID: t.ContactID}, queues.DefaultPriority)
+		err = tasks.Queue(rc, tasks.HandlerQueue, oa.OrgID(), &HandleContactEventTask{ContactID: t.ContactID}, false)
 		if err != nil {
 			return fmt.Errorf("error re-adding contact task after failing to get lock: %w", err)
 		}
@@ -186,7 +185,7 @@ func TriggerIVRFlow(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 	// queue this to our ivr starter, it will take care of creating the calls then calling back in
 	rc := rt.RP.Get()
 	defer rc.Close()
-	err = tasks.Queue(rc, tasks.BatchQueue, orgID, task, queues.HighPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, orgID, task, true)
 	if err != nil {
 		return fmt.Errorf("error queuing ivr flow start: %w", err)
 	}

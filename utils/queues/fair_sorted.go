@@ -5,34 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/jsonx"
-)
-
-// Task is a wrapper for encoding a task
-type Task struct {
-	Type       string          `json:"type"`
-	OwnerID    int             `json:"-"`
-	Task       json.RawMessage `json:"task"`
-	QueuedOn   time.Time       `json:"queued_on"`
-	ErrorCount int             `json:"error_count,omitempty"`
-}
-
-// Priority is the priority for the task
-type Priority int
-
-const (
-	// HighPriority is the highest priority for tasks
-	HighPriority = Priority(-10000000)
-
-	// DefaultPriority is the default priority for tasks
-	DefaultPriority = Priority(0)
-
-	// LowPriority is the lowest priority for tasks
-	LowPriority = Priority(+10000000)
 )
 
 type FairSorted struct {
@@ -48,7 +24,7 @@ func (q *FairSorted) String() string {
 }
 
 // Push adds the passed in task to our queue for execution
-func (q *FairSorted) Push(rc redis.Conn, taskType string, ownerID int, task any, priority Priority) error {
+func (q *FairSorted) Push(rc redis.Conn, taskType string, ownerID int, task any, priority bool) error {
 	score := q.score(priority)
 
 	taskBody, err := json.Marshal(task)
@@ -88,8 +64,14 @@ func (q *FairSorted) queueKey(ownerID int) string {
 	return fmt.Sprintf("%s:%d", q.keyBase, ownerID)
 }
 
-func (q *FairSorted) score(priority Priority) string {
-	s := float64(dates.Now().UnixMicro())/float64(1000000) + float64(priority)
+func (q *FairSorted) score(priority bool) string {
+	weight := float64(0)
+	if priority {
+		weight = -10000000
+	}
+
+	s := float64(dates.Now().UnixMicro())/float64(1000000) + weight
+
 	return strconv.FormatFloat(s, 'f', 6, 64)
 }
 

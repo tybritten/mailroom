@@ -27,7 +27,6 @@ import (
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/nyaruka/mailroom/utils/clogs"
-	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/nyaruka/mailroom/web"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -103,7 +102,7 @@ func TestTwilioIVR(t *testing.T) {
 	err := models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start})
 	require.NoError(t, err)
 
-	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
 	testsuite.FlushTasks(t, rt)
@@ -411,7 +410,7 @@ func TestVonageIVR(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM flows_flowstart`).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM flows_flowstart WHERE params ->> 'ref_id' = '123'`).Returns(1)
 
-	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
 	testsuite.FlushTasks(t, rt)

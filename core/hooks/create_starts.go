@@ -11,7 +11,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queues"
 )
 
 // CreateStartsHook is our hook to fire our scene starts
@@ -74,7 +73,7 @@ func (h *createStartsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *s
 				}
 			}
 
-			err = tasks.Queue(rc, tasks.BatchQueue, oa.OrgID(), &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
+			err = tasks.Queue(rc, tasks.BatchQueue, oa.OrgID(), &starts.StartFlowTask{FlowStart: start}, false)
 			if err != nil {
 				return fmt.Errorf("error queuing flow start: %w", err)
 			}

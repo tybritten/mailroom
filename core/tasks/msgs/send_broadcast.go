@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/mailroom/core/search"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/mailroom/utils/queues"
 )
 
 const (
@@ -116,7 +115,7 @@ func createBroadcastBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		isLast := (i == len(idBatches)-1)
 
 		batch := bcast.CreateBatch(idBatch, isFirst, isLast)
-		err = tasks.Queue(rc, q, bcast.OrgID, &SendBroadcastBatchTask{BroadcastBatch: batch}, queues.DefaultPriority)
+		err = tasks.Queue(rc, q, bcast.OrgID, &SendBroadcastBatchTask{BroadcastBatch: batch}, false)
 		if err != nil {
 			if i == 0 {
 				return fmt.Errorf("error queuing broadcast batch: %w", err)

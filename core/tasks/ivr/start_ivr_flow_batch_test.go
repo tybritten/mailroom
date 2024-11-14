@@ -16,7 +16,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,7 +40,7 @@ func TestIVR(t *testing.T) {
 
 	service.callError = fmt.Errorf("unable to create call")
 
-	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
 	testsuite.FlushTasks(t, rt)
@@ -53,7 +52,7 @@ func TestIVR(t *testing.T) {
 	service.callError = nil
 	service.callID = ivr.CallID("call1")
 
-	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
 	testsuite.FlushTasks(t, rt)
@@ -64,7 +63,7 @@ func TestIVR(t *testing.T) {
 	service.callError = nil
 	service.callID = ivr.CallID("call1")
 
-	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
 	testsuite.FlushTasks(t, rt)

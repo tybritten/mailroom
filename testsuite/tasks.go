@@ -21,7 +21,7 @@ func QueueBatchTask(t *testing.T, rt *runtime.Runtime, org *testdata.Org, task t
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	err := tasks.Queue(rc, tasks.BatchQueue, org.ID, task, queues.DefaultPriority)
+	err := tasks.Queue(rc, tasks.BatchQueue, org.ID, task, false)
 	require.NoError(t, err)
 }
 
@@ -68,7 +68,7 @@ func FlushTasks(t *testing.T, rt *runtime.Runtime) map[string]int {
 	var err error
 	counts := make(map[string]int)
 
-	qs := []*queues.FairSorted{tasks.HandlerQueue, tasks.BatchQueue, tasks.ThrottledQueue}
+	qs := []queues.Fair{tasks.HandlerQueue, tasks.BatchQueue, tasks.ThrottledQueue}
 
 	for {
 		// look for a task in the queues

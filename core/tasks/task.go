@@ -57,7 +57,7 @@ func Perform(ctx context.Context, rt *runtime.Runtime, task *queues.Task) error 
 }
 
 // Queue adds the given task to the given queue
-func Queue(rc redis.Conn, q *queues.FairSorted, orgID models.OrgID, task Task, priority queues.Priority) error {
+func Queue(rc redis.Conn, q queues.Fair, orgID models.OrgID, task Task, priority bool) error {
 	return q.Push(rc, task.Type(), int(orgID), task, priority)
 }
 

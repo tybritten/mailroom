@@ -11,7 +11,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +34,7 @@ func TestRetryCallsCron(t *testing.T) {
 	err := models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start})
 	require.NoError(t, err)
 
-	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, queues.DefaultPriority)
+	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
 	service.callError = nil
