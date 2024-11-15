@@ -97,8 +97,8 @@ ORDER BY timeout_on ASC
    LIMIT 25000`
 
 type Timeout struct {
-	SessionID models.SessionID `db:"session_id"`
-	OrgID     models.OrgID     `db:"org_id"`
-	ContactID models.ContactID `db:"contact_id"`
-	TimeoutOn time.Time        `db:"timeout_on"`
+	SessionID models.SessionID `db:"session_id" json:"session_id"`
+	OrgID     models.OrgID     `db:"org_id"     json:"-"`
+	ContactID models.ContactID `db:"contact_id" json:"contact_id"`
+	TimeoutOn time.Time        `db:"timeout_on" json:"timeout_on"`
 }
