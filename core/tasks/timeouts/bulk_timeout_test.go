@@ -19,7 +19,7 @@ func TestBulkTimeout(t *testing.T) {
 	dates.SetNowFunc(dates.NewFixedNow(time.Date(2024, 11, 15, 13, 59, 0, 0, time.UTC)))
 
 	testsuite.QueueBatchTask(t, rt, testdata.Org1, &timeouts.BulkTimeoutTask{
-		Timeouts: []timeouts.Timeout{
+		Timeouts: []*timeouts.Timeout{
 			{SessionID: 123456, ContactID: testdata.Cathy.ID, TimeoutOn: time.Date(2024, 11, 15, 13, 57, 0, 0, time.UTC)},
 			{SessionID: 234567, ContactID: testdata.Bob.ID, TimeoutOn: time.Date(2024, 11, 15, 13, 58, 0, 0, time.UTC)},
 		},

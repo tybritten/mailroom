@@ -21,7 +21,7 @@ func init() {
 
 // BulkTimeoutTask is the payload of the task
 type BulkTimeoutTask struct {
-	Timeouts []Timeout `json:"timeouts"`
+	Timeouts []*Timeout `json:"timeouts"`
 }
 
 func (t *BulkTimeoutTask) Type() string {
