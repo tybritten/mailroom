@@ -56,7 +56,7 @@ func TestFireCampaignEvents(t *testing.T) {
 		err := tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, task, false)
 		assert.NoError(t, err)
 
-		testsuite.FlushTasks(t, rt)
+		testsuite.FlushTasks(t, rt, nil)
 
 		// and left in redis marker
 		for _, fid := range fireIDs {

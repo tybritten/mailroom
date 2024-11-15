@@ -36,7 +36,7 @@ func TestStartFlowBatchTask(t *testing.T) {
 	// start the first batch...
 	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: batch1}, false)
 	assert.NoError(t, err)
-	testsuite.FlushTasks(t, rt)
+	testsuite.FlushTasks(t, rt, nil)
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE contact_id = ANY($1) 
 		AND status = 'C' AND responded = FALSE AND org_id = 1 AND call_id IS NULL AND output IS NOT NULL`, pq.Array([]models.ContactID{testdata.Cathy.ID, testdata.Bob.ID})).
@@ -55,7 +55,7 @@ func TestStartFlowBatchTask(t *testing.T) {
 	// start the second and final batch...
 	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: batch2}, false)
 	assert.NoError(t, err)
-	testsuite.FlushTasks(t, rt)
+	testsuite.FlushTasks(t, rt, nil)
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE start_id = $1`, start1.ID).Returns(4)
 	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowstart WHERE id = $1`, start1.ID).Returns("C")
@@ -72,7 +72,7 @@ func TestStartFlowBatchTask(t *testing.T) {
 	// start the first batch...
 	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: start2Batch1}, false)
 	assert.NoError(t, err)
-	testsuite.FlushTasks(t, rt)
+	testsuite.FlushTasks(t, rt, nil)
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE start_id = $1`, start2.ID).Returns(2)
 
@@ -82,7 +82,7 @@ func TestStartFlowBatchTask(t *testing.T) {
 	// start the second batch...
 	err = tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: start2Batch2}, false)
 	assert.NoError(t, err)
-	testsuite.FlushTasks(t, rt)
+	testsuite.FlushTasks(t, rt, nil)
 
 	// check that second batch didn't create any runs and start status is still interrupted
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE start_id = $1`, start2.ID).Returns(2)
@@ -105,7 +105,7 @@ func TestStartFlowBatchTaskNonPersistedStart(t *testing.T) {
 	// start the first batch...
 	err := tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowBatchTask{FlowStartBatch: batch}, false)
 	assert.NoError(t, err)
-	testsuite.FlushTasks(t, rt)
+	testsuite.FlushTasks(t, rt, nil)
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun`).Returns(2)
 }

@@ -105,7 +105,7 @@ func TestTwilioIVR(t *testing.T) {
 	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
-	testsuite.FlushTasks(t, rt)
+	testsuite.FlushTasks(t, rt, nil)
 
 	// check our 3 contacts have 3 wired calls
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM ivr_call WHERE contact_id = $1 AND status = $2 AND external_id = $3`,
@@ -413,7 +413,7 @@ func TestVonageIVR(t *testing.T) {
 	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
-	testsuite.FlushTasks(t, rt)
+	testsuite.FlushTasks(t, rt, nil)
 
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM ivr_call WHERE contact_id = $1 AND status = $2 AND external_id = $3`,
 		testdata.Cathy.ID, models.CallStatusWired, "Call1").Returns(1)
