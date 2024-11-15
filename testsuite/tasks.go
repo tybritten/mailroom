@@ -3,6 +3,7 @@ package testsuite
 import (
 	"context"
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/gomodule/redigo/redis"
@@ -60,7 +61,7 @@ func CurrentTasks(t *testing.T, rt *runtime.Runtime, qname string) map[models.Or
 	return tasks
 }
 
-func FlushTasks(t *testing.T, rt *runtime.Runtime) map[string]int {
+func FlushTasks(t *testing.T, rt *runtime.Runtime, qnames []string) map[string]int {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
@@ -68,7 +69,12 @@ func FlushTasks(t *testing.T, rt *runtime.Runtime) map[string]int {
 	var err error
 	counts := make(map[string]int)
 
-	qs := []queues.Fair{tasks.HandlerQueue, tasks.BatchQueue, tasks.ThrottledQueue}
+	var qs []queues.Fair
+	for _, q := range []queues.Fair{tasks.HandlerQueue, tasks.BatchQueue, tasks.ThrottledQueue} {
+		if len(qnames) == 0 || slices.Contains(qnames, fmt.Sprint(q)[6:]) {
+			qs = append(qs, q)
+		}
+	}
 
 	for {
 		// look for a task in the queues

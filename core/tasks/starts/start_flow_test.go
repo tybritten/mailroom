@@ -232,7 +232,7 @@ func TestStartFlowTask(t *testing.T) {
 		err = tasks.Queue(rc, tc.queue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 		assert.NoError(t, err)
 
-		taskCounts := testsuite.FlushTasks(t, rt)
+		taskCounts := testsuite.FlushTasks(t, rt, nil)
 
 		// assert our count of batches
 		assert.Equal(t, tc.expectedBatchCount, taskCounts["start_flow_batch"], "%d: unexpected batch count", i)
@@ -268,7 +268,7 @@ func TestStartFlowTaskNonPersistedStart(t *testing.T) {
 
 	err := tasks.Queue(rc, tasks.ThrottledQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	assert.NoError(t, err)
-	testsuite.FlushTasks(t, rt)
+	testsuite.FlushTasks(t, rt, nil)
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun`).Returns(2)
 }
