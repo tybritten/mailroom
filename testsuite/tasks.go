@@ -61,7 +61,7 @@ func CurrentTasks(t *testing.T, rt *runtime.Runtime, qname string) map[models.Or
 	return tasks
 }
 
-func FlushTasks(t *testing.T, rt *runtime.Runtime, qnames []string) map[string]int {
+func FlushTasks(t *testing.T, rt *runtime.Runtime, qnames ...string) map[string]int {
 	rc := rt.RP.Get()
 	defer rc.Close()
 

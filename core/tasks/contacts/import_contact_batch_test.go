@@ -31,14 +31,14 @@ func TestImportContactBatch(t *testing.T) {
 
 	// perform first batch task...
 	testsuite.QueueBatchTask(t, rt, testdata.Org1, &contacts.ImportContactBatchTask{ContactImportBatchID: batch1ID})
-	testsuite.FlushTasks(t, rt, nil)
+	testsuite.FlushTasks(t, rt)
 
 	// import is still in progress
 	assertdb.Query(t, rt.DB, `SELECT status FROM contacts_contactimport WHERE id = $1`, importID).Columns(map[string]any{"status": "O"})
 
 	// perform second batch task...
 	testsuite.QueueBatchTask(t, rt, testdata.Org1, &contacts.ImportContactBatchTask{ContactImportBatchID: batch2ID})
-	testsuite.FlushTasks(t, rt, nil)
+	testsuite.FlushTasks(t, rt)
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contact WHERE id >= 30000`).Returns(3)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contact WHERE name = 'Norbert' AND language = 'eng'`).Returns(1)
