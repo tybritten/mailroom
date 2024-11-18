@@ -167,7 +167,7 @@ func TestBroadcastsFromEvents(t *testing.T) {
 		err = tasks.Queue(rc, tc.queue, testdata.Org1.ID, &msgs.SendBroadcastTask{Broadcast: bcast}, false)
 		assert.NoError(t, err)
 
-		taskCounts := testsuite.FlushTasks(t, rt, nil)
+		taskCounts := testsuite.FlushTasks(t, rt)
 
 		// assert our count of batches
 		assert.Equal(t, tc.expectedBatchCount, taskCounts["send_broadcast_batch"], "%d: unexpected batch count", i)
@@ -291,7 +291,7 @@ func TestSendBroadcastTask(t *testing.T) {
 		err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, task, false)
 		assert.NoError(t, err)
 
-		taskCounts := testsuite.FlushTasks(t, rt, nil)
+		taskCounts := testsuite.FlushTasks(t, rt)
 
 		// assert our count of batches
 		assert.Equal(t, tc.expectedBatches, taskCounts["send_broadcast_batch"], "%d: unexpected batch count", i)

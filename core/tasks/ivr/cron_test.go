@@ -40,7 +40,7 @@ func TestRetryCallsCron(t *testing.T) {
 	service.callError = nil
 	service.callID = ivr.CallID("call1")
 
-	testsuite.FlushTasks(t, rt, nil)
+	testsuite.FlushTasks(t, rt)
 
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM ivr_call WHERE contact_id = $1 AND status = $2 AND external_id = $3`,
 		testdata.Cathy.ID, models.CallStatusWired, "call1").Returns(1)

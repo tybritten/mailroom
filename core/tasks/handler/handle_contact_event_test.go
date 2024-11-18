@@ -36,7 +36,7 @@ func TestHandleContactEvent(t *testing.T) {
 		NewContact: false,
 	})
 
-	tasksRan := testsuite.FlushTasks(t, rt, nil)
+	tasksRan := testsuite.FlushTasks(t, rt)
 	assert.Equal(t, map[string]int{"handle_contact_event": 2}, tasksRan)
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contact WHERE id = $1 AND status = 'S'`, testdata.Cathy.ID).Returns(1)

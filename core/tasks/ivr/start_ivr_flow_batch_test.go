@@ -43,7 +43,7 @@ func TestIVR(t *testing.T) {
 	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
-	testsuite.FlushTasks(t, rt, nil)
+	testsuite.FlushTasks(t, rt)
 
 	// should have one call in a failed state
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM ivr_call WHERE contact_id = $1 AND status = $2`, testdata.Cathy.ID, models.CallStatusFailed).Returns(1)
@@ -55,7 +55,7 @@ func TestIVR(t *testing.T) {
 	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
-	testsuite.FlushTasks(t, rt, nil)
+	testsuite.FlushTasks(t, rt)
 
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM ivr_call WHERE contact_id = $1 AND status = $2 AND external_id = $3`, testdata.Cathy.ID, models.CallStatusWired, "call1").Returns(1)
 
@@ -66,7 +66,7 @@ func TestIVR(t *testing.T) {
 	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
-	testsuite.FlushTasks(t, rt, nil)
+	testsuite.FlushTasks(t, rt)
 
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM ivr_call WHERE contact_id = $1 AND status = $2 AND next_attempt IS NOT NULL;`, testdata.Cathy.ID, models.CallStatusQueued).Returns(1)
 }
