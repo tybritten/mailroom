@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("sessions_timeouts", NewTimeoutsCron(100, 100))
+	tasks.RegisterCron("sessions_timeouts", NewTimeoutsCron(10, 100))
 }
 
 type timeoutsCron struct {

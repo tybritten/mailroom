@@ -25,7 +25,7 @@ func TestBulkTimeout(t *testing.T) {
 		},
 	})
 
-	assert.Equal(t, map[string]int{"bulk_timeout": 1}, testsuite.FlushTasks(t, rt, []string{"batch", "throttled"}))
+	assert.Equal(t, map[string]int{"bulk_timeout": 1}, testsuite.FlushTasks(t, rt, "batch", "throttled"))
 
 	testsuite.AssertContactTasks(t, testdata.Org1, testdata.Cathy, []string{
 		`{"type":"timeout_event","task":{"session_id":123456,"time":"2024-11-15T13:57:00Z"},"queued_on":"2024-11-15T13:59:00Z"}`,
