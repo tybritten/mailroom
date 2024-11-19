@@ -41,10 +41,9 @@ func (c *timeoutsCron) AllInstances() bool {
 }
 
 func (c *timeoutsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
-	// find all sessions that need to be expired (we exclude IVR runs)
 	rows, err := rt.DB.QueryxContext(ctx, sqlSelectTimedoutSessions)
 	if err != nil {
-		return nil, fmt.Errorf("error selecting timed out sessions: %w", err)
+		return nil, fmt.Errorf("error querying sessions with timed out waits: %w", err)
 	}
 	defer rows.Close()
 
@@ -67,7 +66,7 @@ func (c *timeoutsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string
 		// check whether we've already queued this
 		queued, err := c.marker.IsMember(rc, taskID(timeout))
 		if err != nil {
-			return nil, fmt.Errorf("error checking whether task is queued: %w", err)
+			return nil, fmt.Errorf("error checking whether timeout is already queued: %w", err)
 		}
 
 		// already queued? move on
@@ -92,7 +91,7 @@ func (c *timeoutsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string
 
 			for _, timeout := range batch {
 				if !throttle {
-					err := handler.QueueTask(rc, timeout.OrgID, timeout.ContactID, ctasks.NewWaitTimeout(timeout.SessionID, timeout.TimeoutOn))
+					err := handler.QueueTask(rc, orgID, timeout.ContactID, ctasks.NewWaitTimeout(timeout.SessionID, timeout.TimeoutOn))
 					if err != nil {
 						return nil, fmt.Errorf("error queuing timeout task to handler queue: %w", err)
 					}
