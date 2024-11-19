@@ -1,3 +1,8 @@
+v9.3.48 (2024-11-19)
+-------------------------
+ * Add new task to handle bulk session timeouts
+ * Create absraction for fair queues
+
 v9.3.47 (2024-11-13)
 -------------------------
  * Update to match goflow changes to airtime transfers
