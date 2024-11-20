@@ -224,8 +224,8 @@ func TestSessionWithSubflows(t *testing.T) {
 	assert.Nil(t, session.Timeout())
 
 	require.Len(t, session.Runs(), 2)
-	assert.Equal(t, startID, session.Runs()[0].StartID())
-	assert.Equal(t, models.NilStartID, session.Runs()[1].StartID())
+	assert.Equal(t, startID, session.Runs()[0].StartID)
+	assert.Equal(t, models.NilStartID, session.Runs()[1].StartID)
 
 	// check that matches what is in the db
 	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded, ended_on, wait_resume_on_expire FROM flows_flowsession`).

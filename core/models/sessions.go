@@ -399,17 +399,18 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	}
 
 	// figure out which runs are new and which are updated
-	updatedRuns := make([]any, 0, 1)
-	newRuns := make([]any, 0)
+	updatedRuns := make([]*FlowRun, 0, 1)
+	newRuns := make([]*FlowRun, 0)
+
 	for _, r := range s.Runs() {
-		modified, found := s.seenRuns[r.UUID()]
+		modified, found := s.seenRuns[r.UUID]
 		if !found {
-			newRuns = append(newRuns, &r.r)
+			newRuns = append(newRuns, r)
 			continue
 		}
 
-		if r.ModifiedOn().After(modified) {
-			updatedRuns = append(updatedRuns, &r.r)
+		if r.ModifiedOn.After(modified) {
+			updatedRuns = append(updatedRuns, r)
 			continue
 		}
 	}
@@ -550,7 +551,7 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 
 		// set start id if first run of session
 		if i == 0 && startID != NilStartID {
-			run.SetStartID(startID)
+			run.StartID = startID
 		}
 
 		// save the run to our session
@@ -677,14 +678,13 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 		return nil, fmt.Errorf("error inserting waiting sessions: %w", err)
 	}
 
-	// for each session associate our run with each
-	runs := make([]any, 0, len(sessions))
+	// gather all runs across all sessions
+	runs := make([]*FlowRun, 0, len(sessions))
 	for _, s := range sessions {
 		for _, r := range s.runs {
-			runs = append(runs, &r.r)
+			r.SessionID = s.ID() // set our session id now that it is written
 
-			// set our session id now that it is written
-			r.SetSessionID(s.ID())
+			runs = append(runs, r)
 		}
 	}
 

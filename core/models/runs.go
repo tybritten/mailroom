@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -40,42 +39,24 @@ var runStatusMap = map[flows.RunStatus]RunStatus{
 
 // FlowRun is the mailroom type for a FlowRun
 type FlowRun struct {
-	r struct {
-		ID              FlowRunID       `db:"id"`
-		UUID            flows.RunUUID   `db:"uuid"`
-		Status          RunStatus       `db:"status"`
-		CreatedOn       time.Time       `db:"created_on"`
-		ModifiedOn      time.Time       `db:"modified_on"`
-		ExitedOn        *time.Time      `db:"exited_on"`
-		Responded       bool            `db:"responded"`
-		Results         string          `db:"results"`
-		Path            string          `db:"path"`
-		CurrentNodeUUID null.String     `db:"current_node_uuid"`
-		ContactID       flows.ContactID `db:"contact_id"`
-		FlowID          FlowID          `db:"flow_id"`
-		OrgID           OrgID           `db:"org_id"`
-		SessionID       SessionID       `db:"session_id"`
-		StartID         StartID         `db:"start_id"`
-	}
+	ID              FlowRunID       `db:"id"`
+	UUID            flows.RunUUID   `db:"uuid"`
+	Status          RunStatus       `db:"status"`
+	CreatedOn       time.Time       `db:"created_on"`
+	ModifiedOn      time.Time       `db:"modified_on"`
+	ExitedOn        *time.Time      `db:"exited_on"`
+	Responded       bool            `db:"responded"`
+	Results         string          `db:"results"`
+	Path            string          `db:"path"`
+	CurrentNodeUUID null.String     `db:"current_node_uuid"`
+	ContactID       flows.ContactID `db:"contact_id"`
+	FlowID          FlowID          `db:"flow_id"`
+	OrgID           OrgID           `db:"org_id"`
+	SessionID       SessionID       `db:"session_id"`
+	StartID         StartID         `db:"start_id"`
 
 	// we keep a reference to the engine's run
 	run flows.Run
-}
-
-func (r *FlowRun) SetSessionID(sessionID SessionID) { r.r.SessionID = sessionID }
-func (r *FlowRun) SetStartID(startID StartID)       { r.r.StartID = startID }
-func (r *FlowRun) StartID() StartID                 { return r.r.StartID }
-func (r *FlowRun) UUID() flows.RunUUID              { return r.r.UUID }
-func (r *FlowRun) ModifiedOn() time.Time            { return r.r.ModifiedOn }
-
-// MarshalJSON is our custom marshaller so that our inner struct get output
-func (r *FlowRun) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.r)
-}
-
-// UnmarshalJSON is our custom marshaller so that our inner struct get output
-func (r *FlowRun) UnmarshalJSON(b []byte) error {
-	return json.Unmarshal(b, &r.r)
 }
 
 // Step represents a single step in a run, this struct is used for serialization to the steps
@@ -112,26 +93,26 @@ func newRun(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, session *Session, f
 		return nil, fmt.Errorf("unable to load flow with uuid: %s: %w", fr.FlowReference().UUID, err)
 	}
 
-	// create our run
-	run := &FlowRun{}
-	r := &run.r
-	r.UUID = fr.UUID()
-	r.Status = runStatusMap[fr.Status()]
-	r.CreatedOn = fr.CreatedOn()
-	r.ExitedOn = fr.ExitedOn()
-	r.ModifiedOn = fr.ModifiedOn()
-	r.ContactID = fr.Contact().ID()
-	r.FlowID = flowID
-	r.SessionID = session.ID()
-	r.StartID = NilStartID
-	r.OrgID = oa.OrgID()
-	r.Path = string(jsonx.MustMarshal(path))
-	r.Results = string(jsonx.MustMarshal(fr.Results()))
+	r := &FlowRun{
+		UUID:       fr.UUID(),
+		Status:     runStatusMap[fr.Status()],
+		CreatedOn:  fr.CreatedOn(),
+		ExitedOn:   fr.ExitedOn(),
+		ModifiedOn: fr.ModifiedOn(),
+		ContactID:  fr.Contact().ID(),
+		FlowID:     flowID,
+		OrgID:      oa.OrgID(),
+		SessionID:  session.ID(),
+		StartID:    NilStartID,
+		Path:       string(jsonx.MustMarshal(path)),
+		Results:    string(jsonx.MustMarshal(fr.Results())),
+
+		run: fr,
+	}
 
 	if len(path) > 0 {
 		r.CurrentNodeUUID = null.String(path[len(path)-1].NodeUUID)
 	}
-	run.run = fr
 
 	// mark ourselves as responded if we received a message
 	for _, e := range fr.Events() {
@@ -141,7 +122,7 @@ func newRun(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, session *Session, f
 		}
 	}
 
-	return run, nil
+	return r, nil
 }
 
 // GetContactIDsAtNode returns the ids of contacts currently waiting or active at the given flow node
