@@ -64,6 +64,7 @@ type FlowRun struct {
 
 func (r *FlowRun) SetSessionID(sessionID SessionID) { r.r.SessionID = sessionID }
 func (r *FlowRun) SetStartID(startID StartID)       { r.r.StartID = startID }
+func (r *FlowRun) StartID() StartID                 { return r.r.StartID }
 func (r *FlowRun) UUID() flows.RunUUID              { return r.r.UUID }
 func (r *FlowRun) ModifiedOn() time.Time            { return r.r.ModifiedOn }
 

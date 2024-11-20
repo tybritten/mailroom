@@ -89,7 +89,7 @@ func TestResume(t *testing.T) {
 	modelContact, flowContact, _ := testdata.Cathy.Load(rt, oa)
 
 	trigger := triggers.NewBuilder(oa.Env(), flow.Reference(), flowContact).Manual().Build()
-	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{modelContact}, []flows.Trigger{trigger}, nil, true)
+	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{modelContact}, []flows.Trigger{trigger}, nil, true, models.NilStartID)
 	assert.NoError(t, err)
 	assert.NotNil(t, sessions)
 
@@ -178,7 +178,7 @@ func TestStartFlowConcurrency(t *testing.T) {
 
 	// start each contact in the flow at the same time...
 	test.RunConcurrently(len(contacts), func(i int) {
-		sessions, err := runner.StartFlow(ctx, rt, oa, dbFlow, []models.ContactID{contacts[i].ID}, options)
+		sessions, err := runner.StartFlow(ctx, rt, oa, dbFlow, []models.ContactID{contacts[i].ID}, options, models.NilStartID)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(sessions))
 	})

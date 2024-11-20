@@ -203,7 +203,7 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 		}
 
 		for _, c := range []*testdata.Contact{testdata.Cathy, testdata.Bob, testdata.George, testdata.Alexandria} {
-			_, err := runner.StartFlow(ctx, rt, oa, flow.(*models.Flow), []models.ContactID{c.ID}, options)
+			_, err := runner.StartFlow(ctx, rt, oa, flow.(*models.Flow), []models.ContactID{c.ID}, options, models.NilStartID)
 			require.NoError(t, err)
 		}
 
@@ -278,7 +278,7 @@ func RunFlowAndApplyEvents(t *testing.T, ctx context.Context, rt *runtime.Runtim
 	tx, err := rt.DB.BeginTxx(ctx, nil)
 	require.NoError(t, err)
 
-	session, err := models.NewSession(ctx, tx, oa, fs, sprint)
+	session, err := models.NewSession(ctx, tx, oa, fs, sprint, models.NilStartID)
 	require.NoError(t, err)
 
 	err = tx.Commit()
