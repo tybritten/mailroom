@@ -1,3 +1,8 @@
+v9.3.49 (2024-11-20)
+-------------------------
+ * Update deps
+ * Add task to handle throttled expirations
+
 v9.3.48 (2024-11-19)
 -------------------------
  * Add new task to handle bulk session timeouts
