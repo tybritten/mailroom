@@ -55,8 +55,8 @@ func TestTimeouts(t *testing.T) {
 	assert.Equal(t, "handle_contact_event", task1.Type)
 	task2, err := tasks.HandlerQueue.Pop(rc)
 	assert.NoError(t, err)
-	assert.Equal(t, int(testdata.Org1.ID), task1.OwnerID)
-	assert.Equal(t, "handle_contact_event", task1.Type)
+	assert.Equal(t, int(testdata.Org1.ID), task2.OwnerID)
+	assert.Equal(t, "handle_contact_event", task2.Type)
 
 	// decode the tasks to check contacts
 	eventTask := &handler.HandleContactEventTask{}
