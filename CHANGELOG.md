@@ -1,3 +1,8 @@
+v9.3.50 (2024-11-20)
+-------------------------
+ * Simplify FlowRun struct
+ * Only set start_id on first run of a session
+
 v9.3.49 (2024-11-20)
 -------------------------
  * Update deps
