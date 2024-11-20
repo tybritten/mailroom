@@ -381,7 +381,7 @@ func StartIVRFlow(
 	}
 
 	// start our flow
-	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{c}, []flows.Trigger{trigger}, hook, true)
+	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{c}, []flows.Trigger{trigger}, hook, true, models.NilStartID)
 	if err != nil {
 		return fmt.Errorf("error starting flow: %w", err)
 	}

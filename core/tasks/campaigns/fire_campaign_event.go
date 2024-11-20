@@ -227,7 +227,7 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 		CommitHook: markFired,
 	}
 
-	_, err = runner.StartFlow(ctx, rt, oa, dbFlow, slices.Collect(maps.Keys(firesToFire)), options)
+	_, err = runner.StartFlow(ctx, rt, oa, dbFlow, slices.Collect(maps.Keys(firesToFire)), options, models.NilStartID)
 	if err != nil {
 		slog.Error("error starting flow for campaign event", "error", err, "event", eventUUID)
 	}
