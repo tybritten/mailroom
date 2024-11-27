@@ -30,19 +30,16 @@ func (s segmentID) String() string {
 	return fmt.Sprintf("%s:%s", s.exitUUID, s.destUUID)
 }
 
-type segmentContact struct {
+type segmentRecentContact struct {
 	contact *flows.Contact
 	operand string
 	time    time.Time
+	rnd     string
 }
 
 // RecordFlowStatistics records statistics from the given parallel slices of sessions and sprints
 func RecordFlowStatistics(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, sessions []flows.Session, sprints []flows.Sprint) error {
-	rc := rt.RP.Get()
-	defer rc.Close()
-
-	segmentIDs := make([]segmentID, 0, 10)
-	recentBySegment := make(map[segmentID][]*segmentContact, 10)
+	recentBySegment := make(map[segmentID][]*segmentRecentContact, 10)
 	nodeTypeCache := make(map[flows.NodeUUID]string)
 
 	for i, sprint := range sprints {
@@ -50,34 +47,30 @@ func RecordFlowStatistics(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx,
 
 		for _, seg := range sprint.Segments() {
 			segID := segmentID{seg.Exit().UUID(), seg.Destination().UUID()}
-			uiNodeType := getNodeUIType(seg.Flow(), seg.Node(), nodeTypeCache)
 
-			// only store operand values for certain node types
-			operand := ""
-			if storeOperandsForTypes[uiNodeType] {
-				operand = seg.Operand()
-			}
+			// only store recent contact if we have less than the cap
+			if len(recentBySegment[segID]) < recentContactsCap {
+				uiNodeType := getNodeUIType(seg.Flow(), seg.Node(), nodeTypeCache)
 
-			if _, seen := recentBySegment[segID]; !seen {
-				segmentIDs = append(segmentIDs, segID)
+				// only store operand values for certain node types
+				operand := ""
+				if storeOperandsForTypes[uiNodeType] {
+					operand = seg.Operand()
+				}
+				recentBySegment[segID] = append(recentBySegment[segID], &segmentRecentContact{contact: session.Contact(), operand: operand, time: seg.Time(), rnd: redisx.RandomBase64(10)})
 			}
-			recentBySegment[segID] = append(recentBySegment[segID], &segmentContact{contact: session.Contact(), operand: operand, time: seg.Time()})
 		}
 	}
 
-	for _, segID := range segmentIDs {
-		recentContacts := recentBySegment[segID]
+	rc := rt.RP.Get()
+	defer rc.Close()
 
-		// trim recent set for each segment - no point in trying to add more values than we keep
-		if len(recentContacts) > recentContactsCap {
-			recentBySegment[segID] = recentContacts[:len(recentContacts)-recentContactsCap]
-		}
-
+	for segID, recentContacts := range recentBySegment {
 		recentSet := redisx.NewCappedZSet(fmt.Sprintf(recentContactsKey, segID), recentContactsCap, recentContactsExpire)
 
 		for _, recent := range recentContacts {
 			// set members need to be unique, so we include a random string
-			value := fmt.Sprintf("%s|%d|%s", redisx.RandomBase64(10), recent.contact.ID(), stringsx.TruncateEllipsis(recent.operand, 100))
+			value := fmt.Sprintf("%s|%d|%s", recent.rnd, recent.contact.ID(), stringsx.TruncateEllipsis(recent.operand, 100))
 			score := float64(recent.time.UnixNano()) / float64(1e9) // score is UNIX time as floating point
 
 			err := recentSet.Add(rc, value, score)
