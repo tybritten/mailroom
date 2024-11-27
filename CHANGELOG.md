@@ -1,3 +1,7 @@
+v9.3.51 (2024-11-27)
+-------------------------
+ * Start recording flow segment counts in flow activity table
+
 v9.3.50 (2024-11-20)
 -------------------------
  * Simplify FlowRun struct
