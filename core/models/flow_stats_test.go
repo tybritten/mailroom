@@ -71,7 +71,7 @@ func TestRecordFlowStatistics(t *testing.T) {
 
 	// check recent operands for color split :: Blue exit -> next node
 	assertredis.ZRange(t, rc, "recent_contacts:c02fc3ba-369a-4c87-9bc4-c3b376bda6d2:57b50d33-2b5a-4726-82de-9848c61eff6e", 0, -1,
-		[]string{"2SS5dyuJzp|123|blue", "6MBPV0gqT9|234|BLUE"},
+		[]string{"2SS5dyuJzp|123|blue", "2MsZZ/N3TH|234|BLUE"},
 	)
 
 	// check recent operands for color split :: Other exit -> next node
@@ -81,6 +81,6 @@ func TestRecordFlowStatistics(t *testing.T) {
 
 	// check recent operands for split by expression :: Other exit -> next node
 	assertredis.ZRange(t, rc, "recent_contacts:2b698218-87e5-4ab8-922e-e65f91d12c10:88d8bf00-51ce-4e5e-aae8-4f957a0761a0", 0, -1,
-		[]string{"2MsZZ/N3TH|123|0", "KKLrT60Tr9|234|0"},
+		[]string{"PLQQFoOgV9|123|0", "/cgnkcW6vA|234|0"},
 	)
 }
