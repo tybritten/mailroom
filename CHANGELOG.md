@@ -1,3 +1,7 @@
+v9.3.52 (2024-11-29)
+-------------------------
+ * Update to latest gocommon that fixes country parsing from phone numbers
+
 v9.3.51 (2024-11-27)
 -------------------------
  * Start recording flow segment counts in flow activity table
