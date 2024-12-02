@@ -1,3 +1,7 @@
+v9.3.53 (2024-12-02)
+-------------------------
+ * Update to latest goflow
+
 v9.3.52 (2024-11-29)
 -------------------------
  * Update to latest gocommon that fixes country parsing from phone numbers
