@@ -274,25 +274,6 @@ WHERE
 	id = :id
 `
 
-const sqlUpdateRun = `
-UPDATE
-	flows_flowrun fr
-SET
-	status = r.status,
-	exited_on = r.exited_on::timestamp with time zone,
-	responded = r.responded::bool,
-	results = r.results,
-	path = r.path::jsonb,
-	current_node_uuid = r.current_node_uuid::uuid,
-	modified_on = NOW()
-FROM (
-	VALUES(:uuid, :status, :exited_on, :responded, :results, :path, :current_node_uuid)
-) AS
-	r(uuid, status, exited_on, responded, results, path, current_node_uuid)
-WHERE
-	fr.uuid = r.uuid::uuid
-`
-
 // Update updates the session based on the state passed in from our engine session, this also takes care of applying any event hooks
 func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *OrgAssets, fs flows.Session, sprint flows.Sprint, contact *Contact, hook SessionCommitHook) error {
 	// make sure we have our seen runs
@@ -424,16 +405,13 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	}
 
 	// update all modified runs at once
-	err = BulkQuery(ctx, "update runs", tx, sqlUpdateRun, updatedRuns)
-	if err != nil {
-		slog.Error("error while updating runs for session", "error", err, "session", string(output))
-		return fmt.Errorf("error updating runs: %w", err)
+	if err := UpdateRuns(ctx, tx, updatedRuns); err != nil {
+		return fmt.Errorf("error updating existing runs: %w", err)
 	}
 
 	// insert all new runs at once
-	err = BulkQuery(ctx, "insert runs", tx, sqlInsertRun, newRuns)
-	if err != nil {
-		return fmt.Errorf("error writing runs: %w", err)
+	if err := InsertRuns(ctx, tx, newRuns); err != nil {
+		return fmt.Errorf("error inserting new runs: %w", err)
 	}
 
 	if err := RecordFlowStatistics(ctx, rt, tx, []flows.Session{fs}, []flows.Sprint{sprint}); err != nil {
