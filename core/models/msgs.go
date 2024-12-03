@@ -656,7 +656,7 @@ func MarkMessagesQueued(ctx context.Context, db DBorTx, msgs []*Msg) error {
 
 const sqlUpdateMsgStatus = `
 UPDATE msgs_msg
-   SET status = m.status, next_attempt = m.next_attempt::timestampz
+   SET status = m.status, next_attempt = m.next_attempt::timestamptz
   FROM (VALUES(:id, :status, :next_attempt)) AS m(id, status, next_attempt)
  WHERE msgs_msg.id = m.id::bigint`
 
