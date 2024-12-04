@@ -1,3 +1,7 @@
+v9.3.55 (2024-12-04)
+-------------------------
+ * Start writing new flow run path fields (path_nodes and path_times)
+
 v9.3.54 (2024-12-03)
 -------------------------
  * Update to latest goflow that adds flow spec 13.6
