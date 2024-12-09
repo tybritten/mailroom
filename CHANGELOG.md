@@ -1,3 +1,7 @@
+v9.3.59 (2024-12-09)
+-------------------------
+ * Always migrate to latest patch version of flow spec
+
 v9.3.58 (2024-12-09)
 -------------------------
  * Update goflow which has new 13.6.1 flow migration
