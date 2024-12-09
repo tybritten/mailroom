@@ -1,3 +1,7 @@
+v9.3.58 (2024-12-09)
+-------------------------
+ * Update goflow which has new 13.6.1 flow migration
+
 v9.3.57 (2024-12-09)
 -------------------------
  * Update deps including goflow
