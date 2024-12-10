@@ -1,3 +1,7 @@
+v9.3.60 (2024-12-10)
+-------------------------
+ * Stop writing flowrun.path
+
 v9.3.59 (2024-12-09)
 -------------------------
  * Always migrate to latest patch version of flow spec
