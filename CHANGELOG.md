@@ -1,3 +1,7 @@
+v9.3.61 (2024-12-11)
+-------------------------
+ * Read outbox size check from new msg folder counts
+
 v9.3.60 (2024-12-10)
 -------------------------
  * Stop writing flowrun.path
