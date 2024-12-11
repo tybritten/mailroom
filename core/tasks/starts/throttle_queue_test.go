@@ -31,7 +31,7 @@ func TestThrottleQueue(t *testing.T) {
 	assert.Equal(t, map[string]any{"paused": 0, "resumed": 1}, res)
 
 	// make it look like org 1 has 20,000 messages in its outbox
-	rt.DB.MustExec(`INSERT INTO msgs_systemlabelcount(org_id, label_type, count, is_squashed) VALUES (1, 'O', 10050, FALSE)`)
+	rt.DB.MustExec(`INSERT INTO orgs_itemcount(org_id, scope, count, is_squashed) VALUES (1, 'msgs:folder:O', 10050, FALSE)`)
 
 	models.FlushCache()
 
@@ -40,7 +40,7 @@ func TestThrottleQueue(t *testing.T) {
 	assert.Equal(t, map[string]any{"paused": 1, "resumed": 0}, res)
 
 	// make it look like most of the inbox has cleared
-	rt.DB.MustExec(`INSERT INTO msgs_systemlabelcount(org_id, label_type, count, is_squashed) VALUES (1, 'O', -10000, FALSE)`)
+	rt.DB.MustExec(`INSERT INTO orgs_itemcount(org_id, scope, count, is_squashed) VALUES (1, 'msgs:folder:O', -10000, FALSE)`)
 
 	models.FlushCache()
 

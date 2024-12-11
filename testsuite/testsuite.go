@@ -280,7 +280,6 @@ DELETE FROM channels_channelevent;
 DELETE FROM channels_channellog;
 DELETE FROM msgs_msg;
 DELETE FROM flows_flowrun;
-DELETE FROM flows_flowpathcount;
 DELETE FROM flows_flowcategorycount;
 DELETE FROM flows_flowactivitycount;
 DELETE FROM flows_flowstartcount;
@@ -292,7 +291,6 @@ DELETE FROM flows_flowrevision WHERE flow_id >= 30000;
 DELETE FROM flows_flow WHERE id >= 30000;
 DELETE FROM ivr_call;
 DELETE FROM campaigns_eventfire;
-DELETE FROM msgs_systemlabelcount;
 DELETE FROM msgs_msg_labels;
 DELETE FROM msgs_msg;
 DELETE FROM msgs_broadcast_groups;
@@ -312,6 +310,7 @@ DELETE FROM contacts_contactgroup_contacts WHERE contact_id >= 30000 OR contactg
 DELETE FROM contacts_contact WHERE id >= 30000;
 DELETE FROM contacts_contactgroupcount WHERE group_id >= 30000;
 DELETE FROM contacts_contactgroup WHERE id >= 30000;
+DELETE FROM orgs_itemcount;
 
 ALTER SEQUENCE flows_flow_id_seq RESTART WITH 30000;
 ALTER SEQUENCE tickets_ticket_id_seq RESTART WITH 1;
