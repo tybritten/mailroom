@@ -1,3 +1,7 @@
+v9.3.62 (2024-12-11)
+-------------------------
+ * Update to latest goflow
+
 v9.3.61 (2024-12-11)
 -------------------------
  * Read outbox size check from new msg folder counts
