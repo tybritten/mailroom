@@ -245,7 +245,7 @@ SELECT ROW_TO_JSON(o) FROM (SELECT
 			GROUP BY c.country ORDER BY count(c.country) desc, country LIMIT 1
 	    ), ''
 	) AS default_country,
-	(SELECT SUM(count) FROM msgs_systemlabelcount WHERE org_id = $1 AND label_type = 'O') AS outbox_count
+	(SELECT SUM(count) FROM orgs_itemcount WHERE org_id = $1 AND scope = 'msgs:folder:O') AS outbox_count
 	FROM orgs_org o
 	WHERE id = $1
 ) o`
