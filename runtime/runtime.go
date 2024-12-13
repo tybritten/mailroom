@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
+	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
 )
@@ -21,6 +22,7 @@ type Runtime struct {
 	Dynamo     *dynamo.Service
 	S3         *s3x.Service
 	ES         *elasticsearch.TypedClient
+	CW         *cwatch.Service
 	FCM        FCMClient
 	Config     *Config
 }
