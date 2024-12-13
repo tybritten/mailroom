@@ -1,3 +1,7 @@
+v9.3.66 (2024-12-13)
+-------------------------
+ * Convert all remaining metrics to cloudwatch
+
 v9.3.65 (2024-12-13)
 -------------------------
  * Add cloudwatch and start sending cron times there
