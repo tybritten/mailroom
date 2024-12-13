@@ -11,7 +11,6 @@ import (
 	"github.com/appleboy/go-fcm"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/jmoiron/sqlx"
-	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
@@ -133,13 +132,6 @@ func (mr *Mailroom) Start() error {
 		log.Info("elastic ok")
 	}
 
-	// if we have a librato token, configure it
-	if c.LibratoToken != "" {
-		analytics.RegisterBackend(analytics.NewLibrato(c.LibratoUsername, c.LibratoToken, c.InstanceID, time.Second, mr.wg))
-	}
-
-	analytics.Start()
-
 	// configure and start cloudwatch
 	mr.rt.CW, err = cwatch.NewService(c.AWSAccessKeyID, c.AWSSecretAccessKey, c.AWSRegion, c.CloudwatchNamespace, c.DeploymentID)
 	if err != nil {
@@ -176,7 +168,6 @@ func (mr *Mailroom) Stop() error {
 	mr.throttledForeman.Stop()
 
 	mr.rt.CW.StopQueue()
-	analytics.Stop()
 
 	close(mr.quit)
 	mr.cancel()
