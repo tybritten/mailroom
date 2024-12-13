@@ -6,7 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nyaruka/gocommon/analytics"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/crons"
@@ -66,7 +67,13 @@ func recordCronExecution(name string, r func(context.Context, *runtime.Runtime) 
 
 		elapsed := time.Since(started)
 		elapsedSeconds := elapsed.Seconds()
-		analytics.Gauge("mr.cron_"+name, elapsedSeconds)
+
+		rt.CW.Queue(types.MetricDatum{
+			MetricName: aws.String("CronTime"),
+			Dimensions: []types.Dimension{{Name: aws.String("TaskName"), Value: aws.String(name)}},
+			Value:      aws.Float64(elapsedSeconds),
+			Unit:       types.StandardUnitSeconds,
+		})
 
 		rc := rt.RP.Get()
 		defer rc.Close()

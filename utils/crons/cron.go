@@ -38,10 +38,7 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, allInstances bo
 	log := slog.With("cron", name)
 
 	go func() {
-		defer func() {
-			log.Info("cron exiting")
-			wg.Done()
-		}()
+		defer func() { wg.Done() }()
 
 		for {
 			select {

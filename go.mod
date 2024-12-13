@@ -7,7 +7,8 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/appleboy/go-fcm v1.2.1
 	github.com/aws/aws-sdk-go-v2 v1.32.6
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.20
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.15.21
+	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.43.3
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.38.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.71.0
 	github.com/buger/jsonparser v1.1.1
@@ -22,11 +23,11 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
-	github.com/nyaruka/gocommon v1.59.3
+	github.com/nyaruka/gocommon v1.60.3
 	github.com/nyaruka/goflow v0.225.8
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.8.1
-	github.com/nyaruka/rp-indexer/v9 v9.2.1
+	github.com/nyaruka/rp-indexer/v9 v9.3.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.61.0
@@ -34,13 +35,13 @@ require (
 	github.com/samber/slog-sentry v1.2.2
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.10.0
-	google.golang.org/api v0.210.0
+	google.golang.org/api v0.211.0
 )
 
 require (
 	cel.dev/expr v0.19.1 // indirect
 	cloud.google.com/go v0.116.0 // indirect
-	cloud.google.com/go/auth v0.12.0 // indirect
+	cloud.google.com/go/auth v0.12.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.6 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	cloud.google.com/go/firestore v1.17.0 // indirect
@@ -62,7 +63,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.25 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.1 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.25 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.24.8 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.24.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.4.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.6 // indirect
@@ -116,7 +117,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	golang.org/x/crypto v0.30.0 // indirect
-	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d // indirect
+	golang.org/x/exp v0.0.0-20241210194714-1829a127f884 // indirect
 	golang.org/x/net v0.32.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect

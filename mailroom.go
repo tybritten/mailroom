@@ -12,6 +12,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/analytics"
+	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/mailroom/core/tasks"
@@ -139,6 +140,16 @@ func (mr *Mailroom) Start() error {
 
 	analytics.Start()
 
+	// configure and start cloudwatch
+	mr.rt.CW, err = cwatch.NewService(c.AWSAccessKeyID, c.AWSSecretAccessKey, c.AWSRegion, c.CloudwatchNamespace, c.DeploymentID)
+	if err != nil {
+		log.Error("cloudwatch not available", "error", err)
+	} else {
+		log.Info("cloudwatch ok")
+	}
+
+	mr.rt.CW.StartQueue(mr.wg, time.Second*3)
+
 	// init our foremen and start it
 	mr.handlerForeman.Start()
 	mr.batchForeman.Start()
@@ -164,7 +175,9 @@ func (mr *Mailroom) Stop() error {
 	mr.batchForeman.Stop()
 	mr.throttledForeman.Stop()
 
+	mr.rt.CW.StopQueue()
 	analytics.Stop()
+
 	close(mr.quit)
 	mr.cancel()
 

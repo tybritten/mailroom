@@ -15,6 +15,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
+	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/jsonx"
@@ -22,6 +23,7 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx/assertredis"
 	"github.com/nyaruka/rp-indexer/v9/indexers"
+	ixruntime "github.com/nyaruka/rp-indexer/v9/runtime"
 )
 
 var _db *sqlx.DB
@@ -72,6 +74,7 @@ func Reset(what ResetFlag) {
 // Runtime returns the various runtime things a test might need
 func Runtime() (context.Context, *runtime.Runtime) {
 	cfg := runtime.NewDefaultConfig()
+	cfg.DeploymentID = "test"
 	cfg.Port = 8091
 	cfg.ElasticContactsIndex = elasticContactsIndex
 	cfg.AWSAccessKeyID = "root"
@@ -89,6 +92,9 @@ func Runtime() (context.Context, *runtime.Runtime) {
 	s3svc, err := s3x.NewService(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.S3Endpoint, cfg.S3Minio)
 	noError(err)
 
+	cwSvc, err := cwatch.NewService(cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion, cfg.CloudwatchNamespace, cfg.DeploymentID)
+	noError(err)
+
 	dbx := getDB()
 	rt := &runtime.Runtime{
 		DB:         dbx,
@@ -97,6 +103,7 @@ func Runtime() (context.Context, *runtime.Runtime) {
 		Dynamo:     dyna,
 		S3:         s3svc,
 		ES:         getES(),
+		CW:         cwSvc,
 		FCM:        &MockFCMClient{ValidTokens: []string{"FCMID3", "FCMID4", "FCMID5"}},
 		Config:     cfg,
 	}
@@ -112,7 +119,7 @@ func ReindexElastic(ctx context.Context) {
 	es := getES()
 
 	contactsIndexer := indexers.NewContactIndexer(elasticURL, elasticContactsIndex, 1, 1, 100)
-	contactsIndexer.Index(db.DB, false, false)
+	contactsIndexer.Index(&ixruntime.Runtime{DB: db.DB}, false, false)
 
 	_, err := es.Indices.Refresh().Index(elasticContactsIndex).Do(ctx)
 	noError(err)
