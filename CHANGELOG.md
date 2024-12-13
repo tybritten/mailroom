@@ -1,3 +1,7 @@
+v9.3.65 (2024-12-13)
+-------------------------
+ * Add cloudwatch and start sending cron times there
+
 v9.3.64 (2024-12-12)
 -------------------------
  * Update to latest goflow
