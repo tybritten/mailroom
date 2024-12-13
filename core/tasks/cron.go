@@ -40,7 +40,7 @@ type Cron interface {
 	Run(context.Context, *runtime.Runtime) (map[string]any, error)
 
 	// AllInstances returns whether cron runs on all instances - i.e. locking is instance specific. This is for crons
-	// like analytics which report instance specific stats. Other crons are synchronized across all instances.
+	// like metrics which report instance specific stats. Other crons are synchronized across all instances.
 	AllInstances() bool
 }
 
@@ -69,7 +69,7 @@ func recordCronExecution(name string, r func(context.Context, *runtime.Runtime) 
 		elapsedSeconds := elapsed.Seconds()
 
 		rt.CW.Queue(types.MetricDatum{
-			MetricName: aws.String("CronTime"),
+			MetricName: aws.String("CronTaskDuration"),
 			Dimensions: []types.Dimension{{Name: aws.String("TaskName"), Value: aws.String(name)}},
 			Value:      aws.Float64(elapsedSeconds),
 			Unit:       types.StandardUnitSeconds,

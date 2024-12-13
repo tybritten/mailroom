@@ -10,7 +10,6 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
-	"github.com/nyaruka/gocommon/analytics"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/triggers"
@@ -118,8 +117,6 @@ func (t *FireCampaignEventTask) Perform(ctx context.Context, rt *runtime.Runtime
 
 // FireCampaignEvents tries to handle the given event fires, returning those that were handled (i.e. skipped, fired or deleted)
 func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, fires []*models.EventFire, flowUUID assets.FlowUUID, campaign *triggers.CampaignReference, eventUUID triggers.CampaignEventUUID) ([]*models.EventFire, error) {
-	start := time.Now()
-
 	// get the capmaign event object
 	dbEvent := oa.CampaignEventByID(fires[0].EventID)
 	if dbEvent == nil {
@@ -231,10 +228,6 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 	if err != nil {
 		slog.Error("error starting flow for campaign event", "error", err, "event", eventUUID)
 	}
-
-	// log both our total and average
-	analytics.Gauge("mr.campaign_event_elapsed", float64(time.Since(start))/float64(time.Second))
-	analytics.Gauge("mr.campaign_event_count", float64(len(handled)))
 
 	return handled, nil
 }

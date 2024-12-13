@@ -69,19 +69,16 @@ type Config struct {
 	S3SessionsBucket    string `help:"S3 bucket to write flow sessions to"`
 	S3Minio             bool   `help:"S3 is actually Minio or other compatible service"`
 
-	CourierAuthToken string `help:"the authentication token used for requests to Courier"`
-	LibratoUsername  string `help:"the username that will be used to authenticate to Librato"`
-	LibratoToken     string `help:"the token that will be used to authenticate to Librato"`
-
 	CloudwatchNamespace string `help:"the namespace to use for cloudwatch metrics"`
 	DeploymentID        string `help:"the deployment identifier to use for metrics"`
+	InstanceID          string `help:"the instance identifier to use for metrics"`
 
+	CourierAuthToken       string `help:"the authentication token used for requests to Courier"`
 	AndroidCredentialsFile string `help:"path to JSON file with FCM service account credentials used to sync Android relayers"`
 
-	InstanceID string     `help:"the unique identifier of this instance, defaults to hostname"`
-	LogLevel   slog.Level `help:"the logging level courier should use"`
-	UUIDSeed   int        `help:"seed to use for UUID generation in a testing environment"`
-	Version    string     `help:"the version of this mailroom install"`
+	LogLevel slog.Level `help:"the logging level courier should use"`
+	UUIDSeed int        `help:"seed to use for UUID generation in a testing environment"`
+	Version  string     `help:"the version of this mailroom install"`
 }
 
 // NewDefaultConfig returns a new default configuration object
@@ -133,11 +130,11 @@ func NewDefaultConfig() *Config {
 
 		CloudwatchNamespace: "Temba",
 		DeploymentID:        "dev",
+		InstanceID:          hostname,
 
-		InstanceID: hostname,
-		LogLevel:   slog.LevelWarn,
-		UUIDSeed:   0,
-		Version:    "Dev",
+		LogLevel: slog.LevelWarn,
+		UUIDSeed: 0,
+		Version:  "Dev",
 	}
 }
 
