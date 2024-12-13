@@ -73,6 +73,9 @@ type Config struct {
 	LibratoUsername  string `help:"the username that will be used to authenticate to Librato"`
 	LibratoToken     string `help:"the token that will be used to authenticate to Librato"`
 
+	CloudwatchNamespace string `help:"the namespace to use for cloudwatch metrics"`
+	DeploymentID        string `help:"the deployment identifier to use for metrics"`
+
 	AndroidCredentialsFile string `help:"path to JSON file with FCM service account credentials used to sync Android relayers"`
 
 	InstanceID string     `help:"the unique identifier of this instance, defaults to hostname"`
@@ -127,6 +130,9 @@ func NewDefaultConfig() *Config {
 		S3Endpoint:          "https://s3.amazonaws.com",
 		S3AttachmentsBucket: "temba-attachments",
 		S3SessionsBucket:    "temba-sessions",
+
+		CloudwatchNamespace: "Temba",
+		DeploymentID:        "dev",
 
 		InstanceID: hostname,
 		LogLevel:   slog.LevelWarn,
