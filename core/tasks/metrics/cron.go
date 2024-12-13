@@ -23,7 +23,9 @@ type metricsCron struct {
 }
 
 func (c *metricsCron) Next(last time.Time) time.Time {
-	return tasks.CronNext(last, time.Minute)
+	// We offset 30 seconds from the top of the minute so that metrics related to queue sizes don't see the spikes that
+	// typically occur every minute by tasks such as expirations, timeouts etc.
+	return tasks.CronNext(last, time.Minute).Add(time.Second * 30)
 }
 
 func (c *metricsCron) AllInstances() bool {
@@ -31,13 +33,6 @@ func (c *metricsCron) AllInstances() bool {
 }
 
 func (c *metricsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
-	// TODO replace with offset passed to tasks.CronNext
-	// We wait 15 seconds since we fire at the top of the minute, the same as expirations.
-	// That way any metrics related to the size of our queue are a bit more accurate (all expirations can
-	// usually be handled in 15 seconds). Something more complicated would take into account the age of
-	// the items in our queues.
-	time.Sleep(time.Second * 15)
-
 	handlerSize, batchSize, throttledSize := getQueueSizes(rt)
 
 	// get our DB and redis stats
