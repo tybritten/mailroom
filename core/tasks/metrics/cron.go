@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 )
@@ -50,55 +50,21 @@ func (c *metricsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]
 	c.dbWaitDuration = dbStats.WaitDuration
 	c.redisWaitDuration = redisStats.WaitDuration
 
-	dims := []types.Dimension{
-		{Name: aws.String("Host"), Value: aws.String(rt.Config.InstanceID)},
-		{Name: aws.String("App"), Value: aws.String("mailroom")},
-	}
+	hostDim := cwatch.Dimension("Host", rt.Config.InstanceID)
+	appDim := cwatch.Dimension("App", "mailroom")
 
-	rt.CW.Queue(types.MetricDatum{
-		MetricName: aws.String("DBConnectionsInUse"),
-		Dimensions: dims,
-		Value:      aws.Float64(float64(dbStats.InUse)),
-		Unit:       types.StandardUnitCount,
-	}, types.MetricDatum{
-		MetricName: aws.String("DBConnectionWaitDuration"),
-		Dimensions: dims,
-		Value:      aws.Float64(float64(dbWaitDurationInPeriod / time.Second)),
-		Unit:       types.StandardUnitSeconds,
-	}, types.MetricDatum{
-		MetricName: aws.String("RedisConnectionsInUse"),
-		Dimensions: dims,
-		Value:      aws.Float64(float64(redisStats.ActiveCount)),
-		Unit:       types.StandardUnitCount,
-	}, types.MetricDatum{
-		MetricName: aws.String("RedisConnectionsWaitDuration"),
-		Dimensions: dims,
-		Value:      aws.Float64(float64(redisWaitDurationInPeriod / time.Second)),
-		Unit:       types.StandardUnitSeconds,
-	})
+	rt.CW.Queue(
+		cwatch.Datum("DBConnectionsInUse", float64(dbStats.InUse), types.StandardUnitCount, hostDim, appDim),
+		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod/time.Second), types.StandardUnitSeconds, hostDim, appDim),
+		cwatch.Datum("RedisConnectionsInUse", float64(redisStats.ActiveCount), types.StandardUnitCount, hostDim, appDim),
+		cwatch.Datum("RedisConnectionsWaitDuration", float64(redisWaitDurationInPeriod/time.Second), types.StandardUnitSeconds, hostDim, appDim),
+	)
 
-	rt.CW.Queue(types.MetricDatum{
-		MetricName: aws.String("QueuedTasks"),
-		Dimensions: []types.Dimension{
-			{Name: aws.String("QueueName"), Value: aws.String("handler")},
-		},
-		Value: aws.Float64(float64(handlerSize)),
-		Unit:  types.StandardUnitCount,
-	}, types.MetricDatum{
-		MetricName: aws.String("QueuedTasks"),
-		Dimensions: []types.Dimension{
-			{Name: aws.String("QueueName"), Value: aws.String("batch")},
-		},
-		Value: aws.Float64(float64(batchSize)),
-		Unit:  types.StandardUnitCount,
-	}, types.MetricDatum{
-		MetricName: aws.String("QueuedTasks"),
-		Dimensions: []types.Dimension{
-			{Name: aws.String("QueueName"), Value: aws.String("throttled")},
-		},
-		Value: aws.Float64(float64(throttledSize)),
-		Unit:  types.StandardUnitCount,
-	})
+	rt.CW.Queue(
+		cwatch.Datum("QueuedTasks", float64(handlerSize), types.StandardUnitCount, cwatch.Dimension("QueueName", "handler")),
+		cwatch.Datum("QueuedTasks", float64(batchSize), types.StandardUnitCount, cwatch.Dimension("QueueName", "batch")),
+		cwatch.Datum("QueuedTasks", float64(throttledSize), types.StandardUnitCount, cwatch.Dimension("QueueName", "throttled")),
+	)
 
 	return map[string]any{
 		"db_inuse":       dbStats.InUse,

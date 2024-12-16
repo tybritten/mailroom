@@ -7,10 +7,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
+	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/core/models"
@@ -100,15 +100,10 @@ func (t *HandleContactEventTask) Perform(ctx context.Context, rt *runtime.Runtim
 		err = performHandlerTask(ctx, rt, oa, t.ContactID, ctask)
 
 		// send metrics for processing time and lag from queue time
-		rt.CW.Queue(types.MetricDatum{
-			MetricName: aws.String("HandlerTaskDuration"),
-			Value:      aws.Float64(float64(time.Since(start)) / float64(time.Second)),
-			Unit:       types.StandardUnitSeconds,
-		}, types.MetricDatum{
-			MetricName: aws.String("HandlerTaskLatency"),
-			Value:      aws.Float64(float64(time.Since(taskPayload.QueuedOn)) / float64(time.Second)),
-			Unit:       types.StandardUnitSeconds,
-		})
+		rt.CW.Queue(
+			cwatch.Datum("HandlerTaskDuration", float64(time.Since(start))/float64(time.Second), types.StandardUnitSeconds),
+			cwatch.Datum("HandlerTaskLatency", float64(time.Since(taskPayload.QueuedOn))/float64(time.Second), types.StandardUnitSeconds),
+		)
 
 		// if we get an error processing an event, requeue it for later and return our error
 		if err != nil {
