@@ -140,7 +140,7 @@ func (mr *Mailroom) Start() error {
 		log.Info("cloudwatch ok")
 	}
 
-	mr.rt.CW.StartQueue(mr.wg, time.Second*3)
+	mr.rt.CW.StartQueue(time.Second * 3)
 
 	// init our foremen and start it
 	mr.handlerForeman.Start()
@@ -167,15 +167,15 @@ func (mr *Mailroom) Stop() error {
 	mr.batchForeman.Stop()
 	mr.throttledForeman.Stop()
 
-	mr.rt.CW.StopQueue()
-
-	close(mr.quit)
+	close(mr.quit) // tell workers and crons to stop
 	mr.cancel()
 
-	// stop our web server
 	mr.webserver.Stop()
 
 	mr.wg.Wait()
+
+	// now that all tasks are finished, stop services they depend on
+	mr.rt.CW.StopQueue()
 
 	log.Info("mailroom stopped")
 	return nil
