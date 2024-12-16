@@ -1,3 +1,8 @@
+v9.3.67 (2024-12-16)
+-------------------------
+ * Update to latest gocommon and goflow
+ * Tweak metrics cron so that instead of sleeping there is an offset added to the next time
+
 v9.3.66 (2024-12-13)
 -------------------------
  * Convert all remaining metrics to cloudwatch
