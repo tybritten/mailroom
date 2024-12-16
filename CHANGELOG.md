@@ -1,3 +1,7 @@
+v9.3.68 (2024-12-16)
+-------------------------
+ * Fix cloudwatch service stopping before tasks are stopped
+
 v9.3.67 (2024-12-16)
 -------------------------
  * Update to latest gocommon and goflow
