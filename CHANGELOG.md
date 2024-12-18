@@ -1,3 +1,7 @@
+v9.3.69 (2024-12-18)
+-------------------------
+ * Use same approach to metrics as courier - record events in stats, convert to metrics and send every minute
+
 v9.3.68 (2024-12-16)
 -------------------------
  * Fix cloudwatch service stopping before tasks are stopped
