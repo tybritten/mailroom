@@ -36,8 +36,8 @@ func (s *Stats) ToMetrics() []types.MetricDatum {
 
 	metrics = append(metrics,
 		cwatch.Datum("HandlerTaskCount", float64(s.HandlerTaskCount), types.StandardUnitCount),
-		cwatch.Datum("HandlerTaskDuration", float64(avgHandlerTaskDuration/time.Second), types.StandardUnitCount),
-		cwatch.Datum("HandlerTaskLatency", float64(avgHandlerTaskLatency/time.Second), types.StandardUnitCount),
+		cwatch.Datum("HandlerTaskDuration", float64(avgHandlerTaskDuration)/float64(time.Second), types.StandardUnitCount),
+		cwatch.Datum("HandlerTaskLatency", float64(avgHandlerTaskLatency)/float64(time.Second), types.StandardUnitCount),
 	)
 
 	for name, count := range s.CronTaskCount {
@@ -45,7 +45,7 @@ func (s *Stats) ToMetrics() []types.MetricDatum {
 
 		metrics = append(metrics,
 			cwatch.Datum("CronTaskCount", float64(count), types.StandardUnitCount, cwatch.Dimension("TaskName", name)),
-			cwatch.Datum("CronTaskDuration", float64(avgTime/time.Second), types.StandardUnitSeconds, cwatch.Dimension("TaskName", name)),
+			cwatch.Datum("CronTaskDuration", float64(avgTime)/float64(time.Second), types.StandardUnitSeconds, cwatch.Dimension("TaskName", name)),
 		)
 	}
 
