@@ -6,8 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
-	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/crons"
@@ -68,7 +66,7 @@ func recordCronExecution(name string, r func(context.Context, *runtime.Runtime) 
 		elapsed := time.Since(started)
 		elapsedSeconds := elapsed.Seconds()
 
-		rt.CW.Queue(cwatch.Datum("CronTaskDuration", elapsedSeconds, types.StandardUnitSeconds, cwatch.Dimension("TaskName", name)))
+		rt.Stats.RecordCronTask(name, elapsed)
 
 		rc := rt.RP.Get()
 		defer rc.Close()
@@ -90,7 +88,7 @@ func recordCronExecution(name string, r func(context.Context, *runtime.Runtime) 
 		for k, v := range results {
 			logResults = append(logResults, k, v)
 		}
-		log = log.With("elapsed", elapsedSeconds, slog.Group("results", logResults...))
+		log = log.With("elapsed", elapsed, slog.Group("results", logResults...))
 
 		// if cron too longer than a minute, log as error
 		if elapsed > time.Minute {

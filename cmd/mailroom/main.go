@@ -27,7 +27,6 @@ import (
 	_ "github.com/nyaruka/mailroom/core/tasks/incidents"
 	_ "github.com/nyaruka/mailroom/core/tasks/interrupts"
 	_ "github.com/nyaruka/mailroom/core/tasks/ivr"
-	_ "github.com/nyaruka/mailroom/core/tasks/metrics"
 	_ "github.com/nyaruka/mailroom/core/tasks/msgs"
 	_ "github.com/nyaruka/mailroom/core/tasks/schedules"
 	_ "github.com/nyaruka/mailroom/core/tasks/starts"

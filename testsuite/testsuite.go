@@ -104,6 +104,7 @@ func Runtime() (context.Context, *runtime.Runtime) {
 		S3:         s3svc,
 		ES:         getES(),
 		CW:         cwSvc,
+		Stats:      runtime.NewStatsCollector(),
 		FCM:        &MockFCMClient{ValidTokens: []string{"FCMID3", "FCMID4", "FCMID5"}},
 		Config:     cfg,
 	}

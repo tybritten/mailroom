@@ -22,6 +22,7 @@ type Runtime struct {
 	Dynamo     *dynamo.Service
 	S3         *s3x.Service
 	ES         *elasticsearch.TypedClient
+	Stats      *StatsCollector
 	CW         *cwatch.Service
 	FCM        FCMClient
 	Config     *Config

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/appleboy/go-fcm"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/aws/cwatch"
@@ -34,6 +35,11 @@ type Mailroom struct {
 	throttledForeman *Foreman
 
 	webserver *web.Server
+
+	// both sqlx and redis provide wait stats which are cummulative that we need to convert into increments by
+	// tracking their previous values
+	dbWaitDuration    time.Duration
+	redisWaitDuration time.Duration
 }
 
 // NewMailroom creates and returns a new mailroom instance
@@ -140,8 +146,6 @@ func (mr *Mailroom) Start() error {
 		log.Info("cloudwatch ok")
 	}
 
-	mr.rt.CW.StartQueue(time.Second * 3)
-
 	// init our foremen and start it
 	mr.handlerForeman.Start()
 	mr.batchForeman.Start()
@@ -153,9 +157,74 @@ func (mr *Mailroom) Start() error {
 
 	tasks.StartCrons(mr.rt, mr.wg, mr.quit)
 
+	mr.startMetricsReporter(time.Minute)
+
 	log.Info("mailroom started", "domain", c.Domain)
 
 	return nil
+}
+
+func (mr *Mailroom) startMetricsReporter(interval time.Duration) {
+	mr.wg.Add(1)
+
+	report := func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		count, err := mr.reportMetrics(ctx)
+		cancel()
+		if err != nil {
+			slog.Error("error reporting metrics", "error", err)
+		} else {
+			slog.Info("sent metrics to cloudwatch", "count", count)
+		}
+	}
+
+	go func() {
+		defer func() {
+			slog.Info("metrics reporter exiting")
+			mr.wg.Done()
+		}()
+
+		for {
+			select {
+			case <-mr.quit:
+				report()
+				return
+			case <-time.After(interval): // TODO align to half minute marks for queue sizes?
+				report()
+			}
+		}
+	}()
+}
+
+func (mr *Mailroom) reportMetrics(ctx context.Context) (int, error) {
+	metrics := mr.rt.Stats.Extract().ToMetrics()
+
+	handlerSize, batchSize, throttledSize := getQueueSizes(mr.rt)
+
+	// calculate DB and redis stats
+	dbStats := mr.rt.DB.Stats()
+	redisStats := mr.rt.RP.Stats()
+	dbWaitDurationInPeriod := dbStats.WaitDuration - mr.dbWaitDuration
+	redisWaitDurationInPeriod := redisStats.WaitDuration - mr.redisWaitDuration
+	mr.dbWaitDuration = dbStats.WaitDuration
+	mr.redisWaitDuration = redisStats.WaitDuration
+
+	hostDim := cwatch.Dimension("Host", mr.rt.Config.InstanceID)
+	metrics = append(metrics,
+		cwatch.Datum("DBConnectionsInUse", float64(dbStats.InUse), types.StandardUnitCount, hostDim),
+		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod/time.Second), types.StandardUnitSeconds, hostDim),
+		cwatch.Datum("RedisConnectionsInUse", float64(redisStats.ActiveCount), types.StandardUnitCount, hostDim),
+		cwatch.Datum("RedisConnectionsWaitDuration", float64(redisWaitDurationInPeriod/time.Second), types.StandardUnitSeconds, hostDim),
+		cwatch.Datum("QueuedTasks", float64(handlerSize), types.StandardUnitCount, cwatch.Dimension("QueueName", "handler")),
+		cwatch.Datum("QueuedTasks", float64(batchSize), types.StandardUnitCount, cwatch.Dimension("QueueName", "batch")),
+		cwatch.Datum("QueuedTasks", float64(throttledSize), types.StandardUnitCount, cwatch.Dimension("QueueName", "throttled")),
+	)
+
+	if err := mr.rt.CW.Send(ctx, metrics...); err != nil {
+		return 0, fmt.Errorf("error sending metrics: %w", err)
+	}
+
+	return len(metrics), nil
 }
 
 // Stop stops the mailroom service
@@ -173,9 +242,6 @@ func (mr *Mailroom) Stop() error {
 	mr.webserver.Stop()
 
 	mr.wg.Wait()
-
-	// now that all tasks are finished, stop services they depend on
-	mr.rt.CW.StopQueue()
 
 	log.Info("mailroom stopped")
 	return nil
@@ -198,4 +264,24 @@ func openAndCheckDBConnection(url string, maxOpenConns int) (*sql.DB, *sqlx.DB, 
 	cancel()
 
 	return db.DB, db, err
+}
+
+func getQueueSizes(rt *runtime.Runtime) (int, int, int) {
+	rc := rt.RP.Get()
+	defer rc.Close()
+
+	handler, err := tasks.HandlerQueue.Size(rc)
+	if err != nil {
+		slog.Error("error calculating handler queue size", "error", err)
+	}
+	batch, err := tasks.BatchQueue.Size(rc)
+	if err != nil {
+		slog.Error("error calculating batch queue size", "error", err)
+	}
+	throttled, err := tasks.ThrottledQueue.Size(rc)
+	if err != nil {
+		slog.Error("error calculating throttled queue size", "error", err)
+	}
+
+	return handler, batch, throttled
 }
