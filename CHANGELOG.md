@@ -1,3 +1,7 @@
+v9.3.71 (2024-12-18)
+-------------------------
+ * Fix integer rounding in duration metrics
+
 v9.3.70 (2024-12-18)
 -------------------------
  * Fix initializing stats collector
