@@ -212,9 +212,9 @@ func (mr *Mailroom) reportMetrics(ctx context.Context) (int, error) {
 	hostDim := cwatch.Dimension("Host", mr.rt.Config.InstanceID)
 	metrics = append(metrics,
 		cwatch.Datum("DBConnectionsInUse", float64(dbStats.InUse), types.StandardUnitCount, hostDim),
-		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod/time.Second), types.StandardUnitSeconds, hostDim),
+		cwatch.Datum("DBConnectionWaitDuration", float64(dbWaitDurationInPeriod)/float64(time.Second), types.StandardUnitSeconds, hostDim),
 		cwatch.Datum("RedisConnectionsInUse", float64(redisStats.ActiveCount), types.StandardUnitCount, hostDim),
-		cwatch.Datum("RedisConnectionsWaitDuration", float64(redisWaitDurationInPeriod/time.Second), types.StandardUnitSeconds, hostDim),
+		cwatch.Datum("RedisConnectionsWaitDuration", float64(redisWaitDurationInPeriod)/float64(time.Second), types.StandardUnitSeconds, hostDim),
 		cwatch.Datum("QueuedTasks", float64(handlerSize), types.StandardUnitCount, cwatch.Dimension("QueueName", "handler")),
 		cwatch.Datum("QueuedTasks", float64(batchSize), types.StandardUnitCount, cwatch.Dimension("QueueName", "batch")),
 		cwatch.Datum("QueuedTasks", float64(throttledSize), types.StandardUnitCount, cwatch.Dimension("QueueName", "throttled")),
