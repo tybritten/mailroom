@@ -45,7 +45,7 @@ type Mailroom struct {
 // NewMailroom creates and returns a new mailroom instance
 func NewMailroom(config *runtime.Config) *Mailroom {
 	mr := &Mailroom{
-		rt:   &runtime.Runtime{Config: config},
+		rt:   &runtime.Runtime{Config: config, Stats: runtime.NewStatsCollector()},
 		quit: make(chan bool),
 		wg:   &sync.WaitGroup{},
 	}
