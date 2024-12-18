@@ -3,15 +3,11 @@
 [![Build Status](https://github.com/nyaruka/mailroom/workflows/CI/badge.svg)](https://github.com/nyaruka/mailroom/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/nyaruka/mailroom/branch/main/graph/badge.svg)](https://codecov.io/gh/nyaruka/mailroom)
 
-Service for RapidPro/TextIt which does most of the heavy lifting. It interacts directly with the database and sends and 
-receives messages with [Courier](https://github.com/nyaruka/courier) for handling via Redis.
+Task handling service for the RapidPro/TextIt platform.
 
 ## Deploying
 
-As a Go application, it compiles to a binary and that binary along with the config file is all
-you need to run it on your server. You can find bundles for each platform in the
-[releases directory](https://github.com/nyaruka/mailroom/releases). We recommend running it
-behind a reverse proxy such as nginx or Elastic Load Balancer that provides HTTPs encryption.
+It compiles to a binary and can find bundles for each platform in the [releases directory](https://github.com/nyaruka/mailroom/releases).
 
 ## Configuration
 
