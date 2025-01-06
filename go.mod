@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.72.0
 	github.com/buger/jsonparser v1.1.1
 	github.com/elastic/go-elasticsearch/v8 v8.17.0
-	github.com/getsentry/sentry-go v0.30.0
+	github.com/getsentry/sentry-go v0.31.1
 	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-playground/validator/v10 v10.23.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
@@ -32,7 +32,7 @@ require (
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.61.0
 	github.com/samber/slog-multi v1.3.3
-	github.com/samber/slog-sentry v1.2.2
+	github.com/samber/slog-sentry/v2 v2.9.2
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.10.0
 	google.golang.org/api v0.214.0
@@ -105,6 +105,7 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/samber/lo v1.47.0 // indirect
+	github.com/samber/slog-common v0.18.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.32.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.57.0 // indirect
