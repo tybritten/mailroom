@@ -1,3 +1,7 @@
+v9.3.72 (2025-01-06)
+-------------------------
+ * Update deps including goflow and phonenumbers
+
 v9.3.71 (2024-12-18)
 -------------------------
  * Fix integer rounding in duration metrics
