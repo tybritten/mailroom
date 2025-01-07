@@ -37,23 +37,23 @@ environment variables and parameters and for more details on each option.
  
 ### AWS services:
 
-- `MAILROOM_AWS_ACCESS_KEY_ID`: AWS access key id used to authenticate to AWS
-- `MAILROOM_AWS_SECRET_ACCESS_KEY` AWS secret access key used to authenticate to AWS
-- `MAILROOM_AWS_REGION`: AWS region (ex: `eu-west-1`)
-- `MAILROOM_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (ex: `mailroom-attachments`)
-- `MAILROOM_S3_SESSIONS_BUCKET`: name of your S3 bucket (ex: `mailroom-sessions`)
+* `MAILROOM_AWS_ACCESS_KEY_ID`: AWS access key id used to authenticate to AWS
+* `MAILROOM_AWS_SECRET_ACCESS_KEY` AWS secret access key used to authenticate to AWS
+* `MAILROOM_AWS_REGION`: AWS region (ex: `eu-west-1`)
+* `MAILROOM_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (ex: `mailroom-attachments`)
+* `MAILROOM_S3_SESSIONS_BUCKET`: name of your S3 bucket (ex: `mailroom-sessions`)
 
 ### Flow engine configuration:
 
-- `MAILROOM_MAX_STEPS_PER_SPRINT`: maximum number of steps allowed in a single engine sprint
-- `MAILROOM_MAX_RESUMES_PER_SESSION`: maximum number of resumes allowed in an engine session
-- `MAILROOM_MAX_VALUE_LENGTH`: maximum length in characters of contact field and run result values
+* `MAILROOM_MAX_STEPS_PER_SPRINT`: maximum number of steps allowed in a single engine sprint
+* `MAILROOM_MAX_RESUMES_PER_SESSION`: maximum number of resumes allowed in an engine session
+* `MAILROOM_MAX_VALUE_LENGTH`: maximum length in characters of contact field and run result values
 
 ### Logging and error reporting:
 
-- `MAILROOM_DEPLOYMENT_ID`: used for metrics reporting
-- `MAILROOM_SENTRY_DSN`: DSN to use when logging errors to Sentry
-- `MAILROOM_LOG_LEVEL`: logging level to use (default is `warn`)
+* `MAILROOM_DEPLOYMENT_ID`: used for metrics reporting
+* `MAILROOM_SENTRY_DSN`: DSN to use when logging errors to Sentry
+* `MAILROOM_LOG_LEVEL`: logging level to use (default is `warn`)
 
 ## Development
 
