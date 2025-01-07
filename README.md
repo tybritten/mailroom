@@ -53,7 +53,7 @@ environment variables and parameters and for more details on each option.
 
 - `MAILROOM_DEPLOYMENT_ID`: used for metrics reporting
 - `MAILROOM_SENTRY_DSN`: DSN to use when logging errors to Sentry
-- `MAILROOM_LOG_LEVEL`: logging level mailroom should use (default is `warn`)
+- `MAILROOM_LOG_LEVEL`: logging level to use (default is `warn`)
 
 ## Development
 
