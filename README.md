@@ -38,7 +38,7 @@ environment variables and parameters and for more details on each option.
 ### AWS services:
 
  * `MAILROOM_AWS_ACCESS_KEY_ID`: AWS access key id used to authenticate to AWS
- * `MAILROOM_AWS_SECRET_ACCESS_KEY` AWS secret access key used to authenticate to AWS
+ * `MAILROOM_AWS_SECRET_ACCESS_KEY`: AWS secret access key used to authenticate to AWS
  * `MAILROOM_AWS_REGION`: AWS region (ex: `eu-west-1`)
  * `MAILROOM_S3_ATTACHMENTS_BUCKET`: name of your S3 bucket (ex: `mailroom-attachments`)
  * `MAILROOM_S3_SESSIONS_BUCKET`: name of your S3 bucket (ex: `mailroom-sessions`)
