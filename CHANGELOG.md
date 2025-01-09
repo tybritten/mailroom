@@ -1,3 +1,8 @@
+v10.1.0 (2025-01-08)
+-------------------------
+ * Update to latest goflow
+ * Add support for yearly schedules
+
 v10.0.0 (2025-01-07)
 -------------------------
  * Update README.md
