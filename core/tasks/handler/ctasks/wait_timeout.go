@@ -64,6 +64,7 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	}
 
 	// check that the timeout is the same
+	// TODO check session modified_on matches task instead of this
 	timeout := *session.WaitTimeoutOn()
 	if !timeout.Equal(t.Time) {
 		log.Info("ignoring timeout, has been updated", "event_timeout", t.Time, "session_timeout", timeout)

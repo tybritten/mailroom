@@ -57,6 +57,7 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	}
 
 	// check that our expiration is still the same
+	// TODO check session modified_on matches task instead of this
 	expiresOn, err := models.GetSessionWaitExpiresOn(ctx, rt.DB, t.SessionID)
 	if err != nil {
 		return fmt.Errorf("unable to load expiration for run: %w", err)
