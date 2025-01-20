@@ -1,3 +1,8 @@
+v10.1.2 (2025-01-20)
+-------------------------
+ * Start writing FlowSession.modified_on
+ * Test without postgis
+
 v10.1.1 (2025-01-09)
 -------------------------
  * Remove viewer users
