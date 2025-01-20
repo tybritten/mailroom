@@ -1,3 +1,7 @@
+v10.1.4 (2025-01-20)
+-------------------------
+ * Use session.modified_on to determine if a timed task is still valid
+
 v10.1.3 (2025-01-20)
 -------------------------
  * Assume session.modified_on non-null and include on timed tasks
