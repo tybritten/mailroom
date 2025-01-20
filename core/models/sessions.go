@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"crypto/md5"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -455,7 +454,7 @@ func (s *Session) ClearWaitTimeout(ctx context.Context, db *sqlx.DB) error {
 	s.s.WaitTimeoutOn = nil
 
 	if db != nil {
-		_, err := db.ExecContext(ctx, `UPDATE flows_flowsession SET timeout_on = NULL WHERE id = $1`, s.ID())
+		_, err := db.ExecContext(ctx, `UPDATE flows_flowsession SET timeout_on = NULL, modified_on = NOW() WHERE id = $1`, s.ID())
 		if err != nil {
 			return fmt.Errorf("error clearing wait timeout: %w", err)
 		}
@@ -823,20 +822,6 @@ func FilterByWaitingSession(ctx context.Context, db *sqlx.DB, contacts []Contact
 	var overlap []ContactID
 	err := db.SelectContext(ctx, &overlap, `SELECT DISTINCT(contact_id) FROM flows_flowsession WHERE status = 'W' AND contact_id = ANY($1)`, pq.Array(contacts))
 	return overlap, err
-}
-
-// GetSessionWaitExpiresOn looks up the wait expiration for the passed in session and will return nil if the
-// session is no longer waiting
-func GetSessionWaitExpiresOn(ctx context.Context, db *sqlx.DB, sessionID SessionID) (*time.Time, error) {
-	var expiresOn time.Time
-	err := db.Get(&expiresOn, `SELECT wait_expires_on FROM flows_flowsession WHERE id = $1 AND status = 'W'`, sessionID)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("error selecting wait_expires_on for session #%d: %w", sessionID, err)
-	}
-	return &expiresOn, nil
 }
 
 // ExitSessions exits sessions and their runs. It batches the given session ids and exits each batch in a transaction.

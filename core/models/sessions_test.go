@@ -449,26 +449,6 @@ func TestInterruptSessionsForFlows(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT current_flow_id FROM contacts_contact WHERE id = $1`, testdata.Cathy.ID).Returns(nil)
 }
 
-func TestGetSessionWaitExpiresOn(t *testing.T) {
-	ctx, rt := testsuite.Runtime()
-
-	defer testsuite.Reset(testsuite.ResetData)
-
-	s1Expires := time.Date(2022, 1, 26, 13, 28, 30, 0, time.UTC)
-	s1ID := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), s1Expires, true, nil)
-
-	s1Actual, err := models.GetSessionWaitExpiresOn(ctx, rt.DB, s1ID)
-	assert.NoError(t, err)
-	assert.Equal(t, s1Expires, *s1Actual)
-
-	// for a non-waiting session, should return nil
-	s2ID := testdata.InsertFlowSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, models.SessionStatusCompleted, testdata.Favorites, models.NilCallID)
-
-	s2Actual, err := models.GetSessionWaitExpiresOn(ctx, rt.DB, s2ID)
-	assert.NoError(t, err)
-	assert.Nil(t, s2Actual)
-}
-
 func TestClearWaitTimeout(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 

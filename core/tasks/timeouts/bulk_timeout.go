@@ -43,7 +43,7 @@ func (t *BulkTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	defer rc.Close()
 
 	for _, timeout := range t.Timeouts {
-		err := handler.QueueTask(rc, oa.OrgID(), timeout.ContactID, ctasks.NewWaitTimeout(timeout.SessionID, timeout.TimeoutOn, timeout.ModifiedOn))
+		err := handler.QueueTask(rc, oa.OrgID(), timeout.ContactID, ctasks.NewWaitTimeout(timeout.SessionID, timeout.ModifiedOn))
 		if err != nil {
 			return fmt.Errorf("error queuing handle task for timeout on session #%d: %w", timeout.SessionID, err)
 		}

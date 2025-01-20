@@ -43,7 +43,7 @@ func (t *BulkExpireTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *m
 	defer rc.Close()
 
 	for _, exp := range t.Expirations {
-		err := handler.QueueTask(rc, oa.OrgID(), exp.ContactID, ctasks.NewWaitExpiration(exp.SessionID, exp.WaitExpiresOn, exp.ModifiedOn))
+		err := handler.QueueTask(rc, oa.OrgID(), exp.ContactID, ctasks.NewWaitExpiration(exp.SessionID, exp.ModifiedOn))
 		if err != nil {
 			return fmt.Errorf("error queuing handle task for expiration on session #%d: %w", exp.SessionID, err)
 		}
