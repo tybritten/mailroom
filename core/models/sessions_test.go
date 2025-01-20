@@ -55,6 +55,7 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.Equal(t, models.SessionStatusWaiting, session.Status())
 	assert.Equal(t, flow.ID, session.CurrentFlowID())
 	assert.NotNil(t, session.CreatedOn())
+	assert.NotNil(t, session.ModifiedOn())
 	assert.Nil(t, session.EndedOn())
 	assert.False(t, session.Responded())
 	assert.NotNil(t, session.WaitStartedOn())
@@ -87,6 +88,7 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	require.NoError(t, tx.Commit())
 
 	assert.Equal(t, models.SessionStatusWaiting, session.Status())
+	assert.Greater(t, *session.ModifiedOn(), session.CreatedOn())
 	assert.Equal(t, flow.ID, session.CurrentFlowID())
 	assert.True(t, session.Responded())
 	assert.NotNil(t, session.WaitStartedOn())
