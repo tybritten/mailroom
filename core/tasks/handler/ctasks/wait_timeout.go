@@ -22,12 +22,13 @@ func init() {
 }
 
 type WaitTimeoutTask struct {
-	SessionID models.SessionID `json:"session_id"`
-	Time      time.Time        `json:"time"`
+	SessionID  models.SessionID `json:"session_id"`
+	Time       time.Time        `json:"time"`        // TODO remove
+	ModifiedOn time.Time        `json:"modified_on"` // session modified_on to check it hasn't been changed since we were queued
 }
 
-func NewWaitTimeout(sessionID models.SessionID, time time.Time) *WaitTimeoutTask {
-	return &WaitTimeoutTask{SessionID: sessionID, Time: time}
+func NewWaitTimeout(sessionID models.SessionID, time time.Time, modifiedOn time.Time) *WaitTimeoutTask {
+	return &WaitTimeoutTask{SessionID: sessionID, Time: time, ModifiedOn: modifiedOn}
 }
 
 func (t *WaitTimeoutTask) Type() string {

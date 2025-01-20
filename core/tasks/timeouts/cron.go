@@ -91,7 +91,7 @@ func (c *timeoutsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string
 
 			for _, timeout := range batch {
 				if !throttle {
-					err := handler.QueueTask(rc, orgID, timeout.ContactID, ctasks.NewWaitTimeout(timeout.SessionID, timeout.TimeoutOn))
+					err := handler.QueueTask(rc, orgID, timeout.ContactID, ctasks.NewWaitTimeout(timeout.SessionID, timeout.TimeoutOn, timeout.ModifiedOn))
 					if err != nil {
 						return nil, fmt.Errorf("error queuing timeout task to handler queue: %w", err)
 					}

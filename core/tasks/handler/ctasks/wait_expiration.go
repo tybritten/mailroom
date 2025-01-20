@@ -20,12 +20,13 @@ func init() {
 }
 
 type WaitExpirationTask struct {
-	SessionID models.SessionID `json:"session_id"`
-	Time      time.Time        `json:"time"`
+	SessionID  models.SessionID `json:"session_id"`
+	Time       time.Time        `json:"time"`        // TODO remove
+	ModifiedOn time.Time        `json:"modified_on"` // session modified_on to check it hasn't been changed since we were queued
 }
 
-func NewWaitExpiration(sessionID models.SessionID, time time.Time) *WaitExpirationTask {
-	return &WaitExpirationTask{SessionID: sessionID, Time: time}
+func NewWaitExpiration(sessionID models.SessionID, time time.Time, modifiedOn time.Time) *WaitExpirationTask {
+	return &WaitExpirationTask{SessionID: sessionID, Time: time, ModifiedOn: modifiedOn}
 }
 
 func (t *WaitExpirationTask) Type() string {
