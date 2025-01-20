@@ -106,7 +106,7 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 
 			for _, exp := range batch {
 				if !throttle {
-					err := handler.QueueTask(rc, orgID, exp.ContactID, ctasks.NewWaitExpiration(exp.SessionID, exp.WaitExpiresOn))
+					err := handler.QueueTask(rc, orgID, exp.ContactID, ctasks.NewWaitExpiration(exp.SessionID, exp.WaitExpiresOn, exp.ModifiedOn))
 					if err != nil {
 						return nil, fmt.Errorf("error queuing expiration task to handler queue: %w", err)
 					}
