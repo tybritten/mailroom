@@ -62,7 +62,7 @@ type Session struct {
 		ContactID          ContactID         `db:"contact_id"`
 		OrgID              OrgID             `db:"org_id"`
 		CreatedOn          time.Time         `db:"created_on"`
-		ModifiedOn         *time.Time        `db:"modified_on"` // TODO switch to time.Time when NOT NULL
+		ModifiedOn         time.Time         `db:"modified_on"`
 		EndedOn            *time.Time        `db:"ended_on"`
 		WaitStartedOn      *time.Time        `db:"wait_started_on"`
 		WaitTimeoutOn      *time.Time        `db:"timeout_on"`
@@ -105,7 +105,7 @@ func (s *Session) OutputURL() string                  { return string(s.s.Output
 func (s *Session) ContactID() ContactID               { return s.s.ContactID }
 func (s *Session) OrgID() OrgID                       { return s.s.OrgID }
 func (s *Session) CreatedOn() time.Time               { return s.s.CreatedOn }
-func (s *Session) ModifiedOn() *time.Time             { return s.s.ModifiedOn }
+func (s *Session) ModifiedOn() time.Time              { return s.s.ModifiedOn }
 func (s *Session) EndedOn() *time.Time                { return s.s.EndedOn }
 func (s *Session) WaitStartedOn() *time.Time          { return s.s.WaitStartedOn }
 func (s *Session) WaitTimeoutOn() *time.Time          { return s.s.WaitTimeoutOn }
@@ -299,11 +299,10 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 		return fmt.Errorf("unknown session status: %s", fs.Status())
 	}
 	s.s.Status = status
-	mt := time.Now()
-	s.s.ModifiedOn = &mt
+	s.s.ModifiedOn = time.Now()
 
 	if s.s.Status != SessionStatusWaiting {
-		s.s.EndedOn = s.s.ModifiedOn
+		s.s.EndedOn = &s.s.ModifiedOn
 	}
 
 	// now build up our runs
@@ -515,11 +514,10 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 	s.ContactID = ContactID(fs.Contact().ID())
 	s.OrgID = oa.OrgID()
 	s.CreatedOn = fs.Runs()[0].CreatedOn()
-	mt := time.Now()
-	s.ModifiedOn = &mt
+	s.ModifiedOn = time.Now()
 
 	if s.Status != SessionStatusWaiting {
-		s.EndedOn = s.ModifiedOn
+		s.EndedOn = &s.ModifiedOn
 	}
 
 	session.contact = fs.Contact()
