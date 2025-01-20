@@ -23,12 +23,11 @@ func init() {
 
 type WaitTimeoutTask struct {
 	SessionID  models.SessionID `json:"session_id"`
-	Time       time.Time        `json:"time"`        // TODO remove
 	ModifiedOn time.Time        `json:"modified_on"` // session modified_on to check it hasn't been changed since we were queued
 }
 
-func NewWaitTimeout(sessionID models.SessionID, time time.Time, modifiedOn time.Time) *WaitTimeoutTask {
-	return &WaitTimeoutTask{SessionID: sessionID, Time: time, ModifiedOn: modifiedOn}
+func NewWaitTimeout(sessionID models.SessionID, modifiedOn time.Time) *WaitTimeoutTask {
+	return &WaitTimeoutTask{SessionID: sessionID, ModifiedOn: modifiedOn}
 }
 
 func (t *WaitTimeoutTask) Type() string {
@@ -54,21 +53,13 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		return fmt.Errorf("error loading waiting session for contact: %w", err)
 	}
 
-	// if we didn't find a session or it is another session then this session has already been interrupted
+	// if we didn't find a session or it is another session or if it's been modified since, ignore this task
 	if session == nil || session.ID() != t.SessionID {
 		return nil
 	}
-
-	if session.WaitTimeoutOn() == nil {
-		log.Info("ignoring session timeout, has no timeout set")
-		return nil
-	}
-
-	// check that the timeout is the same
-	// TODO check session modified_on matches task instead of this
-	timeout := *session.WaitTimeoutOn()
-	if !timeout.Equal(t.Time) {
-		log.Info("ignoring timeout, has been updated", "event_timeout", t.Time, "session_timeout", timeout)
+	if !session.ModifiedOn().Equal(t.ModifiedOn) {
+		fmt.Printf("session: %d\n", session.ModifiedOn().UnixNano())
+		fmt.Printf("task:    %d\n", t.ModifiedOn.UnixNano())
 		return nil
 	}
 

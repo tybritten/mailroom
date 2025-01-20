@@ -3,7 +3,6 @@ package ctasks
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/nyaruka/goflow/flows/resumes"
@@ -21,12 +20,11 @@ func init() {
 
 type WaitExpirationTask struct {
 	SessionID  models.SessionID `json:"session_id"`
-	Time       time.Time        `json:"time"`        // TODO remove
 	ModifiedOn time.Time        `json:"modified_on"` // session modified_on to check it hasn't been changed since we were queued
 }
 
-func NewWaitExpiration(sessionID models.SessionID, time time.Time, modifiedOn time.Time) *WaitExpirationTask {
-	return &WaitExpirationTask{SessionID: sessionID, Time: time, ModifiedOn: modifiedOn}
+func NewWaitExpiration(sessionID models.SessionID, modifiedOn time.Time) *WaitExpirationTask {
+	return &WaitExpirationTask{SessionID: sessionID, ModifiedOn: modifiedOn}
 }
 
 func (t *WaitExpirationTask) Type() string {
@@ -38,8 +36,6 @@ func (t *WaitExpirationTask) UseReadOnly() bool {
 }
 
 func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
-	log := slog.With("contact_id", contact.ID(), "session_id", t.SessionID)
-
 	// build our flow contact
 	flowContact, err := contact.FlowContact(oa)
 	if err != nil {
@@ -52,25 +48,8 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 		return fmt.Errorf("error loading waiting session for contact: %w", err)
 	}
 
-	// if we didn't find a session or it is another session then this session has already been interrupted
-	if session == nil || session.ID() != t.SessionID {
-		return nil
-	}
-
-	// check that our expiration is still the same
-	// TODO check session modified_on matches task instead of this
-	expiresOn, err := models.GetSessionWaitExpiresOn(ctx, rt.DB, t.SessionID)
-	if err != nil {
-		return fmt.Errorf("unable to load expiration for run: %w", err)
-	}
-
-	if expiresOn == nil {
-		log.Info("ignoring expiration, session no longer waiting", "event_expiration", t.Time)
-		return nil
-	}
-
-	if !expiresOn.Equal(t.Time) {
-		log.Info("ignoring expiration, has been updated", "event_expiration", t.Time, "run_expiration", expiresOn)
+	// if we didn't find a session or it is another session or if it's been modified since, ignore this task
+	if session == nil || session.ID() != t.SessionID || !session.ModifiedOn().Equal(t.ModifiedOn) {
 		return nil
 	}
 
