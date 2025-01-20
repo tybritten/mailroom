@@ -1,3 +1,7 @@
+v10.1.3 (2025-01-20)
+-------------------------
+ * Assume session.modified_on non-null and include on timed tasks
+
 v10.1.2 (2025-01-20)
 -------------------------
  * Start writing FlowSession.modified_on
