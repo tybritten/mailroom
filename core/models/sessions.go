@@ -62,6 +62,7 @@ type Session struct {
 		ContactID          ContactID         `db:"contact_id"`
 		OrgID              OrgID             `db:"org_id"`
 		CreatedOn          time.Time         `db:"created_on"`
+		ModifiedOn         time.Time         `db:"modified_on"`
 		EndedOn            *time.Time        `db:"ended_on"`
 		WaitStartedOn      *time.Time        `db:"wait_started_on"`
 		WaitTimeoutOn      *time.Time        `db:"timeout_on"`
@@ -104,6 +105,7 @@ func (s *Session) OutputURL() string                  { return string(s.s.Output
 func (s *Session) ContactID() ContactID               { return s.s.ContactID }
 func (s *Session) OrgID() OrgID                       { return s.s.OrgID }
 func (s *Session) CreatedOn() time.Time               { return s.s.CreatedOn }
+func (s *Session) ModifiedOn() time.Time              { return s.s.ModifiedOn }
 func (s *Session) EndedOn() *time.Time                { return s.s.EndedOn }
 func (s *Session) WaitStartedOn() *time.Time          { return s.s.WaitStartedOn }
 func (s *Session) WaitTimeoutOn() *time.Time          { return s.s.WaitTimeoutOn }
@@ -247,7 +249,8 @@ UPDATE
 SET 
 	output = :output, 
 	output_url = :output_url,
-	status = :status, 
+	status = :status,
+	modified_on = :modified_on,
 	ended_on = :ended_on,
 	responded = :responded,
 	current_flow_id = :current_flow_id,
@@ -265,6 +268,7 @@ UPDATE
 SET 
 	output_url = :output_url,
 	status = :status, 
+	modified_on = :modified_on,
 	ended_on = :ended_on,
 	responded = :responded,
 	current_flow_id = :current_flow_id,
@@ -295,10 +299,10 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 		return fmt.Errorf("unknown session status: %s", fs.Status())
 	}
 	s.s.Status = status
+	s.s.ModifiedOn = time.Now()
 
 	if s.s.Status != SessionStatusWaiting {
-		now := time.Now()
-		s.s.EndedOn = &now
+		s.s.EndedOn = &s.s.ModifiedOn
 	}
 
 	// now build up our runs
@@ -510,10 +514,10 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 	s.ContactID = ContactID(fs.Contact().ID())
 	s.OrgID = oa.OrgID()
 	s.CreatedOn = fs.Runs()[0].CreatedOn()
+	s.ModifiedOn = time.Now()
 
 	if s.Status != SessionStatusWaiting {
-		now := time.Now()
-		s.EndedOn = &now
+		s.EndedOn = &s.ModifiedOn
 	}
 
 	session.contact = fs.Contact()
@@ -555,26 +559,26 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 
 const sqlInsertWaitingSession = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id, created_on, current_flow_id,  timeout_on,  wait_started_on,  wait_expires_on,  wait_resume_on_expire,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, NOW(),     :current_flow_id, :timeout_on, :wait_started_on, :wait_expires_on, :wait_resume_on_expire, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  timeout_on,  wait_started_on,  wait_expires_on,  wait_resume_on_expire,  call_id)
+               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :timeout_on, :wait_started_on, :wait_expires_on, :wait_resume_on_expire, :call_id)
 RETURNING id`
 
 const sqlInsertWaitingSessionNoOutput = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id, created_on, current_flow_id,  timeout_on,  wait_started_on,  wait_expires_on,  wait_resume_on_expire,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, NOW(),     :current_flow_id, :timeout_on, :wait_started_on, :wait_expires_on, :wait_resume_on_expire, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  timeout_on,  wait_started_on,  wait_expires_on,  wait_resume_on_expire,  call_id)
+               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :timeout_on, :wait_started_on, :wait_expires_on, :wait_resume_on_expire, :call_id)
 RETURNING id`
 
 const sqlInsertEndedSession = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id, created_on, ended_on, wait_resume_on_expire, call_id)
-               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, NOW(),      NOW(),    FALSE,                :call_id)
+	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  ended_on, wait_resume_on_expire,  call_id)
+               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :ended_on,                 FALSE, :call_id)
 RETURNING id`
 
 const sqlInsertEndedSessionNoOutput = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id, created_on, ended_on, wait_resume_on_expire, call_id)
-               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, NOW(),      NOW(),    FALSE,                :call_id)
+	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id,  created_on,  modified_on,  ended_on, wait_resume_on_expire,  call_id)
+               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, :created_on, :modified_on, :ended_on,                 FALSE, :call_id)
 RETURNING id`
 
 // InsertSessions writes the passed in session to our database, writes any runs that need to be created
@@ -720,6 +724,7 @@ SELECT
 	contact_id,
 	org_id,
 	created_on,
+	modified_on,
 	ended_on,
 	timeout_on,
 	wait_started_on,
@@ -861,7 +866,7 @@ func ExitSessions(ctx context.Context, db *sqlx.DB, sessionIDs []SessionID, stat
 
 const sqlExitSessions = `
    UPDATE flows_flowsession
-      SET status = $3, ended_on = $2, wait_started_on = NULL, wait_expires_on = NULL, timeout_on = NULL, current_flow_id = NULL
+      SET status = $3, modified_on = $2, ended_on = $2, wait_started_on = NULL, wait_expires_on = NULL, timeout_on = NULL, current_flow_id = NULL
     WHERE id = ANY ($1) AND status = 'W'
 RETURNING contact_id`
 

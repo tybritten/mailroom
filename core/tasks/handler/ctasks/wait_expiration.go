@@ -20,12 +20,13 @@ func init() {
 }
 
 type WaitExpirationTask struct {
-	SessionID models.SessionID `json:"session_id"`
-	Time      time.Time        `json:"time"`
+	SessionID  models.SessionID `json:"session_id"`
+	Time       time.Time        `json:"time"`        // TODO remove
+	ModifiedOn time.Time        `json:"modified_on"` // session modified_on to check it hasn't been changed since we were queued
 }
 
-func NewWaitExpiration(sessionID models.SessionID, time time.Time) *WaitExpirationTask {
-	return &WaitExpirationTask{SessionID: sessionID, Time: time}
+func NewWaitExpiration(sessionID models.SessionID, time time.Time, modifiedOn time.Time) *WaitExpirationTask {
+	return &WaitExpirationTask{SessionID: sessionID, Time: time, ModifiedOn: modifiedOn}
 }
 
 func (t *WaitExpirationTask) Type() string {
@@ -57,6 +58,7 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	}
 
 	// check that our expiration is still the same
+	// TODO check session modified_on matches task instead of this
 	expiresOn, err := models.GetSessionWaitExpiresOn(ctx, rt.DB, t.SessionID)
 	if err != nil {
 		return fmt.Errorf("unable to load expiration for run: %w", err)

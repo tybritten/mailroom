@@ -106,7 +106,7 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 
 			for _, exp := range batch {
 				if !throttle {
-					err := handler.QueueTask(rc, orgID, exp.ContactID, ctasks.NewWaitExpiration(exp.SessionID, exp.WaitExpiresOn))
+					err := handler.QueueTask(rc, orgID, exp.ContactID, ctasks.NewWaitExpiration(exp.SessionID, exp.WaitExpiresOn, exp.ModifiedOn))
 					if err != nil {
 						return nil, fmt.Errorf("error queuing expiration task to handler queue: %w", err)
 					}
@@ -134,18 +134,19 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 }
 
 const sqlSelectExpiredWaits = `
-    SELECT s.id as session_id, s.org_id, s.wait_expires_on, s.wait_resume_on_expire , s.contact_id
-      FROM flows_flowsession s
-     WHERE s.session_type = 'M' AND s.status = 'W' AND s.wait_expires_on <= NOW()
-  ORDER BY s.wait_expires_on ASC
+    SELECT id as session_id, org_id, wait_expires_on, wait_resume_on_expire, contact_id, modified_on
+      FROM flows_flowsession
+     WHERE session_type = 'M' AND status = 'W' AND wait_expires_on <= NOW()
+  ORDER BY wait_expires_on ASC
      LIMIT 25000`
 
 type ExpiredWait struct {
-	SessionID     models.SessionID `db:"session_id"             json:"session_id"`
-	OrgID         models.OrgID     `db:"org_id"                 json:"-"`
-	WaitExpiresOn time.Time        `db:"wait_expires_on"        json:"wait_expires_on"`
-	WaitResumes   bool             `db:"wait_resume_on_expire"  json:"-"`
-	ContactID     models.ContactID `db:"contact_id"             json:"contact_id"`
+	SessionID     models.SessionID `db:"session_id"            json:"session_id"`
+	OrgID         models.OrgID     `db:"org_id"                json:"-"`
+	WaitExpiresOn time.Time        `db:"wait_expires_on"       json:"wait_expires_on"` // TODO remove
+	WaitResumes   bool             `db:"wait_resume_on_expire" json:"-"`
+	ContactID     models.ContactID `db:"contact_id"            json:"contact_id"`
+	ModifiedOn    time.Time        `db:"modified_on"           json:"modified_on"`
 }
 
 type VoiceExpirationsCron struct{}

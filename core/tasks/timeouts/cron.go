@@ -91,7 +91,7 @@ func (c *timeoutsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string
 
 			for _, timeout := range batch {
 				if !throttle {
-					err := handler.QueueTask(rc, orgID, timeout.ContactID, ctasks.NewWaitTimeout(timeout.SessionID, timeout.TimeoutOn))
+					err := handler.QueueTask(rc, orgID, timeout.ContactID, ctasks.NewWaitTimeout(timeout.SessionID, timeout.TimeoutOn, timeout.ModifiedOn))
 					if err != nil {
 						return nil, fmt.Errorf("error queuing timeout task to handler queue: %w", err)
 					}
@@ -110,15 +110,16 @@ func (c *timeoutsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string
 }
 
 const sqlSelectTimedoutSessions = `
-  SELECT id as session_id, org_id, contact_id, timeout_on
+  SELECT id as session_id, org_id, contact_id, modified_on, timeout_on
     FROM flows_flowsession
    WHERE status = 'W' AND timeout_on < NOW() AND call_id IS NULL
 ORDER BY timeout_on ASC
    LIMIT 25000`
 
 type Timeout struct {
-	SessionID models.SessionID `db:"session_id" json:"session_id"`
-	OrgID     models.OrgID     `db:"org_id"     json:"-"`
-	ContactID models.ContactID `db:"contact_id" json:"contact_id"`
-	TimeoutOn time.Time        `db:"timeout_on" json:"timeout_on"`
+	SessionID  models.SessionID `db:"session_id"  json:"session_id"`
+	OrgID      models.OrgID     `db:"org_id"      json:"-"`
+	ContactID  models.ContactID `db:"contact_id"  json:"contact_id"`
+	ModifiedOn time.Time        `db:"modified_on" json:"modified_on"`
+	TimeoutOn  time.Time        `db:"timeout_on"  json:"timeout_on"` // TODO remove
 }
