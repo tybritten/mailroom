@@ -77,6 +77,7 @@ func TestTimedEvents(t *testing.T) {
 
 	last := time.Now()
 	var sessionID models.SessionID
+	var sessionModifiedOn time.Time
 	var runID models.FlowRunID
 
 	for i, tc := range tcs {
@@ -94,18 +95,18 @@ func TestTimedEvents(t *testing.T) {
 				Text:      tc.Message,
 			}
 		} else if tc.EventType == ctasks.TypeWaitExpiration {
-			var expiration time.Time
+			var taskModifiedOn time.Time
 
 			if tc.Message == "bad" {
-				expiration = time.Now()
+				taskModifiedOn = time.Now()
 			} else if tc.Message == "child" {
-				rt.DB.Get(&expiration, `SELECT wait_expires_on FROM flows_flowsession WHERE id = $1 AND status != 'W'`, sessionID)
+				rt.DB.Get(&taskModifiedOn, `SELECT modified_on FROM flows_flowsession WHERE id = $1 AND status != 'W'`, sessionID)
 				rt.DB.Get(&runID, `SELECT id FROM flows_flowrun WHERE session_id = $1 AND status NOT IN ('A', 'W')`, sessionID)
 			} else {
-				expiration = time.Now().Add(time.Hour * 24)
+				taskModifiedOn = sessionModifiedOn
 			}
 
-			ctask = ctasks.NewWaitExpiration(sessionID, expiration, time.Now())
+			ctask = ctasks.NewWaitExpiration(sessionID, taskModifiedOn)
 
 		} else if tc.EventType == ctasks.TypeWaitTimeout {
 			timeoutOn := time.Now().Round(time.Millisecond) // so that there's no difference between this and what we read from the db
@@ -113,7 +114,7 @@ func TestTimedEvents(t *testing.T) {
 			// usually courier will set timeout_on after sending the last message
 			rt.DB.MustExec(`UPDATE flows_flowsession SET timeout_on = $2 WHERE id = $1`, sessionID, timeoutOn)
 
-			ctask = ctasks.NewWaitTimeout(sessionID, timeoutOn, time.Now())
+			ctask = ctasks.NewWaitTimeout(sessionID, sessionModifiedOn)
 		}
 
 		err := handler.QueueTask(rc, tc.Org.ID, tc.Contact.ID, ctask)
@@ -131,6 +132,8 @@ func TestTimedEvents(t *testing.T) {
 		}
 
 		err = rt.DB.Get(&sessionID, `SELECT id FROM flows_flowsession WHERE contact_id = $1 ORDER BY created_on DESC LIMIT 1`, tc.Contact.ID)
+		assert.NoError(t, err)
+		err = rt.DB.Get(&sessionModifiedOn, `SELECT modified_on FROM flows_flowsession WHERE contact_id = $1 ORDER BY created_on DESC LIMIT 1`, tc.Contact.ID)
 		assert.NoError(t, err)
 
 		err = rt.DB.Get(&runID, `SELECT id FROM flows_flowrun WHERE contact_id = $1 ORDER BY created_on DESC LIMIT 1`, tc.Contact.ID)
@@ -162,7 +165,7 @@ func TestTimedEvents(t *testing.T) {
 	rt.DB.MustExec(`ALTER TABLE flows_flowsession ENABLE TRIGGER temba_flowsession_status_change`)
 
 	// try to expire the run
-	err = handler.QueueTask(rc, testdata.Org1.ID, testdata.Cathy.ID, ctasks.NewWaitExpiration(sessionID, expiration, time.Now()))
+	err = handler.QueueTask(rc, testdata.Org1.ID, testdata.Cathy.ID, ctasks.NewWaitExpiration(sessionID, time.Now()))
 	assert.NoError(t, err)
 
 	task, err := tasks.HandlerQueue.Pop(rc)

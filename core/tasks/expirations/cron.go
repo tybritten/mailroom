@@ -10,27 +10,23 @@ import (
 	"github.com/nyaruka/mailroom/core/ivr"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
-	"github.com/nyaruka/mailroom/core/tasks/handler"
-	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 )
 
 func init() {
-	tasks.RegisterCron("run_expirations", NewExpirationsCron(10, 100))
+	tasks.RegisterCron("run_expirations", NewExpirationsCron(100))
 	tasks.RegisterCron("expire_ivr_calls", &VoiceExpirationsCron{})
 }
 
 type ExpirationsCron struct {
 	marker        *redisx.IntervalSet
-	bulkThreshold int // use bulk task for any org with this or more expirations
 	bulkBatchSize int // number of expirations to queue in a single bulk task
 }
 
-func NewExpirationsCron(bulkThreshold, bulkBatchSize int) *ExpirationsCron {
+func NewExpirationsCron(bulkBatchSize int) *ExpirationsCron {
 	return &ExpirationsCron{
 		marker:        redisx.NewIntervalSet("run_expirations", time.Hour*24, 2),
-		bulkThreshold: bulkThreshold,
 		bulkBatchSize: bulkBatchSize,
 	}
 }
@@ -43,8 +39,7 @@ func (c *ExpirationsCron) AllInstances() bool {
 	return false
 }
 
-// handles waiting messaging sessions whose waits have expired, resuming those that can be resumed,
-// and expiring those that can't
+// handles waiting messaging sessions whose waits have expired
 func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	rows, err := rt.DB.QueryxContext(ctx, sqlSelectExpiredWaits)
 	if err != nil {
@@ -59,23 +54,15 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 	// scan and organize by org
 	byOrg := make(map[models.OrgID][]*ExpiredWait, 50)
 
-	// the sessions that can't be resumed and will be exited
-	toExit := make([]models.SessionID, 0, 100)
-
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	numDupes, numQueuedHandler, numQueuedBulk, numExited := 0, 0, 0, 0
+	numDupes, numQueued := 0, 0
 
 	for rows.Next() {
 		expiredWait := &ExpiredWait{}
 		if err := rows.StructScan(expiredWait); err != nil {
 			return nil, fmt.Errorf("error scanning expired wait: %w", err)
-		}
-
-		if !expiredWait.WaitResumes {
-			toExit = append(toExit, expiredWait.SessionID)
-			continue
 		}
 
 		// check whether we've already queued this
@@ -94,25 +81,13 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 	}
 
 	for orgID, expirations := range byOrg {
-		throttle := len(expirations) >= c.bulkThreshold
-
 		for batch := range slices.Chunk(expirations, c.bulkBatchSize) {
-			if throttle {
-				if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &BulkExpireTask{Expirations: batch}, true); err != nil {
-					return nil, fmt.Errorf("error queuing bulk expiration task to throttle queue: %w", err)
-				}
-				numQueuedBulk += len(batch)
+			if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &BulkExpireTask{Expirations: batch}, true); err != nil {
+				return nil, fmt.Errorf("error queuing bulk expiration task to throttle queue: %w", err)
 			}
+			numQueued += len(batch)
 
 			for _, exp := range batch {
-				if !throttle {
-					err := handler.QueueTask(rc, orgID, exp.ContactID, ctasks.NewWaitExpiration(exp.SessionID, exp.WaitExpiresOn, exp.ModifiedOn))
-					if err != nil {
-						return nil, fmt.Errorf("error queuing expiration task to handler queue: %w", err)
-					}
-					numQueuedHandler++
-				}
-
 				// mark as queued
 				if err = c.marker.Add(rc, taskID(exp)); err != nil {
 					return nil, fmt.Errorf("error marking expiration task as queued: %w", err)
@@ -121,20 +96,11 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 		}
 	}
 
-	// exit the sessions that can't be resumed
-	for batch := range slices.Chunk(toExit, 500) {
-		err = models.ExitSessions(ctx, rt.DB, batch, models.SessionStatusExpired)
-		if err != nil {
-			return nil, fmt.Errorf("error exiting expired sessions: %w", err)
-		}
-		numExited += len(batch)
-	}
-
-	return map[string]any{"exited": numExited, "dupes": numDupes, "queued_handler": numQueuedHandler, "queued_bulk": numQueuedBulk}, nil
+	return map[string]any{"dupes": numDupes, "queued": numQueued}, nil
 }
 
 const sqlSelectExpiredWaits = `
-    SELECT id as session_id, org_id, wait_expires_on, wait_resume_on_expire, contact_id, modified_on
+    SELECT id as session_id, org_id, wait_expires_on, contact_id, modified_on
       FROM flows_flowsession
      WHERE session_type = 'M' AND status = 'W' AND wait_expires_on <= NOW()
   ORDER BY wait_expires_on ASC
@@ -144,7 +110,6 @@ type ExpiredWait struct {
 	SessionID     models.SessionID `db:"session_id"            json:"session_id"`
 	OrgID         models.OrgID     `db:"org_id"                json:"-"`
 	WaitExpiresOn time.Time        `db:"wait_expires_on"       json:"wait_expires_on"` // TODO remove
-	WaitResumes   bool             `db:"wait_resume_on_expire" json:"-"`
 	ContactID     models.ContactID `db:"contact_id"            json:"contact_id"`
 	ModifiedOn    time.Time        `db:"modified_on"           json:"modified_on"`
 }
