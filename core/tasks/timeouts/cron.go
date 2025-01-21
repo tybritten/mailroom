@@ -8,26 +8,22 @@ import (
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
-	"github.com/nyaruka/mailroom/core/tasks/handler"
-	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 )
 
 func init() {
-	tasks.RegisterCron("sessions_timeouts", NewTimeoutsCron(10, 100))
+	tasks.RegisterCron("sessions_timeouts", NewTimeoutsCron(100))
 }
 
 type timeoutsCron struct {
 	marker        *redisx.IntervalSet
-	bulkThreshold int // use bulk task for any org with this or more timeouts
 	bulkBatchSize int // number of timeouts to queue in a single bulk task
 }
 
-func NewTimeoutsCron(bulkThreshold, bulkBatchSize int) tasks.Cron {
+func NewTimeoutsCron(bulkBatchSize int) tasks.Cron {
 	return &timeoutsCron{
 		marker:        redisx.NewIntervalSet("session_timeouts", time.Hour*24, 2),
-		bulkThreshold: bulkThreshold,
 		bulkBatchSize: bulkBatchSize,
 	}
 }
@@ -55,7 +51,7 @@ func (c *timeoutsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	numDupes, numQueuedHandler, numQueuedBulk := 0, 0, 0
+	numDupes, numQueued := 0, 0
 
 	for rows.Next() {
 		timeout := &Timeout{}
@@ -79,25 +75,13 @@ func (c *timeoutsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string
 	}
 
 	for orgID, timeouts := range byOrg {
-		throttle := len(timeouts) >= c.bulkThreshold
-
 		for batch := range slices.Chunk(timeouts, c.bulkBatchSize) {
-			if throttle {
-				if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &BulkTimeoutTask{Timeouts: batch}, true); err != nil {
-					return nil, fmt.Errorf("error queuing bulk timeout task to throttle queue: %w", err)
-				}
-				numQueuedBulk += len(batch)
+			if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &BulkTimeoutTask{Timeouts: batch}, true); err != nil {
+				return nil, fmt.Errorf("error queuing bulk timeout task to throttle queue: %w", err)
 			}
+			numQueued += len(batch)
 
 			for _, timeout := range batch {
-				if !throttle {
-					err := handler.QueueTask(rc, orgID, timeout.ContactID, ctasks.NewWaitTimeout(timeout.SessionID, timeout.ModifiedOn))
-					if err != nil {
-						return nil, fmt.Errorf("error queuing timeout task to handler queue: %w", err)
-					}
-					numQueuedHandler++
-				}
-
 				// mark as queued
 				if err = c.marker.Add(rc, taskID(timeout)); err != nil {
 					return nil, fmt.Errorf("error marking timeout task as queued: %w", err)
@@ -106,7 +90,7 @@ func (c *timeoutsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string
 		}
 	}
 
-	return map[string]any{"dupes": numDupes, "queued_handler": numQueuedHandler, "queued_bulk": numQueuedBulk}, nil
+	return map[string]any{"dupes": numDupes, "queued": numQueued}, nil
 }
 
 const sqlSelectTimedoutSessions = `

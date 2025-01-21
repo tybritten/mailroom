@@ -52,7 +52,7 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 	}
 
 	// scan and organize by org
-	expiresByOrg := make(map[models.OrgID][]*ExpiredWait, 50)
+	byOrg := make(map[models.OrgID][]*ExpiredWait, 50)
 
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -77,10 +77,10 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 			continue
 		}
 
-		expiresByOrg[expiredWait.OrgID] = append(expiresByOrg[expiredWait.OrgID], expiredWait)
+		byOrg[expiredWait.OrgID] = append(byOrg[expiredWait.OrgID], expiredWait)
 	}
 
-	for orgID, expirations := range expiresByOrg {
+	for orgID, expirations := range byOrg {
 		for batch := range slices.Chunk(expirations, c.bulkBatchSize) {
 			if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &BulkExpireTask{Expirations: batch}, true); err != nil {
 				return nil, fmt.Errorf("error queuing bulk expiration task to throttle queue: %w", err)
