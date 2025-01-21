@@ -54,12 +54,7 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	}
 
 	// if we didn't find a session or it is another session or if it's been modified since, ignore this task
-	if session == nil || session.ID() != t.SessionID {
-		return nil
-	}
-	if !session.ModifiedOn().Equal(t.ModifiedOn) {
-		fmt.Printf("session: %d\n", session.ModifiedOn().UnixNano())
-		fmt.Printf("task:    %d\n", t.ModifiedOn.UnixNano())
+	if session == nil || session.ID() != t.SessionID || !session.ModifiedOn().Equal(t.ModifiedOn) {
 		return nil
 	}
 
