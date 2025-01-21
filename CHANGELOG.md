@@ -1,3 +1,7 @@
+v10.1.5 (2025-01-21)
+-------------------------
+ * Handle non-resumable expirations in the contact handler task to ensure correct locking
+
 v10.1.4 (2025-01-20)
 -------------------------
  * Use session.modified_on to determine if a timed task is still valid
