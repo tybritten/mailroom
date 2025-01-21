@@ -10,8 +10,6 @@ import (
 	"github.com/nyaruka/mailroom/core/ivr"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
-	"github.com/nyaruka/mailroom/core/tasks/handler"
-	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 )
@@ -57,25 +55,18 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 	}
 
 	// scan and organize by org
-	byOrg := make(map[models.OrgID][]*ExpiredWait, 50)
-
-	// the sessions that can't be resumed and will be exited
-	toExit := make([]models.SessionID, 0, 100)
+	resumesByOrg := make(map[models.OrgID][]*ExpiredWait, 50)
+	exitsByOrg := make(map[models.OrgID][]*ExpiredWait, 50)
 
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	numDupes, numQueuedHandler, numQueuedBulk, numExited := 0, 0, 0, 0
+	numDupes, numQueuedResumes, numQueuedExits := 0, 0, 0
 
 	for rows.Next() {
 		expiredWait := &ExpiredWait{}
 		if err := rows.StructScan(expiredWait); err != nil {
 			return nil, fmt.Errorf("error scanning expired wait: %w", err)
-		}
-
-		if !expiredWait.WaitResumes {
-			toExit = append(toExit, expiredWait.SessionID)
-			continue
 		}
 
 		// check whether we've already queued this
@@ -90,47 +81,48 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 			continue
 		}
 
-		byOrg[expiredWait.OrgID] = append(byOrg[expiredWait.OrgID], expiredWait)
+		if expiredWait.WaitResumes {
+			resumesByOrg[expiredWait.OrgID] = append(resumesByOrg[expiredWait.OrgID], expiredWait)
+		} else {
+			exitsByOrg[expiredWait.OrgID] = append(exitsByOrg[expiredWait.OrgID], expiredWait)
+		}
 	}
 
-	for orgID, expirations := range byOrg {
-		throttle := len(expirations) >= c.bulkThreshold
-
+	// create throttled tasks to resume the sessions that can be resumed
+	for orgID, expirations := range resumesByOrg {
 		for batch := range slices.Chunk(expirations, c.bulkBatchSize) {
-			if throttle {
-				if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &BulkExpireTask{Expirations: batch}, true); err != nil {
-					return nil, fmt.Errorf("error queuing bulk expiration task to throttle queue: %w", err)
-				}
-				numQueuedBulk += len(batch)
+			if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &BulkExpireTask{Expirations: batch}, true); err != nil {
+				return nil, fmt.Errorf("error queuing bulk expiration task to throttle queue: %w", err)
 			}
+			numQueuedResumes += len(batch)
 
 			for _, exp := range batch {
-				if !throttle {
-					err := handler.QueueTask(rc, orgID, exp.ContactID, ctasks.NewWaitExpiration(exp.SessionID, exp.ModifiedOn))
-					if err != nil {
-						return nil, fmt.Errorf("error queuing expiration task to handler queue: %w", err)
-					}
-					numQueuedHandler++
-				}
-
 				// mark as queued
 				if err = c.marker.Add(rc, taskID(exp)); err != nil {
-					return nil, fmt.Errorf("error marking expiration task as queued: %w", err)
+					return nil, fmt.Errorf("error marking resumable expiration task as queued: %w", err)
 				}
 			}
 		}
 	}
 
-	// exit the sessions that can't be resumed
-	for batch := range slices.Chunk(toExit, 500) {
-		err = models.ExitSessions(ctx, rt.DB, batch, models.SessionStatusExpired)
-		if err != nil {
-			return nil, fmt.Errorf("error exiting expired sessions: %w", err)
+	// create batch tasks to exit the sessions that can't be resumed
+	for orgID, expirations := range exitsByOrg {
+		for batch := range slices.Chunk(expirations, c.bulkBatchSize) {
+			if err := tasks.Queue(rc, tasks.BatchQueue, orgID, &BulkExpireNoResumeTask{Expirations: batch}, true); err != nil {
+				return nil, fmt.Errorf("error queuing non-resumable bulk expiration task to batch queue: %w", err)
+			}
+			numQueuedExits += len(batch)
+
+			for _, exp := range batch {
+				// mark as queued
+				if err = c.marker.Add(rc, taskID(exp)); err != nil {
+					return nil, fmt.Errorf("error marking non-resumable expiration task as queued: %w", err)
+				}
+			}
 		}
-		numExited += len(batch)
 	}
 
-	return map[string]any{"exited": numExited, "dupes": numDupes, "queued_handler": numQueuedHandler, "queued_bulk": numQueuedBulk}, nil
+	return map[string]any{"dupes": numDupes, "queued_resumes": numQueuedResumes, "queued_exits": numQueuedExits}, nil
 }
 
 const sqlSelectExpiredWaits = `

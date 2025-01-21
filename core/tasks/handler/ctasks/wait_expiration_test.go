@@ -112,9 +112,7 @@ func TestTimedEvents(t *testing.T) {
 			timeoutOn := time.Now().Round(time.Millisecond) // so that there's no difference between this and what we read from the db
 
 			// usually courier will set timeout_on after sending the last message
-			rt.DB.MustExec(`UPDATE flows_flowsession SET timeout_on = $2, modified_on = NOW() WHERE id = $1`, sessionID, timeoutOn)
-			err := rt.DB.Get(&sessionModifiedOn, `SELECT modified_on FROM flows_flowsession WHERE id = $1`, sessionID)
-			assert.NoError(t, err)
+			rt.DB.MustExec(`UPDATE flows_flowsession SET timeout_on = $2 WHERE id = $1`, sessionID, timeoutOn)
 
 			ctask = ctasks.NewWaitTimeout(sessionID, sessionModifiedOn)
 		}
