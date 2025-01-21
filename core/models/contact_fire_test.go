@@ -29,8 +29,8 @@ func TestContactFires(t *testing.T) {
 	assert.Equal(t, models.SessionID(1234), fires[testdata.Org1.ID][0].Extra.V.SessionID)
 	assert.Len(t, fires[testdata.Org2.ID], 1)
 
-	err = models.DeleteContactFires(ctx, rt, []models.ContactFireID{fires[testdata.Org1.ID][0].ID, fires[testdata.Org1.ID][1].ID, fires[testdata.Org2.ID][0].ID})
+	err = models.DeleteContactFires(ctx, rt, []*models.ContactFire{fires[testdata.Org1.ID][0], fires[testdata.Org1.ID][1]})
 	assert.NoError(t, err)
 
-	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire`, 1)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire`, 2)
 }

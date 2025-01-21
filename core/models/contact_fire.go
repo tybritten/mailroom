@@ -19,8 +19,8 @@ const (
 )
 
 type ContactFireExtra struct {
-	SessionID   SessionID `json:"session_id,omitempty"`
-	WaitResumes bool      `json:"wait_resumes,omitempty"`
+	SessionID         SessionID `json:"session_id,omitempty"`
+	SessionModifiedOn time.Time `json:"session_modified_on,omitempty"`
 }
 
 type ContactFire struct {
@@ -38,7 +38,7 @@ const sqlSelectDueContactFires = `
     FROM contacts_contactfire
    WHERE fire_on < NOW()
 ORDER BY fire_on ASC
-   LIMIT 50000`
+   LIMIT 10000`
 
 func LoadDueContactfires(ctx context.Context, rt *runtime.Runtime) (map[OrgID][]*ContactFire, error) {
 	rows, err := rt.DB.QueryxContext(ctx, sqlSelectDueContactFires)
@@ -62,7 +62,12 @@ func LoadDueContactfires(ctx context.Context, rt *runtime.Runtime) (map[OrgID][]
 	return byOrg, nil
 }
 
-func DeleteContactFires(ctx context.Context, rt *runtime.Runtime, ids []ContactFireID) error {
+func DeleteContactFires(ctx context.Context, rt *runtime.Runtime, fires []*ContactFire) error {
+	ids := make([]ContactFireID, 0, len(fires))
+	for _, f := range fires {
+		ids = append(ids, f.ID)
+	}
+
 	_, err := rt.DB.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE id = ANY($1)`, pq.Array(ids))
 	if err != nil {
 		return fmt.Errorf("error deleting contact fires: %w", err)

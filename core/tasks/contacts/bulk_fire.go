@@ -7,6 +7,8 @@ import (
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
+	"github.com/nyaruka/mailroom/core/tasks/handler"
+	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
@@ -37,27 +39,26 @@ func (t *BulkFireTask) WithAssets() models.Refresh {
 
 // Perform creates the actual task
 func (t *BulkFireTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
-	//timeoutsToResume := make([]models.SessionID, 0, 100)
-	//expirationsToResume := make([]models.SessionID, 0, 100)
-	sessionsToExit := make([]models.SessionID, 0, 100)
+	rc := rt.RP.Get()
+	defer rc.Close()
 
 	for _, fire := range t.Fires {
 		if fire.Type == models.ContactFireTypeWaitExpiration {
-			if fire.Extra.V.WaitResumes {
-				// TODO
-			} else {
-				sessionsToExit = append(sessionsToExit, fire.Extra.V.SessionID)
+<<<<<<< Updated upstream
+			err := handler.QueueTask(rc, oa.OrgID(), fire.ContactID, ctasks.NewWaitExpiration(fire.Extra.V.SessionID, exp.ModifiedOn))
+			if err != nil {
+				return fmt.Errorf("error queuing handle task for expiration on session #%d: %w", exp.SessionID, err)
+=======
+			err := handler.QueueTask(rc, oa.OrgID(), fire.ContactID, ctasks.NewWaitExpiration(fire.Extra.V.SessionID, fire.Extra.V.SessionModifiedOn))
+			if err != nil {
+				return fmt.Errorf("error queuing handle task for expiration on session #%d: %w", fire.Extra.V.SessionID, err)
+>>>>>>> Stashed changes
 			}
 		} else if fire.Type == models.ContactFireTypeWaitTimeout {
 			// TODO
 		} else if fire.Type == models.ContactFireTypeCampaign {
 			// TODO
 		}
-	}
-
-	// exit the sessions that can't be resumed
-	if err := models.ExitSessions(ctx, rt.DB, sessionsToExit, models.SessionStatusExpired); err != nil {
-		return fmt.Errorf("error exiting non-resumable expired sessions: %w", err)
 	}
 
 	return nil
