@@ -1,3 +1,7 @@
+v10.1.6 (2025-01-21)
+-------------------------
+ * Simplify timeout handling to match expiration handling
+
 v10.1.5 (2025-01-21)
 -------------------------
  * Handle non-resumable expirations in the contact handler task to ensure correct locking
