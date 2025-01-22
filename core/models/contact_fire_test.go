@@ -16,20 +16,19 @@ func TestContactFires(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	rt.DB.MustExec(`INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, extra, fire_on) VALUES (1, $1, 'E', '', '{"session_id": 1234}', '2025-01-17T11:58:00Z')`, testdata.Cathy.ID)
-	rt.DB.MustExec(`INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, extra, fire_on) VALUES (1, $1, 'E', '', '{"session_id": 2345}', '2025-01-17T11:58:30Z')`, testdata.Bob.ID)
-	rt.DB.MustExec(`INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, extra, fire_on) VALUES (2, $1, 'E', '', '{"session_id": 3456}', '2025-01-17T11:59:00Z')`, testdata.Org2Contact.ID)
-	rt.DB.MustExec(`INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, extra, fire_on) VALUES (1, $1, 'C', '4567', '{}', $2)`, testdata.Bob.ID, time.Now().Add(time.Hour))
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeWaitExpiration, "", map[string]any{"session_id": 1234}, time.Now().Add(-5*time.Second))
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeWaitExpiration, "", map[string]any{"session_id": 2345}, time.Now().Add(-4*time.Second))
+	testdata.InsertContactFire(rt, testdata.Org2, testdata.Org2Contact, models.ContactFireTypeWaitExpiration, "", map[string]any{"session_id": 3456}, time.Now().Add(-3*time.Second))
+	testdata.InsertContactFire(rt, testdata.Org2, testdata.Org2Contact, models.ContactFireTypeWaitTimeout, "", map[string]any{"session_id": 3456}, time.Now().Add(-2*time.Second))
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeCampaign, "235", map[string]any{}, time.Now().Add(2*time.Second))
 
-	fires, err := models.LoadDueContactfires(ctx, rt)
+	fires, err := models.LoadDueContactfires(ctx, rt, 3)
 	assert.NoError(t, err)
-	assert.Len(t, fires, 2)
-	assert.Len(t, fires[testdata.Org1.ID], 2)
-	assert.Equal(t, testdata.Cathy.ID, fires[testdata.Org1.ID][0].ContactID)
-	assert.Equal(t, models.SessionID(1234), fires[testdata.Org1.ID][0].Extra.V.SessionID)
-	assert.Len(t, fires[testdata.Org2.ID], 1)
+	assert.Len(t, fires, 3)
+	assert.Equal(t, testdata.Cathy.ID, fires[0].ContactID)
+	assert.Equal(t, models.SessionID(1234), fires[0].Extra.V.SessionID)
 
-	err = models.DeleteContactFires(ctx, rt, []*models.ContactFire{fires[testdata.Org1.ID][0], fires[testdata.Org1.ID][1]})
+	err = models.DeleteContactFires(ctx, rt, []*models.ContactFire{fires[0], fires[1]})
 	assert.NoError(t, err)
 
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire`, 2)

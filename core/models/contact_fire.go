@@ -24,13 +24,13 @@ type ContactFireExtra struct {
 }
 
 type ContactFire struct {
-	ID        ContactFireID           `db:"id"         json:"-"`
-	OrgID     OrgID                   `db:"org_id"     json:"-"`
-	ContactID ContactID               `db:"contact_id" json:"contact_id"`
-	Type      ContactFireType         `db:"fire_type"  json:"type"`
-	Scope     string                  `db:"scope"      json:"scope,omitempty"`
-	Extra     JSONB[ContactFireExtra] `db:"extra"      json:"extra,omitempty"`
-	FireOn    time.Time               `db:"fire_on"    json:"fire_on"`
+	ID        ContactFireID           `db:"id"`
+	OrgID     OrgID                   `db:"org_id"`
+	ContactID ContactID               `db:"contact_id"`
+	Type      ContactFireType         `db:"fire_type"`
+	Scope     string                  `db:"scope"`
+	Extra     JSONB[ContactFireExtra] `db:"extra"`
+	FireOn    time.Time               `db:"fire_on"`
 }
 
 const sqlSelectDueContactFires = `
@@ -38,28 +38,27 @@ const sqlSelectDueContactFires = `
     FROM contacts_contactfire
    WHERE fire_on < NOW()
 ORDER BY fire_on ASC
-   LIMIT 10000`
+   LIMIT $1`
 
-func LoadDueContactfires(ctx context.Context, rt *runtime.Runtime) (map[OrgID][]*ContactFire, error) {
-	rows, err := rt.DB.QueryxContext(ctx, sqlSelectDueContactFires)
+// LoadDueContactfires returns up to 10,000 contact fires that are due to be fired.
+func LoadDueContactfires(ctx context.Context, rt *runtime.Runtime, limit int) ([]*ContactFire, error) {
+	rows, err := rt.DB.QueryxContext(ctx, sqlSelectDueContactFires, limit)
 	if err != nil {
 		return nil, fmt.Errorf("error querying due contact fires: %w", err)
 	}
 	defer rows.Close()
 
-	// scan and organize by org
-	byOrg := make(map[OrgID][]*ContactFire, 50)
+	fires := make([]*ContactFire, 0, 50)
 
 	for rows.Next() {
 		f := &ContactFire{}
 		if err := rows.StructScan(f); err != nil {
 			return nil, fmt.Errorf("error scanning contact fire: %w", err)
 		}
-
-		byOrg[f.OrgID] = append(byOrg[f.OrgID], f)
+		fires = append(fires, f)
 	}
 
-	return byOrg, nil
+	return fires, nil
 }
 
 func DeleteContactFires(ctx context.Context, rt *runtime.Runtime, fires []*ContactFire) error {
