@@ -1,3 +1,7 @@
+v10.1.7 (2025-01-22)
+-------------------------
+ * Add new tasks for bulk session expires and timeouts
+
 v10.1.6 (2025-01-21)
 -------------------------
  * Simplify timeout handling to match expiration handling

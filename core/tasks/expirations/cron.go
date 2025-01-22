@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/mailroom/core/ivr"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
+	"github.com/nyaruka/mailroom/core/tasks/contacts"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 )
@@ -82,7 +83,12 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 
 	for orgID, expirations := range byOrg {
 		for batch := range slices.Chunk(expirations, c.bulkBatchSize) {
-			if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &BulkExpireTask{Expirations: batch}, true); err != nil {
+			exps := make([]*contacts.Expiration, len(batch))
+			for i, exp := range batch {
+				exps[i] = &contacts.Expiration{ContactID: exp.ContactID, SessionID: exp.SessionID, ModifiedOn: exp.ModifiedOn}
+			}
+
+			if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &contacts.BulkSessionExpireTask{Expirations: exps}, true); err != nil {
 				return nil, fmt.Errorf("error queuing bulk expiration task to throttle queue: %w", err)
 			}
 			numQueued += len(batch)
@@ -107,11 +113,11 @@ const sqlSelectExpiredWaits = `
      LIMIT 25000`
 
 type ExpiredWait struct {
-	SessionID     models.SessionID `db:"session_id"            json:"session_id"`
-	OrgID         models.OrgID     `db:"org_id"                json:"-"`
-	WaitExpiresOn time.Time        `db:"wait_expires_on"       json:"wait_expires_on"` // TODO remove
-	ContactID     models.ContactID `db:"contact_id"            json:"contact_id"`
-	ModifiedOn    time.Time        `db:"modified_on"           json:"modified_on"`
+	SessionID     models.SessionID `db:"session_id"`
+	OrgID         models.OrgID     `db:"org_id"`
+	WaitExpiresOn time.Time        `db:"wait_expires_on"`
+	ContactID     models.ContactID `db:"contact_id"`
+	ModifiedOn    time.Time        `db:"modified_on"`
 }
 
 type VoiceExpirationsCron struct{}
