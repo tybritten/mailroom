@@ -12,6 +12,8 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
+// TODO replaced by BulkSessionExpireTask
+
 // TypeBulkExpire is the type of the task
 const TypeBulkExpire = "bulk_expire"
 

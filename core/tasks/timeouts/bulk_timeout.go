@@ -12,6 +12,8 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
+// TODO replaced by BulkSessionTimeoutTask
+
 // TypeBulkTimeout is the type of the task
 const TypeBulkTimeout = "bulk_timeout"
 
