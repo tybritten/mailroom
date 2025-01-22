@@ -8,6 +8,7 @@ import (
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
+	"github.com/nyaruka/mailroom/core/tasks/contacts"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 )
@@ -76,7 +77,12 @@ func (c *timeoutsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string
 
 	for orgID, timeouts := range byOrg {
 		for batch := range slices.Chunk(timeouts, c.bulkBatchSize) {
-			if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &BulkTimeoutTask{Timeouts: batch}, true); err != nil {
+			ts := make([]*contacts.Timeout, len(batch))
+			for i, exp := range batch {
+				ts[i] = &contacts.Timeout{ContactID: exp.ContactID, SessionID: exp.SessionID, ModifiedOn: exp.ModifiedOn}
+			}
+
+			if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &contacts.BulkSessionTimeoutTask{Timeouts: ts}, true); err != nil {
 				return nil, fmt.Errorf("error queuing bulk timeout task to throttle queue: %w", err)
 			}
 			numQueued += len(batch)

@@ -13,6 +13,7 @@ import (
 	_ "github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
+	"github.com/nyaruka/mailroom/core/tasks/contacts"
 	"github.com/nyaruka/mailroom/core/tasks/expirations"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
@@ -55,9 +56,9 @@ func TestExpirations(t *testing.T) {
 	task1, err := tasks.ThrottledQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.Equal(t, int(testdata.Org1.ID), task1.OwnerID)
-	assert.Equal(t, "bulk_expire", task1.Type)
+	assert.Equal(t, "bulk_session_expire", task1.Type)
 
-	decoded := &expirations.BulkExpireTask{}
+	decoded := &contacts.BulkSessionExpireTask{}
 	jsonx.MustUnmarshal(task1.Task, decoded)
 	assert.Len(t, decoded.Expirations, 1)
 	assert.Equal(t, s2ID, decoded.Expirations[0].SessionID)
@@ -66,11 +67,11 @@ func TestExpirations(t *testing.T) {
 	task2, err := tasks.ThrottledQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.Equal(t, int(testdata.Org2.ID), task2.OwnerID)
-	assert.Equal(t, "bulk_expire", task2.Type)
+	assert.Equal(t, "bulk_session_expire", task2.Type)
 	task3, err := tasks.ThrottledQueue.Pop(rc)
 	assert.NoError(t, err)
 	assert.Equal(t, int(testdata.Org2.ID), task3.OwnerID)
-	assert.Equal(t, "bulk_expire", task2.Type)
+	assert.Equal(t, "bulk_session_expire", task2.Type)
 
 	// no other
 	task, err := tasks.ThrottledQueue.Pop(rc)
