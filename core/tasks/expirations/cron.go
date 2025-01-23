@@ -3,21 +3,19 @@ package expirations
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"slices"
 	"time"
 
-	"github.com/nyaruka/mailroom/core/ivr"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/contacts"
+	"github.com/nyaruka/mailroom/core/tasks/ivr"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx"
 )
 
 func init() {
 	tasks.RegisterCron("run_expirations", NewExpirationsCron(100))
-	tasks.RegisterCron("expire_ivr_calls", &VoiceExpirationsCron{})
 }
 
 type ExpirationsCron struct {
@@ -54,11 +52,12 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 
 	// scan and organize by org
 	byOrg := make(map[models.OrgID][]*ExpiredWait, 50)
+	callsByOrg := make(map[models.OrgID][]*ExpiredWait, 50)
 
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	numDupes, numQueued := 0, 0
+	numDupes, numExpires, numHangups := 0, 0, 0
 
 	for rows.Next() {
 		expiredWait := &ExpiredWait{}
@@ -78,7 +77,11 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 			continue
 		}
 
-		byOrg[expiredWait.OrgID] = append(byOrg[expiredWait.OrgID], expiredWait)
+		if expiredWait.CallID != models.NilCallID {
+			callsByOrg[expiredWait.OrgID] = append(callsByOrg[expiredWait.OrgID], expiredWait)
+		} else {
+			byOrg[expiredWait.OrgID] = append(byOrg[expiredWait.OrgID], expiredWait)
+		}
 	}
 
 	for orgID, expirations := range byOrg {
@@ -91,7 +94,7 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 			if err := tasks.Queue(rc, tasks.ThrottledQueue, orgID, &contacts.BulkSessionExpireTask{Expirations: exps}, true); err != nil {
 				return nil, fmt.Errorf("error queuing bulk expiration task to throttle queue: %w", err)
 			}
-			numQueued += len(batch)
+			numExpires += len(batch)
 
 			for _, exp := range batch {
 				// mark as queued
@@ -102,105 +105,42 @@ func (c *ExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[str
 		}
 	}
 
-	return map[string]any{"dupes": numDupes, "queued": numQueued}, nil
+	for orgID, expirations := range callsByOrg {
+		for batch := range slices.Chunk(expirations, c.bulkBatchSize) {
+			hups := make([]*ivr.Hangup, len(batch))
+			for i, exp := range batch {
+				hups[i] = &ivr.Hangup{SessionID: exp.SessionID, CallID: exp.CallID}
+			}
+
+			if err := tasks.Queue(rc, tasks.BatchQueue, orgID, &ivr.BulkCallHangupTask{Hangups: hups}, true); err != nil {
+				return nil, fmt.Errorf("error queuing bulk hangup task to batch queue: %w", err)
+			}
+			numHangups += len(batch)
+
+			for _, exp := range batch {
+				// mark as queued
+				if err = c.marker.Add(rc, taskID(exp)); err != nil {
+					return nil, fmt.Errorf("error marking hangup task as queued: %w", err)
+				}
+			}
+		}
+	}
+
+	return map[string]any{"dupes": numDupes, "queued_expires": numExpires, "queued_hangups": numHangups}, nil
 }
 
 const sqlSelectExpiredWaits = `
-    SELECT id as session_id, org_id, wait_expires_on, contact_id, modified_on
+    SELECT id, org_id, contact_id, call_id, wait_expires_on, modified_on
       FROM flows_flowsession
-     WHERE session_type = 'M' AND status = 'W' AND wait_expires_on <= NOW()
+     WHERE status = 'W' AND wait_expires_on <= NOW()
   ORDER BY wait_expires_on ASC
      LIMIT 25000`
 
 type ExpiredWait struct {
-	SessionID     models.SessionID `db:"session_id"`
+	SessionID     models.SessionID `db:"id"`
 	OrgID         models.OrgID     `db:"org_id"`
-	WaitExpiresOn time.Time        `db:"wait_expires_on"`
 	ContactID     models.ContactID `db:"contact_id"`
+	CallID        models.CallID    `db:"call_id"`
+	WaitExpiresOn time.Time        `db:"wait_expires_on"`
 	ModifiedOn    time.Time        `db:"modified_on"`
-}
-
-type VoiceExpirationsCron struct{}
-
-func (c *VoiceExpirationsCron) Next(last time.Time) time.Time {
-	return tasks.CronNext(last, time.Minute)
-}
-
-func (c *VoiceExpirationsCron) AllInstances() bool {
-	return false
-}
-
-// looks for voice sessions that should be expired and ends them
-func (c *VoiceExpirationsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
-	log := slog.With("comp", "ivr_cron_expirer")
-
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
-	defer cancel()
-
-	// select voice sessions with expired waits
-	rows, err := rt.DB.QueryxContext(ctx, sqlSelectExpiredVoiceWaits)
-	if err != nil {
-		return nil, fmt.Errorf("error querying voice sessions with expired waits: %w", err)
-	}
-	defer rows.Close()
-
-	expiredSessions := make([]models.SessionID, 0, 100)
-	clogs := make([]*models.ChannelLog, 0, 100)
-
-	for rows.Next() {
-		expiredWait := &ExpiredVoiceWait{}
-		err := rows.StructScan(expiredWait)
-		if err != nil {
-			return nil, fmt.Errorf("error scanning expired wait: %w", err)
-		}
-
-		// add the session to those we need to expire
-		expiredSessions = append(expiredSessions, expiredWait.SessionID)
-
-		// load our call
-		conn, err := models.GetCallByID(ctx, rt.DB, expiredWait.OrgID, expiredWait.CallID)
-		if err != nil {
-			log.Error("unable to load call", "error", err, "call_id", expiredWait.CallID)
-			continue
-		}
-
-		// hang up our call
-		clog, err := ivr.HangupCall(ctx, rt, conn)
-		if err != nil {
-			// log error but carry on with other calls
-			log.Error("error hanging up call", "error", err, "call_id", conn.ID())
-		}
-
-		if clog != nil {
-			clogs = append(clogs, clog)
-		}
-	}
-
-	// now expire our runs and sessions
-	if len(expiredSessions) > 0 {
-		err := models.ExitSessions(ctx, rt.DB, expiredSessions, models.SessionStatusExpired)
-		if err != nil {
-			log.Error("error expiring sessions for expired calls", "error", err)
-		}
-	}
-
-	if err := models.InsertChannelLogs(ctx, rt, clogs); err != nil {
-		return nil, fmt.Errorf("error inserting channel logs: %w", err)
-	}
-
-	return map[string]any{"expired": len(expiredSessions)}, nil
-}
-
-const sqlSelectExpiredVoiceWaits = `
-  SELECT id, org_id, call_id, wait_expires_on
-    FROM flows_flowsession
-   WHERE session_type = 'V' AND status = 'W' AND wait_expires_on <= NOW()
-ORDER BY wait_expires_on ASC
-   LIMIT 100`
-
-type ExpiredVoiceWait struct {
-	SessionID models.SessionID `db:"id"`
-	OrgID     models.OrgID     `db:"org_id"`
-	CallID    models.CallID    `db:"call_id"`
-	ExpiresOn time.Time        `db:"wait_expires_on"`
 }
