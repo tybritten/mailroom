@@ -1,3 +1,7 @@
+v10.1.9 (2025-01-23)
+-------------------------
+ * Queue courier messages with session_modified_on
+
 v10.1.8 (2025-01-23)
 -------------------------
  * Implement new cron to turn contact fires into bulk tasks for session expirations and timeouts
