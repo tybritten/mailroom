@@ -311,6 +311,7 @@ DELETE FROM templates_template WHERE id >= 30000;
 DELETE FROM schedules_schedule;
 DELETE FROM campaigns_campaignevent WHERE id >= 30000;
 DELETE FROM campaigns_campaign WHERE id >= 30000;
+DELETE FROM contacts_contactfire;
 DELETE FROM contacts_contactimportbatch;
 DELETE FROM contacts_contactimport;
 DELETE FROM contacts_contacturn WHERE id >= 30000;
