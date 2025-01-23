@@ -88,6 +88,7 @@ type Msg struct {
 	ContactLastSeenOn    *time.Time           `json:"contact_last_seen_on,omitempty"`
 	SessionID            models.SessionID     `json:"session_id,omitempty"`
 	SessionStatus        models.SessionStatus `json:"session_status,omitempty"`
+	SessionModifiedOn    *time.Time           `json:"session_modified_on,omitempty"` // TODO use omitzero when we upgrade to go 1.24
 	SessionWaitStartedOn *time.Time           `json:"session_wait_started_on,omitempty"`
 	SessionTimeout       int                  `json:"session_timeout,omitempty"`
 }
@@ -160,8 +161,10 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 	}
 
 	if m.Session != nil {
+		mt := m.Session.ModifiedOn()
 		msg.SessionID = m.Session.ID()
 		msg.SessionStatus = m.Session.Status()
+		msg.SessionModifiedOn = &mt
 		msg.ResponseToExternalID = string(m.Session.IncomingMsgExternalID())
 
 		if m.LastInSprint && m.Session.Timeout() != nil && m.Session.WaitStartedOn() != nil {
