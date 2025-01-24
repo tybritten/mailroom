@@ -222,7 +222,7 @@ func (s *Session) updateWait(evts []flows.Event) {
 			run, _ := s.findStep(e.StepUUID())
 
 			s.s.WaitStartedOn = &now
-			s.s.WaitExpiresOn = typed.ExpiresOn
+			s.s.WaitExpiresOn = &typed.ExpiresOn
 			s.s.WaitResumeOnExpire = canResume(run)
 
 			if typed.TimeoutSeconds != nil {
@@ -236,7 +236,7 @@ func (s *Session) updateWait(evts []flows.Event) {
 			run, _ := s.findStep(e.StepUUID())
 
 			s.s.WaitStartedOn = &now
-			s.s.WaitExpiresOn = typed.ExpiresOn
+			s.s.WaitExpiresOn = &typed.ExpiresOn
 			s.s.WaitResumeOnExpire = canResume(run)
 		}
 	}
