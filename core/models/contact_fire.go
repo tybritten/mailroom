@@ -21,6 +21,7 @@ const (
 type ContactFireExtra struct {
 	SessionID         SessionID `json:"session_id,omitempty"`
 	SessionModifiedOn time.Time `json:"session_modified_on,omitempty"`
+	CallID            CallID    `json:"call_id,omitempty"`
 }
 
 type ContactFire struct {
