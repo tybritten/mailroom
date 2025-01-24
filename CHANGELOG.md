@@ -1,3 +1,7 @@
+v10.1.10 (2025-01-24)
+-------------------------
+ * Merge the crons for expiring message and voice sessions
+
 v10.1.9 (2025-01-23)
 -------------------------
  * Queue courier messages with session_modified_on
