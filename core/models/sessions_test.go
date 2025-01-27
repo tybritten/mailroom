@@ -59,13 +59,12 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.Nil(t, session.EndedOn())
 	assert.False(t, session.Responded())
 	assert.NotNil(t, session.WaitExpiresOn())
-	assert.False(t, session.WaitResumeOnExpire())
 	assert.NotNil(t, session.Timeout())
 
 	// check that matches what is in the db
-	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded, ended_on, wait_resume_on_expire FROM flows_flowsession`).
+	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded, ended_on FROM flows_flowsession`).
 		Columns(map[string]any{
-			"status": "W", "session_type": "M", "current_flow_id": int64(flow.ID), "responded": false, "ended_on": nil, "wait_resume_on_expire": false,
+			"status": "W", "session_type": "M", "current_flow_id": int64(flow.ID), "responded": false, "ended_on": nil,
 		})
 
 	// reload contact and check current flow is set
@@ -91,7 +90,6 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.Equal(t, flow.ID, session.CurrentFlowID())
 	assert.True(t, session.Responded())
 	assert.NotNil(t, session.WaitExpiresOn())
-	assert.False(t, session.WaitResumeOnExpire())
 	assert.Nil(t, session.Timeout()) // this wait doesn't have a timeout
 
 	flowSession, err = session.FlowSession(ctx, rt, oa.SessionAssets(), oa.Env())
@@ -113,7 +111,6 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.True(t, session.Responded())
 	assert.NotZero(t, session.CreatedOn())
 	assert.Nil(t, session.WaitExpiresOn())
-	assert.False(t, session.WaitResumeOnExpire())
 	assert.Nil(t, session.Timeout())
 	assert.NotNil(t, session.EndedOn())
 
@@ -217,7 +214,6 @@ func TestSessionWithSubflows(t *testing.T) {
 	assert.Nil(t, session.EndedOn())
 	assert.False(t, session.Responded())
 	assert.NotNil(t, session.WaitExpiresOn())
-	assert.True(t, session.WaitResumeOnExpire()) // because we have a parent
 	assert.Nil(t, session.Timeout())
 
 	require.Len(t, session.Runs(), 2)
@@ -225,9 +221,9 @@ func TestSessionWithSubflows(t *testing.T) {
 	assert.Equal(t, models.NilStartID, session.Runs()[1].StartID)
 
 	// check that matches what is in the db
-	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded, ended_on, wait_resume_on_expire FROM flows_flowsession`).
+	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded, ended_on FROM flows_flowsession`).
 		Columns(map[string]any{
-			"status": "W", "session_type": "M", "current_flow_id": int64(child.ID), "responded": false, "ended_on": nil, "wait_resume_on_expire": true,
+			"status": "W", "session_type": "M", "current_flow_id": int64(child.ID), "responded": false, "ended_on": nil,
 		})
 
 	flowSession, err = session.FlowSession(ctx, rt, oa.SessionAssets(), oa.Env())
@@ -248,7 +244,6 @@ func TestSessionWithSubflows(t *testing.T) {
 	assert.Equal(t, models.NilFlowID, session.CurrentFlowID())
 	assert.True(t, session.Responded())
 	assert.Nil(t, session.WaitExpiresOn())
-	assert.False(t, session.WaitResumeOnExpire())
 	assert.Nil(t, session.Timeout())
 }
 
@@ -454,7 +449,7 @@ func TestClearWaitTimeout(t *testing.T) {
 
 	expiresOn := time.Now().Add(time.Hour)
 	timeoutOn := time.Now().Add(time.Minute)
-	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, expiresOn, true, &timeoutOn)
+	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, expiresOn, &timeoutOn)
 
 	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, models.FlowTypeMessaging, cathy)
 	require.NoError(t, err)

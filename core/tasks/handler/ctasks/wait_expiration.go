@@ -53,17 +53,11 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 		return nil
 	}
 
-	if session.WaitResumeOnExpire() {
-		resume := resumes.NewRunExpiration(oa.Env(), flowContact)
+	resume := resumes.NewRunExpiration(oa.Env(), flowContact)
 
-		_, err = runner.ResumeFlow(ctx, rt, oa, session, contact, resume, nil)
-		if err != nil {
-			return fmt.Errorf("error resuming flow for expiration: %w", err)
-		}
-	} else {
-		if err := models.ExitSessions(ctx, rt.DB, []models.SessionID{session.ID()}, models.SessionStatusExpired); err != nil {
-			return fmt.Errorf("error exiting non-resumable expired session #%d: %w", session.ID(), err)
-		}
+	_, err = runner.ResumeFlow(ctx, rt, oa, session, contact, resume, nil)
+	if err != nil {
+		return fmt.Errorf("error resuming flow for expiration: %w", err)
 	}
 
 	return nil

@@ -28,17 +28,17 @@ func TestTimeouts(t *testing.T) {
 
 	// create sessions for Bob and Cathy that have timed out and session for George that has not
 	s1TimeoutOn := time.Now().Add(-time.Second)
-	s1ID := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), false, &s1TimeoutOn)
+	s1ID := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), &s1TimeoutOn)
 	s2TimeoutOn := time.Now().Add(-time.Second * 30)
-	s2ID := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Bob, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), false, &s2TimeoutOn)
+	s2ID := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Bob, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), &s2TimeoutOn)
 	s3TimeoutOn := time.Now().Add(time.Hour * 24)
-	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), false, &s3TimeoutOn)
+	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), &s3TimeoutOn)
 
 	// for other org create 6 waiting sessions
 	for i := range 6 {
 		c := testdata.InsertContact(rt, testdata.Org2, flows.ContactUUID(uuids.NewV4()), fmt.Sprint(i), i18n.NilLanguage, models.ContactStatusActive)
 		timeoutOn := time.Now().Add(-time.Second * 10)
-		testdata.InsertWaitingSession(rt, testdata.Org2, c, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), false, &timeoutOn)
+		testdata.InsertWaitingSession(rt, testdata.Org2, c, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), &timeoutOn)
 	}
 
 	// schedule our timeouts
