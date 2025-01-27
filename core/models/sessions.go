@@ -197,30 +197,25 @@ func (s *Session) FlowSession(ctx context.Context, rt *runtime.Runtime, sa flows
 	return session, nil
 }
 
-// looks for a wait event and updates wait fields if one exists
-func (s *Session) updateWait(evts []flows.Event) {
-	s.s.WaitTimeoutOn = nil
-	s.s.WaitExpiresOn = nil
-	s.timeout = nil
-
-	now := time.Now()
-
+// looks thru sprint events to figure out if we have a wait on this session and if so what is its expiration and timeout
+func getWaitProperties(evts []flows.Event) (*time.Time, *time.Duration) {
 	for _, e := range evts {
 		switch typed := e.(type) {
 		case *events.MsgWaitEvent:
-			s.s.WaitExpiresOn = &typed.ExpiresOn
+			expiresOn := &typed.ExpiresOn
+			var timeout *time.Duration
 
 			if typed.TimeoutSeconds != nil {
-				seconds := time.Duration(*typed.TimeoutSeconds) * time.Second
-				timeoutOn := now.Add(seconds)
-
-				s.s.WaitTimeoutOn = &timeoutOn
-				s.timeout = &seconds
+				t := time.Duration(*typed.TimeoutSeconds) * time.Second
+				timeout = &t
 			}
+			return expiresOn, timeout
 		case *events.DialWaitEvent:
-			s.s.WaitExpiresOn = &typed.ExpiresOn
+			return &typed.ExpiresOn, nil
 		}
 	}
+
+	return nil, nil
 }
 
 const sqlUpdateSession = `
@@ -298,7 +293,15 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	s.s.CurrentFlowID = NilFlowID
 
 	// update wait related fields
-	s.updateWait(sprint.Events())
+	waitExpiresOn, waitTimeout := getWaitProperties(sprint.Events())
+	s.s.WaitExpiresOn = waitExpiresOn
+	s.s.WaitTimeoutOn = nil
+	s.timeout = nil
+	if waitTimeout != nil {
+		ton := time.Now().Add(*waitTimeout)
+		s.s.WaitTimeoutOn = &ton
+		s.timeout = waitTimeout
+	}
 
 	// run through our runs to figure out our current flow
 	for _, r := range fs.Runs() {
@@ -527,8 +530,16 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 		}
 	}
 
-	// calculate our timeout if any
-	session.updateWait(sprint.Events())
+	// set our wait expiration/timeout if any
+	waitExpiresOn, waitTimeout := getWaitProperties(sprint.Events())
+	s.WaitExpiresOn = waitExpiresOn
+	s.WaitTimeoutOn = nil
+	session.timeout = nil
+	if waitTimeout != nil {
+		ton := time.Now().Add(*waitTimeout)
+		s.WaitTimeoutOn = &ton
+		session.timeout = waitTimeout
+	}
 
 	return session, nil
 }
