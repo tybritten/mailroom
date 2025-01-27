@@ -1,3 +1,9 @@
+v10.1.11 (2025-01-27)
+-------------------------
+ * Update to latest goflow which has some changes to wait expirations
+ * Fix sentry initialization
+ * Add support for IVR session expires to new contact fire cron
+
 v10.1.10 (2025-01-24)
 -------------------------
  * Merge the crons for expiring message and voice sessions
