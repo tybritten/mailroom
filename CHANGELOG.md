@@ -1,3 +1,7 @@
+v10.1.12 (2025-01-27)
+-------------------------
+ * Stop writing session.wait_started_on
+
 v10.1.11 (2025-01-27)
 -------------------------
  * Update to latest goflow which has some changes to wait expirations
