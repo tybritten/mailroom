@@ -85,12 +85,11 @@ type Msg struct {
 	ResponseToExternalID string             `json:"response_to_external_id,omitempty"`
 	IsResend             bool               `json:"is_resend,omitempty"`
 
-	ContactLastSeenOn    *time.Time           `json:"contact_last_seen_on,omitempty"`
-	SessionID            models.SessionID     `json:"session_id,omitempty"`
-	SessionStatus        models.SessionStatus `json:"session_status,omitempty"`
-	SessionModifiedOn    *time.Time           `json:"session_modified_on,omitempty"` // TODO use omitzero when we upgrade to go 1.24
-	SessionWaitStartedOn *time.Time           `json:"session_wait_started_on,omitempty"`
-	SessionTimeout       int                  `json:"session_timeout,omitempty"`
+	ContactLastSeenOn *time.Time           `json:"contact_last_seen_on,omitempty"`
+	SessionID         models.SessionID     `json:"session_id,omitempty"`
+	SessionStatus     models.SessionStatus `json:"session_status,omitempty"`
+	SessionModifiedOn *time.Time           `json:"session_modified_on,omitempty"` // TODO use omitzero when we upgrade to go 1.24
+	SessionTimeout    int                  `json:"session_timeout,omitempty"`
 }
 
 // NewCourierMsg creates a courier message in the format it's expecting to be queued
@@ -167,11 +166,10 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		msg.SessionModifiedOn = &mt
 		msg.ResponseToExternalID = string(m.Session.IncomingMsgExternalID())
 
-		if m.LastInSprint && m.Session.Timeout() != nil && m.Session.WaitStartedOn() != nil {
-			// These fields are set on the last outgoing message in a session's sprint. In the case
+		if m.LastInSprint && m.Session.Timeout() != nil {
+			// This field is set on the last outgoing message in a session's sprint. In the case
 			// of the session being at a wait with a timeout then the timeout will be set. It is up to
 			// Courier to update the session's timeout appropriately after sending the message.
-			msg.SessionWaitStartedOn = m.Session.WaitStartedOn()
 			msg.SessionTimeout = int(*m.Session.Timeout() / time.Second)
 		}
 	}
