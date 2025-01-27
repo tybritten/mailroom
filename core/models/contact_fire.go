@@ -75,3 +75,44 @@ func DeleteContactFires(ctx context.Context, rt *runtime.Runtime, fires []*Conta
 
 	return nil
 }
+
+func ClearSessionContactFires(ctx context.Context, rt *runtime.Runtime, s *Session) error {
+	_, err := rt.DB.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = $1 AND fire_type IN ('E', 'T')`, s.ContactID())
+	if err != nil {
+		return fmt.Errorf("error deleting session wait/timeout contact fires for contact #%d: %w", s.ContactID(), err)
+	}
+	return nil
+}
+
+func CreateSessionContactFires(ctx context.Context, s *Session, expiresOn *time.Time, timeoutOn *time.Time) []*ContactFire {
+	fs := make([]*ContactFire, 0, 2)
+
+	if expiresOn != nil {
+		fs = append(fs, &ContactFire{
+			OrgID:     s.OrgID(),
+			ContactID: s.ContactID(),
+			Type:      ContactFireTypeWaitExpiration,
+			Extra:     JSONB[ContactFireExtra]{ContactFireExtra{SessionID: s.ID(), SessionModifiedOn: s.ModifiedOn()}},
+			FireOn:    *expiresOn,
+		})
+	}
+	if timeoutOn != nil {
+		fs = append(fs, &ContactFire{
+			OrgID:     s.OrgID(),
+			ContactID: s.ContactID(),
+			Type:      ContactFireTypeWaitTimeout,
+			Extra:     JSONB[ContactFireExtra]{ContactFireExtra{SessionID: s.ID(), SessionModifiedOn: s.ModifiedOn()}},
+			FireOn:    *expiresOn,
+		})
+	}
+
+	return fs
+}
+
+var sqlInsertContactFires = `
+INSERT INTO contacts_contactfire( org_id,  contact_id,  fire_type, scope,  extra,  fire_on)
+                          VALUES(:org_id, :contact_id, :fire_type,    '', :extra, :fire_on)`
+
+func InsertContactFires(ctx context.Context, db DBorTx, fs []*ContactFire) error {
+	return BulkQuery(ctx, "inserted contact fires", db, sqlInsertContactFires, fs)
+}
