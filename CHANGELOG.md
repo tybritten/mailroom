@@ -1,3 +1,7 @@
+v10.1.13 (2025-01-27)
+-------------------------
+ * Stop writing session.wait_resume_on_expire and let engine figure it out
+
 v10.1.12 (2025-01-27)
 -------------------------
  * Stop writing session.wait_started_on
