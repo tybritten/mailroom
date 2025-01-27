@@ -51,23 +51,22 @@ type SessionCommitHook func(context.Context, *sqlx.Tx, *redis.Pool, *OrgAssets, 
 // Session is the mailroom type for a FlowSession
 type Session struct {
 	s struct {
-		ID                 SessionID         `db:"id"`
-		UUID               flows.SessionUUID `db:"uuid"`
-		SessionType        FlowType          `db:"session_type"`
-		Status             SessionStatus     `db:"status"`
-		Responded          bool              `db:"responded"`
-		Output             null.String       `db:"output"`
-		OutputURL          null.String       `db:"output_url"`
-		ContactID          ContactID         `db:"contact_id"`
-		OrgID              OrgID             `db:"org_id"`
-		CreatedOn          time.Time         `db:"created_on"`
-		ModifiedOn         time.Time         `db:"modified_on"`
-		EndedOn            *time.Time        `db:"ended_on"`
-		WaitTimeoutOn      *time.Time        `db:"timeout_on"`
-		WaitExpiresOn      *time.Time        `db:"wait_expires_on"`
-		WaitResumeOnExpire bool              `db:"wait_resume_on_expire"`
-		CurrentFlowID      FlowID            `db:"current_flow_id"`
-		CallID             *CallID           `db:"call_id"`
+		ID            SessionID         `db:"id"`
+		UUID          flows.SessionUUID `db:"uuid"`
+		SessionType   FlowType          `db:"session_type"`
+		Status        SessionStatus     `db:"status"`
+		Responded     bool              `db:"responded"`
+		Output        null.String       `db:"output"`
+		OutputURL     null.String       `db:"output_url"`
+		ContactID     ContactID         `db:"contact_id"`
+		OrgID         OrgID             `db:"org_id"`
+		CreatedOn     time.Time         `db:"created_on"`
+		ModifiedOn    time.Time         `db:"modified_on"`
+		EndedOn       *time.Time        `db:"ended_on"`
+		WaitTimeoutOn *time.Time        `db:"timeout_on"`
+		WaitExpiresOn *time.Time        `db:"wait_expires_on"`
+		CurrentFlowID FlowID            `db:"current_flow_id"`
+		CallID        *CallID           `db:"call_id"`
 	}
 
 	incomingMsgID      MsgID
@@ -107,7 +106,6 @@ func (s *Session) ModifiedOn() time.Time              { return s.s.ModifiedOn }
 func (s *Session) EndedOn() *time.Time                { return s.s.EndedOn }
 func (s *Session) WaitTimeoutOn() *time.Time          { return s.s.WaitTimeoutOn }
 func (s *Session) WaitExpiresOn() *time.Time          { return s.s.WaitExpiresOn }
-func (s *Session) WaitResumeOnExpire() bool           { return s.s.WaitResumeOnExpire }
 func (s *Session) CurrentFlowID() FlowID              { return s.s.CurrentFlowID }
 func (s *Session) CallID() *CallID                    { return s.s.CallID }
 func (s *Session) IncomingMsgID() MsgID               { return s.incomingMsgID }
@@ -201,14 +199,8 @@ func (s *Session) FlowSession(ctx context.Context, rt *runtime.Runtime, sa flows
 
 // looks for a wait event and updates wait fields if one exists
 func (s *Session) updateWait(evts []flows.Event) {
-	canResume := func(r flows.Run) bool {
-		// a session can be resumed on a wait expiration if there's a parent and it's a messaging flow
-		return r.ParentInSession() != nil && r.Flow().Type() == flows.FlowTypeMessaging
-	}
-
 	s.s.WaitTimeoutOn = nil
 	s.s.WaitExpiresOn = nil
-	s.s.WaitResumeOnExpire = false
 	s.timeout = nil
 
 	now := time.Now()
@@ -216,10 +208,7 @@ func (s *Session) updateWait(evts []flows.Event) {
 	for _, e := range evts {
 		switch typed := e.(type) {
 		case *events.MsgWaitEvent:
-			run, _ := s.findStep(e.StepUUID())
-
 			s.s.WaitExpiresOn = &typed.ExpiresOn
-			s.s.WaitResumeOnExpire = canResume(run)
 
 			if typed.TimeoutSeconds != nil {
 				seconds := time.Duration(*typed.TimeoutSeconds) * time.Second
@@ -229,10 +218,7 @@ func (s *Session) updateWait(evts []flows.Event) {
 				s.timeout = &seconds
 			}
 		case *events.DialWaitEvent:
-			run, _ := s.findStep(e.StepUUID())
-
 			s.s.WaitExpiresOn = &typed.ExpiresOn
-			s.s.WaitResumeOnExpire = canResume(run)
 		}
 	}
 }
@@ -249,7 +235,6 @@ SET
 	responded = :responded,
 	current_flow_id = :current_flow_id,
 	wait_expires_on = :wait_expires_on,
-	wait_resume_on_expire = :wait_resume_on_expire,
 	timeout_on = :timeout_on
 WHERE 
 	id = :id
@@ -266,7 +251,6 @@ SET
 	responded = :responded,
 	current_flow_id = :current_flow_id,
 	wait_expires_on = :wait_expires_on,
-	wait_resume_on_expire = :wait_resume_on_expire,
 	timeout_on = :timeout_on
 WHERE 
 	id = :id
@@ -551,26 +535,26 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 
 const sqlInsertWaitingSession = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  timeout_on,  wait_expires_on,  wait_resume_on_expire,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :timeout_on, :wait_expires_on, :wait_resume_on_expire, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  timeout_on,  wait_expires_on,  call_id)
+               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :timeout_on, :wait_expires_on, :call_id)
 RETURNING id`
 
 const sqlInsertWaitingSessionNoOutput = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  timeout_on,  wait_expires_on,  wait_resume_on_expire,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :timeout_on, :wait_expires_on, :wait_resume_on_expire, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  timeout_on,  wait_expires_on,  call_id)
+               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :timeout_on, :wait_expires_on, :call_id)
 RETURNING id`
 
 const sqlInsertEndedSession = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  ended_on, wait_resume_on_expire,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :ended_on,                 FALSE, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  ended_on,  call_id)
+               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :ended_on, :call_id)
 RETURNING id`
 
 const sqlInsertEndedSessionNoOutput = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id,  created_on,  modified_on,  ended_on, wait_resume_on_expire,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, :created_on, :modified_on, :ended_on,                 FALSE, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id,  created_on,  modified_on,  ended_on,  call_id)
+               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, :created_on, :modified_on, :ended_on, :call_id)
 RETURNING id`
 
 // InsertSessions writes the passed in session to our database, writes any runs that need to be created
@@ -720,7 +704,6 @@ SELECT
 	ended_on,
 	timeout_on,
 	wait_expires_on,
-	wait_resume_on_expire,
 	current_flow_id,
 	call_id
 FROM 

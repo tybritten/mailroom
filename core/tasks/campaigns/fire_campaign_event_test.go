@@ -35,8 +35,8 @@ func TestFireCampaignEvents(t *testing.T) {
 	fire3ID := testdata.InsertEventFire(rt, testdata.Alexandria, testdata.RemindersEvent3, now)
 
 	// create waiting sessions for Cathy and Alexandria
-	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeVoice, testdata.IVRFlow, models.NilCallID, time.Now(), false, nil)
-	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Alexandria, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), false, nil)
+	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeVoice, testdata.IVRFlow, models.NilCallID, time.Now(), nil)
+	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Alexandria, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), nil)
 
 	// simulates the cron job picking up pending fires, marking them in redis, and queueing a task to handle them
 	fireFires := func(fireIDs []models.FireID, flow *testdata.Flow, ce *testdata.CampaignEvent) {
