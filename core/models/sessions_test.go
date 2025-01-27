@@ -58,7 +58,6 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.NotZero(t, session.ModifiedOn())
 	assert.Nil(t, session.EndedOn())
 	assert.False(t, session.Responded())
-	assert.NotNil(t, session.WaitStartedOn())
 	assert.NotNil(t, session.WaitExpiresOn())
 	assert.False(t, session.WaitResumeOnExpire())
 	assert.NotNil(t, session.Timeout())
@@ -91,7 +90,6 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.Greater(t, session.ModifiedOn(), session.CreatedOn())
 	assert.Equal(t, flow.ID, session.CurrentFlowID())
 	assert.True(t, session.Responded())
-	assert.NotNil(t, session.WaitStartedOn())
 	assert.NotNil(t, session.WaitExpiresOn())
 	assert.False(t, session.WaitResumeOnExpire())
 	assert.Nil(t, session.Timeout()) // this wait doesn't have a timeout
@@ -114,7 +112,6 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.Equal(t, models.NilFlowID, session.CurrentFlowID()) // no longer "in" a flow
 	assert.True(t, session.Responded())
 	assert.NotZero(t, session.CreatedOn())
-	assert.Nil(t, session.WaitStartedOn())
 	assert.Nil(t, session.WaitExpiresOn())
 	assert.False(t, session.WaitResumeOnExpire())
 	assert.Nil(t, session.Timeout())
@@ -170,7 +167,6 @@ func TestSingleSprintSession(t *testing.T) {
 	assert.NotZero(t, session.CreatedOn())
 	assert.NotNil(t, session.EndedOn())
 	assert.False(t, session.Responded())
-	assert.Nil(t, session.WaitStartedOn())
 	assert.Nil(t, session.WaitExpiresOn())
 	assert.Nil(t, session.Timeout())
 
@@ -220,7 +216,6 @@ func TestSessionWithSubflows(t *testing.T) {
 	assert.NotZero(t, session.CreatedOn())
 	assert.Nil(t, session.EndedOn())
 	assert.False(t, session.Responded())
-	assert.NotNil(t, session.WaitStartedOn())
 	assert.NotNil(t, session.WaitExpiresOn())
 	assert.True(t, session.WaitResumeOnExpire()) // because we have a parent
 	assert.Nil(t, session.Timeout())
@@ -252,7 +247,6 @@ func TestSessionWithSubflows(t *testing.T) {
 	assert.Equal(t, models.SessionStatusCompleted, session.Status())
 	assert.Equal(t, models.NilFlowID, session.CurrentFlowID())
 	assert.True(t, session.Responded())
-	assert.Nil(t, session.WaitStartedOn())
 	assert.Nil(t, session.WaitExpiresOn())
 	assert.False(t, session.WaitResumeOnExpire())
 	assert.Nil(t, session.Timeout())
@@ -338,7 +332,7 @@ func TestInterruptSessionsForContacts(t *testing.T) {
 	assertSessionAndRunStatus(t, rt, session4ID, models.SessionStatusWaiting) // contact not included
 
 	// check other columns are correct on interrupted session, run and contact
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE ended_on IS NOT NULL AND wait_started_on IS NULL AND wait_expires_on IS NULL AND timeout_on IS NULL AND current_flow_id IS NULL AND id = $1`, session2ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE ended_on IS NOT NULL AND wait_expires_on IS NULL AND timeout_on IS NULL AND current_flow_id IS NULL AND id = $1`, session2ID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowrun WHERE id = $1`, run2ID).Columns(map[string]any{"status": "I"})
 	assertdb.Query(t, rt.DB, `SELECT current_flow_id FROM contacts_contact WHERE id = $1`, testdata.Cathy.ID).Returns(nil)
 }
@@ -379,7 +373,7 @@ func TestInterruptSessionsForContactsTx(t *testing.T) {
 	assertSessionAndRunStatus(t, rt, session4ID, models.SessionStatusWaiting) // contact not included
 
 	// check other columns are correct on interrupted session, run and contact
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE ended_on IS NOT NULL AND wait_started_on IS NULL AND wait_expires_on IS NULL AND timeout_on IS NULL AND current_flow_id IS NULL AND id = $1`, session2ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE ended_on IS NOT NULL AND wait_expires_on IS NULL AND timeout_on IS NULL AND current_flow_id IS NULL AND id = $1`, session2ID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowrun WHERE id = $1`, run2ID).Columns(map[string]any{"status": "I"})
 	assertdb.Query(t, rt.DB, `SELECT current_flow_id FROM contacts_contact WHERE id = $1`, testdata.Cathy.ID).Returns(nil)
 }
@@ -408,7 +402,7 @@ func TestInterruptSessionsForChannels(t *testing.T) {
 	assertSessionAndRunStatus(t, rt, session4ID, models.SessionStatusWaiting) // channel not included
 
 	// check other columns are correct on interrupted session and contact
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE ended_on IS NOT NULL AND wait_started_on IS NULL AND wait_expires_on IS NULL AND timeout_on IS NULL AND current_flow_id IS NULL AND id = $1`, session2ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE ended_on IS NOT NULL AND wait_expires_on IS NULL AND timeout_on IS NULL AND current_flow_id IS NULL AND id = $1`, session2ID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT current_flow_id FROM contacts_contact WHERE id = $1`, testdata.Cathy.ID).Returns(nil)
 }
 
@@ -445,7 +439,7 @@ func TestInterruptSessionsForFlows(t *testing.T) {
 	assertSessionAndRunStatus(t, rt, session4ID, models.SessionStatusWaiting) // flow not included
 
 	// check other columns are correct on interrupted session and contact
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE ended_on IS NOT NULL AND wait_started_on IS NULL AND wait_expires_on IS NULL AND timeout_on IS NULL AND current_flow_id IS NULL AND id = $1`, session2ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE ended_on IS NOT NULL AND wait_expires_on IS NULL AND timeout_on IS NULL AND current_flow_id IS NULL AND id = $1`, session2ID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT current_flow_id FROM contacts_contact WHERE id = $1`, testdata.Cathy.ID).Returns(nil)
 }
 
@@ -460,7 +454,7 @@ func TestClearWaitTimeout(t *testing.T) {
 
 	expiresOn := time.Now().Add(time.Hour)
 	timeoutOn := time.Now().Add(time.Minute)
-	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, time.Now(), expiresOn, true, &timeoutOn)
+	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID, expiresOn, true, &timeoutOn)
 
 	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, models.FlowTypeMessaging, cathy)
 	require.NoError(t, err)
