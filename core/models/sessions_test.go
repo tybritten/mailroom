@@ -57,7 +57,7 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.NotZero(t, session.ModifiedOn())
 	assert.Nil(t, session.EndedOn())
 	assert.False(t, session.Responded())
-	assert.NotNil(t, session.Timeout())
+	assert.Nil(t, session.Timeout()) // not used because message doesn't have a channel
 
 	// check that matches what is in the db
 	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded, ended_on FROM flows_flowsession`).
@@ -67,7 +67,7 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 
 	// check we have contact fires for wait expiration and timeout
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Bob.ID).Returns(1)
-	//assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Bob.ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Bob.ID).Returns(1)
 
 	// reload contact and check current flow is set
 	modelContact, _, _ = testdata.Bob.Load(rt, oa)
@@ -91,11 +91,11 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.Greater(t, session.ModifiedOn(), session.CreatedOn())
 	assert.Equal(t, flow.ID, session.CurrentFlowID())
 	assert.True(t, session.Responded())
-	assert.Nil(t, session.Timeout()) // this wait doesn't have a timeout
+	assert.Nil(t, session.Timeout())
 
-	// check we have a contact fire for wait expiration but not timeout
+	// check we have a contact fire for wait expiration but not timeout (wait doesn't have a timeout)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Bob.ID).Returns(1)
-	//assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Bob.ID).Returns(0)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Bob.ID).Returns(0)
 
 	flowSession, err = session.FlowSession(ctx, rt, oa.SessionAssets(), oa.Env())
 	require.NoError(t, err)
