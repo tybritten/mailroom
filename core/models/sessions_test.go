@@ -59,7 +59,8 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.Nil(t, session.EndedOn())
 	assert.False(t, session.Responded())
 	assert.NotNil(t, session.WaitExpiresOn())
-	assert.NotNil(t, session.Timeout())
+	assert.NotNil(t, session.WaitTimeoutOn())
+	assert.NotNil(t, session.Timeout()) // not used because message doesn't have a channel
 
 	// check that matches what is in the db
 	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded, ended_on FROM flows_flowsession`).
@@ -90,7 +91,8 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.Equal(t, flow.ID, session.CurrentFlowID())
 	assert.True(t, session.Responded())
 	assert.NotNil(t, session.WaitExpiresOn())
-	assert.Nil(t, session.Timeout()) // this wait doesn't have a timeout
+	assert.Nil(t, session.WaitTimeoutOn()) // this wait doesn't have a timeout
+	assert.Nil(t, session.Timeout())
 
 	flowSession, err = session.FlowSession(ctx, rt, oa.SessionAssets(), oa.Env())
 	require.NoError(t, err)
@@ -111,6 +113,7 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.True(t, session.Responded())
 	assert.NotZero(t, session.CreatedOn())
 	assert.Nil(t, session.WaitExpiresOn())
+	assert.Nil(t, session.WaitTimeoutOn())
 	assert.Nil(t, session.Timeout())
 	assert.NotNil(t, session.EndedOn())
 
@@ -165,6 +168,7 @@ func TestSingleSprintSession(t *testing.T) {
 	assert.NotNil(t, session.EndedOn())
 	assert.False(t, session.Responded())
 	assert.Nil(t, session.WaitExpiresOn())
+	assert.Nil(t, session.WaitTimeoutOn())
 	assert.Nil(t, session.Timeout())
 
 	// check that matches what is in the db
@@ -214,6 +218,7 @@ func TestSessionWithSubflows(t *testing.T) {
 	assert.Nil(t, session.EndedOn())
 	assert.False(t, session.Responded())
 	assert.NotNil(t, session.WaitExpiresOn())
+	assert.Nil(t, session.WaitTimeoutOn())
 	assert.Nil(t, session.Timeout())
 
 	require.Len(t, session.Runs(), 2)
@@ -284,6 +289,7 @@ func TestSessionFailedStart(t *testing.T) {
 	assert.Equal(t, models.SessionStatusFailed, session.Status())
 	assert.Equal(t, models.NilFlowID, session.CurrentFlowID())
 	assert.Nil(t, session.WaitExpiresOn())
+	assert.Nil(t, session.WaitTimeoutOn())
 	assert.NotNil(t, session.EndedOn())
 
 	// check that matches what is in the db
