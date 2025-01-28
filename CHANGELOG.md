@@ -1,3 +1,7 @@
+v10.1.14 (2025-01-28)
+-------------------------
+ * Use new contact fire system to set session wait expirations/timeouts
+
 v10.1.13 (2025-01-27)
 -------------------------
  * Stop writing session.wait_resume_on_expire and let engine figure it out
