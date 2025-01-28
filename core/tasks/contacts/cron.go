@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("contact_fires", &FiresCron{fetchBatchSize: 10_000, taskBatchSize: 100})
+	tasks.RegisterCron("contact_fires", &FiresCron{fetchBatchSize: 5_000, taskBatchSize: 100})
 }
 
 type FiresCron struct {
@@ -26,7 +26,7 @@ func NewFiresCron(fetchBatchSize, taskBatchSize int) *FiresCron {
 }
 
 func (c *FiresCron) Next(last time.Time) time.Time {
-	return tasks.CronNext(last, time.Minute)
+	return tasks.CronNext(last, 30*time.Second)
 }
 
 func (c *FiresCron) AllInstances() bool {
@@ -128,8 +128,8 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 			}
 		}
 
-		// if we're getting close to a minute, stop and let the next cron run handle the rest
-		if time.Since(start) > 50*time.Second {
+		// if we're getting close to the repeat schedule of this task, stop and let the next run pick up the rest
+		if time.Since(start) > 25*time.Second {
 			break
 		}
 	}
