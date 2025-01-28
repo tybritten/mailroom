@@ -49,7 +49,7 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	}
 
 	// if we didn't find a session or it is another session or if it's been modified since, ignore this task
-	if session == nil || session.ID() != t.SessionID || !session.ModifiedOn().Equal(t.ModifiedOn.Truncate(time.Microsecond)) {
+	if session == nil || session.ID() != t.SessionID || !equalToMillis(session.ModifiedOn(), t.ModifiedOn) {
 		return nil
 	}
 
@@ -61,4 +61,9 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	}
 
 	return nil
+}
+
+// helper to compare two times with millisecond precision - used to compare times that have been in and out of the database
+func equalToMillis(t1, t2 time.Time) bool {
+	return t1.Round(time.Millisecond).Equal(t2.Round(time.Millisecond))
 }
