@@ -237,8 +237,8 @@ func TestSessionWithSubflows(t *testing.T) {
 		})
 
 	// check we have a contact fire for wait expiration but not timeout
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Bob.ID).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Bob.ID).Returns(0)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Cathy.ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Cathy.ID).Returns(0)
 
 	flowSession, err = session.FlowSession(ctx, rt, oa.SessionAssets(), oa.Env())
 	require.NoError(t, err)

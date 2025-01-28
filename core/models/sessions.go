@@ -193,6 +193,30 @@ func (s *Session) FlowSession(ctx context.Context, rt *runtime.Runtime, sa flows
 	return session, nil
 }
 
+func (s *Session) GetNewFires(oa *OrgAssets, sprint flows.Sprint) []*ContactFire {
+	waitExpiresOn, waitTimeout, queuesToCourier := getWaitProperties(oa, sprint.Events())
+	var waitTimeoutOn *time.Time
+	if waitTimeout != nil {
+		if queuesToCourier {
+			s.timeout = waitTimeout
+		} else {
+			ton := time.Now().Add(*waitTimeout)
+			waitTimeoutOn = &ton
+		}
+	}
+
+	fs := make([]*ContactFire, 0, 2)
+
+	if waitExpiresOn != nil {
+		fs = append(fs, NewContactFireForSession(s, ContactFireTypeWaitExpiration, *waitExpiresOn))
+	}
+	if waitTimeoutOn != nil {
+		fs = append(fs, NewContactFireForSession(s, ContactFireTypeWaitTimeout, *waitTimeoutOn))
+	}
+
+	return fs
+}
+
 // looks thru sprint events to figure out if we have a wait on this session and if so what is its expiration and timeout
 func getWaitProperties(oa *OrgAssets, evts []flows.Event) (*time.Time, *time.Duration, bool) {
 	var expiresOn *time.Time
@@ -341,22 +365,11 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	}
 
 	// clear and recreate any wait expires/timeout fires
-	if err := ClearSessionContactFires(ctx, rt, s); err != nil {
+	if err := DeleteSessionContactFires(ctx, tx, []ContactID{s.ContactID()}); err != nil {
 		return fmt.Errorf("error deleting session contact fires: %w", err)
 	}
 
-	waitExpiresOn, waitTimeout, queuesToCourier := getWaitProperties(oa, sprint.Events())
-	var waitTimeoutOn *time.Time
-	if waitTimeout != nil {
-		if queuesToCourier {
-			s.timeout = waitTimeout
-		} else {
-			ton := time.Now().Add(*waitTimeout)
-			waitTimeoutOn = &ton
-		}
-	}
-
-	fires := CreateSessionContactFires(ctx, s, waitExpiresOn, waitTimeoutOn)
+	fires := s.GetNewFires(oa, sprint)
 
 	if err := InsertContactFires(ctx, tx, fires); err != nil {
 		return fmt.Errorf("error inserting session contact fires: %w", err)
@@ -580,19 +593,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 			}
 		}
 
-		// set our wait expiration/timeout if any
-		waitExpiresOn, waitTimeout, queuesToCourier := getWaitProperties(oa, sprints[i].Events())
-		var waitTimeoutOn *time.Time
-		if waitTimeout != nil {
-			if queuesToCourier {
-				session.timeout = waitTimeout
-			} else {
-				ton := time.Now().Add(*waitTimeout)
-				waitTimeoutOn = &ton
-			}
-		}
-
-		fires = append(fires, CreateSessionContactFires(ctx, session, waitExpiresOn, waitTimeoutOn)...)
+		fires = append(fires, session.GetNewFires(oa, sprints[i])...)
 	}
 
 	// call our global pre commit hook if present
@@ -705,8 +706,6 @@ SELECT
 	created_on,
 	modified_on,
 	ended_on,
-	timeout_on,
-	wait_expires_on,
 	current_flow_id,
 	call_id
 FROM 
@@ -846,7 +845,7 @@ const sqlExitSessionContacts = `
 // exits sessions and their runs inside the given transaction
 func exitSessionBatch(ctx context.Context, tx *sqlx.Tx, sessionIDs []SessionID, status SessionStatus) error {
 	runStatus := RunStatus(status) // session status codes are subset of run status codes
-	contactIDs := make([]SessionID, 0, len(sessionIDs))
+	contactIDs := make([]ContactID, 0, len(sessionIDs))
 
 	// first update the sessions themselves and get the contact ids
 	start := time.Now()
@@ -875,6 +874,11 @@ func exitSessionBatch(ctx context.Context, tx *sqlx.Tx, sessionIDs []SessionID, 
 	res, err = tx.ExecContext(ctx, sqlExitSessionContacts, pq.Array(contactIDs))
 	if err != nil {
 		return fmt.Errorf("error exiting sessions: %w", err)
+	}
+
+	// delete any session wait/timeout fires for these contacts
+	if err := DeleteSessionContactFires(ctx, tx, contactIDs); err != nil {
+		return fmt.Errorf("error deleting session contact fires: %w", err)
 	}
 
 	rows, _ = res.RowsAffected()

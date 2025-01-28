@@ -34,6 +34,21 @@ type ContactFire struct {
 	FireOn    time.Time               `db:"fire_on"`
 }
 
+func newContactFire(orgID OrgID, contactID ContactID, typ ContactFireType, scope string, extra ContactFireExtra, fireOn time.Time) *ContactFire {
+	return &ContactFire{
+		OrgID:     orgID,
+		ContactID: contactID,
+		Type:      typ,
+		Scope:     scope,
+		Extra:     JSONB[ContactFireExtra]{extra},
+		FireOn:    fireOn,
+	}
+}
+
+func NewContactFireForSession(s *Session, typ ContactFireType, fireOn time.Time) *ContactFire {
+	return newContactFire(s.OrgID(), s.ContactID(), typ, "", ContactFireExtra{SessionID: s.ID(), SessionModifiedOn: s.ModifiedOn()}, fireOn)
+}
+
 const sqlSelectDueContactFires = `
   SELECT id, org_id, contact_id, fire_type, scope, extra
     FROM contacts_contactfire
@@ -76,37 +91,12 @@ func DeleteContactFires(ctx context.Context, rt *runtime.Runtime, fires []*Conta
 	return nil
 }
 
-func ClearSessionContactFires(ctx context.Context, rt *runtime.Runtime, s *Session) error {
-	_, err := rt.DB.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = $1 AND fire_type IN ('E', 'T')`, s.ContactID())
+func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []ContactID) error {
+	_, err := db.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = ANY($1) AND fire_type IN ('E', 'T') AND scope = ''`, pq.Array(contactIDs))
 	if err != nil {
-		return fmt.Errorf("error deleting session wait/timeout contact fires for contact #%d: %w", s.ContactID(), err)
+		return fmt.Errorf("error deleting session wait/timeout contact fires: %w", err)
 	}
 	return nil
-}
-
-func CreateSessionContactFires(ctx context.Context, s *Session, expiresOn *time.Time, timeoutOn *time.Time) []*ContactFire {
-	fs := make([]*ContactFire, 0, 2)
-
-	if expiresOn != nil {
-		fs = append(fs, &ContactFire{
-			OrgID:     s.OrgID(),
-			ContactID: s.ContactID(),
-			Type:      ContactFireTypeWaitExpiration,
-			Extra:     JSONB[ContactFireExtra]{ContactFireExtra{SessionID: s.ID(), SessionModifiedOn: s.ModifiedOn()}},
-			FireOn:    *expiresOn,
-		})
-	}
-	if timeoutOn != nil {
-		fs = append(fs, &ContactFire{
-			OrgID:     s.OrgID(),
-			ContactID: s.ContactID(),
-			Type:      ContactFireTypeWaitTimeout,
-			Extra:     JSONB[ContactFireExtra]{ContactFireExtra{SessionID: s.ID(), SessionModifiedOn: s.ModifiedOn()}},
-			FireOn:    *expiresOn,
-		})
-	}
-
-	return fs
 }
 
 var sqlInsertContactFires = `
