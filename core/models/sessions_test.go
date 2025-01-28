@@ -66,8 +66,8 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 		})
 
 	// check we have contact fires for wait expiration and timeout
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Bob.ID).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Bob.ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = '' AND extra->'session_id' = $2`, testdata.Bob.ID, modelSessions[0].ID()).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = '' AND extra->'session_id' = $2`, testdata.Bob.ID, modelSessions[0].ID()).Returns(1)
 
 	// reload contact and check current flow is set
 	modelContact, _, _ = testdata.Bob.Load(rt, oa)
