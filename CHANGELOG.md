@@ -1,3 +1,7 @@
+v10.1.17 (2025-01-28)
+-------------------------
+ * Fix (again) how session modified_on is checked for session wait expirations and timeouts
+
 v10.1.16 (2025-01-28)
 -------------------------
  * Fix contact fires being created before sessions have ids
