@@ -63,8 +63,6 @@ type Session struct {
 		CreatedOn     time.Time         `db:"created_on"`
 		ModifiedOn    time.Time         `db:"modified_on"`
 		EndedOn       *time.Time        `db:"ended_on"`
-		WaitTimeoutOn *time.Time        `db:"timeout_on"`
-		WaitExpiresOn *time.Time        `db:"wait_expires_on"`
 		CurrentFlowID FlowID            `db:"current_flow_id"`
 		CallID        *CallID           `db:"call_id"`
 	}
@@ -104,8 +102,6 @@ func (s *Session) OrgID() OrgID                       { return s.s.OrgID }
 func (s *Session) CreatedOn() time.Time               { return s.s.CreatedOn }
 func (s *Session) ModifiedOn() time.Time              { return s.s.ModifiedOn }
 func (s *Session) EndedOn() *time.Time                { return s.s.EndedOn }
-func (s *Session) WaitTimeoutOn() *time.Time          { return s.s.WaitTimeoutOn }
-func (s *Session) WaitExpiresOn() *time.Time          { return s.s.WaitExpiresOn }
 func (s *Session) CurrentFlowID() FlowID              { return s.s.CurrentFlowID }
 func (s *Session) CallID() *CallID                    { return s.s.CallID }
 func (s *Session) IncomingMsgID() MsgID               { return s.incomingMsgID }
@@ -197,25 +193,58 @@ func (s *Session) FlowSession(ctx context.Context, rt *runtime.Runtime, sa flows
 	return session, nil
 }
 
+func (s *Session) GetNewFires(oa *OrgAssets, sprint flows.Sprint) []*ContactFire {
+	waitExpiresOn, waitTimeout, queuesToCourier := getWaitProperties(oa, sprint.Events())
+	var waitTimeoutOn *time.Time
+	if waitTimeout != nil {
+		if queuesToCourier {
+			s.timeout = waitTimeout
+		} else {
+			ton := time.Now().Add(*waitTimeout)
+			waitTimeoutOn = &ton
+		}
+	}
+
+	fs := make([]*ContactFire, 0, 2)
+
+	if waitExpiresOn != nil {
+		fs = append(fs, NewContactFireForSession(s, ContactFireTypeWaitExpiration, *waitExpiresOn))
+	}
+	if waitTimeoutOn != nil {
+		fs = append(fs, NewContactFireForSession(s, ContactFireTypeWaitTimeout, *waitTimeoutOn))
+	}
+
+	return fs
+}
+
 // looks thru sprint events to figure out if we have a wait on this session and if so what is its expiration and timeout
-func getWaitProperties(evts []flows.Event) (*time.Time, *time.Duration) {
+func getWaitProperties(oa *OrgAssets, evts []flows.Event) (*time.Time, *time.Duration, bool) {
+	var expiresOn *time.Time
+	var timeout *time.Duration
+	var queuesToCourier bool
+
 	for _, e := range evts {
 		switch typed := e.(type) {
 		case *events.MsgWaitEvent:
-			expiresOn := &typed.ExpiresOn
-			var timeout *time.Duration
+			expiresOn = &typed.ExpiresOn
 
 			if typed.TimeoutSeconds != nil {
 				t := time.Duration(*typed.TimeoutSeconds) * time.Second
 				timeout = &t
 			}
-			return expiresOn, timeout
 		case *events.DialWaitEvent:
-			return &typed.ExpiresOn, nil
+			expiresOn = &typed.ExpiresOn
+		case *events.MsgCreatedEvent:
+			if typed.Msg.Channel() != nil {
+				channel := oa.ChannelByUUID(typed.Msg.Channel().UUID)
+				if channel != nil && !channel.IsAndroid() {
+					queuesToCourier = true
+				}
+			}
 		}
 	}
 
-	return nil, nil
+	return expiresOn, timeout, queuesToCourier
 }
 
 const sqlUpdateSession = `
@@ -229,8 +258,8 @@ SET
 	ended_on = :ended_on,
 	responded = :responded,
 	current_flow_id = :current_flow_id,
-	wait_expires_on = :wait_expires_on,
-	timeout_on = :timeout_on
+	wait_expires_on = NULL,
+	timeout_on = NULL
 WHERE 
 	id = :id
 `
@@ -245,8 +274,8 @@ SET
 	ended_on = :ended_on,
 	responded = :responded,
 	current_flow_id = :current_flow_id,
-	wait_expires_on = :wait_expires_on,
-	timeout_on = :timeout_on
+	wait_expires_on = NULL,
+	timeout_on = NULL
 WHERE 
 	id = :id
 `
@@ -292,17 +321,6 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	s.findStep = fs.FindStep
 	s.s.CurrentFlowID = NilFlowID
 
-	// update wait related fields
-	waitExpiresOn, waitTimeout := getWaitProperties(sprint.Events())
-	s.s.WaitExpiresOn = waitExpiresOn
-	s.s.WaitTimeoutOn = nil
-	s.timeout = nil
-	if waitTimeout != nil {
-		ton := time.Now().Add(*waitTimeout)
-		s.s.WaitTimeoutOn = &ton
-		s.timeout = waitTimeout
-	}
-
 	// run through our runs to figure out our current flow
 	for _, r := range fs.Runs() {
 		// if this run is waiting, save it as the current flow
@@ -326,14 +344,6 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 		}
 	}
 
-	// apply all our pre write events
-	for _, e := range sprint.Events() {
-		err := ApplyPreWriteEvent(ctx, rt, tx, oa, s.scene, e)
-		if err != nil {
-			return fmt.Errorf("error applying event: %v: %w", e, err)
-		}
-	}
-
 	// the SQL statement we'll use to update this session
 	updateSQL := sqlUpdateSession
 
@@ -352,6 +362,17 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	_, err = tx.NamedExecContext(ctx, updateSQL, s.s)
 	if err != nil {
 		return fmt.Errorf("error updating session: %w", err)
+	}
+
+	// clear and recreate any wait expires/timeout fires
+	if err := DeleteSessionContactFires(ctx, tx, []ContactID{s.ContactID()}); err != nil {
+		return fmt.Errorf("error deleting session contact fires: %w", err)
+	}
+
+	fires := s.GetNewFires(oa, sprint)
+
+	if err := InsertContactFires(ctx, tx, fires); err != nil {
+		return fmt.Errorf("error inserting session contact fires: %w", err)
 	}
 
 	// if this session is complete, so is any associated connection
@@ -424,21 +445,6 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 		return fmt.Errorf("error applying pre commit hook: %T: %w", hook, err)
 	}
 
-	return nil
-}
-
-// ClearWaitTimeout clears the timeout on the wait on this session and is used if the engine tells us
-// that the flow no longer has a timeout on that wait. It can be called without updating the session
-// in the database which is used when handling msg_created events before session is updated anyway.
-func (s *Session) ClearWaitTimeout(ctx context.Context, db *sqlx.DB) error {
-	s.s.WaitTimeoutOn = nil
-
-	if db != nil {
-		_, err := db.ExecContext(ctx, `UPDATE flows_flowsession SET timeout_on = NULL, modified_on = NOW() WHERE id = $1`, s.ID())
-		if err != nil {
-			return fmt.Errorf("error clearing wait timeout: %w", err)
-		}
-	}
 	return nil
 }
 
@@ -530,30 +536,19 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 		}
 	}
 
-	// set our wait expiration/timeout if any
-	waitExpiresOn, waitTimeout := getWaitProperties(sprint.Events())
-	s.WaitExpiresOn = waitExpiresOn
-	s.WaitTimeoutOn = nil
-	session.timeout = nil
-	if waitTimeout != nil {
-		ton := time.Now().Add(*waitTimeout)
-		s.WaitTimeoutOn = &ton
-		session.timeout = waitTimeout
-	}
-
 	return session, nil
 }
 
 const sqlInsertWaitingSession = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  timeout_on,  wait_expires_on,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :timeout_on, :wait_expires_on, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  call_id)
+               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :call_id)
 RETURNING id`
 
 const sqlInsertWaitingSessionNoOutput = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  timeout_on,  wait_expires_on,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :timeout_on, :wait_expires_on, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  call_id)
+               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :call_id)
 RETURNING id`
 
 const sqlInsertEndedSession = `
@@ -580,6 +575,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 	waitingSessionsI := make([]any, 0, len(ss))
 	endedSessionsI := make([]any, 0, len(ss))
 	completedCallIDs := make([]CallID, 0, 1)
+	fires := make([]*ContactFire, 0, len(ss))
 
 	for i, s := range ss {
 		session, err := NewSession(ctx, tx, oa, s, sprints[i], startID)
@@ -596,16 +592,8 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 				completedCallIDs = append(completedCallIDs, session.call.ID())
 			}
 		}
-	}
 
-	// apply all our pre write events
-	for i := range ss {
-		for _, e := range sprints[i].Events() {
-			err := ApplyPreWriteEvent(ctx, rt, tx, oa, sessions[i].scene, e)
-			if err != nil {
-				return nil, fmt.Errorf("error applying event: %v: %w", e, err)
-			}
-		}
+		fires = append(fires, session.GetNewFires(oa, sprints[i])...)
 	}
 
 	// call our global pre commit hook if present
@@ -665,6 +653,11 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 		return nil, fmt.Errorf("error writing runs: %w", err)
 	}
 
+	// insert all our contact fires
+	if err := InsertContactFires(ctx, tx, fires); err != nil {
+		return nil, fmt.Errorf("error inserting session contact fires: %w", err)
+	}
+
 	if err := RecordFlowStatistics(ctx, rt, tx, ss, sprints); err != nil {
 		return nil, fmt.Errorf("error saving flow statistics: %w", err)
 	}
@@ -713,8 +706,6 @@ SELECT
 	created_on,
 	modified_on,
 	ended_on,
-	timeout_on,
-	wait_expires_on,
 	current_flow_id,
 	call_id
 FROM 
@@ -854,7 +845,7 @@ const sqlExitSessionContacts = `
 // exits sessions and their runs inside the given transaction
 func exitSessionBatch(ctx context.Context, tx *sqlx.Tx, sessionIDs []SessionID, status SessionStatus) error {
 	runStatus := RunStatus(status) // session status codes are subset of run status codes
-	contactIDs := make([]SessionID, 0, len(sessionIDs))
+	contactIDs := make([]ContactID, 0, len(sessionIDs))
 
 	// first update the sessions themselves and get the contact ids
 	start := time.Now()
@@ -883,6 +874,11 @@ func exitSessionBatch(ctx context.Context, tx *sqlx.Tx, sessionIDs []SessionID, 
 	res, err = tx.ExecContext(ctx, sqlExitSessionContacts, pq.Array(contactIDs))
 	if err != nil {
 		return fmt.Errorf("error exiting sessions: %w", err)
+	}
+
+	// delete any session wait/timeout fires for these contacts
+	if err := DeleteSessionContactFires(ctx, tx, contactIDs); err != nil {
+		return fmt.Errorf("error deleting session contact fires: %w", err)
 	}
 
 	rows, _ = res.RowsAffected()

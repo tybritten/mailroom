@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows/engine"
 	"github.com/nyaruka/goflow/flows/resumes"
 	"github.com/nyaruka/mailroom/core/models"
@@ -62,13 +63,13 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 
 	_, err = runner.ResumeFlow(ctx, rt, oa, session, contact, resume, nil)
 	if err != nil {
-		// if we errored, and it's the wait rejecting the timeout event, it's because it no longer exists on the flow, so clear it
-		// on the session
+		// if we errored, and it's the wait rejecting the timeout event, it's because it no longer exists on the flow, so clear it on the session
+		// TODO remove once all sessions are using fires instead
 		var eerr *engine.Error
 		if errors.As(err, &eerr) && eerr.Code() == engine.ErrorResumeRejectedByWait && resume.Type() == resumes.TypeWaitTimeout {
 			log.Info("clearing session timeout which is no longer set in flow")
 
-			if err := session.ClearWaitTimeout(ctx, rt.DB); err != nil {
+			if err := ClearWaitTimeout(ctx, rt.DB, session); err != nil {
 				return fmt.Errorf("error clearing session timeout: %w", err)
 			}
 
@@ -78,5 +79,13 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		return fmt.Errorf("error resuming flow for timeout: %w", err)
 	}
 
+	return nil
+}
+
+func ClearWaitTimeout(ctx context.Context, db *sqlx.DB, s *models.Session) error {
+	_, err := db.ExecContext(ctx, `UPDATE flows_flowsession SET timeout_on = NULL, modified_on = NOW() WHERE id = $1`, s.ID())
+	if err != nil {
+		return fmt.Errorf("error clearing wait timeout: %w", err)
+	}
 	return nil
 }

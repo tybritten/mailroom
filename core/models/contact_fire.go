@@ -34,6 +34,21 @@ type ContactFire struct {
 	FireOn    time.Time               `db:"fire_on"`
 }
 
+func newContactFire(orgID OrgID, contactID ContactID, typ ContactFireType, scope string, extra ContactFireExtra, fireOn time.Time) *ContactFire {
+	return &ContactFire{
+		OrgID:     orgID,
+		ContactID: contactID,
+		Type:      typ,
+		Scope:     scope,
+		Extra:     JSONB[ContactFireExtra]{extra},
+		FireOn:    fireOn,
+	}
+}
+
+func NewContactFireForSession(s *Session, typ ContactFireType, fireOn time.Time) *ContactFire {
+	return newContactFire(s.OrgID(), s.ContactID(), typ, "", ContactFireExtra{SessionID: s.ID(), SessionModifiedOn: s.ModifiedOn()}, fireOn)
+}
+
 const sqlSelectDueContactFires = `
   SELECT id, org_id, contact_id, fire_type, scope, extra
     FROM contacts_contactfire
@@ -74,4 +89,20 @@ func DeleteContactFires(ctx context.Context, rt *runtime.Runtime, fires []*Conta
 	}
 
 	return nil
+}
+
+func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []ContactID) error {
+	_, err := db.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = ANY($1) AND fire_type IN ('E', 'T') AND scope = ''`, pq.Array(contactIDs))
+	if err != nil {
+		return fmt.Errorf("error deleting session wait/timeout contact fires: %w", err)
+	}
+	return nil
+}
+
+var sqlInsertContactFires = `
+INSERT INTO contacts_contactfire( org_id,  contact_id,  fire_type, scope,  extra,  fire_on)
+                          VALUES(:org_id, :contact_id, :fire_type,    '', :extra, :fire_on)`
+
+func InsertContactFires(ctx context.Context, db DBorTx, fs []*ContactFire) error {
+	return BulkQuery(ctx, "inserted contact fires", db, sqlInsertContactFires, fs)
 }
