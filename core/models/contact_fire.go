@@ -46,7 +46,9 @@ func newContactFire(orgID OrgID, contactID ContactID, typ ContactFireType, scope
 }
 
 func NewContactFireForSession(s *Session, typ ContactFireType, fireOn time.Time) *ContactFire {
-	return newContactFire(s.OrgID(), s.ContactID(), typ, "", ContactFireExtra{SessionID: s.ID(), SessionModifiedOn: s.ModifiedOn()}, fireOn)
+	e := ContactFireExtra{SessionID: s.ID(), SessionModifiedOn: s.ModifiedOn().In(time.UTC)}
+
+	return newContactFire(s.OrgID(), s.ContactID(), typ, "", e, fireOn)
 }
 
 const sqlSelectDueContactFires = `

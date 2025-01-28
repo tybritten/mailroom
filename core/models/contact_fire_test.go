@@ -58,7 +58,7 @@ func TestSessionContactFires(t *testing.T) {
 
 	tx := rt.DB.MustBegin()
 
-	_, err = models.InsertSessions(ctx, rt, tx, oa, []flows.Session{flowSession1, flowSession2}, []flows.Sprint{sprint1, sprint2}, []*models.Contact{modelContact1, modelContact2}, nil, models.NilStartID)
+	modelSessions, err := models.InsertSessions(ctx, rt, tx, oa, []flows.Session{flowSession1, flowSession2}, []flows.Sprint{sprint1, sprint2}, []*models.Contact{modelContact1, modelContact2}, nil, models.NilStartID)
 	require.NoError(t, err)
 	require.NoError(t, tx.Commit())
 
@@ -66,6 +66,10 @@ func TestSessionContactFires(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T'`, testdata.Bob.ID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E'`, testdata.Cathy.ID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T'`, testdata.Cathy.ID).Returns(1)
+
+	// check session modified on is stored as UTC
+	assertdb.Query(t, rt.DB, `SELECT extra->>'session_modified_on' FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E'`, testdata.Bob.ID).
+		Returns(modelSessions[0].ModifiedOn().In(time.UTC).Format(time.RFC3339Nano))
 
 	err = models.DeleteSessionContactFires(ctx, rt.DB, []models.ContactID{testdata.Bob.ID})
 	assert.NoError(t, err)

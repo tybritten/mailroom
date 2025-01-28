@@ -55,7 +55,7 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	}
 
 	// if we didn't find a session or it is another session or if it's been modified since, ignore this task
-	if session == nil || session.ID() != t.SessionID || !session.ModifiedOn().Equal(t.ModifiedOn) {
+	if session == nil || session.ID() != t.SessionID || !session.ModifiedOn().Equal(t.ModifiedOn.Truncate(time.Microsecond)) {
 		return nil
 	}
 
