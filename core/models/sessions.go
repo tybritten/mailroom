@@ -592,8 +592,6 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 				completedCallIDs = append(completedCallIDs, session.call.ID())
 			}
 		}
-
-		fires = append(fires, session.GetNewFires(oa, sprints[i])...)
 	}
 
 	// call our global pre commit hook if present
@@ -637,14 +635,15 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 		return nil, fmt.Errorf("error inserting waiting sessions: %w", err)
 	}
 
-	// gather all runs across all sessions
+	// now that sessions have ids, set it on runs and generates fires
 	runs := make([]*FlowRun, 0, len(sessions))
-	for _, s := range sessions {
+	for i, s := range sessions {
 		for _, r := range s.runs {
-			r.SessionID = s.ID() // set our session id now that it is written
-
+			r.SessionID = s.ID()
 			runs = append(runs, r)
 		}
+
+		fires = append(fires, s.GetNewFires(oa, sprints[i])...)
 	}
 
 	// insert all runs
