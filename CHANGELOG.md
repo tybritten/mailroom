@@ -1,3 +1,7 @@
+v10.1.15 (2025-01-28)
+-------------------------
+ * Fix how session modified_on is checked for session wait expirations and timeouts
+
 v10.1.14 (2025-01-28)
 -------------------------
  * Use new contact fire system to set session wait expirations/timeouts
