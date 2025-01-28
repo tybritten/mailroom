@@ -1,3 +1,8 @@
+v10.1.16 (2025-01-28)
+-------------------------
+ * Fix contact fires being created before sessions have ids
+ * Run contact fire cron every 30 secs
+
 v10.1.15 (2025-01-28)
 -------------------------
  * Fix how session modified_on is checked for session wait expirations and timeouts
