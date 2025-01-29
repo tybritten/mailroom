@@ -116,8 +116,8 @@ func InsertFlowSession(rt *runtime.Runtime, org *Org, contact *Contact, sessionT
 func InsertWaitingSession(rt *runtime.Runtime, org *Org, contact *Contact, sessionType models.FlowType, currentFlow *Flow, callID models.CallID, waitExpiresOn time.Time, waitTimeoutOn *time.Time) models.SessionID {
 	var id models.SessionID
 	must(rt.DB.Get(&id,
-		`INSERT INTO flows_flowsession(uuid, org_id, contact_id, status, output, responded, created_on, modified_on, session_type, current_flow_id, call_id, wait_expires_on, timeout_on) 
-		 VALUES($1, $2, $3, 'W', '{"status":"waiting"}', TRUE, NOW(), NOW(), $4, $5, $6, $7, $8) RETURNING id`, uuids.NewV4(), org.ID, contact.ID, sessionType, currentFlow.ID, callID, waitExpiresOn, waitTimeoutOn,
+		`INSERT INTO flows_flowsession(uuid, org_id, contact_id, status, last_sprint_uuid, output, responded, created_on, modified_on, session_type, current_flow_id, call_id, wait_expires_on, timeout_on) 
+		 VALUES($1, $2, $3, 'W', $4, '{"status":"waiting"}', TRUE, NOW(), NOW(), $5, $6, $7, $8, $9) RETURNING id`, uuids.NewV4(), org.ID, contact.ID, uuids.NewV4(), sessionType, currentFlow.ID, callID, waitExpiresOn, waitTimeoutOn,
 	))
 	return id
 }
