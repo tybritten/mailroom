@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/lib/pq"
+	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/runtime"
+	"github.com/nyaruka/null/v3"
 )
 
 type ContactFireID int64
@@ -25,34 +27,42 @@ type ContactFireExtra struct {
 }
 
 type ContactFire struct {
-	ID        ContactFireID           `db:"id"`
-	OrgID     OrgID                   `db:"org_id"`
-	ContactID ContactID               `db:"contact_id"`
-	Type      ContactFireType         `db:"fire_type"`
-	Scope     string                  `db:"scope"`
-	Extra     JSONB[ContactFireExtra] `db:"extra"`
-	FireOn    time.Time               `db:"fire_on"`
+	ID        ContactFireID   `db:"id"`
+	OrgID     OrgID           `db:"org_id"`
+	ContactID ContactID       `db:"contact_id"`
+	Type      ContactFireType `db:"fire_type"`
+	Scope     string          `db:"scope"`
+	FireOn    time.Time       `db:"fire_on"`
+
+	SessionUUID null.String `db:"session_uuid"`
+	SprintUUID  null.String `db:"sprint_uuid"`
+
+	// deprecated
+	Extra JSONB[ContactFireExtra] `db:"extra"`
 }
 
-func newContactFire(orgID OrgID, contactID ContactID, typ ContactFireType, scope string, extra ContactFireExtra, fireOn time.Time) *ContactFire {
+func newContactFire(orgID OrgID, contactID ContactID, typ ContactFireType, scope string, fireOn time.Time, sessionUUID flows.SessionUUID, sprintUUID flows.SprintUUID, extra ContactFireExtra) *ContactFire {
 	return &ContactFire{
 		OrgID:     orgID,
 		ContactID: contactID,
 		Type:      typ,
 		Scope:     scope,
-		Extra:     JSONB[ContactFireExtra]{extra},
 		FireOn:    fireOn,
+
+		SessionUUID: null.String(sessionUUID),
+		SprintUUID:  null.String(sprintUUID),
+		Extra:       JSONB[ContactFireExtra]{extra},
 	}
 }
 
 func NewContactFireForSession(s *Session, typ ContactFireType, fireOn time.Time) *ContactFire {
 	e := ContactFireExtra{SessionID: s.ID(), SessionModifiedOn: s.ModifiedOn().In(time.UTC)}
 
-	return newContactFire(s.OrgID(), s.ContactID(), typ, "", e, fireOn)
+	return newContactFire(s.OrgID(), s.ContactID(), typ, "", fireOn, s.UUID(), s.LastSprintUUID(), e)
 }
 
 const sqlSelectDueContactFires = `
-  SELECT id, org_id, contact_id, fire_type, scope, extra
+  SELECT id, org_id, contact_id, fire_type, scope, session_uuid, sprint_uuid, fire_on, extra
     FROM contacts_contactfire
    WHERE fire_on < NOW()
 ORDER BY fire_on ASC
@@ -102,8 +112,8 @@ func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []Cont
 }
 
 var sqlInsertContactFires = `
-INSERT INTO contacts_contactfire( org_id,  contact_id,  fire_type, scope,  extra,  fire_on)
-                          VALUES(:org_id, :contact_id, :fire_type,    '', :extra, :fire_on)`
+INSERT INTO contacts_contactfire( org_id,  contact_id,  fire_type, scope,  fire_on,  session_uuid,  sprint_uuid,  extra)
+                          VALUES(:org_id, :contact_id, :fire_type,    '', :fire_on, :session_uuid, :sprint_uuid, :extra)`
 
 func InsertContactFires(ctx context.Context, db DBorTx, fs []*ContactFire) error {
 	return BulkQuery(ctx, "inserted contact fires", db, sqlInsertContactFires, fs)
