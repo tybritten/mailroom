@@ -1,3 +1,7 @@
+v10.1.21 (2025-01-29)
+-------------------------
+ * Add new session fields to message payloads queued to courier
+
 v10.1.20 (2025-01-29)
 -------------------------
  * Start writing ContactFire.session_uuid and ContactFire.sprint_uuid
