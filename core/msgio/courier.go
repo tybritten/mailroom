@@ -59,6 +59,13 @@ type Templating struct {
 	Language   string `json:"language"`
 }
 
+type Session struct {
+	UUID       flows.SessionUUID    `json:"uuid"`
+	Status     models.SessionStatus `json:"status"`
+	SprintUUID flows.SprintUUID     `json:"sprint_uuid"`
+	Timeout    int                  `json:"timeout,omitempty"`
+}
+
 // Msg is the format of a message queued to courier
 type Msg struct {
 	ID                   models.MsgID       `json:"id"`
@@ -85,10 +92,13 @@ type Msg struct {
 	ResponseToExternalID string             `json:"response_to_external_id,omitempty"`
 	IsResend             bool               `json:"is_resend,omitempty"`
 
-	ContactLastSeenOn *time.Time           `json:"contact_last_seen_on,omitempty"`
+	ContactLastSeenOn *time.Time `json:"contact_last_seen_on,omitempty"`
+	Session           *Session   `json:"session,omitempty"`
+
+	// deprecated
 	SessionID         models.SessionID     `json:"session_id,omitempty"`
 	SessionStatus     models.SessionStatus `json:"session_status,omitempty"`
-	SessionModifiedOn *time.Time           `json:"session_modified_on,omitempty"` // TODO use omitzero when we upgrade to go 1.24
+	SessionModifiedOn *time.Time           `json:"session_modified_on,omitempty"`
 	SessionTimeout    int                  `json:"session_timeout,omitempty"`
 }
 
@@ -160,6 +170,12 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 	}
 
 	if m.Session != nil {
+		msg.Session = &Session{
+			UUID:       m.Session.UUID(),
+			Status:     m.Session.Status(),
+			SprintUUID: m.Session.LastSprintUUID(),
+		}
+
 		mt := m.Session.ModifiedOn()
 		msg.SessionID = m.Session.ID()
 		msg.SessionStatus = m.Session.Status()
@@ -171,6 +187,8 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 			// of the session being at a wait with a timeout then the timeout will be set. It is up to
 			// Courier to update the session's timeout appropriately after sending the message.
 			msg.SessionTimeout = int(*m.Session.Timeout() / time.Second)
+
+			msg.Session.Timeout = msg.SessionTimeout
 		}
 	}
 

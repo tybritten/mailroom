@@ -95,6 +95,11 @@ func TestNewCourierMsg(t *testing.T) {
 			"yes",
 			"no"
 		],
+		"session": {
+			"uuid": "%s",
+			"status": "W",
+			"sprint_uuid": "%s"
+        },
 		"session_id": %d,
 		"session_status": "W",
 		"session_modified_on": "%s",
@@ -110,7 +115,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"tps_cost": 2,
 		"urn": "tel:+16055741111",
 		"uuid": "%s"
-	}`, session.ID(), session.ModifiedOn().Format(time.RFC3339Nano), msg1.UUID()))
+	}`, session.UUID(), session.LastSprintUUID(), session.ID(), session.ModifiedOn().Format(time.RFC3339Nano), msg1.UUID()))
 
 	// create a priority flow message.. i.e. the session is responding to an incoming message
 	cathy.SetLastSeenOn(time.Date(2023, 4, 20, 10, 15, 0, 0, time.UTC))
@@ -143,6 +148,11 @@ func TestNewCourierMsg(t *testing.T) {
 		"id": 3,
 		"org_id": 1,
 		"origin": "flow",
+		"session": {
+			"uuid": "%s",
+			"status": "W",
+			"sprint_uuid": "%s"
+        },
 		"session_id": %d,
 		"session_status": "W",
 		"session_modified_on": "%s",
@@ -150,7 +160,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"tps_cost": 1,
 		"urn": "tel:+16055741111",
 		"uuid": "%s"
-	}`, session.ID(), session.ModifiedOn().Format(time.RFC3339Nano), msg2.UUID()))
+	}`, session.UUID(), session.LastSprintUUID(), session.ID(), session.ModifiedOn().Format(time.RFC3339Nano), msg2.UUID()))
 
 	// try a broadcast message which won't have session and flow fields set and won't be high priority
 	bcastID := testdata.InsertBroadcast(rt, testdata.Org1, `eng`, map[i18n.Language]string{`eng`: "Blast"}, nil, models.NilScheduleID, []*testdata.Contact{testFred}, nil)
@@ -197,6 +207,11 @@ func TestNewCourierMsg(t *testing.T) {
 		"org_id": 1,
 		"origin": "flow",
 		"response_to_external_id": "EX123",
+		"session": {
+			"uuid": "%s",
+			"status": "W",
+			"sprint_uuid": "%s"
+        },
 		"session_id": %d,
 		"session_status": "W",
 		"session_modified_on": "%s",
@@ -204,7 +219,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"tps_cost": 1,
 		"urn": "tel:+16055741111",
 		"uuid": "%s"
-	}`, optIn.ID(), session.ID(), session.ModifiedOn().Format(time.RFC3339Nano), msg4.UUID()))
+	}`, optIn.ID(), session.UUID(), session.LastSprintUUID(), session.ID(), session.ModifiedOn().Format(time.RFC3339Nano), msg4.UUID()))
 }
 
 func createAndAssertCourierMsg(t *testing.T, oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, expectedJSON string) {
