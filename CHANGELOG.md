@@ -1,3 +1,9 @@
+v10.1.20 (2025-01-29)
+-------------------------
+ * Start writing ContactFire.session_uuid and ContactFire.sprint_uuid
+ * Attempt number 5 to fix session modified on checking
+ * Start writing FlowSession.last_sprint_uuid
+
 v10.1.19 (2025-01-29)
 -------------------------
  * Fix (third time!) how session modified_on is checked for session wait expirations and timeouts
