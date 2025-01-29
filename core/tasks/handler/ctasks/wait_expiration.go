@@ -3,6 +3,7 @@ package ctasks
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/nyaruka/goflow/flows/resumes"
@@ -36,6 +37,8 @@ func (t *WaitExpirationTask) UseReadOnly() bool {
 }
 
 func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
+	log := slog.With("ctask", "expiration_event", "contact_id", contact.ID(), "session_id", t.SessionID)
+
 	// build our flow contact
 	flowContact, err := contact.FlowContact(oa)
 	if err != nil {
@@ -49,7 +52,12 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	}
 
 	// if we didn't find a session or it is another session or if it's been modified since, ignore this task
-	if session == nil || session.ID() != t.SessionID || !equalToMillis(session.ModifiedOn(), t.ModifiedOn) {
+	if session == nil || session.ID() != t.SessionID {
+		log.Debug("skipping as waiting session has changed")
+		return nil
+	}
+	if !equalToMillis(session.ModifiedOn(), t.ModifiedOn) {
+		log.Debug("skipping as session has been modified since", "session_modified_on", session.ModifiedOn(), "task_modified_on", t.ModifiedOn)
 		return nil
 	}
 
