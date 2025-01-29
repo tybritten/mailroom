@@ -56,7 +56,7 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 		log.Debug("skipping as waiting session has changed")
 		return nil
 	}
-	if !equalTime(session.ModifiedOn(), t.ModifiedOn) {
+	if !equalishTime(session.ModifiedOn(), t.ModifiedOn) {
 		log.Debug("skipping as session has been modified since", "session_modified_on", session.ModifiedOn(), "task_modified_on", t.ModifiedOn)
 		return nil
 	}
@@ -71,7 +71,7 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	return nil
 }
 
-// helper to compare two times with millisecond precision - used to compare times that have been in and out of the database
-func equalTime(t1, t2 time.Time) bool {
-	return t1.UnixMilli() == t2.UnixMilli()
+// helper to compare two times when one of them has been in and out of the database
+func equalishTime(t1, t2 time.Time) bool {
+	return t1.Sub(t2).Abs() <= time.Millisecond
 }

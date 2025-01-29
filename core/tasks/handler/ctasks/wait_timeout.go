@@ -59,7 +59,7 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		log.Debug("skipping as waiting session has changed")
 		return nil
 	}
-	if !equalTime(session.ModifiedOn(), t.ModifiedOn) {
+	if !equalishTime(session.ModifiedOn(), t.ModifiedOn) {
 		log.Debug("skipping as session has been modified since", "session_modified_on", session.ModifiedOn(), "task_modified_on", t.ModifiedOn)
 		return nil
 	}
