@@ -1,3 +1,7 @@
+v10.1.18 (2025-01-29)
+-------------------------
+ * Add more debug level logging
+
 v10.1.17 (2025-01-28)
 -------------------------
  * Fix (again) how session modified_on is checked for session wait expirations and timeouts
