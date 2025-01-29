@@ -51,20 +51,21 @@ type SessionCommitHook func(context.Context, *sqlx.Tx, *redis.Pool, *OrgAssets, 
 // Session is the mailroom type for a FlowSession
 type Session struct {
 	s struct {
-		ID            SessionID         `db:"id"`
-		UUID          flows.SessionUUID `db:"uuid"`
-		SessionType   FlowType          `db:"session_type"`
-		Status        SessionStatus     `db:"status"`
-		Responded     bool              `db:"responded"`
-		Output        null.String       `db:"output"`
-		OutputURL     null.String       `db:"output_url"`
-		ContactID     ContactID         `db:"contact_id"`
-		OrgID         OrgID             `db:"org_id"`
-		CreatedOn     time.Time         `db:"created_on"`
-		ModifiedOn    time.Time         `db:"modified_on"`
-		EndedOn       *time.Time        `db:"ended_on"`
-		CurrentFlowID FlowID            `db:"current_flow_id"`
-		CallID        *CallID           `db:"call_id"`
+		ID             SessionID         `db:"id"`
+		UUID           flows.SessionUUID `db:"uuid"`
+		SessionType    FlowType          `db:"session_type"`
+		Status         SessionStatus     `db:"status"`
+		LastSprintUUID null.String       `db:"last_sprint_uuid"`
+		Responded      bool              `db:"responded"`
+		Output         null.String       `db:"output"`
+		OutputURL      null.String       `db:"output_url"`
+		ContactID      ContactID         `db:"contact_id"`
+		OrgID          OrgID             `db:"org_id"`
+		CreatedOn      time.Time         `db:"created_on"`
+		ModifiedOn     time.Time         `db:"modified_on"`
+		EndedOn        *time.Time        `db:"ended_on"`
+		CurrentFlowID  FlowID            `db:"current_flow_id"`
+		CallID         *CallID           `db:"call_id"`
 	}
 
 	incomingMsgID      MsgID
@@ -91,9 +92,10 @@ type Session struct {
 }
 
 func (s *Session) ID() SessionID                      { return s.s.ID }
-func (s *Session) UUID() flows.SessionUUID            { return flows.SessionUUID(s.s.UUID) }
+func (s *Session) UUID() flows.SessionUUID            { return s.s.UUID }
 func (s *Session) SessionType() FlowType              { return s.s.SessionType }
 func (s *Session) Status() SessionStatus              { return s.s.Status }
+func (s *Session) LastSprintUUID() flows.SprintUUID   { return flows.SprintUUID(s.s.LastSprintUUID) }
 func (s *Session) Responded() bool                    { return s.s.Responded }
 func (s *Session) Output() string                     { return string(s.s.Output) }
 func (s *Session) OutputURL() string                  { return string(s.s.OutputURL) }
@@ -254,6 +256,7 @@ SET
 	output = :output, 
 	output_url = :output_url,
 	status = :status,
+	last_sprint_uuid = :last_sprint_uuid,
 	modified_on = :modified_on,
 	ended_on = :ended_on,
 	responded = :responded,
@@ -270,6 +273,7 @@ UPDATE
 SET 
 	output_url = :output_url,
 	status = :status, 
+	last_sprint_uuid = :last_sprint_uuid,
 	modified_on = :modified_on,
 	ended_on = :ended_on,
 	responded = :responded,
@@ -299,6 +303,7 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 		return fmt.Errorf("unknown session status: %s", fs.Status())
 	}
 	s.s.Status = status
+	s.s.LastSprintUUID = null.String(sprint.UUID())
 	s.s.ModifiedOn = time.Now()
 
 	if s.s.Status != SessionStatusWaiting {
@@ -493,6 +498,7 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 	s := &session.s
 	s.UUID = uuid
 	s.Status = sessionStatus
+	s.LastSprintUUID = null.String(sprint.UUID())
 	s.SessionType = sessionType
 	s.Responded = false
 	s.Output = null.String(output)
@@ -541,26 +547,26 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 
 const sqlInsertWaitingSession = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  call_id)
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :call_id)
 RETURNING id`
 
 const sqlInsertWaitingSessionNoOutput = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  responded,  output_url,  contact_id,  org_id,  created_on,  modified_on,  current_flow_id,  call_id)
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :responded, :output_url, :contact_id, :org_id, :created_on, :modified_on, :current_flow_id, :call_id)
 RETURNING id`
 
 const sqlInsertEndedSession = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  ended_on,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :ended_on, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  responded,  output,  output_url,  contact_id,  org_id,  created_on,  modified_on,  ended_on,  call_id)
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :responded, :output, :output_url, :contact_id, :org_id, :created_on, :modified_on, :ended_on, :call_id)
 RETURNING id`
 
 const sqlInsertEndedSessionNoOutput = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  responded,           output_url,  contact_id,  org_id,  created_on,  modified_on,  ended_on,  call_id)
-               VALUES(:uuid, :session_type, :status, :responded,          :output_url, :contact_id, :org_id, :created_on, :modified_on, :ended_on, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  responded,  output_url,  contact_id,  org_id,  created_on,  modified_on,  ended_on,  call_id)
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :responded, :output_url, :contact_id, :org_id, :created_on, :modified_on, :ended_on, :call_id)
 RETURNING id`
 
 // InsertSessions writes the passed in session to our database, writes any runs that need to be created
