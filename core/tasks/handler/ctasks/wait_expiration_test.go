@@ -106,7 +106,7 @@ func TestTimedEvents(t *testing.T) {
 				taskModifiedOn = sessionModifiedOn
 			}
 
-			ctask = ctasks.NewWaitExpiration(sessionID, taskModifiedOn)
+			ctask = &ctasks.WaitExpirationTask{SessionID: sessionID, ModifiedOn: taskModifiedOn}
 
 		} else if tc.EventType == ctasks.TypeWaitTimeout {
 			timeoutOn := time.Now().Round(time.Millisecond) // so that there's no difference between this and what we read from the db
@@ -114,7 +114,7 @@ func TestTimedEvents(t *testing.T) {
 			// usually courier will set timeout_on after sending the last message
 			rt.DB.MustExec(`UPDATE flows_flowsession SET timeout_on = $2 WHERE id = $1`, sessionID, timeoutOn)
 
-			ctask = ctasks.NewWaitTimeout(sessionID, sessionModifiedOn)
+			ctask = &ctasks.WaitTimeoutTask{SessionID: sessionID, ModifiedOn: sessionModifiedOn}
 		}
 
 		err := handler.QueueTask(rc, tc.Org.ID, tc.Contact.ID, ctask)
@@ -165,7 +165,7 @@ func TestTimedEvents(t *testing.T) {
 	rt.DB.MustExec(`ALTER TABLE flows_flowsession ENABLE TRIGGER temba_flowsession_status_change`)
 
 	// try to expire the run
-	err = handler.QueueTask(rc, testdata.Org1.ID, testdata.Cathy.ID, ctasks.NewWaitExpiration(sessionID, time.Now()))
+	err = handler.QueueTask(rc, testdata.Org1.ID, testdata.Cathy.ID, &ctasks.WaitTimeoutTask{SessionID: sessionID, ModifiedOn: time.Now()})
 	assert.NoError(t, err)
 
 	task, err := tasks.HandlerQueue.Pop(rc)

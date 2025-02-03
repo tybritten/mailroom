@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/engine"
 	"github.com/nyaruka/goflow/flows/resumes"
 	"github.com/nyaruka/mailroom/core/models"
@@ -23,12 +24,12 @@ func init() {
 }
 
 type WaitTimeoutTask struct {
-	SessionID  models.SessionID `json:"session_id"`
-	ModifiedOn time.Time        `json:"modified_on"` // session modified_on to check it hasn't been changed since we were queued
-}
+	SessionUUID flows.SessionUUID `json:"session_uuid"`
+	SprintUUID  flows.SprintUUID  `json:"sprint_uuid"`
 
-func NewWaitTimeout(sessionID models.SessionID, modifiedOn time.Time) *WaitTimeoutTask {
-	return &WaitTimeoutTask{SessionID: sessionID, ModifiedOn: modifiedOn}
+	// deprecated
+	SessionID  models.SessionID `json:"session_id"`
+	ModifiedOn time.Time        `json:"modified_on"`
 }
 
 func (t *WaitTimeoutTask) Type() string {
