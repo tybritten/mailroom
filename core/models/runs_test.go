@@ -38,6 +38,7 @@ func TestInsertAndUpdateRuns(t *testing.T) {
 		FlowID:          testdata.Favorites.ID,
 		OrgID:           testdata.Org1.ID,
 		SessionID:       sessionID,
+		SessionUUID:     "d3ba3339-2690-4a9e-9a45-cb4d0fed884a",
 		StartID:         models.NilStartID,
 	}
 
