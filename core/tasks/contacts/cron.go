@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/ivr"
@@ -73,7 +74,13 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 			for batch := range slices.Chunk(orgExpires, c.taskBatchSize) {
 				es := make([]*Expiration, len(batch))
 				for i, f := range batch {
-					es[i] = &Expiration{ContactID: f.ContactID, SessionID: f.Extra.V.SessionID, ModifiedOn: f.Extra.V.SessionModifiedOn}
+					es[i] = &Expiration{
+						ContactID:   f.ContactID,
+						SessionUUID: flows.SessionUUID(f.SessionUUID),
+						SprintUUID:  flows.SprintUUID(f.SprintUUID),
+						SessionID:   f.Extra.V.SessionID,
+						ModifiedOn:  f.Extra.V.SessionModifiedOn,
+					}
 				}
 
 				// put expirations in throttled queue but high priority so they get priority over flow starts etc
@@ -113,7 +120,13 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 			for batch := range slices.Chunk(orgTimeouts, c.taskBatchSize) {
 				ts := make([]*Timeout, len(batch))
 				for i, f := range batch {
-					ts[i] = &Timeout{ContactID: f.ContactID, SessionID: f.Extra.V.SessionID, ModifiedOn: f.Extra.V.SessionModifiedOn}
+					ts[i] = &Timeout{
+						ContactID:   f.ContactID,
+						SessionUUID: flows.SessionUUID(f.SessionUUID),
+						SprintUUID:  flows.SprintUUID(f.SprintUUID),
+						SessionID:   f.Extra.V.SessionID,
+						ModifiedOn:  f.Extra.V.SessionModifiedOn,
+					}
 				}
 
 				// put timeouts in throttled queue but high priority so they get priority over flow starts etc

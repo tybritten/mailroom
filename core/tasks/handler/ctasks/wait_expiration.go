@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/resumes"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/runner"
@@ -20,12 +21,12 @@ func init() {
 }
 
 type WaitExpirationTask struct {
-	SessionID  models.SessionID `json:"session_id"`
-	ModifiedOn time.Time        `json:"modified_on"` // session modified_on to check it hasn't been changed since we were queued
-}
+	SessionUUID flows.SessionUUID `json:"session_uuid"`
+	SprintUUID  flows.SprintUUID  `json:"sprint_uuid"`
 
-func NewWaitExpiration(sessionID models.SessionID, modifiedOn time.Time) *WaitExpirationTask {
-	return &WaitExpirationTask{SessionID: sessionID, ModifiedOn: modifiedOn}
+	// deprecated
+	SessionID  models.SessionID `json:"session_id"`
+	ModifiedOn time.Time        `json:"modified_on"`
 }
 
 func (t *WaitExpirationTask) Type() string {
