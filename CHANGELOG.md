@@ -1,3 +1,7 @@
+v10.1.22 (2025-02-03)
+-------------------------
+ * Delete session wait contact fires before inserting new ones for new sessions
+
 v10.1.21 (2025-01-29)
 -------------------------
  * Add new session fields to message payloads queued to courier
