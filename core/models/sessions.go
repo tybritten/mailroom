@@ -370,7 +370,7 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	}
 
 	// clear and recreate any wait expires/timeout fires
-	if err := DeleteSessionContactFires(ctx, tx, []ContactID{s.ContactID()}); err != nil {
+	if _, err := DeleteSessionContactFires(ctx, tx, []ContactID{s.ContactID()}); err != nil {
 		return fmt.Errorf("error deleting session contact fires: %w", err)
 	}
 
@@ -582,6 +582,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 	endedSessionsI := make([]any, 0, len(ss))
 	completedCallIDs := make([]CallID, 0, 1)
 	fires := make([]*ContactFire, 0, len(ss))
+	contactIDs := make([]ContactID, 0, len(ss))
 
 	for i, s := range ss {
 		session, err := NewSession(ctx, tx, oa, s, sprints[i], startID)
@@ -589,6 +590,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 			return nil, fmt.Errorf("error creating session objects: %w", err)
 		}
 		sessions = append(sessions, session)
+		contactIDs = append(contactIDs, session.s.ContactID)
 
 		if session.Status() == SessionStatusWaiting {
 			waitingSessionsI = append(waitingSessionsI, &session.s)
@@ -656,6 +658,14 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 	err = BulkQuery(ctx, "insert runs", tx, sqlInsertRun, runs)
 	if err != nil {
 		return nil, fmt.Errorf("error writing runs: %w", err)
+	}
+
+	numFiresDeleted, err := DeleteSessionContactFires(ctx, tx, contactIDs)
+	if err != nil {
+		return nil, fmt.Errorf("error deleting session contact fires: %w", err)
+	}
+	if numFiresDeleted > 0 {
+		slog.With("org_id", oa.OrgID()).Error("deleted session contact fires that shouldn't have been there", "count", numFiresDeleted)
 	}
 
 	// insert all our contact fires
@@ -882,7 +892,7 @@ func exitSessionBatch(ctx context.Context, tx *sqlx.Tx, sessionIDs []SessionID, 
 	}
 
 	// delete any session wait/timeout fires for these contacts
-	if err := DeleteSessionContactFires(ctx, tx, contactIDs); err != nil {
+	if _, err := DeleteSessionContactFires(ctx, tx, contactIDs); err != nil {
 		return fmt.Errorf("error deleting session contact fires: %w", err)
 	}
 

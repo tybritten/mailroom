@@ -71,8 +71,9 @@ func TestSessionContactFires(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT extra->>'session_modified_on' FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E'`, testdata.Bob.ID).
 		Returns(modelSessions[0].ModifiedOn().In(time.UTC).Format(time.RFC3339Nano))
 
-	err = models.DeleteSessionContactFires(ctx, rt.DB, []models.ContactID{testdata.Bob.ID})
+	num, err := models.DeleteSessionContactFires(ctx, rt.DB, []models.ContactID{testdata.Bob.ID})
 	assert.NoError(t, err)
+	assert.Equal(t, 2, num)
 
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.Bob.ID).Returns(0)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.Cathy.ID).Returns(2)

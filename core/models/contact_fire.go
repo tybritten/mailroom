@@ -103,12 +103,14 @@ func DeleteContactFires(ctx context.Context, rt *runtime.Runtime, fires []*Conta
 	return nil
 }
 
-func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []ContactID) error {
-	_, err := db.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = ANY($1) AND fire_type IN ('E', 'T') AND scope = ''`, pq.Array(contactIDs))
+func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []ContactID) (int, error) {
+	res, err := db.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = ANY($1) AND fire_type IN ('E', 'T') AND scope = ''`, pq.Array(contactIDs))
 	if err != nil {
-		return fmt.Errorf("error deleting session wait/timeout contact fires: %w", err)
+		return 0, fmt.Errorf("error deleting session wait/timeout contact fires: %w", err)
 	}
-	return nil
+
+	numDeleted, _ := res.RowsAffected()
+	return int(numDeleted), nil
 }
 
 var sqlInsertContactFires = `
