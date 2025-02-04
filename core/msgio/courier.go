@@ -94,12 +94,6 @@ type Msg struct {
 
 	ContactLastSeenOn *time.Time `json:"contact_last_seen_on,omitempty"`
 	Session           *Session   `json:"session,omitempty"`
-
-	// deprecated
-	SessionID         models.SessionID     `json:"session_id,omitempty"`
-	SessionStatus     models.SessionStatus `json:"session_status,omitempty"`
-	SessionModifiedOn *time.Time           `json:"session_modified_on,omitempty"`
-	SessionTimeout    int                  `json:"session_timeout,omitempty"`
 }
 
 // NewCourierMsg creates a courier message in the format it's expecting to be queued
@@ -175,20 +169,13 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 			Status:     m.Session.Status(),
 			SprintUUID: m.Session.LastSprintUUID(),
 		}
-
-		mt := m.Session.ModifiedOn()
-		msg.SessionID = m.Session.ID()
-		msg.SessionStatus = m.Session.Status()
-		msg.SessionModifiedOn = &mt
 		msg.ResponseToExternalID = string(m.Session.IncomingMsgExternalID())
 
 		if m.LastInSprint && m.Session.Timeout() != nil {
 			// This field is set on the last outgoing message in a session's sprint. In the case
 			// of the session being at a wait with a timeout then the timeout will be set. It is up to
 			// Courier to update the session's timeout appropriately after sending the message.
-			msg.SessionTimeout = int(*m.Session.Timeout() / time.Second)
-
-			msg.Session.Timeout = msg.SessionTimeout
+			msg.Session.Timeout = int(*m.Session.Timeout() / time.Second)
 		}
 	}
 

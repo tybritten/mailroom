@@ -109,11 +109,11 @@ func InsertContactURN(rt *runtime.Runtime, org *Org, contact *Contact, urn urns.
 }
 
 // InsertContactFire inserts a contact fire
-func InsertContactFire(rt *runtime.Runtime, org *Org, contact *Contact, typ models.ContactFireType, scope string, extra map[string]any, fireOn time.Time) models.ContactFireID {
+func InsertContactFire(rt *runtime.Runtime, org *Org, contact *Contact, typ models.ContactFireType, scope string, fireOn time.Time, sessionUUID flows.SessionUUID, extra map[string]any) models.ContactFireID {
 	var id models.ContactFireID
 	must(rt.DB.Get(&id,
-		`INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, extra, fire_on) 
-		 VALUES($1, $2, $3, $4, $5, $6) RETURNING id`, org.ID, contact.ID, typ, scope, jsonx.MustMarshal(extra), fireOn,
+		`INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, fire_on, session_uuid, extra) 
+		 VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id`, org.ID, contact.ID, typ, scope, fireOn, sessionUUID, jsonx.MustMarshal(extra),
 	))
 	return id
 }

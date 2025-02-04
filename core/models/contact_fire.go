@@ -21,9 +21,8 @@ const (
 )
 
 type ContactFireExtra struct {
-	SessionID         SessionID `json:"session_id,omitempty"`
-	SessionModifiedOn time.Time `json:"session_modified_on,omitempty"`
-	CallID            CallID    `json:"call_id,omitempty"`
+	SessionID SessionID `json:"session_id,omitempty"`
+	CallID    CallID    `json:"call_id,omitempty"`
 }
 
 type ContactFire struct {
@@ -56,9 +55,7 @@ func newContactFire(orgID OrgID, contactID ContactID, typ ContactFireType, scope
 }
 
 func NewContactFireForSession(s *Session, typ ContactFireType, fireOn time.Time) *ContactFire {
-	e := ContactFireExtra{SessionID: s.ID(), SessionModifiedOn: s.ModifiedOn().In(time.UTC)}
-
-	return newContactFire(s.OrgID(), s.ContactID(), typ, "", fireOn, s.UUID(), s.LastSprintUUID(), e)
+	return newContactFire(s.OrgID(), s.ContactID(), typ, "", fireOn, s.UUID(), s.LastSprintUUID(), ContactFireExtra{})
 }
 
 const sqlSelectDueContactFires = `

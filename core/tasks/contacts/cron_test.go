@@ -8,6 +8,7 @@ import (
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/jsonx"
+	"github.com/nyaruka/goflow/flows"
 	_ "github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
@@ -26,13 +27,13 @@ func TestFiresCron(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeWaitExpiration, "", map[string]any{"session_id": 1234, "session_modified_on": "2025-01-22T17:55:00Z"}, time.Now().Add(-1*time.Second))
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeWaitTimeout, "", map[string]any{"session_id": 1234, "session_modified_on": "2025-01-22T17:55:00Z"}, time.Now().Add(3*time.Second))
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeWaitExpiration, "", map[string]any{"session_id": 2345, "session_modified_on": "2025-01-22T17:56:00Z"}, time.Now().Add(-3*time.Second))
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeWaitTimeout, "", map[string]any{"session_id": 1234, "session_modified_on": "2025-01-22T17:55:00Z"}, time.Now().Add(3*time.Second))
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.George, models.ContactFireTypeWaitExpiration, "", map[string]any{"session_id": 3456, "session_modified_on": "2025-01-22T17:57:00Z", "call_id": 23}, time.Now().Add(-time.Second))
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.George, models.ContactFireTypeWaitTimeout, "", map[string]any{"session_id": 3456, "session_modified_on": "2025-01-22T17:57:00Z"}, time.Now().Add(-time.Second))
-	testdata.InsertContactFire(rt, testdata.Org2, testdata.Org2Contact, models.ContactFireTypeWaitTimeout, "", map[string]any{"session_id": 4567, "session_modified_on": "2025-01-22T17:58:00Z"}, time.Now().Add(-time.Second))
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-1*time.Second), "f72b48df-5f6d-4e4f-955a-f5fb29ccb97b", map[string]any{})
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeWaitTimeout, "", time.Now().Add(3*time.Second), "f72b48df-5f6d-4e4f-955a-f5fb29ccb97b", map[string]any{})
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-3*time.Second), "4010a3b2-d1f2-42ae-9051-47d41a3ef923", map[string]any{})
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeWaitTimeout, "", time.Now().Add(3*time.Second), "4010a3b2-d1f2-42ae-9051-47d41a3ef923", map[string]any{})
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.George, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-time.Second), "5c1248e3-f669-4a72-83f4-a29292fdad4d", map[string]any{"session_id": 3456, "call_id": 23})
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.George, models.ContactFireTypeWaitTimeout, "", time.Now().Add(-time.Second), "5c1248e3-f669-4a72-83f4-a29292fdad4d", map[string]any{})
+	testdata.InsertContactFire(rt, testdata.Org2, testdata.Org2Contact, models.ContactFireTypeWaitTimeout, "", time.Now().Add(-time.Second), "8edf3b3c-0081-4d31-b199-1502b3190eb7", map[string]any{})
 
 	cron := contacts.NewFiresCron(3, 5)
 	res, err := cron.Run(ctx, rt)
@@ -60,15 +61,13 @@ func TestFiresCron(t *testing.T) {
 	decoded1 := &contacts.BulkSessionExpireTask{}
 	jsonx.MustUnmarshal(ts[0].Task, decoded1)
 	assert.Len(t, decoded1.Expirations, 2)
-	assert.Equal(t, models.SessionID(2345), decoded1.Expirations[0].SessionID)
-	assert.Equal(t, time.Date(2025, 1, 22, 17, 56, 0, 0, time.UTC), decoded1.Expirations[0].ModifiedOn)
-	assert.Equal(t, models.SessionID(1234), decoded1.Expirations[1].SessionID)
-	assert.Equal(t, time.Date(2025, 1, 22, 17, 55, 0, 0, time.UTC), decoded1.Expirations[1].ModifiedOn)
+	assert.Equal(t, flows.SessionUUID("4010a3b2-d1f2-42ae-9051-47d41a3ef923"), decoded1.Expirations[0].SessionUUID)
+	assert.Equal(t, flows.SessionUUID("f72b48df-5f6d-4e4f-955a-f5fb29ccb97b"), decoded1.Expirations[1].SessionUUID)
 
 	decoded2 := &contacts.BulkSessionTimeoutTask{}
 	jsonx.MustUnmarshal(ts[1].Task, decoded2)
 	assert.Len(t, decoded2.Timeouts, 1)
-	assert.Equal(t, models.SessionID(3456), decoded2.Timeouts[0].SessionID)
+	assert.Equal(t, flows.SessionUUID("5c1248e3-f669-4a72-83f4-a29292fdad4d"), decoded2.Timeouts[0].SessionUUID)
 
 	// the hangup task should have ended up in the batch queue
 	task, err := tasks.BatchQueue.Pop(rc)
