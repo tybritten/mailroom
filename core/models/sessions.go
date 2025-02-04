@@ -582,7 +582,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 	endedSessionsI := make([]any, 0, len(ss))
 	completedCallIDs := make([]CallID, 0, 1)
 	fires := make([]*ContactFire, 0, len(ss))
-	contactIDs := make([]ContactID, 0, len(ss))
+	waitingContactIDs := make([]ContactID, 0, len(ss))
 
 	for i, s := range ss {
 		session, err := NewSession(ctx, tx, oa, s, sprints[i], startID)
@@ -590,10 +590,10 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 			return nil, fmt.Errorf("error creating session objects: %w", err)
 		}
 		sessions = append(sessions, session)
-		contactIDs = append(contactIDs, session.s.ContactID)
 
 		if session.Status() == SessionStatusWaiting {
 			waitingSessionsI = append(waitingSessionsI, &session.s)
+			waitingContactIDs = append(waitingContactIDs, session.s.ContactID)
 		} else {
 			endedSessionsI = append(endedSessionsI, &session.s)
 			if session.call != nil {
@@ -660,7 +660,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 		return nil, fmt.Errorf("error writing runs: %w", err)
 	}
 
-	numFiresDeleted, err := DeleteSessionContactFires(ctx, tx, contactIDs)
+	numFiresDeleted, err := DeleteSessionContactFires(ctx, tx, waitingContactIDs)
 	if err != nil {
 		return nil, fmt.Errorf("error deleting session contact fires: %w", err)
 	}
