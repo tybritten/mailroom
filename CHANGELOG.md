@@ -1,3 +1,7 @@
+v10.1.27 (2025-02-04)
+-------------------------
+ * Stop reading from session.responded and session.modified_on
+
 v10.1.26 (2025-02-04)
 -------------------------
  * Stop clearing session.timeout_on and wait_expires_on
