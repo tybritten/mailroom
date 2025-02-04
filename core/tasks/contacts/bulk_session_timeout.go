@@ -24,10 +24,6 @@ type Timeout struct {
 	ContactID   models.ContactID  `json:"contact_id"`
 	SessionUUID flows.SessionUUID `json:"session_uuid"`
 	SprintUUID  flows.SprintUUID  `json:"sprint_uuid"`
-
-	// deprecated
-	SessionID  models.SessionID `json:"session_id"`
-	ModifiedOn time.Time        `json:"modified_on"`
 }
 
 // BulkSessionTimeoutTask is the payload of the task
@@ -54,7 +50,7 @@ func (t *BulkSessionTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtim
 	defer rc.Close()
 
 	for _, e := range t.Timeouts {
-		err := handler.QueueTask(rc, oa.OrgID(), e.ContactID, &ctasks.WaitTimeoutTask{SessionUUID: e.SessionUUID, SprintUUID: e.SprintUUID, SessionID: e.SessionID, ModifiedOn: e.ModifiedOn})
+		err := handler.QueueTask(rc, oa.OrgID(), e.ContactID, &ctasks.WaitTimeoutTask{SessionUUID: e.SessionUUID, SprintUUID: e.SprintUUID})
 		if err != nil {
 			return fmt.Errorf("error queuing handle task for expiration on session %s: %w", e.SessionUUID, err)
 		}

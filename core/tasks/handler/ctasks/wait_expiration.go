@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/resumes"
@@ -23,10 +22,6 @@ func init() {
 type WaitExpirationTask struct {
 	SessionUUID flows.SessionUUID `json:"session_uuid"`
 	SprintUUID  flows.SprintUUID  `json:"sprint_uuid"`
-
-	// deprecated
-	SessionID  models.SessionID `json:"session_id"`
-	ModifiedOn time.Time        `json:"modified_on"`
 }
 
 func (t *WaitExpirationTask) Type() string {

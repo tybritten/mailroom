@@ -78,8 +78,6 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 						ContactID:   f.ContactID,
 						SessionUUID: flows.SessionUUID(f.SessionUUID),
 						SprintUUID:  flows.SprintUUID(f.SprintUUID),
-						SessionID:   f.Extra.V.SessionID,
-						ModifiedOn:  f.Extra.V.SessionModifiedOn,
 					}
 				}
 
@@ -124,8 +122,6 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 						ContactID:   f.ContactID,
 						SessionUUID: flows.SessionUUID(f.SessionUUID),
 						SprintUUID:  flows.SprintUUID(f.SprintUUID),
-						SessionID:   f.Extra.V.SessionID,
-						ModifiedOn:  f.Extra.V.SessionModifiedOn,
 					}
 				}
 
