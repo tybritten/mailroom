@@ -710,13 +710,11 @@ SELECT
 	session_type,
 	status,
 	last_sprint_uuid,
-	responded,
 	output,
 	output_url,
 	contact_id,
 	org_id,
 	created_on,
-	modified_on,
 	ended_on,
 	current_flow_id,
 	call_id
