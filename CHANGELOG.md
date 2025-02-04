@@ -1,3 +1,9 @@
+v10.1.23 (2025-02-04)
+-------------------------
+ * Start writing session UUID on flow runs
+ * Remove no longer used crons for session waits
+ * Start including session and sprint UUIDs on timed task payloads
+
 v10.1.22 (2025-02-03)
 -------------------------
  * Delete session wait contact fires before inserting new ones for new sessions
