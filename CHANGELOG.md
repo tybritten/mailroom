@@ -1,3 +1,8 @@
+v10.1.26 (2025-02-04)
+-------------------------
+ * Stop clearing session.timeout_on and wait_expires_on
+ * Remove no longer needed fields from task payloads
+
 v10.1.25 (2025-02-04)
 -------------------------
  * Use sprint UUID to validate session timed events instead of session id/modified_on
