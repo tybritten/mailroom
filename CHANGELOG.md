@@ -1,3 +1,7 @@
+v10.1.24 (2025-02-04)
+-------------------------
+ * Only delete session fires for contacts which have waiting sessions
+
 v10.1.23 (2025-02-04)
 -------------------------
  * Start writing session UUID on flow runs
