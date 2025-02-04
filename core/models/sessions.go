@@ -260,9 +260,7 @@ SET
 	modified_on = :modified_on,
 	ended_on = :ended_on,
 	responded = :responded,
-	current_flow_id = :current_flow_id,
-	wait_expires_on = NULL,
-	timeout_on = NULL
+	current_flow_id = :current_flow_id
 WHERE 
 	id = :id
 `
@@ -277,9 +275,7 @@ SET
 	modified_on = :modified_on,
 	ended_on = :ended_on,
 	responded = :responded,
-	current_flow_id = :current_flow_id,
-	wait_expires_on = NULL,
-	timeout_on = NULL
+	current_flow_id = :current_flow_id
 WHERE 
 	id = :id
 `
@@ -844,7 +840,7 @@ func ExitSessions(ctx context.Context, db *sqlx.DB, sessionIDs []SessionID, stat
 
 const sqlExitSessions = `
    UPDATE flows_flowsession
-      SET status = $3, modified_on = $2, ended_on = $2, wait_expires_on = NULL, timeout_on = NULL, current_flow_id = NULL
+      SET status = $3, modified_on = $2, ended_on = $2, current_flow_id = NULL
     WHERE id = ANY ($1) AND status = 'W'
 RETURNING contact_id`
 

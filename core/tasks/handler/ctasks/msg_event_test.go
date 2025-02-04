@@ -359,8 +359,7 @@ func TestMsgEvents(t *testing.T) {
 	})
 
 	// Fred's sessions should not have a timeout because courier will set them
-	assertdb.Query(t, rt.DB, `SELECT count(*) from flows_flowsession where contact_id = $1`, testdata.Org2Contact.ID).Returns(6)
-	assertdb.Query(t, rt.DB, `SELECT count(*) from flows_flowsession where contact_id = $1 and timeout_on IS NULL`, testdata.Org2Contact.ID).Returns(6)
+	assertdb.Query(t, rt.DB, `SELECT count(*) from contacts_contactfire where contact_id = $1 and fire_type = 'T'`, testdata.Org2Contact.ID).Returns(0)
 
 	// force an error by marking our run for fred as complete (our session is still active so this will blow up)
 	rt.DB.MustExec(`UPDATE flows_flowrun SET status = 'C', exited_on = NOW() WHERE contact_id = $1`, testdata.Org2Contact.ID)

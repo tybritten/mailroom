@@ -143,6 +143,7 @@ func TestTimedEvents(t *testing.T) {
 
 	// should only have a single waiting session/run with no timeout
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE status = 'W' AND contact_id = $1`, testdata.Cathy.ID).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT timeout_on FROM flows_flowsession WHERE status = 'W' AND contact_id = $1`, testdata.Cathy.ID).Returns(nil)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE status = 'W' AND contact_id = $1`, testdata.Cathy.ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E'`, testdata.Cathy.ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T'`, testdata.Cathy.ID).Returns(0)
 }
