@@ -1,3 +1,7 @@
+v10.1.25 (2025-02-04)
+-------------------------
+ * Use sprint UUID to validate session timed events instead of session id/modified_on
+
 v10.1.24 (2025-02-04)
 -------------------------
  * Only delete session fires for contacts which have waiting sessions
