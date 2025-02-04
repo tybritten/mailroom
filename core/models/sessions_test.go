@@ -54,15 +54,14 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.Equal(t, models.SessionStatusWaiting, session.Status())
 	assert.Equal(t, flow.ID, session.CurrentFlowID())
 	assert.NotZero(t, session.CreatedOn())
-	assert.NotZero(t, session.ModifiedOn())
+	assert.NotZero(t, session.LastSprintUUID())
 	assert.Nil(t, session.EndedOn())
-	assert.False(t, session.Responded())
 	assert.Nil(t, session.Timeout()) // not used because message doesn't have a channel
 
 	// check that matches what is in the db
-	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded, ended_on FROM flows_flowsession`).
+	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, ended_on FROM flows_flowsession`).
 		Columns(map[string]any{
-			"status": "W", "session_type": "M", "current_flow_id": int64(flow.ID), "responded": false, "ended_on": nil,
+			"status": "W", "session_type": "M", "current_flow_id": int64(flow.ID), "ended_on": nil,
 		})
 
 	// check we have contact fires for wait expiration and timeout
@@ -88,9 +87,7 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	require.NoError(t, tx.Commit())
 
 	assert.Equal(t, models.SessionStatusWaiting, session.Status())
-	assert.Greater(t, session.ModifiedOn(), session.CreatedOn())
 	assert.Equal(t, flow.ID, session.CurrentFlowID())
-	assert.True(t, session.Responded())
 	assert.Nil(t, session.Timeout())
 
 	// check we have a contact fire for wait expiration but not timeout (wait doesn't have a timeout)
@@ -113,14 +110,13 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 
 	assert.Equal(t, models.SessionStatusCompleted, session.Status())
 	assert.Equal(t, models.NilFlowID, session.CurrentFlowID()) // no longer "in" a flow
-	assert.True(t, session.Responded())
 	assert.NotZero(t, session.CreatedOn())
 	assert.Nil(t, session.Timeout())
 	assert.NotNil(t, session.EndedOn())
 
 	// check that matches what is in the db
-	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded FROM flows_flowsession`).
-		Columns(map[string]any{"status": "C", "session_type": "M", "current_flow_id": nil, "responded": true})
+	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id FROM flows_flowsession`).
+		Columns(map[string]any{"status": "C", "session_type": "M", "current_flow_id": nil})
 
 	assertdb.Query(t, rt.DB, `SELECT current_flow_id FROM contacts_contact WHERE id = $1`, testdata.Bob.ID).Returns(nil)
 
@@ -171,12 +167,11 @@ func TestSingleSprintSession(t *testing.T) {
 	assert.Equal(t, models.NilFlowID, session.CurrentFlowID())
 	assert.NotZero(t, session.CreatedOn())
 	assert.NotNil(t, session.EndedOn())
-	assert.False(t, session.Responded())
 	assert.Nil(t, session.Timeout())
 
 	// check that matches what is in the db
-	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded FROM flows_flowsession`).
-		Columns(map[string]any{"status": "C", "session_type": "M", "current_flow_id": nil, "responded": false})
+	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id FROM flows_flowsession`).
+		Columns(map[string]any{"status": "C", "session_type": "M", "current_flow_id": nil})
 
 	// check we have no contact fires for wait expiration or timeout
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Bob.ID).Returns(0)
@@ -223,7 +218,6 @@ func TestSessionWithSubflows(t *testing.T) {
 	assert.Equal(t, child.ID, session.CurrentFlowID())
 	assert.NotZero(t, session.CreatedOn())
 	assert.Nil(t, session.EndedOn())
-	assert.False(t, session.Responded())
 	assert.Nil(t, session.Timeout())
 
 	require.Len(t, session.Runs(), 2)
@@ -231,9 +225,9 @@ func TestSessionWithSubflows(t *testing.T) {
 	assert.Equal(t, models.NilStartID, session.Runs()[1].StartID)
 
 	// check that matches what is in the db
-	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded, ended_on FROM flows_flowsession`).
+	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, ended_on FROM flows_flowsession`).
 		Columns(map[string]any{
-			"status": "W", "session_type": "M", "current_flow_id": int64(child.ID), "responded": false, "ended_on": nil,
+			"status": "W", "session_type": "M", "current_flow_id": int64(child.ID), "ended_on": nil,
 		})
 
 	// check we have a contact fire for wait expiration but not timeout
@@ -256,7 +250,6 @@ func TestSessionWithSubflows(t *testing.T) {
 
 	assert.Equal(t, models.SessionStatusCompleted, session.Status())
 	assert.Equal(t, models.NilFlowID, session.CurrentFlowID())
-	assert.True(t, session.Responded())
 	assert.Nil(t, session.Timeout())
 
 	// check we have no contact fires for wait expiration or timeout
@@ -303,8 +296,8 @@ func TestSessionFailedStart(t *testing.T) {
 	assert.NotNil(t, session.EndedOn())
 
 	// check that matches what is in the db
-	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id, responded FROM flows_flowsession`).
-		Columns(map[string]any{"status": "F", "session_type": "M", "current_flow_id": nil, "responded": false})
+	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id FROM flows_flowsession`).
+		Columns(map[string]any{"status": "F", "session_type": "M", "current_flow_id": nil})
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE ended_on IS NOT NULL`).Returns(1)
 
 	// check the state of all the created runs
