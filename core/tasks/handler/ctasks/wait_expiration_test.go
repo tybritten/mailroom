@@ -14,6 +14,7 @@ import (
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTimedEvents(t *testing.T) {
@@ -27,97 +28,89 @@ func TestTimedEvents(t *testing.T) {
 	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.Favorites, []string{"start"}, models.MatchOnly, nil, nil, nil)
 	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.PickANumber, []string{"pick"}, models.MatchOnly, nil, nil, nil)
 
+	contact := testdata.Cathy
+
 	tcs := []struct {
-		EventType string
-		Contact   *testdata.Contact
-		Message   string
-		Response  string
-		Channel   *testdata.Channel
-		Org       *testdata.Org
+		eventType        string
+		messageIn        string
+		expectedResponse string
+		expectedFlow     *testdata.Flow
 	}{
 		// 0: start the flow
-		{ctasks.TypeMsgEvent, testdata.Cathy, "start", "What is your favorite color?", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, "start", "What is your favorite color?", testdata.Favorites},
 
 		// 1: this expiration does nothing because the times don't match
-		{ctasks.TypeWaitExpiration, testdata.Cathy, "bad", "", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeWaitExpiration, "bad", "", testdata.Favorites},
 
 		// 2: this checks that the flow wasn't expired
-		{ctasks.TypeMsgEvent, testdata.Cathy, "red", "Good choice, I like Red too! What is your favorite beer?", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, "red", "Good choice, I like Red too! What is your favorite beer?", testdata.Favorites},
 
 		// 3: this expiration will actually take
-		{ctasks.TypeWaitExpiration, testdata.Cathy, "good", "", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeWaitExpiration, "", "", nil},
 
 		// 4: we won't get a response as we will be out of the flow
-		{ctasks.TypeMsgEvent, testdata.Cathy, "mutzig", "", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, "mutzig", "", nil},
 
 		// 5: start the parent expiration flow
-		{ctasks.TypeMsgEvent, testdata.Cathy, "parent", "Child", testdata.FacebookChannel, testdata.Org1},
+		{ctasks.TypeMsgEvent, "parent", "Child", testdata.ChildTimeoutFlow},
 
-		// 6: respond, should bring us out
-		{ctasks.TypeMsgEvent, testdata.Cathy, "hi", "Completed", testdata.FacebookChannel, testdata.Org1},
+		// 6: expire the child
+		{ctasks.TypeWaitExpiration, "", "Expired", testdata.ParentTimeoutFlow},
 
-		// 7: expiring our child should be a no op
-		{ctasks.TypeWaitExpiration, testdata.Cathy, "child", "", testdata.FacebookChannel, testdata.Org1},
+		// 7: expire the parent
+		{ctasks.TypeWaitExpiration, "", "", nil},
 
-		// 8: respond one last time, should be done
-		{ctasks.TypeMsgEvent, testdata.Cathy, "done", "Ended", testdata.FacebookChannel, testdata.Org1},
+		// 8: start the parent expiration flow again
+		{ctasks.TypeMsgEvent, "parent", "Child", testdata.ChildTimeoutFlow},
 
-		// 9: start our favorite flow again
-		{ctasks.TypeMsgEvent, testdata.Cathy, "start", "What is your favorite color?", testdata.FacebookChannel, testdata.Org1},
+		// 9: respond to end normally
+		{ctasks.TypeMsgEvent, "done", "Completed", testdata.ParentTimeoutFlow},
 
-		// 10: timeout on the color question
-		{ctasks.TypeWaitTimeout, testdata.Cathy, "", "Sorry you can't participate right now, I'll try again later.", testdata.FacebookChannel, testdata.Org1},
+		// 10: start our favorite flow again
+		{ctasks.TypeMsgEvent, "start", "What is your favorite color?", testdata.Favorites},
 
-		// 11: start the pick a number flow
-		{ctasks.TypeMsgEvent, testdata.Cathy, "pick", "Pick a number between 1-10.", testdata.FacebookChannel, testdata.Org1},
+		// 11: timeout on the color question with bad sprint UUID
+		{ctasks.TypeWaitTimeout, "bad", "", testdata.Favorites},
 
-		// 12: try to resume with timeout even tho flow doesn't have one set
-		{ctasks.TypeWaitTimeout, testdata.Cathy, "", "", testdata.FacebookChannel, testdata.Org1},
+		// 12: timeout on the color question
+		{ctasks.TypeWaitTimeout, "", "Sorry you can't participate right now, I'll try again later.", nil},
+
+		// 13: start the pick a number flow
+		{ctasks.TypeMsgEvent, "pick", "Pick a number between 1-10.", testdata.PickANumber},
+
+		// 14: try to resume with timeout even tho flow doesn't have one set
+		{ctasks.TypeWaitTimeout, "", "", testdata.PickANumber},
 	}
 
 	last := time.Now()
-	var sessionID models.SessionID
-	var sessionModifiedOn time.Time
-	var runID models.FlowRunID
+	var sessionUUID flows.SessionUUID
+	var sprintUUID flows.SprintUUID
 
 	for i, tc := range tcs {
 		time.Sleep(50 * time.Millisecond)
 
 		var ctask handler.Task
-
-		if tc.EventType == ctasks.TypeMsgEvent {
-			ctask = &ctasks.MsgEventTask{
-				ChannelID: tc.Channel.ID,
-				MsgID:     models.MsgID(1),
-				MsgUUID:   flows.MsgUUID(uuids.NewV4()),
-				URN:       tc.Contact.URN,
-				URNID:     tc.Contact.URNID,
-				Text:      tc.Message,
-			}
-		} else if tc.EventType == ctasks.TypeWaitExpiration {
-			var taskModifiedOn time.Time
-
-			if tc.Message == "bad" {
-				taskModifiedOn = time.Now()
-			} else if tc.Message == "child" {
-				rt.DB.Get(&taskModifiedOn, `SELECT modified_on FROM flows_flowsession WHERE id = $1 AND status != 'W'`, sessionID)
-				rt.DB.Get(&runID, `SELECT id FROM flows_flowrun WHERE session_id = $1 AND status NOT IN ('A', 'W')`, sessionID)
-			} else {
-				taskModifiedOn = sessionModifiedOn
-			}
-
-			ctask = &ctasks.WaitExpirationTask{SessionID: sessionID, ModifiedOn: taskModifiedOn}
-
-		} else if tc.EventType == ctasks.TypeWaitTimeout {
-			timeoutOn := time.Now().Round(time.Millisecond) // so that there's no difference between this and what we read from the db
-
-			// usually courier will set timeout_on after sending the last message
-			rt.DB.MustExec(`UPDATE flows_flowsession SET timeout_on = $2 WHERE id = $1`, sessionID, timeoutOn)
-
-			ctask = &ctasks.WaitTimeoutTask{SessionID: sessionID, ModifiedOn: sessionModifiedOn}
+		taskSprintUUID := sprintUUID
+		if tc.messageIn == "bad" {
+			taskSprintUUID = flows.SprintUUID(uuids.NewV4())
 		}
 
-		err := handler.QueueTask(rc, tc.Org.ID, tc.Contact.ID, ctask)
+		if tc.eventType == ctasks.TypeMsgEvent {
+			ctask = &ctasks.MsgEventTask{
+				ChannelID: testdata.FacebookChannel.ID,
+				MsgID:     models.MsgID(1),
+				MsgUUID:   flows.MsgUUID(uuids.NewV4()),
+				URN:       contact.URN,
+				URNID:     contact.URNID,
+				Text:      tc.messageIn,
+			}
+		} else if tc.eventType == ctasks.TypeWaitExpiration {
+			ctask = &ctasks.WaitExpirationTask{SessionUUID: sessionUUID, SprintUUID: taskSprintUUID}
+		} else if tc.eventType == ctasks.TypeWaitTimeout {
+			ctask = &ctasks.WaitTimeoutTask{SessionUUID: sessionUUID, SprintUUID: taskSprintUUID}
+		}
+
+		err := handler.QueueTask(rc, testdata.Org1.ID, testdata.Cathy.ID, ctask)
 		assert.NoError(t, err, "%d: error adding task", i)
 
 		task, err := tasks.HandlerQueue.Pop(rc)
@@ -126,18 +119,24 @@ func TestTimedEvents(t *testing.T) {
 		err = tasks.Perform(ctx, rt, task)
 		assert.NoError(t, err, "%d: error when handling event", i)
 
-		if tc.Response != "" {
-			assertdb.Query(t, rt.DB, `SELECT text FROM msgs_msg WHERE contact_id = $1 AND created_on > $2 ORDER BY id DESC LIMIT 1`, tc.Contact.ID, last).
-				Returns(tc.Response, "%d: response: mismatch", i)
+		if tc.expectedResponse != "" {
+			assertdb.Query(t, rt.DB, `SELECT text FROM msgs_msg WHERE contact_id = $1 AND created_on > $2 ORDER BY id DESC LIMIT 1`, contact.ID, last).
+				Returns(tc.expectedResponse, "%d: response: mismatch", i)
+		}
+		if tc.expectedFlow != nil {
+			// check current_flow is set correctly on the contact
+			assertdb.Query(t, rt.DB, `SELECT current_flow_id FROM contacts_contact WHERE id = $1`, contact.ID).Returns(int64(tc.expectedFlow.ID), "%d: flow: mismatch", i)
+
+			// check that we have a waiting session
+			assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE contact_id = $1 AND status = 'W' AND last_sprint_uuid IS NOT NULL`, contact.ID).Returns(1, "%d: session: mismatch", i)
+		} else {
+			assertdb.Query(t, rt.DB, `SELECT current_flow_id FROM contacts_contact WHERE id = $1`, contact.ID).Returns(nil, "%d: flow: mismatch", i)
 		}
 
-		err = rt.DB.Get(&sessionID, `SELECT id FROM flows_flowsession WHERE contact_id = $1 ORDER BY created_on DESC LIMIT 1`, tc.Contact.ID)
-		assert.NoError(t, err)
-		err = rt.DB.Get(&sessionModifiedOn, `SELECT modified_on FROM flows_flowsession WHERE contact_id = $1 ORDER BY created_on DESC LIMIT 1`, tc.Contact.ID)
-		assert.NoError(t, err)
-
-		err = rt.DB.Get(&runID, `SELECT id FROM flows_flowrun WHERE contact_id = $1 ORDER BY created_on DESC LIMIT 1`, tc.Contact.ID)
-		assert.NoError(t, err)
+		err = rt.DB.Get(&sessionUUID, `SELECT uuid FROM flows_flowsession WHERE contact_id = $1 ORDER BY id DESC LIMIT 1`, contact.ID)
+		require.NoError(t, err)
+		err = rt.DB.Get(&sprintUUID, `SELECT last_sprint_uuid FROM flows_flowsession WHERE contact_id = $1 ORDER BY id DESC LIMIT 1`, contact.ID)
+		require.NoError(t, err)
 
 		last = time.Now()
 	}
@@ -146,31 +145,4 @@ func TestTimedEvents(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE status = 'W' AND contact_id = $1`, testdata.Cathy.ID).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT timeout_on FROM flows_flowsession WHERE status = 'W' AND contact_id = $1`, testdata.Cathy.ID).Returns(nil)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE status = 'W' AND contact_id = $1`, testdata.Cathy.ID).Returns(1)
-
-	// test the case of a run and session no longer being the most recent but somehow still active, expiration should still work
-	r, err := rt.DB.QueryContext(ctx, `SELECT id, session_id from flows_flowrun WHERE contact_id = $1 and status = 'I' order by created_on asc limit 1`, testdata.Cathy.ID)
-	assert.NoError(t, err)
-	defer r.Close()
-	r.Next()
-	r.Scan(&runID, &sessionID)
-
-	expiration := time.Now()
-
-	// set both to be active (this requires us to disable the status change triggers)
-	rt.DB.MustExec(`ALTER TABLE flows_flowrun DISABLE TRIGGER temba_flowrun_on_change`)
-	rt.DB.MustExec(`ALTER TABLE flows_flowsession DISABLE TRIGGER temba_flowsession_status_change`)
-	rt.DB.MustExec(`UPDATE flows_flowrun SET status = 'W' WHERE id = $1`, runID)
-	rt.DB.MustExec(`UPDATE flows_flowsession SET status = 'W', wait_expires_on = $2 WHERE id = $1`, sessionID, expiration)
-	rt.DB.MustExec(`ALTER TABLE flows_flowrun ENABLE TRIGGER temba_flowrun_on_change`)
-	rt.DB.MustExec(`ALTER TABLE flows_flowsession ENABLE TRIGGER temba_flowsession_status_change`)
-
-	// try to expire the run
-	err = handler.QueueTask(rc, testdata.Org1.ID, testdata.Cathy.ID, &ctasks.WaitTimeoutTask{SessionID: sessionID, ModifiedOn: time.Now()})
-	assert.NoError(t, err)
-
-	task, err := tasks.HandlerQueue.Pop(rc)
-	assert.NoError(t, err)
-
-	err = tasks.Perform(ctx, rt, task)
-	assert.NoError(t, err)
 }

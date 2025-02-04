@@ -38,7 +38,7 @@ func (t *WaitExpirationTask) UseReadOnly() bool {
 }
 
 func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
-	log := slog.With("ctask", "expiration_event", "contact_id", contact.ID(), "session_id", t.SessionID)
+	log := slog.With("ctask", "expiration_event", "contact_id", contact.ID(), "session_uuid", t.SessionUUID)
 
 	// build our flow contact
 	flowContact, err := contact.FlowContact(oa)
@@ -53,12 +53,12 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	}
 
 	// if we didn't find a session or it is another session or if it's been modified since, ignore this task
-	if session == nil || session.ID() != t.SessionID {
+	if session == nil || session.UUID() != t.SessionUUID {
 		log.Debug("skipping as waiting session has changed")
 		return nil
 	}
-	if !equalishTime(session.ModifiedOn(), t.ModifiedOn) {
-		log.Debug("skipping as session has been modified since", "session_modified_on", session.ModifiedOn(), "task_modified_on", t.ModifiedOn)
+	if session.LastSprintUUID() != t.SprintUUID {
+		log.Debug("skipping as session has been modified since", "session_sprint", session.LastSprintUUID(), "task_sprint", t.SprintUUID)
 		return nil
 	}
 
@@ -70,9 +70,4 @@ func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, o
 	}
 
 	return nil
-}
-
-// helper to compare two times when one of them has been in and out of the database
-func equalishTime(t1, t2 time.Time) bool {
-	return t1.Sub(t2).Abs() <= time.Millisecond
 }

@@ -713,6 +713,7 @@ SELECT
 	uuid,
 	session_type,
 	status,
+	last_sprint_uuid,
 	responded,
 	output,
 	output_url,
