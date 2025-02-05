@@ -19,7 +19,6 @@ const TypeWaitTimeout = "wait_timeout"
 
 func init() {
 	handler.RegisterContactTask(TypeWaitTimeout, func() handler.Task { return &WaitTimeoutTask{} })
-	handler.RegisterContactTask("timeout_event", func() handler.Task { return &WaitTimeoutTask{} }) // legacy
 }
 
 type WaitTimeoutTask struct {

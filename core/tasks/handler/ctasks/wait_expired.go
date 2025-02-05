@@ -17,7 +17,6 @@ const TypeWaitExpired = "wait_expired"
 
 func init() {
 	handler.RegisterContactTask(TypeWaitExpired, func() handler.Task { return &WaitExpiredTask{} })
-	handler.RegisterContactTask("expiration_event", func() handler.Task { return &WaitExpiredTask{} }) // legacy
 }
 
 type WaitExpiredTask struct {
