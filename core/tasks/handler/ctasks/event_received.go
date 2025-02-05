@@ -22,7 +22,6 @@ const TypeEventReceived = "event_received"
 
 func init() {
 	handler.RegisterContactTask(TypeEventReceived, func() handler.Task { return &EventReceivedTask{} })
-	handler.RegisterContactTask("channel_event", func() handler.Task { return &EventReceivedTask{} }) // legacy
 }
 
 type EventReceivedTask struct {
