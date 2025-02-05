@@ -1,3 +1,7 @@
+v10.1.30 (2025-02-05)
+-------------------------
+ * Report handler task metrics with type as dimension
+
 v10.1.29 (2025-02-05)
 -------------------------
  * New ctask names with support for legacy ones
