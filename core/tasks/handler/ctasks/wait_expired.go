@@ -13,27 +13,28 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-const TypeWaitExpiration = "expiration_event"
+const TypeWaitExpired = "wait_expired"
 
 func init() {
-	handler.RegisterContactTask(TypeWaitExpiration, func() handler.Task { return &WaitExpirationTask{} })
+	handler.RegisterContactTask(TypeWaitExpired, func() handler.Task { return &WaitExpiredTask{} })
+	handler.RegisterContactTask("expiration_event", func() handler.Task { return &WaitExpiredTask{} }) // legacy
 }
 
-type WaitExpirationTask struct {
+type WaitExpiredTask struct {
 	SessionUUID flows.SessionUUID `json:"session_uuid"`
 	SprintUUID  flows.SprintUUID  `json:"sprint_uuid"`
 }
 
-func (t *WaitExpirationTask) Type() string {
-	return TypeWaitExpiration
+func (t *WaitExpiredTask) Type() string {
+	return TypeWaitExpired
 }
 
-func (t *WaitExpirationTask) UseReadOnly() bool {
+func (t *WaitExpiredTask) UseReadOnly() bool {
 	return true
 }
 
-func (t *WaitExpirationTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
-	log := slog.With("ctask", "expiration_event", "contact_id", contact.ID(), "session_uuid", t.SessionUUID)
+func (t *WaitExpiredTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
+	log := slog.With("ctask", "wait_expired", "contact_id", contact.ID(), "session_uuid", t.SessionUUID)
 
 	// build our flow contact
 	flowContact, err := contact.FlowContact(oa)

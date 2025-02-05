@@ -126,7 +126,7 @@ func handleIncoming(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	}
 
 	// create an incoming call "task" and handle it to see if we have a trigger
-	task := &ctasks.ChannelEventTask{
+	task := &ctasks.EventReceivedTask{
 		EventType: models.EventTypeIncomingCall,
 		ChannelID: ch.ID(),
 		URNID:     urnID,

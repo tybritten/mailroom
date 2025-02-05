@@ -21,13 +21,14 @@ import (
 	"github.com/nyaruka/null/v3"
 )
 
-const TypeMsgEvent = "msg_event"
+const TypeMsgReceived = "msg_received"
 
 func init() {
-	handler.RegisterContactTask(TypeMsgEvent, func() handler.Task { return &MsgEventTask{} })
+	handler.RegisterContactTask(TypeMsgReceived, func() handler.Task { return &MsgReceivedTask{} })
+	handler.RegisterContactTask("msg_event", func() handler.Task { return &MsgReceivedTask{} }) // legacy
 }
 
-type MsgEventTask struct {
+type MsgReceivedTask struct {
 	MsgID         models.MsgID     `json:"msg_id"`
 	MsgUUID       flows.MsgUUID    `json:"msg_uuid"`
 	MsgExternalID null.String      `json:"msg_external_id"`
@@ -39,15 +40,15 @@ type MsgEventTask struct {
 	NewContact    bool             `json:"new_contact"`
 }
 
-func (t *MsgEventTask) Type() string {
-	return TypeMsgEvent
+func (t *MsgReceivedTask) Type() string {
+	return TypeMsgReceived
 }
 
-func (t *MsgEventTask) UseReadOnly() bool {
+func (t *MsgReceivedTask) UseReadOnly() bool {
 	return !t.NewContact
 }
 
-func (t *MsgEventTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
+func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
 	channel := oa.ChannelByID(t.ChannelID)
 
 	// fetch the attachments on the message (i.e. ask courier to fetch them)
