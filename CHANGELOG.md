@@ -1,3 +1,7 @@
+v10.1.28 (2025-02-05)
+-------------------------
+ * Stop writing from session.responded and session.modified_on
+
 v10.1.27 (2025-02-04)
 -------------------------
  * Stop reading from session.responded and session.modified_on
