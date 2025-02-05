@@ -1,3 +1,8 @@
+v10.1.29 (2025-02-05)
+-------------------------
+ * New ctask names with support for legacy ones
+ * Remove optional cron to retry pending messages
+
 v10.1.28 (2025-02-05)
 -------------------------
  * Stop writing from session.responded and session.modified_on
