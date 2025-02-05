@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMsgEvents(t *testing.T) {
+func TestMsgReceivedTask(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -281,7 +281,7 @@ func TestMsgEvents(t *testing.T) {
 	}
 
 	makeMsgTask := func(channel *testdata.Channel, contact *testdata.Contact, text string) handler.Task {
-		return &ctasks.MsgEventTask{
+		return &ctasks.MsgReceivedTask{
 			ChannelID: channel.ID,
 			MsgID:     dbMsg.ID,
 			MsgUUID:   dbMsg.FlowMsg.UUID(),

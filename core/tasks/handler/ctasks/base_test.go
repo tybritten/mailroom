@@ -37,37 +37,37 @@ func TestTimedEvents(t *testing.T) {
 		expectedFlow     *testdata.Flow
 	}{
 		// 0: start the flow
-		{ctasks.TypeMsgEvent, "start", "What is your favorite color?", testdata.Favorites},
+		{ctasks.TypeMsgReceived, "start", "What is your favorite color?", testdata.Favorites},
 
 		// 1: this expiration does nothing because the times don't match
-		{ctasks.TypeWaitExpiration, "bad", "", testdata.Favorites},
+		{ctasks.TypeWaitExpired, "bad", "", testdata.Favorites},
 
 		// 2: this checks that the flow wasn't expired
-		{ctasks.TypeMsgEvent, "red", "Good choice, I like Red too! What is your favorite beer?", testdata.Favorites},
+		{ctasks.TypeMsgReceived, "red", "Good choice, I like Red too! What is your favorite beer?", testdata.Favorites},
 
 		// 3: this expiration will actually take
-		{ctasks.TypeWaitExpiration, "", "", nil},
+		{ctasks.TypeWaitExpired, "", "", nil},
 
 		// 4: we won't get a response as we will be out of the flow
-		{ctasks.TypeMsgEvent, "mutzig", "", nil},
+		{ctasks.TypeMsgReceived, "mutzig", "", nil},
 
 		// 5: start the parent expiration flow
-		{ctasks.TypeMsgEvent, "parent", "Child", testdata.ChildTimeoutFlow},
+		{ctasks.TypeMsgReceived, "parent", "Child", testdata.ChildTimeoutFlow},
 
 		// 6: expire the child
-		{ctasks.TypeWaitExpiration, "", "Expired", testdata.ParentTimeoutFlow},
+		{ctasks.TypeWaitExpired, "", "Expired", testdata.ParentTimeoutFlow},
 
 		// 7: expire the parent
-		{ctasks.TypeWaitExpiration, "", "", nil},
+		{ctasks.TypeWaitExpired, "", "", nil},
 
 		// 8: start the parent expiration flow again
-		{ctasks.TypeMsgEvent, "parent", "Child", testdata.ChildTimeoutFlow},
+		{ctasks.TypeMsgReceived, "parent", "Child", testdata.ChildTimeoutFlow},
 
 		// 9: respond to end normally
-		{ctasks.TypeMsgEvent, "done", "Completed", testdata.ParentTimeoutFlow},
+		{ctasks.TypeMsgReceived, "done", "Completed", testdata.ParentTimeoutFlow},
 
 		// 10: start our favorite flow again
-		{ctasks.TypeMsgEvent, "start", "What is your favorite color?", testdata.Favorites},
+		{ctasks.TypeMsgReceived, "start", "What is your favorite color?", testdata.Favorites},
 
 		// 11: timeout on the color question with bad sprint UUID
 		{ctasks.TypeWaitTimeout, "bad", "", testdata.Favorites},
@@ -76,7 +76,7 @@ func TestTimedEvents(t *testing.T) {
 		{ctasks.TypeWaitTimeout, "", "Sorry you can't participate right now, I'll try again later.", nil},
 
 		// 13: start the pick a number flow
-		{ctasks.TypeMsgEvent, "pick", "Pick a number between 1-10.", testdata.PickANumber},
+		{ctasks.TypeMsgReceived, "pick", "Pick a number between 1-10.", testdata.PickANumber},
 
 		// 14: try to resume with timeout even tho flow doesn't have one set
 		{ctasks.TypeWaitTimeout, "", "", testdata.PickANumber},
@@ -95,8 +95,8 @@ func TestTimedEvents(t *testing.T) {
 			taskSprintUUID = flows.SprintUUID(uuids.NewV4())
 		}
 
-		if tc.eventType == ctasks.TypeMsgEvent {
-			ctask = &ctasks.MsgEventTask{
+		if tc.eventType == ctasks.TypeMsgReceived {
+			ctask = &ctasks.MsgReceivedTask{
 				ChannelID: testdata.FacebookChannel.ID,
 				MsgID:     models.MsgID(1),
 				MsgUUID:   flows.MsgUUID(uuids.NewV4()),
@@ -104,8 +104,8 @@ func TestTimedEvents(t *testing.T) {
 				URNID:     contact.URNID,
 				Text:      tc.messageIn,
 			}
-		} else if tc.eventType == ctasks.TypeWaitExpiration {
-			ctask = &ctasks.WaitExpirationTask{SessionUUID: sessionUUID, SprintUUID: taskSprintUUID}
+		} else if tc.eventType == ctasks.TypeWaitExpired {
+			ctask = &ctasks.WaitExpiredTask{SessionUUID: sessionUUID, SprintUUID: taskSprintUUID}
 		} else if tc.eventType == ctasks.TypeWaitTimeout {
 			ctask = &ctasks.WaitTimeoutTask{SessionUUID: sessionUUID, SprintUUID: taskSprintUUID}
 		}

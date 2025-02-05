@@ -15,10 +15,11 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-const TypeWaitTimeout = "timeout_event"
+const TypeWaitTimeout = "wait_timeout"
 
 func init() {
 	handler.RegisterContactTask(TypeWaitTimeout, func() handler.Task { return &WaitTimeoutTask{} })
+	handler.RegisterContactTask("timeout_event", func() handler.Task { return &WaitTimeoutTask{} }) // legacy
 }
 
 type WaitTimeoutTask struct {
@@ -35,7 +36,7 @@ func (t *WaitTimeoutTask) UseReadOnly() bool {
 }
 
 func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
-	log := slog.With("ctask", "timeout_event", "contact_id", contact.ID(), "session_uuid", t.SessionUUID)
+	log := slog.With("ctask", "wait_timeout", "contact_id", contact.ID(), "session_uuid", t.SessionUUID)
 
 	// build our flow contact
 	flowContact, err := contact.FlowContact(oa)
