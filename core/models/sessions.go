@@ -784,13 +784,6 @@ func WriteSessionOutputsToStorage(ctx context.Context, rt *runtime.Runtime, sess
 	return nil
 }
 
-// FilterByWaitingSession takes contact ids and returns those who have waiting sessions
-func FilterByWaitingSession(ctx context.Context, db *sqlx.DB, contacts []ContactID) ([]ContactID, error) {
-	var overlap []ContactID
-	err := db.SelectContext(ctx, &overlap, `SELECT DISTINCT(contact_id) FROM flows_flowsession WHERE status = 'W' AND contact_id = ANY($1)`, pq.Array(contacts))
-	return overlap, err
-}
-
 // ExitSessions exits sessions and their runs. It batches the given session ids and exits each batch in a transaction.
 func ExitSessions(ctx context.Context, db *sqlx.DB, sessionIDs []SessionID, status SessionStatus) error {
 	if len(sessionIDs) == 0 {

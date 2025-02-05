@@ -10,6 +10,7 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/triggers"
@@ -150,7 +151,7 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 		for i := range fires {
 			allContactIDs[i] = fires[i].ContactID
 		}
-		contactsInAFlow, err := models.FilterByWaitingSession(ctx, rt.DB, allContactIDs)
+		contactsInAFlow, err := filterByWaitingSession(ctx, rt.DB, allContactIDs)
 		if err != nil {
 			return nil, fmt.Errorf("error finding waiting sessions: %w", err)
 		}
@@ -230,4 +231,10 @@ func FireCampaignEvents(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 	}
 
 	return handled, nil
+}
+
+func filterByWaitingSession(ctx context.Context, db *sqlx.DB, contacts []models.ContactID) ([]models.ContactID, error) {
+	var overlap []models.ContactID
+	err := db.SelectContext(ctx, &overlap, `SELECT DISTINCT(contact_id) FROM flows_flowsession WHERE status = 'W' AND contact_id = ANY($1)`, pq.Array(contacts))
+	return overlap, err
 }

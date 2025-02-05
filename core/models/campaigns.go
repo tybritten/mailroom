@@ -256,6 +256,8 @@ func (e *CampaignEvent) Campaign() *Campaign { return e.campaign }
 // StartMode returns the start mode for this campaign event
 func (e *CampaignEvent) StartMode() StartMode { return e.e.StartMode }
 
+func (e *CampaignEvent) FlowID() FlowID { return e.e.FlowID }
+
 // loadCampaigns loads all the campaigns for the passed in org
 func loadCampaigns(ctx context.Context, db *sql.DB, orgID OrgID) ([]*Campaign, error) {
 	rows, err := db.QueryContext(ctx, selectCampaignsSQL, orgID)

@@ -113,7 +113,7 @@ func InsertContactFire(rt *runtime.Runtime, org *Org, contact *Contact, typ mode
 	var id models.ContactFireID
 	must(rt.DB.Get(&id,
 		`INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, fire_on, session_uuid, extra) 
-		 VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id`, org.ID, contact.ID, typ, scope, fireOn, sessionUUID, jsonx.MustMarshal(extra),
+		 VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING id`, org.ID, contact.ID, typ, scope, fireOn, null.String(sessionUUID), jsonx.MustMarshal(extra),
 	))
 	return id
 }
