@@ -26,9 +26,9 @@ func TestChannelEvents(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetAll)
 
-	// schedule an event for cathy and george
-	testdata.InsertEventFire(rt, testdata.Cathy, testdata.RemindersEvent1, time.Now())
-	testdata.InsertEventFire(rt, testdata.George, testdata.RemindersEvent1, time.Now())
+	// schedule a campaign event for cathy and george
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeCampaign, fmt.Sprint(testdata.RemindersEvent1), time.Now(), "", map[string]any{})
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.George, models.ContactFireTypeCampaign, fmt.Sprint(testdata.RemindersEvent1), time.Now(), "", map[string]any{})
 
 	// and george to doctors group, cathy is already part of it
 	rt.DB.MustExec(`INSERT INTO contacts_contactgroup_contacts(contactgroup_id, contact_id) VALUES($1, $2);`, testdata.DoctorsGroup.ID, testdata.George.ID)
@@ -270,6 +270,6 @@ func TestChannelEvents(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) from contacts_contactgroup_contacts WHERE contactgroup_id = $1 AND contact_id = $2`, testdata.DoctorsGroup.ID, testdata.George.ID).Returns(1)
 
 	// and she has no upcoming events
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM campaigns_eventfire WHERE contact_id = $1`, testdata.Cathy.ID).Returns(0)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM campaigns_eventfire WHERE contact_id = $1`, testdata.George.ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'C'`, testdata.Cathy.ID).Returns(0)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'C'`, testdata.George.ID).Returns(1)
 }
