@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil"
@@ -1307,6 +1308,15 @@ func UpdateContactURNs(ctx context.Context, db DBorTx, oa *OrgAssets, changes []
 
 	// NOTE: caller needs to update modified on for this contact
 	return affected, nil
+}
+
+func FilterContactIDsByNotInFlow(ctx context.Context, db *sqlx.DB, contacts []ContactID) ([]ContactID, error) {
+	var filtered []ContactID
+
+	if err := db.SelectContext(ctx, &filtered, `SELECT id FROM contacts_contact WHERE id = ANY($1) AND current_flow_id IS NULL`, pq.Array(contacts)); err != nil {
+		return nil, fmt.Errorf("error filtering contacts by not in flow: %w", err)
+	}
+	return filtered, nil
 }
 
 // urnUpdate is our object that represents a single contact URN update
