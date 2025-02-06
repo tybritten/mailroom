@@ -1,3 +1,7 @@
+v10.1.32 (2025-02-06)
+-------------------------
+ * Start inserting new fires for campaign events
+
 v10.1.31 (2025-02-06)
 -------------------------
  * Implement triggering of campaign events from new contact fires model
