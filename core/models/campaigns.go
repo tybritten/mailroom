@@ -432,8 +432,8 @@ SELECT f.id as fire_id, f.event_id as event_id, f.contact_id as contact_id, f.sc
   FROM campaigns_eventfire f
  WHERE f.id IN(?) AND f.fired IS NULL`
 
-// DeleteUnfiredEventFires removes event fires for the passed in event and contact
-func DeleteUnfiredEventFires(ctx context.Context, tx DBorTx, removes []*FireDelete) error {
+// DeleteUnfiredLegacyEventFires removes legacy event fires for the passed in event and contact
+func DeleteUnfiredLegacyEventFires(ctx context.Context, tx DBorTx, removes []*FireDelete) error {
 	if len(removes) == 0 {
 		return nil
 	}
@@ -463,8 +463,8 @@ type FireDelete struct {
 	EventID   CampaignEventID `db:"event_id"`
 }
 
-// DeleteUnfiredContactEvents deletes all unfired event fires for the passed in contacts
-func DeleteUnfiredContactEvents(ctx context.Context, tx DBorTx, contactIDs []ContactID) error {
+// DeleteAllUnfiredLegacyEventFires deletes *all* unfired event fires for the passed in contacts
+func DeleteAllUnfiredLegacyEventFires(ctx context.Context, tx DBorTx, contactIDs []ContactID) error {
 	_, err := tx.ExecContext(ctx, `DELETE FROM campaigns_eventfire WHERE contact_id = ANY($1) AND fired IS NULL`, pq.Array(contactIDs))
 	if err != nil {
 		return fmt.Errorf("error deleting unfired contact events: %w", err)
@@ -509,7 +509,7 @@ func DeleteUnfiredEventsForGroupRemoval(ctx context.Context, tx DBorTx, oa *OrgA
 	}
 
 	// delete all the unfired events
-	return DeleteUnfiredEventFires(ctx, tx, fds)
+	return DeleteUnfiredLegacyEventFires(ctx, tx, fds)
 }
 
 // AddCampaignEventsForGroupAddition first removes the passed in contacts from any events that group change may effect, then recreates

@@ -130,7 +130,7 @@ func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtim
 	}
 
 	// first delete all our removed fires
-	err := models.DeleteUnfiredEventFires(ctx, tx, deletes)
+	err := models.DeleteUnfiredLegacyEventFires(ctx, tx, deletes)
 	if err != nil {
 		return fmt.Errorf("error deleting unfired event fires: %w", err)
 	}
