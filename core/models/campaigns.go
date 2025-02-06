@@ -432,8 +432,8 @@ SELECT f.id as fire_id, f.event_id as event_id, f.contact_id as contact_id, f.sc
   FROM campaigns_eventfire f
  WHERE f.id IN(?) AND f.fired IS NULL`
 
-// DeleteUnfiredLegacyEventFires removes legacy event fires for the passed in event and contact
-func DeleteUnfiredLegacyEventFires(ctx context.Context, tx DBorTx, removes []*FireDelete) error {
+// removes legacy event fires for the passed in event and contact
+func deleteUnfiredLegacyEventFires(ctx context.Context, tx DBorTx, removes []*FireDelete) error {
 	if len(removes) == 0 {
 		return nil
 	}
@@ -458,38 +458,13 @@ IN (
 );
 `
 
-type FireDelete struct {
-	ContactID ContactID       `db:"contact_id"`
-	EventID   CampaignEventID `db:"event_id"`
-}
-
-// DeleteAllUnfiredLegacyEventFires deletes *all* unfired event fires for the passed in contacts
-func DeleteAllUnfiredLegacyEventFires(ctx context.Context, tx DBorTx, contactIDs []ContactID) error {
+// deletes *all* unfired event fires for the passed in contacts
+func deleteAllUnfiredLegacyEventFires(ctx context.Context, tx DBorTx, contactIDs []ContactID) error {
 	_, err := tx.ExecContext(ctx, `DELETE FROM campaigns_eventfire WHERE contact_id = ANY($1) AND fired IS NULL`, pq.Array(contactIDs))
 	if err != nil {
 		return fmt.Errorf("error deleting unfired contact events: %w", err)
 	}
 	return nil
-}
-
-const sqlInsertEventFires = `
-INSERT INTO campaigns_eventfire(contact_id,  event_id,  scheduled)
-                         VALUES(:contact_id, :event_id, :scheduled)
-ON CONFLICT DO NOTHING
-`
-
-type FireAdd struct {
-	ContactID ContactID       `db:"contact_id"`
-	EventID   CampaignEventID `db:"event_id"`
-	Scheduled time.Time       `db:"scheduled"`
-}
-
-// AddEventFires adds the passed in event fires to our db
-func AddEventFires(ctx context.Context, tx DBorTx, adds []*FireAdd) error {
-	if len(adds) == 0 {
-		return nil
-	}
-	return BulkQueryBatches(ctx, "adding campaign event fires", tx, sqlInsertEventFires, 1000, adds)
 }
 
 // DeleteUnfiredEventsForGroupRemoval deletes any unfired events for all campaigns that are
@@ -508,8 +483,7 @@ func DeleteUnfiredEventsForGroupRemoval(ctx context.Context, tx DBorTx, oa *OrgA
 		}
 	}
 
-	// delete all the unfired events
-	return DeleteUnfiredLegacyEventFires(ctx, tx, fds)
+	return DeleteCampaignContactFires(ctx, tx, fds)
 }
 
 // AddCampaignEventsForGroupAddition first removes the passed in contacts from any events that group change may effect, then recreates
@@ -526,8 +500,8 @@ func AddCampaignEventsForGroupAddition(ctx context.Context, tx DBorTx, oa *OrgAs
 		return fmt.Errorf("error removing unfired campaign events for contacts: %w", err)
 	}
 
-	// now calculate which event fires need to be added
-	fas := make([]*FireAdd, 0, 10)
+	// now calculate which fires need to be added
+	fas := make([]*ContactFire, 0, 10)
 
 	tz := oa.Env().Timezone()
 
@@ -547,11 +521,7 @@ func AddCampaignEventsForGroupAddition(ctx context.Context, tx DBorTx, oa *OrgAs
 
 					// if we have one, add it to our list for our batch commit
 					if scheduled != nil {
-						fas = append(fas, &FireAdd{
-							ContactID: ContactID(contact.ID()),
-							EventID:   e.ID(),
-							Scheduled: *scheduled,
-						})
+						fas = append(fas, NewContactFireForCampaign(oa.OrgID(), ContactID(contact.ID()), e.ID(), *scheduled))
 					}
 				}
 			}
@@ -559,7 +529,7 @@ func AddCampaignEventsForGroupAddition(ctx context.Context, tx DBorTx, oa *OrgAs
 	}
 
 	// add all our new event fires
-	return AddEventFires(ctx, tx, fas)
+	return InsertContactFires(ctx, tx, fas)
 }
 
 // ScheduleCampaignEvent calculates event fires for a new campaign event
@@ -579,7 +549,7 @@ func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 		return fmt.Errorf("unable to calculate eligible contacts for event %d: %w", eventID, err)
 	}
 
-	fas := make([]*FireAdd, 0, len(eligible))
+	fas := make([]*ContactFire, 0, len(eligible))
 	tz := oa.Env().Timezone()
 
 	for _, el := range eligible {
@@ -592,12 +562,12 @@ func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 		}
 
 		if scheduled != nil {
-			fas = append(fas, &FireAdd{ContactID: el.ContactID, EventID: eventID, Scheduled: *scheduled})
+			fas = append(fas, NewContactFireForCampaign(oa.OrgID(), el.ContactID, eventID, *scheduled))
 		}
 	}
 
 	// add all our new event fires
-	return AddEventFires(ctx, rt.DB, fas)
+	return InsertContactFires(ctx, rt.DB, fas)
 }
 
 type eligibleContact struct {

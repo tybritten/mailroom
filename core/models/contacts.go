@@ -147,10 +147,9 @@ func (c *Contact) Stop(ctx context.Context, db DBorTx, oa *OrgAssets) error {
 		return fmt.Errorf("error removing stopped contact from groups: %w", err)
 	}
 
-	// remove all unfired campaign event fires
-	_, err = db.ExecContext(ctx, `DELETE FROM campaigns_eventfire WHERE contact_id = $1 AND fired IS NULL`, c.id)
-	if err != nil {
-		return fmt.Errorf("error deleting unfired event fires: %w", err)
+	// remove all campaign event fires
+	if err := DeleteAllCampaignContactFires(ctx, db, []ContactID{c.id}); err != nil {
+		return fmt.Errorf("error deleting campaign event fires: %w", err)
 	}
 
 	// remove the contact from any triggers
@@ -1043,13 +1042,13 @@ func CalculateDynamicGroups(ctx context.Context, db DBorTx, oa *OrgAssets, conta
 		return fmt.Errorf("error removing contact from group: %w", err)
 	}
 
-	// clear any unfired campaign events for this contact
-	if err := DeleteAllUnfiredLegacyEventFires(ctx, db, contactIDs); err != nil {
-		return fmt.Errorf("error deleting unfired events: %w", err)
+	// delete any existing campaign event fires for these contacts
+	if err := DeleteAllCampaignContactFires(ctx, db, contactIDs); err != nil {
+		return fmt.Errorf("error deleting campaign event fires: %w", err)
 	}
 
-	// for each campaign figure out if we need to be added to any events
-	fireAdds := make([]*FireAdd, 0, 2*len(contacts))
+	// for each campaign calculate the new campaign event fires
+	newFires := make([]*ContactFire, 0, 2*len(contacts))
 	tz := oa.Env().Timezone()
 	now := time.Now()
 
@@ -1063,20 +1062,14 @@ func CalculateDynamicGroups(ctx context.Context, db DBorTx, oa *OrgAssets, conta
 				}
 
 				if scheduled != nil {
-					fireAdds = append(fireAdds, &FireAdd{
-						ContactID: ContactID(contact.ID()),
-						EventID:   ce.ID(),
-						Scheduled: *scheduled,
-					})
+					newFires = append(newFires, NewContactFireForCampaign(oa.OrgID(), ContactID(contact.ID()), ce.ID(), *scheduled))
 				}
 			}
 		}
 	}
 
-	// add any event adds
-
-	if err := AddEventFires(ctx, db, fireAdds); err != nil {
-		return fmt.Errorf("unable to add new event fires for contact: %w", err)
+	if err := InsertContactFires(ctx, db, newFires); err != nil {
+		return fmt.Errorf("error inserting new campaign event fires: %w", err)
 	}
 
 	return nil
