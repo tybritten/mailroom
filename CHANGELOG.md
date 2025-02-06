@@ -1,3 +1,8 @@
+v10.1.31 (2025-02-06)
+-------------------------
+ * Implement triggering of campaign events from new contact fires model
+ * Remove legacy ctask names
+
 v10.1.30 (2025-02-05)
 -------------------------
  * Report handler task metrics with type as dimension
