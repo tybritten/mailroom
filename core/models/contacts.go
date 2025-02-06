@@ -1036,18 +1036,15 @@ func CalculateDynamicGroups(ctx context.Context, db DBorTx, oa *OrgAssets, conta
 		}
 	}
 
-	err := AddContactsToGroups(ctx, db, groupAdds)
-	if err != nil {
+	if err := AddContactsToGroups(ctx, db, groupAdds); err != nil {
 		return fmt.Errorf("error adding contact to groups: %w", err)
 	}
-	err = RemoveContactsFromGroups(ctx, db, groupRemoves)
-	if err != nil {
+	if err := RemoveContactsFromGroups(ctx, db, groupRemoves); err != nil {
 		return fmt.Errorf("error removing contact from group: %w", err)
 	}
 
 	// clear any unfired campaign events for this contact
-	err = DeleteUnfiredContactEvents(ctx, db, contactIDs)
-	if err != nil {
+	if err := DeleteAllUnfiredLegacyEventFires(ctx, db, contactIDs); err != nil {
 		return fmt.Errorf("error deleting unfired events: %w", err)
 	}
 
@@ -1077,8 +1074,8 @@ func CalculateDynamicGroups(ctx context.Context, db DBorTx, oa *OrgAssets, conta
 	}
 
 	// add any event adds
-	err = AddEventFires(ctx, db, fireAdds)
-	if err != nil {
+
+	if err := AddEventFires(ctx, db, fireAdds); err != nil {
 		return fmt.Errorf("unable to add new event fires for contact: %w", err)
 	}
 

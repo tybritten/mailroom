@@ -58,6 +58,10 @@ func NewContactFireForSession(s *Session, typ ContactFireType, fireOn time.Time)
 	return newContactFire(s.OrgID(), s.ContactID(), typ, "", fireOn, s.UUID(), s.LastSprintUUID(), ContactFireExtra{})
 }
 
+func NewContactFireForCampaign(orgID OrgID, contactID ContactID, eventID CampaignEventID, fireOn time.Time) *ContactFire {
+	return newContactFire(orgID, contactID, ContactFireTypeCampaign, fmt.Sprint(eventID), fireOn, "", "", ContactFireExtra{})
+}
+
 const sqlSelectDueContactFires = `
   SELECT id, org_id, contact_id, fire_type, scope, session_uuid, sprint_uuid, fire_on, extra
     FROM contacts_contactfire
@@ -86,10 +90,11 @@ func LoadDueContactfires(ctx context.Context, rt *runtime.Runtime, limit int) ([
 	return fires, nil
 }
 
+// DeleteContactFires deletes the given contact fires
 func DeleteContactFires(ctx context.Context, rt *runtime.Runtime, fires []*ContactFire) error {
-	ids := make([]ContactFireID, 0, len(fires))
-	for _, f := range fires {
-		ids = append(ids, f.ID)
+	ids := make([]ContactFireID, len(fires))
+	for i, f := range fires {
+		ids[i] = f.ID
 	}
 
 	_, err := rt.DB.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE id = ANY($1)`, pq.Array(ids))
@@ -100,6 +105,7 @@ func DeleteContactFires(ctx context.Context, rt *runtime.Runtime, fires []*Conta
 	return nil
 }
 
+// DeleteSessionContactFires deletes session wait/timeout fires for the given contacts
 func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []ContactID) (int, error) {
 	res, err := db.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = ANY($1) AND fire_type IN ('E', 'T') AND scope = ''`, pq.Array(contactIDs))
 	if err != nil {
@@ -110,10 +116,33 @@ func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []Cont
 	return int(numDeleted), nil
 }
 
-var sqlInsertContactFires = `
-INSERT INTO contacts_contactfire( org_id,  contact_id,  fire_type, scope,  fire_on,  session_uuid,  sprint_uuid,  extra)
-                          VALUES(:org_id, :contact_id, :fire_type,    '', :fire_on, :session_uuid, :sprint_uuid, :extra)`
+// DeleteAllCampaignContactFires deletes *all* campaign event fires for the given contacts
+func DeleteAllCampaignContactFires(ctx context.Context, db DBorTx, contactIDs []ContactID) error {
+	_, err := db.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = ANY($1) AND fire_type = 'C'`, pq.Array(contactIDs))
+	if err != nil {
+		return fmt.Errorf("error deleting campaign event contact fires: %w", err)
+	}
 
+	return nil
+}
+
+const sqlDeleteContactFires = `
+DELETE FROM contacts_contactfire WHERE id IN (
+    SELECT cf.id FROM contacts_contactfire cf, (VALUES(:contact_id, :event_id)) AS f(contact_id, event_id)
+     WHERE cf.contact_id = f.contact_id::int AND fire_type = 'C' AND cf.scope = f.event_id::text
+)`
+
+// DeleteCampaignContactFires deletes *specific* campaign event fires for the given contacts
+func DeleteCampaignContactFires(ctx context.Context, db DBorTx, deletes []*FireDelete) error {
+	return BulkQueryBatches(ctx, "deleting campaign event fires", db, sqlDeleteContactFires, 1000, deletes)
+}
+
+var sqlInsertContactFires = `
+INSERT INTO contacts_contactfire( org_id,  contact_id,  fire_type,  scope,  fire_on,  session_uuid,  sprint_uuid,  extra)
+                          VALUES(:org_id, :contact_id, :fire_type, :scope, :fire_on, :session_uuid, :sprint_uuid, :extra)
+ON CONFLICT DO NOTHING`
+
+// InsertContactFires inserts the given contact fires (no error on conflict)
 func InsertContactFires(ctx context.Context, db DBorTx, fs []*ContactFire) error {
 	return BulkQuery(ctx, "inserted contact fires", db, sqlInsertContactFires, fs)
 }
