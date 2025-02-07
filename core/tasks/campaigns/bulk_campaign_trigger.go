@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/triggers"
@@ -14,6 +15,13 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
+	"github.com/nyaruka/redisx"
+)
+
+const (
+	recentFiresCap    = 10                 // number of recent fires we keep per event
+	recentFiresExpire = time.Hour * 24 * 7 // how long we keep recent fires
+	recentFiresKey    = "recent_campaign_fires:%d"
 )
 
 // TypeBulkCampaignTrigger is the type of the trigger event task
@@ -88,6 +96,23 @@ func (t *BulkCampaignTriggerTask) Perform(ctx context.Context, rt *runtime.Runti
 	_, err = runner.StartFlow(ctx, rt, oa, flow, contactIDs, options, models.NilStartID)
 	if err != nil {
 		return fmt.Errorf("error starting flow for campaign event #%d: %w", event.ID(), err)
+	}
+
+	// store recent fires in redis for this event
+	recentSet := redisx.NewCappedZSet(fmt.Sprintf(recentFiresKey, t.EventID), recentFiresCap, recentFiresExpire)
+
+	rc := rt.RP.Get()
+	defer rc.Close()
+
+	for _, cid := range contactIDs[:min(recentFiresCap, len(contactIDs))] {
+		// set members need to be unique, so we include a random string
+		value := fmt.Sprintf("%s|%d", redisx.RandomBase64(10), cid)
+		score := float64(dates.Now().UnixNano()) / float64(1e9) // score is UNIX time as floating point
+
+		err := recentSet.Add(rc, value, score)
+		if err != nil {
+			return fmt.Errorf("error adding recent trigger to set: %w", err)
+		}
 	}
 
 	return nil
