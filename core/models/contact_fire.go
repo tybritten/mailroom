@@ -118,11 +118,6 @@ func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []Cont
 
 // DeleteAllCampaignContactFires deletes *all* campaign event fires for the given contacts
 func DeleteAllCampaignContactFires(ctx context.Context, db DBorTx, contactIDs []ContactID) error {
-	// TODO remove once legacy event fires are gone
-	if err := deleteAllUnfiredLegacyEventFires(ctx, db, contactIDs); err != nil {
-		return fmt.Errorf("error deleting legacy campaign event fires: %w", err)
-	}
-
 	_, err := db.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = ANY($1) AND fire_type = 'C'`, pq.Array(contactIDs))
 	if err != nil {
 		return fmt.Errorf("error deleting campaign event contact fires: %w", err)
@@ -145,11 +140,6 @@ DELETE FROM contacts_contactfire WHERE id IN (
 
 // DeleteCampaignContactFires deletes *specific* campaign event fires for the given contacts
 func DeleteCampaignContactFires(ctx context.Context, db DBorTx, deletes []*FireDelete) error {
-	// TODO remove once legacy event fires are gone
-	if err := deleteUnfiredLegacyEventFires(ctx, db, deletes); err != nil {
-		return fmt.Errorf("error deleting legacy unfired event fires: %w", err)
-	}
-
 	return BulkQueryBatches(ctx, "deleting campaign event fires", db, sqlDeleteContactFires, 1000, deletes)
 }
 

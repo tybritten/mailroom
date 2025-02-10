@@ -5,21 +5,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/runtime"
-	"github.com/nyaruka/null/v3"
 )
-
-// FireID is our id for our event fires
-type FireID int64
 
 // CampaignID is our type for campaign ids
 type CampaignID int
@@ -327,145 +321,6 @@ WHERE
 	c.is_archived = FALSE
 ) r;
 `
-
-// MarkEventsFired updates the passed in event fires with the fired time and result
-func MarkEventsFired(ctx context.Context, db DBorTx, fires []*EventFire, fired time.Time, result EventFireResult) error {
-	// set fired on all our values
-	updates := make([]any, 0, len(fires))
-	for _, f := range fires {
-		f.Fired = &fired
-		f.FiredResult = result
-		updates = append(updates, f)
-	}
-
-	return BulkQuery(ctx, "mark events fired", db, sqlMarkEventsFired, updates)
-}
-
-const sqlMarkEventsFired = `
-UPDATE 
-	campaigns_eventfire f
-SET
-	fired = r.fired::timestamptz,
-	fired_result = r.fired_result::varchar
-FROM (
-	VALUES(:fire_id, :fired, :fired_result)
-) AS
-	r(fire_id, fired, fired_result)
-WHERE
-	f.id = r.fire_id::int
-`
-
-// DeleteEventFires deletes all event fires passed in (used when an event has been marked as inactive)
-func DeleteEventFires(ctx context.Context, db DBorTx, fires []*EventFire) error {
-	// build our list of ids
-	ids := make([]FireID, 0, len(fires))
-	for _, f := range fires {
-		ids = append(ids, f.FireID)
-	}
-
-	_, err := db.ExecContext(ctx, sqlDeleteEventFires, pq.Array(ids))
-	if err != nil {
-		return fmt.Errorf("error deleting fires for inactive event: %w", err)
-	}
-
-	return nil
-}
-
-const sqlDeleteEventFires = `
-DELETE FROM campaigns_eventfire
-      WHERE id = ANY($1) AND fired IS NULL`
-
-// EventFireResult represents how a event fire was fired
-type EventFireResult = null.String
-
-const (
-	// FireResultFired means our flow was started
-	FireResultFired = "F"
-
-	// FireResultSkipped means our flow was skipped
-	FireResultSkipped = "S"
-)
-
-// EventFire represents a single campaign event fire for an event and contact
-type EventFire struct {
-	FireID      FireID          `db:"fire_id"`
-	EventID     CampaignEventID `db:"event_id"`
-	ContactID   ContactID       `db:"contact_id"`
-	Scheduled   time.Time       `db:"scheduled"`
-	Fired       *time.Time      `db:"fired"`
-	FiredResult EventFireResult `db:"fired_result"`
-}
-
-// LoadEventFires loads all the event fires with the passed in ids
-func LoadEventFires(ctx context.Context, db *sqlx.DB, ids []FireID) ([]*EventFire, error) {
-	start := time.Now()
-
-	q, vs, err := sqlx.In(sqlSelectEventFires, ids)
-	if err != nil {
-		return nil, fmt.Errorf("error rebinding campaign fire query: %w", err)
-	}
-	q = db.Rebind(q)
-
-	rows, err := db.QueryxContext(ctx, q, vs...)
-	if err != nil {
-		return nil, fmt.Errorf("error querying event fires: %w", err)
-	}
-	defer rows.Close()
-
-	fires := make([]*EventFire, 0, len(ids))
-	for rows.Next() {
-		fire := &EventFire{}
-		err := rows.StructScan(fire)
-		if err != nil {
-			return nil, fmt.Errorf("error scanning campaign fire: %w", err)
-		}
-		fires = append(fires, fire)
-	}
-
-	slog.Debug("event fires loaded", "elapsed", time.Since(start), "count", len(fires))
-
-	return fires, nil
-}
-
-const sqlSelectEventFires = `
-SELECT f.id as fire_id, f.event_id as event_id, f.contact_id as contact_id, f.scheduled as scheduled, f.fired as fired
-  FROM campaigns_eventfire f
- WHERE f.id IN(?) AND f.fired IS NULL`
-
-// removes legacy event fires for the passed in event and contact
-func deleteUnfiredLegacyEventFires(ctx context.Context, tx DBorTx, removes []*FireDelete) error {
-	if len(removes) == 0 {
-		return nil
-	}
-	return BulkQueryBatches(ctx, "removing campaign event fires", tx, sqlRemoveUnfiredFires, 1000, removes)
-}
-
-const sqlRemoveUnfiredFires = `
-DELETE FROM
-	campaigns_eventfire
-WHERE 
-	id
-IN (
-	SELECT 
-		c.id 
-	FROM 
-		campaigns_eventfire c,
-		(VALUES(:contact_id, :event_id)) AS f(contact_id, event_id)
-	WHERE
-		c.contact_id = f.contact_id::int AND 
-		c.event_id = f.event_id::int AND
-		c.fired IS NULL
-);
-`
-
-// deletes *all* unfired event fires for the passed in contacts
-func deleteAllUnfiredLegacyEventFires(ctx context.Context, tx DBorTx, contactIDs []ContactID) error {
-	_, err := tx.ExecContext(ctx, `DELETE FROM campaigns_eventfire WHERE contact_id = ANY($1) AND fired IS NULL`, pq.Array(contactIDs))
-	if err != nil {
-		return fmt.Errorf("error deleting unfired contact events: %w", err)
-	}
-	return nil
-}
 
 // DeleteUnfiredEventsForGroupRemoval deletes any unfired events for all campaigns that are
 // based on the passed in group id for all the passed in contacts.
