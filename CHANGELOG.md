@@ -1,3 +1,8 @@
+v10.1.33 (2025-02-10)
+-------------------------
+ * Store last 10 contacts triggered by a campaign event in redis
+ * Remove support for triggering campaigns from old event fires
+
 v10.1.32 (2025-02-06)
 -------------------------
  * Start inserting new fires for campaign events
