@@ -298,7 +298,6 @@ DELETE FROM flows_flowsession;
 DELETE FROM flows_flowrevision WHERE flow_id >= 30000;
 DELETE FROM flows_flow WHERE id >= 30000;
 DELETE FROM ivr_call;
-DELETE FROM campaigns_eventfire;
 DELETE FROM msgs_msg_labels;
 DELETE FROM msgs_msg;
 DELETE FROM msgs_broadcast_groups;
