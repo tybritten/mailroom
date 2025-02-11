@@ -1,3 +1,7 @@
+v10.1.34 (2025-02-11)
+-------------------------
+ * Allow reading of users from auth_user or users_user temporarily
+
 v10.1.33 (2025-02-10)
 -------------------------
  * Store last 10 contacts triggered by a campaign event in redis
