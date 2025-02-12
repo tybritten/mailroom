@@ -1,3 +1,7 @@
+v10.1.35 (2025-02-12)
+-------------------------
+ * Remove workaround for loading users
+
 v10.1.34 (2025-02-11)
 -------------------------
  * Allow reading of users from auth_user or users_user temporarily
