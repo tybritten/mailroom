@@ -66,6 +66,11 @@ func (t *EventReceivedTask) handle(ctx context.Context, rt *runtime.Runtime, oa 
 		return nil, nil
 	}
 
+	if t.EventType == models.EventTypeDeleteContact {
+
+		return nil, nil
+	}
+
 	if t.EventType == models.EventTypeStopContact {
 		err := contact.Stop(ctx, rt.DB, oa)
 		if err != nil {
@@ -117,7 +122,7 @@ func (t *EventReceivedTask) handle(ctx context.Context, rt *runtime.Runtime, oa 
 		trigger = models.FindMatchingOptInTrigger(oa, channel)
 	case models.EventTypeOptOut:
 		trigger = models.FindMatchingOptOutTrigger(oa, channel)
-	case models.EventTypeWelcomeMessage, models.EventTypeStopContact:
+	case models.EventTypeWelcomeMessage, models.EventTypeStopContact, models.EventTypeDeleteContact:
 		trigger = nil
 	default:
 		return nil, fmt.Errorf("unknown channel event type: %s", t.EventType)

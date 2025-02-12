@@ -24,6 +24,7 @@ const (
 	EventTypeStopContact     ChannelEventType = "stop_contact"
 	EventTypeOptIn           ChannelEventType = "optin"
 	EventTypeOptOut          ChannelEventType = "optout"
+	EventTypeDeleteContact   ChannelEventType = "delete_contact"
 
 	// channel event statuses
 	EventStatusPending ChannelEventStatus = "P" // event created but not yet handled
