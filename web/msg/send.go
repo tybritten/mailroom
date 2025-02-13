@@ -17,6 +17,10 @@ func init() {
 	web.RegisterRoute(http.MethodPost, "/mr/msg/send", web.RequireAuthToken(web.JSONPayload(handleSend)))
 }
 
+type QuickReply struct {
+	Text string `json:"text"`
+}
+
 // Request to send a message.
 //
 //	{
@@ -26,12 +30,13 @@ func init() {
 //	  "text": "hi there"
 //	}
 type sendRequest struct {
-	OrgID       models.OrgID       `json:"org_id"       validate:"required"`
-	UserID      models.UserID      `json:"user_id"      validate:"required"`
-	ContactID   models.ContactID   `json:"contact_id"   validate:"required"`
-	Text        string             `json:"text"`
-	Attachments []utils.Attachment `json:"attachments"`
-	TicketID    models.TicketID    `json:"ticket_id"`
+	OrgID        models.OrgID       `json:"org_id"       validate:"required"`
+	UserID       models.UserID      `json:"user_id"      validate:"required"`
+	ContactID    models.ContactID   `json:"contact_id"   validate:"required"`
+	Text         string             `json:"text"`
+	Attachments  []utils.Attachment `json:"attachments"`
+	QuickReplies []QuickReply       `json:"quick_replies"`
+	TicketID     models.TicketID    `json:"ticket_id"`
 }
 
 // handles a request to resend the given messages
@@ -53,7 +58,12 @@ func handleSend(ctx context.Context, rt *runtime.Runtime, r *sendRequest) (any, 
 		return nil, 0, fmt.Errorf("error creating flow contact: %w", err)
 	}
 
-	content := &flows.MsgContent{Text: r.Text, Attachments: r.Attachments}
+	quickReplies := make([]string, len(r.QuickReplies))
+	for i := range r.QuickReplies {
+		quickReplies[i] = r.QuickReplies[i].Text
+	}
+
+	content := &flows.MsgContent{Text: r.Text, Attachments: r.Attachments, QuickReplies: quickReplies}
 
 	out, ch := models.CreateMsgOut(rt, oa, contact, content, models.NilTemplateID, nil, contact.Locale(oa.Env()), nil)
 	var msg *models.Msg
@@ -82,15 +92,21 @@ func handleSend(ctx context.Context, rt *runtime.Runtime, r *sendRequest) (any, 
 
 	msgio.QueueMessages(ctx, rt, rt.DB, []*models.Msg{msg})
 
+	msgQuickReplies := make([]QuickReply, len(msg.QuickReplies()))
+	for i := range msg.QuickReplies() {
+		msgQuickReplies[i] = QuickReply{Text: msg.QuickReplies()[i]}
+	}
+
 	return map[string]any{
-		"id":          msg.ID(),
-		"channel":     out.Channel(),
-		"contact":     contact.Reference(),
-		"urn":         out.URN(),
-		"text":        msg.Text(),
-		"attachments": msg.Attachments(),
-		"status":      msg.Status(),
-		"created_on":  msg.CreatedOn(),
-		"modified_on": msg.ModifiedOn(),
+		"id":            msg.ID(),
+		"channel":       out.Channel(),
+		"contact":       contact.Reference(),
+		"urn":           out.URN(),
+		"text":          msg.Text(),
+		"attachments":   msg.Attachments(),
+		"quick_replies": msgQuickReplies,
+		"status":        msg.Status(),
+		"created_on":    msg.CreatedOn(),
+		"modified_on":   msg.ModifiedOn(),
 	}, http.StatusOK, nil
 }
