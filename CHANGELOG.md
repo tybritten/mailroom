@@ -1,3 +1,7 @@
+v10.1.38 (2025-02-13)
+-------------------------
+ * Update to latest goflow which uses structs for quick replies
+
 v10.1.37 (2025-02-13)
 -------------------------
  * Start updating current_session_uuid on contacts
