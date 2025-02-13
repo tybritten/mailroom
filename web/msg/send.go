@@ -17,10 +17,6 @@ func init() {
 	web.RegisterRoute(http.MethodPost, "/mr/msg/send", web.RequireAuthToken(web.JSONPayload(handleSend)))
 }
 
-type QuickReply struct {
-	Text string `json:"text"`
-}
-
 // Request to send a message.
 //
 //	{
@@ -35,7 +31,7 @@ type sendRequest struct {
 	ContactID    models.ContactID   `json:"contact_id"   validate:"required"`
 	Text         string             `json:"text"`
 	Attachments  []utils.Attachment `json:"attachments"`
-	QuickReplies []QuickReply       `json:"quick_replies"`
+	QuickReplies []flows.QuickReply `json:"quick_replies"`
 	TicketID     models.TicketID    `json:"ticket_id"`
 }
 
@@ -58,12 +54,7 @@ func handleSend(ctx context.Context, rt *runtime.Runtime, r *sendRequest) (any, 
 		return nil, 0, fmt.Errorf("error creating flow contact: %w", err)
 	}
 
-	quickReplies := make([]string, len(r.QuickReplies))
-	for i := range r.QuickReplies {
-		quickReplies[i] = r.QuickReplies[i].Text
-	}
-
-	content := &flows.MsgContent{Text: r.Text, Attachments: r.Attachments, QuickReplies: quickReplies}
+	content := &flows.MsgContent{Text: r.Text, Attachments: r.Attachments, QuickReplies: r.QuickReplies}
 
 	out, ch := models.CreateMsgOut(rt, oa, contact, content, models.NilTemplateID, nil, contact.Locale(oa.Env()), nil)
 	var msg *models.Msg
@@ -92,9 +83,13 @@ func handleSend(ctx context.Context, rt *runtime.Runtime, r *sendRequest) (any, 
 
 	msgio.QueueMessages(ctx, rt, rt.DB, []*models.Msg{msg})
 
-	msgQuickReplies := make([]QuickReply, len(msg.QuickReplies()))
+	// TODO remove this temp workaround once flows.QuickReply marshals as struct
+	type quickReply struct {
+		Text string `json:"text"`
+	}
+	msgQuickReplies := make([]quickReply, len(msg.QuickReplies()))
 	for i := range msg.QuickReplies() {
-		msgQuickReplies[i] = QuickReply{Text: msg.QuickReplies()[i]}
+		msgQuickReplies[i] = quickReply{Text: msg.QuickReplies()[i].Text}
 	}
 
 	return map[string]any{
