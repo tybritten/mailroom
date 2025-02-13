@@ -1,3 +1,7 @@
+v10.1.37 (2025-02-13)
+-------------------------
+ * Start updating current_session_uuid on contacts
+
 v10.1.36 (2025-02-13)
 -------------------------
  * Add quick replies to msg send endpoint
