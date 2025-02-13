@@ -1,3 +1,7 @@
+v10.1.36 (2025-02-13)
+-------------------------
+ * Add quick replies to msg send endpoint
+
 v10.1.35 (2025-02-12)
 -------------------------
  * Remove workaround for loading users
