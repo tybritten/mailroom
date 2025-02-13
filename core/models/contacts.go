@@ -92,35 +92,37 @@ func NewURNInvalidError(index int, cause error) error {
 
 // Contact is our mailroom struct that represents a contact
 type Contact struct {
-	id            ContactID
-	orgID         OrgID
-	uuid          flows.ContactUUID
-	name          string
-	language      i18n.Language
-	status        ContactStatus
-	fields        map[string]*flows.Value
-	groups        []*Group
-	urns          []urns.URN
-	ticket        *Ticket
-	createdOn     time.Time
-	modifiedOn    time.Time
-	lastSeenOn    *time.Time
-	currentFlowID FlowID
+	id                 ContactID
+	orgID              OrgID
+	uuid               flows.ContactUUID
+	name               string
+	language           i18n.Language
+	status             ContactStatus
+	fields             map[string]*flows.Value
+	groups             []*Group
+	urns               []urns.URN
+	ticket             *Ticket
+	createdOn          time.Time
+	modifiedOn         time.Time
+	lastSeenOn         *time.Time
+	currentSessionUUID flows.SessionUUID
+	currentFlowID      FlowID
 }
 
-func (c *Contact) ID() ContactID                   { return c.id }
-func (c *Contact) UUID() flows.ContactUUID         { return c.uuid }
-func (c *Contact) Name() string                    { return c.name }
-func (c *Contact) Language() i18n.Language         { return c.language }
-func (c *Contact) Status() ContactStatus           { return c.status }
-func (c *Contact) Fields() map[string]*flows.Value { return c.fields }
-func (c *Contact) Groups() []*Group                { return c.groups }
-func (c *Contact) URNs() []urns.URN                { return c.urns }
-func (c *Contact) Ticket() *Ticket                 { return c.ticket }
-func (c *Contact) CreatedOn() time.Time            { return c.createdOn }
-func (c *Contact) ModifiedOn() time.Time           { return c.modifiedOn }
-func (c *Contact) LastSeenOn() *time.Time          { return c.lastSeenOn }
-func (c *Contact) CurrentFlowID() FlowID           { return c.currentFlowID }
+func (c *Contact) ID() ContactID                         { return c.id }
+func (c *Contact) UUID() flows.ContactUUID               { return c.uuid }
+func (c *Contact) Name() string                          { return c.name }
+func (c *Contact) Language() i18n.Language               { return c.language }
+func (c *Contact) Status() ContactStatus                 { return c.status }
+func (c *Contact) Fields() map[string]*flows.Value       { return c.fields }
+func (c *Contact) Groups() []*Group                      { return c.groups }
+func (c *Contact) URNs() []urns.URN                      { return c.urns }
+func (c *Contact) Ticket() *Ticket                       { return c.ticket }
+func (c *Contact) CreatedOn() time.Time                  { return c.createdOn }
+func (c *Contact) ModifiedOn() time.Time                 { return c.modifiedOn }
+func (c *Contact) LastSeenOn() *time.Time                { return c.lastSeenOn }
+func (c *Contact) CurrentFlowID() FlowID                 { return c.currentFlowID }
+func (c *Contact) CurrentSessionUUID() flows.SessionUUID { return c.currentSessionUUID }
 
 // URNForID returns the flow URN for the passed in URN, return NilURN if not found
 func (c *Contact) URNForID(urnID URNID) urns.URN {
@@ -328,16 +330,17 @@ func LoadContacts(ctx context.Context, db Queryer, oa *OrgAssets, ids []ContactI
 		}
 
 		contact := &Contact{
-			id:            e.ID,
-			orgID:         e.OrgID,
-			uuid:          e.UUID,
-			name:          e.Name,
-			language:      e.Language,
-			status:        e.Status,
-			createdOn:     e.CreatedOn,
-			modifiedOn:    e.ModifiedOn,
-			lastSeenOn:    e.LastSeenOn,
-			currentFlowID: e.CurrentFlowID,
+			id:                 e.ID,
+			orgID:              e.OrgID,
+			uuid:               e.UUID,
+			name:               e.Name,
+			language:           e.Language,
+			status:             e.Status,
+			createdOn:          e.CreatedOn,
+			modifiedOn:         e.ModifiedOn,
+			lastSeenOn:         e.LastSeenOn,
+			currentSessionUUID: flows.SessionUUID(e.CurrentSessionUUID),
+			currentFlowID:      e.CurrentFlowID,
 		}
 
 		// load our real groups (exclude status groups)
@@ -525,10 +528,11 @@ type contactEnvelope struct {
 		TopicID    TopicID          `json:"topic_id"`
 		AssigneeID UserID           `json:"assignee_id"`
 	} `json:"tickets"`
-	CreatedOn     time.Time  `json:"created_on"`
-	ModifiedOn    time.Time  `json:"modified_on"`
-	LastSeenOn    *time.Time `json:"last_seen_on"`
-	CurrentFlowID FlowID     `json:"current_flow_id"`
+	CurrentSessionUUID null.String `json:"current_session_uuid"`
+	CurrentFlowID      FlowID      `json:"current_flow_id"`
+	LastSeenOn         *time.Time  `json:"last_seen_on"`
+	CreatedOn          time.Time   `json:"created_on"`
+	ModifiedOn         time.Time   `json:"modified_on"`
 }
 
 const sqlSelectContact = `
@@ -539,15 +543,15 @@ SELECT ROW_TO_JSON(r) FROM (SELECT
 	name,
 	language,
 	status,
-	is_active,
-	created_on,
-	modified_on,
-	last_seen_on,
-	current_flow_id,
 	fields,
 	g.groups AS group_ids,
 	u.urns AS urns,
-	t.tickets AS tickets
+	t.tickets AS tickets,
+	current_session_uuid,
+	current_flow_id,
+	last_seen_on,
+	created_on,
+	modified_on
 FROM
 	contacts_contact c
 LEFT JOIN (
@@ -583,9 +587,7 @@ LEFT JOIN (
 		contact_id
 ) t ON c.id = t.contact_id
 WHERE 
-	c.id = ANY($1) AND
-	is_active = TRUE AND
-	c.org_id = $2
+	c.id = ANY($1) AND is_active = TRUE AND c.org_id = $2
 ) r;
 `
 
