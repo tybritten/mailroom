@@ -104,7 +104,6 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		OrgID:        m.OrgID(),
 		Text:         m.Text(),
 		Attachments:  m.Attachments(),
-		QuickReplies: m.QuickReplies(),
 		Locale:       m.Locale(),
 		HighPriority: m.HighPriority(),
 		MsgCount:     m.MsgCount(),
@@ -117,6 +116,11 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		URNAuth:      string(u.AuthTokens["default"]),
 		Metadata:     m.Metadata(),
 		IsResend:     m.IsResend,
+	}
+
+	msg.QuickReplies = make([]string, len(m.QuickReplies()))
+	for i, qr := range m.QuickReplies() {
+		msg.QuickReplies[i] = qr.Text
 	}
 
 	if m.FlowID() != models.NilFlowID {
