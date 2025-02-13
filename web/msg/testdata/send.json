@@ -62,7 +62,7 @@
             "urn": "tel:+16055741111?id=10000",
             "text": "hello",
             "attachments": [],
-            "quick_replies": null,
+            "quick_replies": [],
             "status": "Q",
             "created_on": "2018-07-06T12:30:00.123456789Z",
             "modified_on": "$recent_timestamp$"
@@ -104,7 +104,7 @@
                 "image/jpeg:https://aws.com/test/test.jpg",
                 "audio/mp3:https://aws.com/test/test.mp3"
             ],
-            "quick_replies": null,
+            "quick_replies": [],
             "status": "Q",
             "created_on": "2018-07-06T12:30:00.123456789Z",
             "modified_on": "$recent_timestamp$"
@@ -135,7 +135,7 @@
             "urn": "tel:+16055741111?id=10000",
             "text": "we can help",
             "attachments": [],
-            "quick_replies": null,
+            "quick_replies": [],
             "status": "Q",
             "created_on": "2018-07-06T12:30:00.123456789Z",
             "modified_on": "$recent_timestamp$"
@@ -168,7 +168,7 @@
             "user_id": 3,
             "contact_id": 10000,
             "text": "What is your preferred color?",
-            "quick_replies": ["Red", "Green", "Blue"]
+            "quick_replies": [{"text": "Red"}, {"text": "Green"}, {"text": "Blue"}]
         },
         "status": 200,
         "response": {
@@ -184,7 +184,7 @@
             "urn": "tel:+16055741111?id=10000",
             "text": "What is your preferred color?",
             "attachments": [],
-            "quick_replies": ["Red", "Green", "Blue"],
+            "quick_replies": [{"text": "Red"}, {"text": "Green"}, {"text": "Blue"}],
             "status": "Q",
             "created_on": "2018-07-06T12:30:00.123456789Z",
             "modified_on": "$recent_timestamp$"
