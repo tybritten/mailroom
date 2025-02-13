@@ -822,7 +822,7 @@ UPDATE flows_flowrun
 
 const sqlExitSessionContacts = `
  UPDATE contacts_contact 
-    SET current_flow_id = NULL, modified_on = NOW() 
+    SET current_session_uuid = NULL, current_flow_id = NULL, modified_on = NOW() 
   WHERE id = ANY($1)`
 
 // exits sessions and their runs inside the given transaction

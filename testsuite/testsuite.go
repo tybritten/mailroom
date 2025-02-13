@@ -268,7 +268,7 @@ func resetDynamo(ctx context.Context, rt *runtime.Runtime) {
 }
 
 var sqlResetTestData = `
-UPDATE contacts_contact SET current_flow_id = NULL;
+UPDATE contacts_contact SET current_session_uuid = NULL, current_flow_id = NULL;
 
 DELETE FROM tickets_ticketdailycount;
 DELETE FROM tickets_ticketdailytiming;
