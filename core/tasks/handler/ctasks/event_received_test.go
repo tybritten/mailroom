@@ -211,6 +211,21 @@ func TestChannelEvents(t *testing.T) {
 			expectedResponse:    "",
 			updatesLastSeen:     false,
 		},
+		{ // 10: a task for a delete contact
+			contact: testdata.Cathy,
+			task: &ctasks.EventReceivedTask{
+				EventID:    eventID,
+				EventType:  models.EventTypeDeleteContact,
+				ChannelID:  testdata.VonageChannel.ID,
+				URNID:      testdata.Cathy.URNID,
+				Extra:      null.Map[any]{},
+				CreatedOn:  time.Now(),
+				NewContact: false,
+			},
+			expectedTriggerType: "",
+			expectedResponse:    "",
+			updatesLastSeen:     false,
+		},
 	}
 
 	models.FlushCache()
