@@ -83,15 +83,6 @@ func handleSend(ctx context.Context, rt *runtime.Runtime, r *sendRequest) (any, 
 
 	msgio.QueueMessages(ctx, rt, rt.DB, []*models.Msg{msg})
 
-	// TODO remove this temp workaround once flows.QuickReply marshals as struct
-	type quickReply struct {
-		Text string `json:"text"`
-	}
-	msgQuickReplies := make([]quickReply, len(msg.QuickReplies()))
-	for i := range msg.QuickReplies() {
-		msgQuickReplies[i] = quickReply{Text: msg.QuickReplies()[i].Text}
-	}
-
 	return map[string]any{
 		"id":            msg.ID(),
 		"channel":       out.Channel(),
@@ -99,7 +90,7 @@ func handleSend(ctx context.Context, rt *runtime.Runtime, r *sendRequest) (any, 
 		"urn":           out.URN(),
 		"text":          msg.Text(),
 		"attachments":   msg.Attachments(),
-		"quick_replies": msgQuickReplies,
+		"quick_replies": msg.QuickReplies(),
 		"status":        msg.Status(),
 		"created_on":    msg.CreatedOn(),
 		"modified_on":   msg.ModifiedOn(),
