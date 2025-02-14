@@ -1,3 +1,9 @@
+v10.1.39 (2025-02-14)
+-------------------------
+ * Update to latest goflow that marshals quick replies as objects
+ * Start writing channel event UUID
+ * Add delete_contact channel event and handle as noop for now
+
 v10.1.38 (2025-02-13)
 -------------------------
  * Update to latest goflow which uses structs for quick replies
