@@ -791,7 +791,7 @@ func getOrCreateContact(ctx context.Context, db DB, orgID OrgID, urnz []urns.URN
 		return uniqueOwners[0], false, nil
 	}
 
-	contactID, err := tryInsertContactAndURNs(ctx, db, orgID, UserID(1), "", i18n.NilLanguage, ContactStatusActive, urnz, channelID)
+	contactID, err := tryInsertContactAndURNs(ctx, db, orgID, NilUserID, "", i18n.NilLanguage, ContactStatusActive, urnz, channelID)
 	if err == nil {
 		return contactID, true, nil
 	}
