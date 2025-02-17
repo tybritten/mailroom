@@ -680,36 +680,20 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 	return sessions, nil
 }
 
-const sqlSelectWaitingSessionForContact = `
-SELECT 
-	id,
-	uuid,
-	session_type,
-	status,
-	last_sprint_uuid,
-	output,
-	output_url,
-	contact_id,
-	created_on,
-	ended_on,
-	current_flow_id,
-	call_id
-FROM 
-	flows_flowsession fs
-WHERE
-    session_type = $1 AND
-	contact_id = $2 AND
-	status = 'W'
-ORDER BY
-	created_on DESC
-LIMIT 1
-`
+const sqlSelectSessionByUUID = `
+SELECT id, uuid, session_type, status, last_sprint_uuid, output, output_url, contact_id, created_on, ended_on, current_flow_id, call_id
+  FROM flows_flowsession fs
+ WHERE uuid = $1`
 
 // FindWaitingSessionForContact returns the waiting session for the passed in contact, if any
-func FindWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, sessionType FlowType, contact *flows.Contact) (*Session, error) {
-	rows, err := rt.DB.QueryxContext(ctx, sqlSelectWaitingSessionForContact, sessionType, contact.ID())
+func FindWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, mc *Contact, fc *flows.Contact) (*Session, error) {
+	if mc.currentSessionUUID == "" {
+		return nil, nil
+	}
+
+	rows, err := rt.DB.QueryxContext(ctx, sqlSelectSessionByUUID, mc.currentSessionUUID)
 	if err != nil {
-		return nil, fmt.Errorf("error selecting waiting session: %w", err)
+		return nil, fmt.Errorf("error selecting session %s: %w", mc.currentSessionUUID, err)
 	}
 	defer rows.Close()
 
@@ -720,12 +704,17 @@ func FindWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *
 
 	// scan in our session
 	session := &Session{
-		contact: contact,
+		contact: fc,
 	}
 	session.scene = NewSceneForSession(session)
 
 	if err := rows.StructScan(&session.s); err != nil {
 		return nil, fmt.Errorf("error scanning session: %w", err)
+	}
+
+	// ignore if this session somehow isn't a waiting session for this contact
+	if session.s.Status != SessionStatusWaiting || session.s.ContactID != ContactID(fc.ID()) {
+		return nil, nil
 	}
 
 	// load our output from storage if necessary

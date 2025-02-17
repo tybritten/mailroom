@@ -628,9 +628,9 @@ func insertTestSession(t *testing.T, ctx context.Context, rt *runtime.Runtime, c
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
 
-	_, flowContact, _ := contact.Load(rt, oa)
+	mc, fc, _ := contact.Load(rt, oa)
 
-	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, models.FlowTypeMessaging, flowContact)
+	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, mc, fc)
 	require.NoError(t, err)
 
 	return session

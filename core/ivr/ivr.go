@@ -411,12 +411,12 @@ func ResumeIVRFlow(
 		return fmt.Errorf("error creating flow contact: %w", err)
 	}
 
-	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, models.FlowTypeVoice, contact)
+	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, c, contact)
 	if err != nil {
 		return fmt.Errorf("error loading session for contact: %w", err)
 	}
 
-	if session == nil {
+	if session == nil || session.SessionType() != models.FlowTypeVoice {
 		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("no active IVR session for contact"))
 	}
 

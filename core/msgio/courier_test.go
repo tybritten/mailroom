@@ -36,7 +36,7 @@ func TestNewCourierMsg(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, oa.Org().Suspended())
 
-	_, cathy, cathyURNs := testdata.Cathy.Load(rt, oa)
+	mCathy, fCathy, cathyURNs := testdata.Cathy.Load(rt, oa)
 	_, fred, fredURNs := testFred.Load(rt, oa)
 
 	twilio := oa.ChannelByUUID(testdata.TwilioChannel.UUID)
@@ -66,7 +66,7 @@ func TestNewCourierMsg(t *testing.T) {
 
 	// create a non-priority flow message.. i.e. the session isn't responding to an incoming message
 	testdata.InsertWaitingSession(rt, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
-	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, models.FlowTypeMessaging, cathy)
+	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, mCathy, fCathy)
 	require.NoError(t, err)
 
 	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), facebook, session, flow, flowMsg1, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
@@ -115,7 +115,7 @@ func TestNewCourierMsg(t *testing.T) {
 	}`, session.UUID(), session.LastSprintUUID(), msg1.UUID()))
 
 	// create a priority flow message.. i.e. the session is responding to an incoming message
-	cathy.SetLastSeenOn(time.Date(2023, 4, 20, 10, 15, 0, 0, time.UTC))
+	fCathy.SetLastSeenOn(time.Date(2023, 4, 20, 10, 15, 0, 0, time.UTC))
 	flowMsg2 := flows.NewMsgOut(
 		cathyURN,
 		assets.NewChannelReference(testdata.TwilioChannel.UUID, "Test Channel"),
