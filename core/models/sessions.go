@@ -59,7 +59,6 @@ type Session struct {
 		Output         null.String       `db:"output"`
 		OutputURL      null.String       `db:"output_url"`
 		ContactID      ContactID         `db:"contact_id"`
-		OrgID          OrgID             `db:"org_id"`
 		CreatedOn      time.Time         `db:"created_on"`
 		EndedOn        *time.Time        `db:"ended_on"`
 		CurrentFlowID  FlowID            `db:"current_flow_id"`
@@ -478,7 +477,6 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 	s.SessionType = sessionType
 	s.Output = null.String(output)
 	s.ContactID = ContactID(fs.Contact().ID())
-	s.OrgID = oa.OrgID()
 	s.CreatedOn = fs.Runs()[0].CreatedOn()
 
 	if s.Status != SessionStatusWaiting {
@@ -522,26 +520,26 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 
 const sqlInsertWaitingSession = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output,  output_url,  contact_id,  org_id,  created_on,  current_flow_id,  call_id)
-               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output, :output_url, :contact_id, :org_id, :created_on, :current_flow_id, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output,  output_url,  contact_id,  created_on,  current_flow_id,  call_id)
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output, :output_url, :contact_id, :created_on, :current_flow_id, :call_id)
 RETURNING id`
 
 const sqlInsertWaitingSessionNoOutput = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output_url,  contact_id,  org_id,  created_on,  current_flow_id,  call_id)
-               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output_url, :contact_id, :org_id, :created_on, :current_flow_id, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output_url,  contact_id,  created_on,  current_flow_id,  call_id)
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output_url, :contact_id, :created_on, :current_flow_id, :call_id)
 RETURNING id`
 
 const sqlInsertEndedSession = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output,  output_url,  contact_id,  org_id,  created_on,  ended_on,  call_id)
-               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output, :output_url, :contact_id, :org_id, :created_on, :ended_on, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output,  output_url,  contact_id,  created_on,  ended_on,  call_id)
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output, :output_url, :contact_id, :created_on, :ended_on, :call_id)
 RETURNING id`
 
 const sqlInsertEndedSessionNoOutput = `
 INSERT INTO
-	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output_url,  contact_id,  org_id,  created_on,  ended_on,  call_id)
-               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output_url, :contact_id, :org_id, :created_on, :ended_on, :call_id)
+	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output_url,  contact_id,  created_on,  ended_on,  call_id)
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output_url, :contact_id, :created_on, :ended_on, :call_id)
 RETURNING id`
 
 // InsertSessions writes the passed in session to our database, writes any runs that need to be created

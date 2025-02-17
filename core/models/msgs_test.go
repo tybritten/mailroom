@@ -163,7 +163,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 
 		flow, _ := oa.FlowByID(tc.Flow.ID)
 
-		session := insertTestSession(t, ctx, rt, testdata.Org1, tc.Contact)
+		session := insertTestSession(t, ctx, rt, tc.Contact)
 		if tc.ResponseTo != models.NilMsgID {
 			session.SetIncomingMsg(tc.ResponseTo, null.NullString)
 		}
@@ -226,7 +226,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 	require.NoError(t, err)
 	channel := oa.ChannelByUUID(testdata.TwilioChannel.UUID)
 	flow, _ := oa.FlowByID(testdata.Favorites.ID)
-	session := insertTestSession(t, ctx, rt, testdata.Org1, testdata.Cathy)
+	session := insertTestSession(t, ctx, rt, testdata.Cathy)
 
 	// check that msg loop detection triggers after 20 repeats of the same text
 	newOutgoing := func(text string) *models.Msg {
@@ -578,7 +578,7 @@ func TestMsgTemplating(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetData)
 
 	oa := testdata.Org1.Load(rt)
-	session := insertTestSession(t, ctx, rt, testdata.Org1, testdata.Cathy)
+	session := insertTestSession(t, ctx, rt, testdata.Cathy)
 	channel := oa.ChannelByUUID(testdata.FacebookChannel.UUID)
 	chRef := assets.NewChannelReference(testdata.FacebookChannel.UUID, "FB")
 	flow, _ := oa.FlowByID(testdata.Favorites.ID)
@@ -622,8 +622,8 @@ func TestMsgTemplating(t *testing.T) {
 	assert.Nil(t, s.Templating)
 }
 
-func insertTestSession(t *testing.T, ctx context.Context, rt *runtime.Runtime, org *testdata.Org, contact *testdata.Contact) *models.Session {
-	testdata.InsertWaitingSession(rt, org, contact, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+func insertTestSession(t *testing.T, ctx context.Context, rt *runtime.Runtime, contact *testdata.Contact) *models.Session {
+	testdata.InsertWaitingSession(rt, contact, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
 
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
