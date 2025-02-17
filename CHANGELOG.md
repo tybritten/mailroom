@@ -1,3 +1,7 @@
+v10.1.42 (2025-02-17)
+-------------------------
+ * Stop writing FlowSession.org
+
 v10.1.41 (2025-02-17)
 -------------------------
  * Stop reading FlowSession.org
