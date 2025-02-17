@@ -645,14 +645,14 @@ func CreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, nam
 // * If URNs exist but are orphaned it creates a new contact and assigns those URNs to them.
 // * If URNs exists and belongs to a single contact it returns that contact (other URNs are not assigned to the contact).
 // * If URNs exists and belongs to multiple contacts it will return an error.
-func GetOrCreateContact(ctx context.Context, db DB, oa *OrgAssets, urnz []urns.URN, channelID ChannelID) (*Contact, *flows.Contact, bool, error) {
+func GetOrCreateContact(ctx context.Context, db DB, oa *OrgAssets, userID UserID, urnz []urns.URN, channelID ChannelID) (*Contact, *flows.Contact, bool, error) {
 	// ensure all URNs are normalized and valid
 	urnz, err := nornalizeAndValidateURNs(urnz)
 	if err != nil {
 		return nil, nil, false, err
 	}
 
-	contactID, created, err := getOrCreateContact(ctx, db, oa.OrgID(), urnz, channelID)
+	contactID, created, err := getOrCreateContact(ctx, db, oa.OrgID(), userID, urnz, channelID)
 	if err != nil {
 		return nil, nil, false, err
 	}
@@ -681,7 +681,7 @@ func GetOrCreateContact(ctx context.Context, db DB, oa *OrgAssets, urnz []urns.U
 
 // GetOrCreateContactsFromURNs will fetch or create the contacts for the passed in URNs, returning a map of the fetched
 // contacts and another map of the created contacts.
-func GetOrCreateContactsFromURNs(ctx context.Context, db DB, oa *OrgAssets, urnz []urns.URN) (map[urns.URN]*Contact, map[urns.URN]*Contact, error) {
+func GetOrCreateContactsFromURNs(ctx context.Context, db DB, oa *OrgAssets, userID UserID, urnz []urns.URN) (map[urns.URN]*Contact, map[urns.URN]*Contact, error) {
 	// ensure all URNs are normalized and valid
 	urnz, err := nornalizeAndValidateURNs(urnz)
 	if err != nil {
@@ -700,7 +700,7 @@ func GetOrCreateContactsFromURNs(ctx context.Context, db DB, oa *OrgAssets, urnz
 	// create any contacts that are missing
 	for urn, contact := range owners {
 		if contact == nil {
-			contact, _, _, err := GetOrCreateContact(ctx, db, oa, []urns.URN{urn}, NilChannelID)
+			contact, _, _, err := GetOrCreateContact(ctx, db, oa, userID, []urns.URN{urn}, NilChannelID)
 			if err != nil {
 				return nil, nil, fmt.Errorf("error creating contact: %w", err)
 			}
@@ -777,7 +777,7 @@ func contactsFromURNs(ctx context.Context, db Queryer, oa *OrgAssets, urnz []urn
 	return byURN, nil
 }
 
-func getOrCreateContact(ctx context.Context, db DB, orgID OrgID, urnz []urns.URN, channelID ChannelID) (ContactID, bool, error) {
+func getOrCreateContact(ctx context.Context, db DB, orgID OrgID, userID UserID, urnz []urns.URN, channelID ChannelID) (ContactID, bool, error) {
 	// find current owners of these URNs
 	owners, err := GetContactIDsFromURNs(ctx, db, orgID, urnz)
 	if err != nil {
@@ -791,7 +791,7 @@ func getOrCreateContact(ctx context.Context, db DB, orgID OrgID, urnz []urns.URN
 		return uniqueOwners[0], false, nil
 	}
 
-	contactID, err := tryInsertContactAndURNs(ctx, db, orgID, NilUserID, "", i18n.NilLanguage, ContactStatusActive, urnz, channelID)
+	contactID, err := tryInsertContactAndURNs(ctx, db, orgID, userID, "", i18n.NilLanguage, ContactStatusActive, urnz, channelID)
 	if err == nil {
 		return contactID, true, nil
 	}

@@ -178,9 +178,9 @@ func TestNewCourierMsg(t *testing.T) {
 		"tps_cost": 1,
 		"urn": "tel:+593979123456",
 		"urn_auth": "sesame",
-		"user_id": 3,
+		"user_id": %d,
 		"uuid": "%s"
-	}`, msg3.CreatedOn().Format(time.RFC3339Nano), msg3.UUID()))
+	}`, msg3.CreatedOn().Format(time.RFC3339Nano), testdata.Admin.ID, msg3.UUID()))
 
 	msg4 := models.NewOutgoingOptInMsg(rt, session, flow, optIn, twilio, "tel:+16055741111?id=10000", time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg4})

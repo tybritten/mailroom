@@ -89,3 +89,12 @@ func loadUsers(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.User, err
 
 	return ScanJSONRows(rows, func() assets.User { return &User{} })
 }
+
+func GetSystemUserID(ctx context.Context, db *sql.DB) (UserID, error) {
+	var id UserID
+	err := db.QueryRowContext(ctx, "SELECT id FROM users_user WHERE username = 'system'").Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("error getting system user id: %w", err)
+	}
+	return id, nil
+}
