@@ -1,3 +1,7 @@
+v10.1.40 (2025-02-17)
+-------------------------
+ * Use system user for created contacts that don't have an explicit user
+
 v10.1.39 (2025-02-14)
 -------------------------
  * Update to latest goflow that marshals quick replies as objects
