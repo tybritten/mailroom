@@ -326,11 +326,11 @@ func NewOutgoingIVR(cfg *runtime.Config, orgID OrgID, call *Call, out *flows.Msg
 }
 
 // NewOutgoingOptInMsg creates an outgoing optin message
-func NewOutgoingOptInMsg(rt *runtime.Runtime, session *Session, flow *Flow, optIn *OptIn, channel *Channel, urn urns.URN, createdOn time.Time) *Msg {
+func NewOutgoingOptInMsg(rt *runtime.Runtime, orgID OrgID, session *Session, flow *Flow, optIn *OptIn, channel *Channel, urn urns.URN, createdOn time.Time) *Msg {
 	msg := &Msg{}
 	m := &msg.m
 	m.UUID = flows.MsgUUID(uuids.NewV4())
-	m.OrgID = session.OrgID()
+	m.OrgID = orgID
 	m.ContactID = session.ContactID()
 	m.HighPriority = session.IncomingMsgID() != NilMsgID
 	m.Direction = DirectionOut
