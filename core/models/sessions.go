@@ -91,7 +91,6 @@ type Session struct {
 
 func (s *Session) ID() SessionID                      { return s.s.ID }
 func (s *Session) UUID() flows.SessionUUID            { return s.s.UUID }
-func (s *Session) OrgID() OrgID                       { return s.s.OrgID }
 func (s *Session) ContactID() ContactID               { return s.s.ContactID }
 func (s *Session) SessionType() FlowType              { return s.s.SessionType }
 func (s *Session) Status() SessionStatus              { return s.s.Status }
@@ -107,13 +106,13 @@ func (s *Session) IncomingMsgExternalID() null.String { return s.incomingExterna
 func (s *Session) Scene() *Scene                      { return s.scene }
 
 // StoragePath returns the path for the session
-func (s *Session) StoragePath() string {
+func (s *Session) StoragePath(orgID OrgID) string {
 	ts := s.CreatedOn().UTC().Format(storageTSFormat)
 
 	// example output: orgs/1/c/20a5/20a5534c-b2ad-4f18-973a-f1aa3b4e6c74/20060102T150405.123Z_session_8a7fc501-177b-4567-a0aa-81c48e6de1c5_51df83ac21d3cf136d8341f0b11cb1a7.json"
 	return path.Join(
 		"orgs",
-		fmt.Sprintf("%d", s.OrgID()),
+		fmt.Sprintf("%d", orgID),
 		"c",
 		string(s.ContactUUID()[:4]),
 		string(s.ContactUUID()),
@@ -206,10 +205,10 @@ func (s *Session) GetNewFires(oa *OrgAssets, sprint flows.Sprint) []*ContactFire
 	fs := make([]*ContactFire, 0, 2)
 
 	if waitExpiresOn != nil {
-		fs = append(fs, NewContactFireForSession(s, ContactFireTypeWaitExpiration, *waitExpiresOn))
+		fs = append(fs, NewContactFireForSession(oa.OrgID(), s, ContactFireTypeWaitExpiration, *waitExpiresOn))
 	}
 	if waitTimeoutOn != nil {
-		fs = append(fs, NewContactFireForSession(s, ContactFireTypeWaitTimeout, *waitTimeoutOn))
+		fs = append(fs, NewContactFireForSession(oa.OrgID(), s, ContactFireTypeWaitTimeout, *waitTimeoutOn))
 	}
 
 	return fs
@@ -331,7 +330,7 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 
 	// if writing to S3, do so
 	if rt.Config.SessionStorage == "s3" {
-		err := WriteSessionOutputsToStorage(ctx, rt, []*Session{s})
+		err := WriteSessionOutputsToStorage(ctx, rt, oa.OrgID(), []*Session{s})
 		if err != nil {
 			slog.Error("error writing session to s3", "error", err)
 		}
@@ -592,7 +591,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 
 	// if writing our sessions to S3, do so
 	if rt.Config.SessionStorage == "s3" {
-		err := WriteSessionOutputsToStorage(ctx, rt, sessions)
+		err := WriteSessionOutputsToStorage(ctx, rt, oa.OrgID(), sessions)
 		if err != nil {
 			return nil, fmt.Errorf("error writing sessions to storage: %w", err)
 		}
@@ -693,7 +692,6 @@ SELECT
 	output,
 	output_url,
 	contact_id,
-	org_id,
 	created_on,
 	ended_on,
 	current_flow_id,
@@ -757,14 +755,14 @@ func FindWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *
 
 // WriteSessionsToStorage writes the outputs of the passed in sessions to our storage (S3), updating the
 // output_url for each on success. Failure of any will cause all to fail.
-func WriteSessionOutputsToStorage(ctx context.Context, rt *runtime.Runtime, sessions []*Session) error {
+func WriteSessionOutputsToStorage(ctx context.Context, rt *runtime.Runtime, orgID OrgID, sessions []*Session) error {
 	start := time.Now()
 
 	uploads := make([]*s3x.Upload, len(sessions))
 	for i, s := range sessions {
 		uploads[i] = &s3x.Upload{
 			Bucket:      rt.Config.S3SessionsBucket,
-			Key:         s.StoragePath(),
+			Key:         s.StoragePath(orgID),
 			Body:        []byte(s.Output()),
 			ContentType: "application/json",
 			ACL:         types.ObjectCannedACLPrivate,

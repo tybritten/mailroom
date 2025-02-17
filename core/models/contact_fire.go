@@ -54,8 +54,8 @@ func newContactFire(orgID OrgID, contactID ContactID, typ ContactFireType, scope
 	}
 }
 
-func NewContactFireForSession(s *Session, typ ContactFireType, fireOn time.Time) *ContactFire {
-	return newContactFire(s.OrgID(), s.ContactID(), typ, "", fireOn, s.UUID(), s.LastSprintUUID(), ContactFireExtra{})
+func NewContactFireForSession(orgID OrgID, s *Session, typ ContactFireType, fireOn time.Time) *ContactFire {
+	return newContactFire(orgID, s.ContactID(), typ, "", fireOn, s.UUID(), s.LastSprintUUID(), ContactFireExtra{})
 }
 
 func NewContactFireForCampaign(orgID OrgID, contactID ContactID, eventID CampaignEventID, fireOn time.Time) *ContactFire {
