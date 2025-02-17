@@ -1,3 +1,7 @@
+v10.1.41 (2025-02-17)
+-------------------------
+ * Stop reading FlowSession.org
+
 v10.1.40 (2025-02-17)
 -------------------------
  * Use system user for created contacts that don't have an explicit user
