@@ -20,7 +20,7 @@ func TestInterrupts(t *testing.T) {
 	oa := testdata.Org1.Load(rt)
 
 	insertSession := func(org *testdata.Org, contact *testdata.Contact, flow *testdata.Flow, connectionID models.CallID) models.SessionID {
-		sessionID := testdata.InsertWaitingSession(rt, org, contact, models.FlowTypeMessaging, flow, connectionID)
+		sessionID := testdata.InsertWaitingSession(rt, contact, models.FlowTypeMessaging, flow, connectionID)
 
 		// give session one waiting run too
 		testdata.InsertFlowRun(rt, org, sessionID, contact, flow, models.RunStatusWaiting, "")
