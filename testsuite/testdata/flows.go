@@ -109,13 +109,17 @@ func InsertFlowSession(rt *runtime.Runtime, contact *Contact, sessionType models
 	return id
 }
 
-// InsertWaitingSession inserts a waiting flow session
+// InsertWaitingSession inserts a waiting flow session and updates the contact
 func InsertWaitingSession(rt *runtime.Runtime, contact *Contact, sessionType models.FlowType, currentFlow *Flow, callID models.CallID) models.SessionID {
 	var id models.SessionID
+	uuid := flows.SessionUUID(uuids.NewV4())
 	must(rt.DB.Get(&id,
 		`INSERT INTO flows_flowsession(uuid, contact_id, status, last_sprint_uuid, output, created_on, session_type, current_flow_id, call_id) 
-		 VALUES($1, $2, 'W', $3, '{"status":"waiting"}', NOW(), $4, $5, $6) RETURNING id`, uuids.NewV4(), contact.ID, uuids.NewV4(), sessionType, currentFlow.ID, callID,
+		 VALUES($1, $2, 'W', $3, '{"status":"waiting"}', NOW(), $4, $5, $6) RETURNING id`, uuid, contact.ID, uuids.NewV4(), sessionType, currentFlow.ID, callID,
 	))
+
+	rt.DB.MustExec(`UPDATE contacts_contact SET current_session_uuid = $2, current_flow_id = $3 WHERE id = $1`, contact.ID, uuid, currentFlow.ID)
+
 	return id
 }
 
