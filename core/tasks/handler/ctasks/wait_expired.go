@@ -54,9 +54,9 @@ func (t *WaitExpiredTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		return nil
 	}
 
-	if session.SessionType() == models.FlowTypeVoice && session.CallID() != nil {
+	if session.SessionType() == models.FlowTypeVoice {
 		// load our call
-		conn, err := models.GetCallByID(ctx, rt.DB, oa.OrgID(), *session.CallID())
+		conn, err := models.GetCallByID(ctx, rt.DB, oa.OrgID(), session.CallID())
 		if err != nil {
 			return fmt.Errorf("error loading call for voice session: %w", err)
 		}

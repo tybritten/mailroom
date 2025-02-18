@@ -62,7 +62,7 @@ type Session struct {
 		CreatedOn      time.Time         `db:"created_on"`
 		EndedOn        *time.Time        `db:"ended_on"`
 		CurrentFlowID  FlowID            `db:"current_flow_id"`
-		CallID         *CallID           `db:"call_id"`
+		CallID         CallID            `db:"call_id"`
 	}
 
 	incomingMsgID      MsgID
@@ -99,7 +99,7 @@ func (s *Session) OutputURL() string                  { return string(s.s.Output
 func (s *Session) CreatedOn() time.Time               { return s.s.CreatedOn }
 func (s *Session) EndedOn() *time.Time                { return s.s.EndedOn }
 func (s *Session) CurrentFlowID() FlowID              { return s.s.CurrentFlowID }
-func (s *Session) CallID() *CallID                    { return s.s.CallID }
+func (s *Session) CallID() CallID                     { return s.s.CallID }
 func (s *Session) IncomingMsgID() MsgID               { return s.incomingMsgID }
 func (s *Session) IncomingMsgExternalID() null.String { return s.incomingExternalID }
 func (s *Session) Scene() *Scene                      { return s.scene }
@@ -164,8 +164,7 @@ func (s *Session) SetIncomingMsg(id MsgID, externalID null.String) {
 
 // SetCall sets the channel connection associated with this sprint
 func (s *Session) SetCall(c *Call) {
-	connID := c.ID()
-	s.s.CallID = &connID
+	s.s.CallID = c.ID()
 	s.call = c
 }
 
