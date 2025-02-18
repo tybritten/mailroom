@@ -1,3 +1,7 @@
+v10.1.44 (2025-02-18)
+-------------------------
+ * Tweak task names used for wait expirations and timeouts
+
 v10.1.43 (2025-02-18)
 -------------------------
  * Get waiting session from Contact.current_session_uuid
