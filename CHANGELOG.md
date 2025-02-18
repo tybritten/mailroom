@@ -1,3 +1,7 @@
+v10.1.43 (2025-02-18)
+-------------------------
+ * Get waiting session from Contact.current_session_uuid
+
 v10.1.42 (2025-02-17)
 -------------------------
  * Stop writing FlowSession.org
