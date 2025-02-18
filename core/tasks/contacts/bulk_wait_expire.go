@@ -18,7 +18,6 @@ const TypeBulkWaitExpire = "bulk_wait_expire"
 
 func init() {
 	tasks.RegisterType(TypeBulkWaitExpire, func() tasks.Task { return &BulkWaitExpireTask{} })
-	tasks.RegisterType("bulk_session_expire", func() tasks.Task { return &BulkWaitExpireTask{} }) // deprecated
 }
 
 type WaitExpiration struct {

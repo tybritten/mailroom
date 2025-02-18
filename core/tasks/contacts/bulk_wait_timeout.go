@@ -18,7 +18,6 @@ const TypeBulkWaitTimeout = "bulk_wait_timeout"
 
 func init() {
 	tasks.RegisterType(TypeBulkWaitTimeout, func() tasks.Task { return &BulkWaitTimeoutTask{} })
-	tasks.RegisterType("bulk_session_timeout", func() tasks.Task { return &BulkWaitTimeoutTask{} }) // deprecated
 }
 
 type WaitTimeout struct {
