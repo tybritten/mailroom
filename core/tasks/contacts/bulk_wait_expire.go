@@ -13,46 +13,47 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-// TypeBulkSessionExpire is the type of the task
-const TypeBulkSessionExpire = "bulk_session_expire"
+// TypeBulkWaitExpire is the type of the task
+const TypeBulkWaitExpire = "bulk_wait_expire"
 
 func init() {
-	tasks.RegisterType(TypeBulkSessionExpire, func() tasks.Task { return &BulkSessionExpireTask{} })
+	tasks.RegisterType(TypeBulkWaitExpire, func() tasks.Task { return &BulkWaitExpireTask{} })
+	tasks.RegisterType("bulk_session_expire", func() tasks.Task { return &BulkWaitExpireTask{} }) // deprecated
 }
 
-type Expiration struct {
+type WaitExpiration struct {
 	ContactID   models.ContactID  `json:"contact_id"`
 	SessionUUID flows.SessionUUID `json:"session_uuid"`
 	SprintUUID  flows.SprintUUID  `json:"sprint_uuid"`
 }
 
-// BulkSessionExpireTask is the payload of the task
-type BulkSessionExpireTask struct {
-	Expirations []*Expiration `json:"expirations"`
+// BulkWaitExpireTask is the payload of the task
+type BulkWaitExpireTask struct {
+	Expirations []*WaitExpiration `json:"expirations"`
 }
 
-func (t *BulkSessionExpireTask) Type() string {
-	return TypeBulkSessionExpire
+func (t *BulkWaitExpireTask) Type() string {
+	return TypeBulkWaitExpire
 }
 
 // Timeout is the maximum amount of time the task can run for
-func (t *BulkSessionExpireTask) Timeout() time.Duration {
+func (t *BulkWaitExpireTask) Timeout() time.Duration {
 	return time.Hour
 }
 
-func (t *BulkSessionExpireTask) WithAssets() models.Refresh {
+func (t *BulkWaitExpireTask) WithAssets() models.Refresh {
 	return models.RefreshNone
 }
 
 // Perform creates the actual task
-func (t *BulkSessionExpireTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
+func (t *BulkWaitExpireTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
 	for _, e := range t.Expirations {
 		err := handler.QueueTask(rc, oa.OrgID(), e.ContactID, &ctasks.WaitExpiredTask{SessionUUID: e.SessionUUID, SprintUUID: e.SprintUUID})
 		if err != nil {
-			return fmt.Errorf("error queuing handle task for expiration on session %s: %w", e.SessionUUID, err)
+			return fmt.Errorf("error queuing handle task for wait expiration on session %s: %w", e.SessionUUID, err)
 		}
 	}
 

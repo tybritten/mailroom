@@ -81,13 +81,13 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 			for batch := range slices.Chunk(fs, c.taskBatchSize) {
 				if og.grouping == "expires" {
 					// turn expires into bulk expire tasks
-					es := make([]*Expiration, len(batch))
+					es := make([]*WaitExpiration, len(batch))
 					for i, f := range batch {
-						es[i] = &Expiration{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
+						es[i] = &WaitExpiration{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
 					}
 
 					// put expirations in throttled queue but high priority so they get priority over flow starts etc
-					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &BulkSessionExpireTask{Expirations: es}, true); err != nil {
+					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &BulkWaitExpireTask{Expirations: es}, true); err != nil {
 						return nil, fmt.Errorf("error queuing bulk session expire task for org #%d: %w", og.orgID, err)
 					}
 					numExpires += len(batch)
@@ -105,13 +105,13 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 					numHangups += len(batch)
 				} else if og.grouping == "timeouts" {
 					// turn timeouts into bulk timeout tasks
-					ts := make([]*Timeout, len(batch))
+					ts := make([]*WaitTimeout, len(batch))
 					for i, f := range batch {
-						ts[i] = &Timeout{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
+						ts[i] = &WaitTimeout{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
 					}
 
 					// queue to throttled queue but high priority so they get priority over flow starts etc
-					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &BulkSessionTimeoutTask{Timeouts: ts}, true); err != nil {
+					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &BulkWaitTimeoutTask{Timeouts: ts}, true); err != nil {
 						return nil, fmt.Errorf("error queuing bulk session timeout task for org #%d: %w", og.orgID, err)
 					}
 					numTimeouts += len(batch)
