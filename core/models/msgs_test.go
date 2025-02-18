@@ -623,7 +623,9 @@ func TestMsgTemplating(t *testing.T) {
 }
 
 func insertTestSession(t *testing.T, ctx context.Context, rt *runtime.Runtime, contact *testdata.Contact) *models.Session {
-	testdata.InsertWaitingSession(rt, contact, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+	_, sessionUUID := testdata.InsertWaitingSession(rt, contact, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+
+	rt.DB.MustExec(`UPDATE contacts_contact SET current_session_uuid = $2, current_flow_id = $3 WHERE id = $1`, contact.ID, sessionUUID, testdata.Favorites.ID)
 
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
