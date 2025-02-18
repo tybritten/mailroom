@@ -420,11 +420,11 @@ func ResumeIVRFlow(
 		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("no active IVR session for contact"))
 	}
 
-	if session.CallID() == nil {
+	if session.CallID() == models.NilCallID {
 		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("active session: %d has no call", session.ID()))
 	}
-	if *session.CallID() != call.ID() {
-		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("active session: %d does not match call: %d", session.ID(), *session.CallID()))
+	if session.CallID() != call.ID() {
+		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("active session: %d does not match call: %d", session.ID(), session.CallID()))
 	}
 
 	// check if call has been marked as errored - it maybe have been updated by status callback
