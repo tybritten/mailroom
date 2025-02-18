@@ -1,3 +1,9 @@
+v10.1.45 (2025-02-18)
+-------------------------
+ * Tweak handling of session.call_id
+ * Add support to wait_expired ctask for voice sessions
+ * Remove aliases for old task names
+
 v10.1.44 (2025-02-18)
 -------------------------
  * Tweak task names used for wait expirations and timeouts
