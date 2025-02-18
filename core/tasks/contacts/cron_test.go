@@ -56,11 +56,11 @@ func TestFiresCron(t *testing.T) {
 	assert.Equal(t, int(testdata.Org1.ID), ts[0].OwnerID)
 	assert.Equal(t, "bulk_campaign_trigger", ts[0].Type)
 	assert.Equal(t, int(testdata.Org1.ID), ts[1].OwnerID)
-	assert.Equal(t, "bulk_session_expire", ts[1].Type)
+	assert.Equal(t, "bulk_wait_expire", ts[1].Type)
 	assert.Equal(t, int(testdata.Org1.ID), ts[2].OwnerID)
-	assert.Equal(t, "bulk_session_timeout", ts[2].Type)
+	assert.Equal(t, "bulk_wait_timeout", ts[2].Type)
 	assert.Equal(t, int(testdata.Org2.ID), ts[3].OwnerID)
-	assert.Equal(t, "bulk_session_timeout", ts[3].Type)
+	assert.Equal(t, "bulk_wait_timeout", ts[3].Type)
 
 	decoded1 := &campaigns.BulkCampaignTriggerTask{}
 	jsonx.MustUnmarshal(ts[0].Task, decoded1)
@@ -68,13 +68,13 @@ func TestFiresCron(t *testing.T) {
 	assert.Equal(t, testdata.Alexandria.ID, decoded1.ContactIDs[0])
 	assert.Equal(t, models.CampaignEventID(6789), decoded1.EventID)
 
-	decoded2 := &contacts.BulkSessionExpireTask{}
+	decoded2 := &contacts.BulkWaitExpireTask{}
 	jsonx.MustUnmarshal(ts[1].Task, decoded2)
 	assert.Len(t, decoded2.Expirations, 2)
 	assert.Equal(t, flows.SessionUUID("4010a3b2-d1f2-42ae-9051-47d41a3ef923"), decoded2.Expirations[0].SessionUUID)
 	assert.Equal(t, flows.SessionUUID("f72b48df-5f6d-4e4f-955a-f5fb29ccb97b"), decoded2.Expirations[1].SessionUUID)
 
-	decoded3 := &contacts.BulkSessionTimeoutTask{}
+	decoded3 := &contacts.BulkWaitTimeoutTask{}
 	jsonx.MustUnmarshal(ts[2].Task, decoded3)
 	assert.Len(t, decoded3.Timeouts, 1)
 	assert.Equal(t, flows.SessionUUID("5c1248e3-f669-4a72-83f4-a29292fdad4d"), decoded3.Timeouts[0].SessionUUID)

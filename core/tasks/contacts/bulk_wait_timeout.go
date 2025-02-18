@@ -13,46 +13,47 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-// TypeBulkSessionTimeout is the type of the task
-const TypeBulkSessionTimeout = "bulk_session_timeout"
+// TypeBulkWaitTimeout is the type of the task
+const TypeBulkWaitTimeout = "bulk_wait_timeout"
 
 func init() {
-	tasks.RegisterType(TypeBulkSessionTimeout, func() tasks.Task { return &BulkSessionTimeoutTask{} })
+	tasks.RegisterType(TypeBulkWaitTimeout, func() tasks.Task { return &BulkWaitTimeoutTask{} })
+	tasks.RegisterType("bulk_session_timeout", func() tasks.Task { return &BulkWaitTimeoutTask{} }) // deprecated
 }
 
-type Timeout struct {
+type WaitTimeout struct {
 	ContactID   models.ContactID  `json:"contact_id"`
 	SessionUUID flows.SessionUUID `json:"session_uuid"`
 	SprintUUID  flows.SprintUUID  `json:"sprint_uuid"`
 }
 
-// BulkSessionTimeoutTask is the payload of the task
-type BulkSessionTimeoutTask struct {
-	Timeouts []*Timeout `json:"timeouts"`
+// BulkWaitTimeoutTask is the payload of the task
+type BulkWaitTimeoutTask struct {
+	Timeouts []*WaitTimeout `json:"timeouts"`
 }
 
-func (t *BulkSessionTimeoutTask) Type() string {
-	return TypeBulkSessionTimeout
+func (t *BulkWaitTimeoutTask) Type() string {
+	return TypeBulkWaitTimeout
 }
 
 // Timeout is the maximum amount of time the task can run for
-func (t *BulkSessionTimeoutTask) Timeout() time.Duration {
+func (t *BulkWaitTimeoutTask) Timeout() time.Duration {
 	return time.Hour
 }
 
-func (t *BulkSessionTimeoutTask) WithAssets() models.Refresh {
+func (t *BulkWaitTimeoutTask) WithAssets() models.Refresh {
 	return models.RefreshNone
 }
 
 // Perform creates the actual task
-func (t *BulkSessionTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
+func (t *BulkWaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets) error {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
 	for _, e := range t.Timeouts {
 		err := handler.QueueTask(rc, oa.OrgID(), e.ContactID, &ctasks.WaitTimeoutTask{SessionUUID: e.SessionUUID, SprintUUID: e.SprintUUID})
 		if err != nil {
-			return fmt.Errorf("error queuing handle task for expiration on session %s: %w", e.SessionUUID, err)
+			return fmt.Errorf("error queuing handle task for wait timeout on session %s: %w", e.SessionUUID, err)
 		}
 	}
 
