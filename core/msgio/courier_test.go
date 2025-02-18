@@ -67,7 +67,7 @@ func TestNewCourierMsg(t *testing.T) {
 	)
 
 	// create a non-priority flow message.. i.e. the session isn't responding to an incoming message
-	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, mCathy, fCathy)
+	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, mCathy, fCathy)
 	require.NoError(t, err)
 	require.NotNil(t, session)
 

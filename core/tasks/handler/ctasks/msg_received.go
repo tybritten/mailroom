@@ -134,7 +134,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	trigger, keyword := models.FindMatchingMsgTrigger(oa, channel, flowContact, t.Text)
 
 	// look for a waiting session for this contact
-	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, contact, flowContact)
+	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, contact, flowContact)
 	if err != nil {
 		return fmt.Errorf("error loading active session for contact: %w", err)
 	}

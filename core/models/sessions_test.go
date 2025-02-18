@@ -336,6 +336,24 @@ func TestSessionFailedStart(t *testing.T) {
 	assert.Equal(t, models.NilFlowID, modelContact.CurrentFlowID())
 }
 
+func TestGetWaitingSessionForContact(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetData)
+
+	sessionID := testdata.InsertWaitingSession(rt, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+	testdata.InsertFlowSession(rt, testdata.Cathy, models.FlowTypeMessaging, models.SessionStatusCompleted, testdata.Favorites, models.NilCallID)
+	testdata.InsertWaitingSession(rt, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+
+	oa := testdata.Org1.Load(rt)
+	mc, fc, _ := testdata.Cathy.Load(rt, oa)
+
+	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, mc, fc)
+	assert.NoError(t, err)
+	assert.NotNil(t, session)
+	assert.Equal(t, sessionID, session.ID())
+}
+
 func TestInterruptSessionsForContacts(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 

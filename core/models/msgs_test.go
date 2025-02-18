@@ -630,7 +630,7 @@ func insertTestSession(t *testing.T, ctx context.Context, rt *runtime.Runtime, c
 
 	mc, fc, _ := contact.Load(rt, oa)
 
-	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, mc, fc)
+	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, mc, fc)
 	require.NoError(t, err)
 
 	return session

@@ -685,8 +685,8 @@ SELECT id, uuid, session_type, status, last_sprint_uuid, output, output_url, con
   FROM flows_flowsession fs
  WHERE uuid = $1`
 
-// FindWaitingSessionForContact returns the waiting session for the passed in contact, if any
-func FindWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, mc *Contact, fc *flows.Contact) (*Session, error) {
+// GetWaitingSessionForContact returns the waiting session for the passed in contact, if any
+func GetWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, mc *Contact, fc *flows.Contact) (*Session, error) {
 	if mc.currentSessionUUID == "" {
 		return nil, nil
 	}
@@ -714,7 +714,7 @@ func FindWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *
 
 	// ignore if this session somehow isn't a waiting session for this contact
 	if session.s.Status != SessionStatusWaiting || session.s.ContactID != ContactID(fc.ID()) {
-		return nil, nil
+		return nil, fmt.Errorf("error getting waiting session for contact #%d: session mismatch", fc.ID())
 	}
 
 	// load our output from storage if necessary
