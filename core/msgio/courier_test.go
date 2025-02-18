@@ -32,6 +32,8 @@ func TestNewCourierMsg(t *testing.T) {
 	testFred := testdata.InsertContact(rt, testdata.Org1, "", "Fred", "eng", models.ContactStatusActive)
 	testdata.InsertContactURN(rt, testdata.Org1, testFred, "tel:+593979123456", 1000, map[string]string{fmt.Sprintf("optin:%d", optInID): "sesame"})
 
+	testdata.InsertWaitingSession(rt, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+
 	oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, testdata.Org1.ID, models.RefreshOptIns)
 	require.NoError(t, err)
 	require.False(t, oa.Org().Suspended())
@@ -65,9 +67,9 @@ func TestNewCourierMsg(t *testing.T) {
 	)
 
 	// create a non-priority flow message.. i.e. the session isn't responding to an incoming message
-	testdata.InsertWaitingSession(rt, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
 	session, err := models.FindWaitingSessionForContact(ctx, rt, oa, mCathy, fCathy)
 	require.NoError(t, err)
+	require.NotNil(t, session)
 
 	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), facebook, session, flow, flowMsg1, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	require.NoError(t, err)
