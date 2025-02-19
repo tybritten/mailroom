@@ -1,3 +1,7 @@
+v10.1.47 (2025-02-19)
+-------------------------
+ * Hangup expired voice sessions via regular expire task
+
 v10.1.46 (2025-02-19)
 -------------------------
  * Don't error when contact current session isn't right but instead log and ignore
