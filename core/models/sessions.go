@@ -711,9 +711,10 @@ func GetWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *O
 		return nil, fmt.Errorf("error scanning session: %w", err)
 	}
 
-	// ignore if this session somehow isn't a waiting session for this contact
+	// ignore and log if this session somehow isn't a waiting session for this contact
 	if session.s.Status != SessionStatusWaiting || session.s.ContactID != ContactID(fc.ID()) {
-		return nil, fmt.Errorf("error getting waiting session for contact #%d: session mismatch", fc.ID())
+		slog.Error("current session for contact isn't a waiting session", "session_uuid", mc.currentSessionUUID, "contact_id", fc.ID())
+		return nil, nil
 	}
 
 	// load our output from storage if necessary
