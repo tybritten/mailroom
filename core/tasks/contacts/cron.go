@@ -126,5 +126,5 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 		}
 	}
 
-	return map[string]any{"wait_expires": numExpires, "timeouts": numTimeouts, "campaigns": numCampaigns}, nil
+	return map[string]any{"wait_expires": numExpires, "wait_timeouts": numTimeouts, "campaigns": numCampaigns}, nil
 }
