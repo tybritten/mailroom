@@ -20,11 +20,6 @@ const (
 	ContactFireTypeCampaign       ContactFireType = "C"
 )
 
-type ContactFireExtra struct {
-	SessionID SessionID `json:"session_id,omitempty"`
-	CallID    CallID    `json:"call_id,omitempty"`
-}
-
 type ContactFire struct {
 	ID        ContactFireID   `db:"id"`
 	OrgID     OrgID           `db:"org_id"`
@@ -35,12 +30,9 @@ type ContactFire struct {
 
 	SessionUUID null.String `db:"session_uuid"`
 	SprintUUID  null.String `db:"sprint_uuid"`
-
-	// deprecated
-	Extra JSONB[ContactFireExtra] `db:"extra"`
 }
 
-func newContactFire(orgID OrgID, contactID ContactID, typ ContactFireType, scope string, fireOn time.Time, sessionUUID flows.SessionUUID, sprintUUID flows.SprintUUID, extra ContactFireExtra) *ContactFire {
+func newContactFire(orgID OrgID, contactID ContactID, typ ContactFireType, scope string, fireOn time.Time, sessionUUID flows.SessionUUID, sprintUUID flows.SprintUUID) *ContactFire {
 	return &ContactFire{
 		OrgID:     orgID,
 		ContactID: contactID,
@@ -50,20 +42,19 @@ func newContactFire(orgID OrgID, contactID ContactID, typ ContactFireType, scope
 
 		SessionUUID: null.String(sessionUUID),
 		SprintUUID:  null.String(sprintUUID),
-		Extra:       JSONB[ContactFireExtra]{extra},
 	}
 }
 
 func NewContactFireForSession(orgID OrgID, s *Session, typ ContactFireType, fireOn time.Time) *ContactFire {
-	return newContactFire(orgID, s.ContactID(), typ, "", fireOn, s.UUID(), s.LastSprintUUID(), ContactFireExtra{})
+	return newContactFire(orgID, s.ContactID(), typ, "", fireOn, s.UUID(), s.LastSprintUUID())
 }
 
 func NewContactFireForCampaign(orgID OrgID, contactID ContactID, eventID CampaignEventID, fireOn time.Time) *ContactFire {
-	return newContactFire(orgID, contactID, ContactFireTypeCampaign, fmt.Sprint(eventID), fireOn, "", "", ContactFireExtra{})
+	return newContactFire(orgID, contactID, ContactFireTypeCampaign, fmt.Sprint(eventID), fireOn, "", "")
 }
 
 const sqlSelectDueContactFires = `
-  SELECT id, org_id, contact_id, fire_type, scope, session_uuid, sprint_uuid, fire_on, extra
+  SELECT id, org_id, contact_id, fire_type, scope, session_uuid, sprint_uuid, fire_on
     FROM contacts_contactfire
    WHERE fire_on < NOW()
 ORDER BY fire_on ASC
@@ -144,8 +135,8 @@ func DeleteCampaignContactFires(ctx context.Context, db DBorTx, deletes []*FireD
 }
 
 var sqlInsertContactFires = `
-INSERT INTO contacts_contactfire( org_id,  contact_id,  fire_type,  scope,  fire_on,  session_uuid,  sprint_uuid,  extra)
-                          VALUES(:org_id, :contact_id, :fire_type, :scope, :fire_on, :session_uuid, :sprint_uuid, :extra)
+INSERT INTO contacts_contactfire( org_id,  contact_id,  fire_type,  scope,  fire_on,  session_uuid,  sprint_uuid, extra)
+                          VALUES(:org_id, :contact_id, :fire_type, :scope, :fire_on, :session_uuid, :sprint_uuid,  '{}')
 ON CONFLICT DO NOTHING`
 
 // InsertContactFires inserts the given contact fires (no error on conflict)

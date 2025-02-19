@@ -27,8 +27,8 @@ func TestChannelEvents(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetAll)
 
 	// schedule a campaign event for cathy and george
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeCampaign, fmt.Sprint(testdata.RemindersEvent1), time.Now(), "", map[string]any{})
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.George, models.ContactFireTypeCampaign, fmt.Sprint(testdata.RemindersEvent1), time.Now(), "", map[string]any{})
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeCampaign, fmt.Sprint(testdata.RemindersEvent1), time.Now(), "")
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.George, models.ContactFireTypeCampaign, fmt.Sprint(testdata.RemindersEvent1), time.Now(), "")
 
 	// and george to doctors group, cathy is already part of it
 	rt.DB.MustExec(`INSERT INTO contacts_contactgroup_contacts(contactgroup_id, contact_id) VALUES($1, $2);`, testdata.DoctorsGroup.ID, testdata.George.ID)
