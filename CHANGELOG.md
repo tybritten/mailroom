@@ -1,3 +1,9 @@
+v10.1.48 (2025-02-19)
+-------------------------
+ * Stop writing contactfire.extra so we can drop it
+ * Remove old IVR hangup task
+ * Clamp flow expires after values to 2 weeks instead of 30 days
+
 v10.1.47 (2025-02-19)
 -------------------------
  * Hangup expired voice sessions via regular expire task
