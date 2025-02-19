@@ -186,7 +186,7 @@ SELECT ROW_TO_JSON(r) FROM (
 				'flow_type', f.flow_type,
 				'expire_after_minutes', 
 					CASE f.flow_type 
-					WHEN 'M' THEN GREATEST(5, LEAST(f.expires_after_minutes, 43200))
+					WHEN 'M' THEN GREATEST(5, LEAST(f.expires_after_minutes, 20160))
 					WHEN 'V' THEN GREATEST(1, LEAST(f.expires_after_minutes, 15))
 					ELSE 0
 					END,
