@@ -66,7 +66,7 @@ func TestLoadFlows(t *testing.T) {
 			"Send All",
 			models.FlowTypeMessaging,
 			flows.FlowTypeMessaging,
-			43200 * time.Minute, // clamped to maximum
+			20160 * time.Minute, // clamped to maximum
 			&sixtyMinutes,       // uses default
 		},
 		{
