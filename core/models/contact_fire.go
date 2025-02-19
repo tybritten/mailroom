@@ -135,8 +135,8 @@ func DeleteCampaignContactFires(ctx context.Context, db DBorTx, deletes []*FireD
 }
 
 var sqlInsertContactFires = `
-INSERT INTO contacts_contactfire( org_id,  contact_id,  fire_type,  scope,  fire_on,  session_uuid,  sprint_uuid, extra)
-                          VALUES(:org_id, :contact_id, :fire_type, :scope, :fire_on, :session_uuid, :sprint_uuid,  '{}')
+INSERT INTO contacts_contactfire( org_id,  contact_id,  fire_type,  scope,  fire_on,  session_uuid,  sprint_uuid)
+                          VALUES(:org_id, :contact_id, :fire_type, :scope, :fire_on, :session_uuid, :sprint_uuid)
 ON CONFLICT DO NOTHING`
 
 // InsertContactFires inserts the given contact fires (no error on conflict)
