@@ -112,8 +112,8 @@ func InsertContactURN(rt *runtime.Runtime, org *Org, contact *Contact, urn urns.
 func InsertContactFire(rt *runtime.Runtime, org *Org, contact *Contact, typ models.ContactFireType, scope string, fireOn time.Time, sessionUUID flows.SessionUUID) models.ContactFireID {
 	var id models.ContactFireID
 	must(rt.DB.Get(&id,
-		`INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, fire_on, session_uuid, extra) 
-		 VALUES($1, $2, $3, $4, $5, $6, '{}') RETURNING id`, org.ID, contact.ID, typ, scope, fireOn, null.String(sessionUUID),
+		`INSERT INTO contacts_contactfire(org_id, contact_id, fire_type, scope, fire_on, session_uuid) 
+		 VALUES($1, $2, $3, $4, $5, $6) RETURNING id`, org.ID, contact.ID, typ, scope, fireOn, null.String(sessionUUID),
 	))
 	return id
 }
