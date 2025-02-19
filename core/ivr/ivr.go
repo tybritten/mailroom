@@ -129,7 +129,7 @@ func HangupCall(ctx context.Context, rt *runtime.Runtime, call *models.Call) (*m
 		clog.HTTP(trace)
 	}
 	if err != nil {
-		clog.Error(clogs.NewLogError("", "", err.Error()))
+		clog.Error(&clogs.LogError{Message: err.Error()})
 	}
 
 	if err := call.AttachLog(ctx, rt.DB, clog); err != nil {
@@ -261,7 +261,7 @@ func RequestStartForCall(ctx context.Context, rt *runtime.Runtime, channel *mode
 		clog.HTTP(trace)
 	}
 	if err != nil {
-		clog.Error(clogs.NewLogError("", "", err.Error()))
+		clog.Error(&clogs.LogError{Message: err.Error()})
 
 		// set our status as errored
 		err := call.UpdateStatus(ctx, rt.DB, models.CallStatusFailed, 0, time.Now())
@@ -478,7 +478,7 @@ func ResumeIVRFlow(
 	var svcErr error
 	switch res := ivrResume.(type) {
 	case InputResume:
-		resume, svcErr, err = buildMsgResume(ctx, rt, svc, channel, contact, urn, call, oa, r, res)
+		resume, svcErr, err = buildMsgResume(ctx, rt, svc, channel, contact, urn, call, oa, res)
 		if resume != nil {
 			session.SetIncomingMsg(models.MsgID(resume.(*resumes.MsgResume).Msg().ID()), null.NullString)
 		}
@@ -530,7 +530,7 @@ func buildDialResume(oa *models.OrgAssets, contact *flows.Contact, resume DialRe
 func buildMsgResume(
 	ctx context.Context, rt *runtime.Runtime,
 	svc Service, channel *models.Channel, contact *flows.Contact, urn urns.URN,
-	call *models.Call, oa *models.OrgAssets, r *http.Request, resume InputResume) (flows.Resume, error, error) {
+	call *models.Call, oa *models.OrgAssets, resume InputResume) (flows.Resume, error, error) {
 	// our msg UUID
 	msgUUID := flows.MsgUUID(uuids.NewV4())
 

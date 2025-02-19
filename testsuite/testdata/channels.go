@@ -19,8 +19,8 @@ func InsertChannel(rt *runtime.Runtime, org *Org, channelType models.ChannelType
 	uuid := assets.ChannelUUID(uuids.NewV4())
 	var id models.ChannelID
 	must(rt.DB.Get(&id,
-		`INSERT INTO channels_channel(uuid, org_id, channel_type, name, address, schemes, role, config, last_seen, is_system, log_policy, is_active, created_on, modified_on, created_by_id, modified_by_id) 
-		VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW(), FALSE, 'A', TRUE, NOW(), NOW(), 1, 1) RETURNING id`, uuid, org.ID, channelType, name, address, pq.Array(schemes), role, models.JSONB[map[string]any]{config},
+		`INSERT INTO channels_channel(uuid, org_id, channel_type, name, address, schemes, role, config, last_seen, is_system, is_enabled, log_policy, is_active, created_on, modified_on, created_by_id, modified_by_id)
+		VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW(), FALSE, TRUE, 'A', TRUE, NOW(), NOW(), 1, 1) RETURNING id`, uuid, org.ID, channelType, name, address, pq.Array(schemes), role, models.JSONB[map[string]any]{config},
 	))
 	return &Channel{ID: id, UUID: uuid, Type: channelType}
 }
