@@ -1,3 +1,9 @@
+v10.1.46 (2025-02-19)
+-------------------------
+ * Don't error when contact current session isn't right but instead log and ignore
+ * Add channel is_enabled field and only load channels with that set to TRUE
+ * Update to go 1.24
+
 v10.1.45 (2025-02-18)
 -------------------------
  * Tweak handling of session.call_id
