@@ -1,6 +1,6 @@
 module github.com/nyaruka/mailroom
 
-go 1.23
+go 1.24
 
 require (
 	firebase.google.com/go/v4 v4.15.1
