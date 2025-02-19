@@ -19,10 +19,10 @@ func TestContactFires(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-5*time.Second), "46aa1e25-9c01-44d7-8223-e43036627505", map[string]any{"call_id": 1234})
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-4*time.Second), "531e84a7-d883-40a0-8e7a-b4dde4428ce1", map[string]any{})
-	testdata.InsertContactFire(rt, testdata.Org2, testdata.Org2Contact, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-3*time.Second), "7c73b6e4-ae33-45a6-9126-be474234b69d", map[string]any{})
-	testdata.InsertContactFire(rt, testdata.Org2, testdata.Org2Contact, models.ContactFireTypeWaitTimeout, "", time.Now().Add(-2*time.Second), "7c73b6e4-ae33-45a6-9126-be474234b69d", map[string]any{})
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-5*time.Second), "46aa1e25-9c01-44d7-8223-e43036627505")
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-4*time.Second), "531e84a7-d883-40a0-8e7a-b4dde4428ce1")
+	testdata.InsertContactFire(rt, testdata.Org2, testdata.Org2Contact, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-3*time.Second), "7c73b6e4-ae33-45a6-9126-be474234b69d")
+	testdata.InsertContactFire(rt, testdata.Org2, testdata.Org2Contact, models.ContactFireTypeWaitTimeout, "", time.Now().Add(-2*time.Second), "7c73b6e4-ae33-45a6-9126-be474234b69d")
 
 	err := models.InsertContactFires(ctx, rt.DB, []*models.ContactFire{
 		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, testdata.RemindersEvent1.ID, time.Now().Add(2*time.Second)),
@@ -43,7 +43,6 @@ func TestContactFires(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, fires, 3)
 	assert.Equal(t, testdata.Cathy.ID, fires[0].ContactID)
-	assert.Equal(t, models.CallID(1234), fires[0].Extra.V.CallID)
 
 	err = models.DeleteContactFires(ctx, rt, []*models.ContactFire{fires[0], fires[1]})
 	assert.NoError(t, err)
@@ -56,7 +55,7 @@ func TestSessionContactFires(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeCampaign, "235", time.Now().Add(2*time.Second), "", map[string]any{})
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeCampaign, "235", time.Now().Add(2*time.Second), "")
 
 	testFlows := testdata.ImportFlows(rt, testdata.Org1, "testdata/session_test_flows.json")
 	flow := testFlows[0]
@@ -97,7 +96,7 @@ func TestCampaignContactFires(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-4*time.Second), "531e84a7-d883-40a0-8e7a-b4dde4428ce1", map[string]any{})
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-4*time.Second), "531e84a7-d883-40a0-8e7a-b4dde4428ce1")
 
 	fires := []*models.ContactFire{
 		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, testdata.RemindersEvent1.ID, time.Now()),

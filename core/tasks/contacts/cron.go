@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/campaigns"
-	"github.com/nyaruka/mailroom/core/tasks/ivr"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
@@ -39,7 +38,7 @@ func (c *FiresCron) AllInstances() bool {
 
 func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	start := time.Now()
-	numExpires, numHangups, numTimeouts, numCampaigns := 0, 0, 0, 0
+	numExpires, numTimeouts, numCampaigns := 0, 0, 0
 
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -62,11 +61,7 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 		for _, f := range fires {
 			og := orgAndGrouping{orgID: f.OrgID}
 			if f.Type == models.ContactFireTypeWaitExpiration {
-				if f.Extra.V.CallID == models.NilCallID {
-					og.grouping = "expires"
-				} else {
-					og.grouping = "hangups"
-				}
+				og.grouping = "expires"
 			} else if f.Type == models.ContactFireTypeWaitTimeout {
 				og.grouping = "timeouts"
 			} else if f.Type == models.ContactFireTypeCampaign {
@@ -91,18 +86,6 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 						return nil, fmt.Errorf("error queuing bulk session expire task for org #%d: %w", og.orgID, err)
 					}
 					numExpires += len(batch)
-				} else if og.grouping == "hangups" {
-					// turn voice expires into bulk hangup tasks
-					hs := make([]*ivr.Hangup, len(batch))
-					for i, f := range batch {
-						hs[i] = &ivr.Hangup{SessionID: f.Extra.V.SessionID, CallID: f.Extra.V.CallID}
-					}
-
-					// put hangups in batch queue but high priority so they get priority over imports etc
-					if err := tasks.Queue(rc, tasks.BatchQueue, og.orgID, &ivr.BulkCallHangupTask{Hangups: hs}, true); err != nil {
-						return nil, fmt.Errorf("error queuing bulk session hangup task for org #%d: %w", og.orgID, err)
-					}
-					numHangups += len(batch)
 				} else if og.grouping == "timeouts" {
 					// turn timeouts into bulk timeout tasks
 					ts := make([]*WaitTimeout, len(batch))
@@ -143,5 +126,5 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 		}
 	}
 
-	return map[string]any{"expires": numExpires, "hangups": numHangups, "timeouts": numTimeouts, "campaigns": numCampaigns}, nil
+	return map[string]any{"wait_expires": numExpires, "timeouts": numTimeouts, "campaigns": numCampaigns}, nil
 }
