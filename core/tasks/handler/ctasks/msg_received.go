@@ -72,7 +72,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		}
 	}
 
-	// if contact is blocked, or channel no longer exists, ignore this message but mark it as handled
+	// if contact is blocked, or channel no longer exists or is disabled, ignore this message but mark it as handled and archived
 	if contact.Status() == models.ContactStatusBlocked || channel == nil {
 		err := models.MarkMessageHandled(ctx, rt.DB, t.MsgID, models.MsgStatusHandled, models.VisibilityArchived, models.NilFlowID, models.NilTicketID, attachments, logUUIDs)
 		if err != nil {
