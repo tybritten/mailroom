@@ -93,10 +93,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"metadata": {"topic": "purchase"},
 		"org_id": 1,
 		"origin": "flow",
-		"quick_replies": [
-			"yes",
-			"no"
-		],
+		"quick_replies": [{"text": "yes"}, {"text": "no"}],
 		"session": {
 			"uuid": "%s",
 			"status": "W",

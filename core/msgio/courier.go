@@ -74,7 +74,7 @@ type Msg struct {
 	Origin               MsgOrigin          `json:"origin"`
 	Text                 string             `json:"text"`
 	Attachments          []utils.Attachment `json:"attachments,omitempty"`
-	QuickReplies         []string           `json:"quick_replies,omitempty"`
+	QuickReplies         []flows.QuickReply `json:"quick_replies,omitempty"`
 	Locale               i18n.Locale        `json:"locale,omitempty"`
 	Templating           *Templating        `json:"templating,omitempty"`
 	HighPriority         bool               `json:"high_priority"`
@@ -104,6 +104,7 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		OrgID:        m.OrgID(),
 		Text:         m.Text(),
 		Attachments:  m.Attachments(),
+		QuickReplies: m.QuickReplies(),
 		Locale:       m.Locale(),
 		HighPriority: m.HighPriority(),
 		MsgCount:     m.MsgCount(),
@@ -116,11 +117,6 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		URNAuth:      string(u.AuthTokens["default"]),
 		Metadata:     m.Metadata(),
 		IsResend:     m.IsResend,
-	}
-
-	msg.QuickReplies = make([]string, len(m.QuickReplies()))
-	for i, qr := range m.QuickReplies() {
-		msg.QuickReplies[i] = qr.Text
 	}
 
 	if m.FlowID() != models.NilFlowID {
