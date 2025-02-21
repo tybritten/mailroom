@@ -500,8 +500,10 @@ func insertSessionAndRun(rt *runtime.Runtime, contact *testdata.Contact, session
 	sessionID, sessionUUID := testdata.InsertFlowSession(rt, contact, sessionType, status, flow, connID)
 	runID := testdata.InsertFlowRun(rt, testdata.Org1, sessionID, sessionUUID, contact, flow, models.RunStatus(status), "")
 
-	// mark contact as being in that flow
-	rt.DB.MustExec(`UPDATE contacts_contact SET current_flow_id = $2 WHERE id = $1`, contact.ID, flow.ID)
+	if status == models.SessionStatusWaiting {
+		// mark contact as being in that flow
+		rt.DB.MustExec(`UPDATE contacts_contact SET current_session_uuid = $2, current_flow_id = $3 WHERE id = $1`, contact.ID, sessionUUID, flow.ID)
+	}
 
 	return sessionID, runID
 }

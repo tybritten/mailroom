@@ -779,6 +779,7 @@ func InterruptSessions(ctx context.Context, db *sqlx.DB, uuids []flows.SessionUU
 		}
 
 		if err := interruptSessionBatch(ctx, tx, batch); err != nil {
+			tx.Rollback()
 			return fmt.Errorf("error interrupting batch of sessions: %w", err)
 		}
 
@@ -812,18 +813,17 @@ func interruptSessionBatch(ctx context.Context, tx *sqlx.Tx, uuids []flows.Sessi
 	contactIDs := make([]ContactID, 0, len(uuids))
 
 	// first update the sessions themselves and get the contact ids
-	err := tx.SelectContext(ctx, &contactIDs, sqlInterruptSessions, pq.Array(uuids))
-	if err != nil {
+	if err := tx.SelectContext(ctx, &contactIDs, sqlInterruptSessions, pq.Array(uuids)); err != nil {
 		return fmt.Errorf("error exiting sessions: %w", err)
 	}
 
 	// then the runs that belong to these sessions
-	if _, err = tx.ExecContext(ctx, sqlInterruptSessionRuns, pq.Array(uuids)); err != nil {
+	if _, err := tx.ExecContext(ctx, sqlInterruptSessionRuns, pq.Array(uuids)); err != nil {
 		return fmt.Errorf("error exiting session runs: %w", err)
 	}
 
 	// and finally the contacts from each session
-	if _, err := tx.ExecContext(ctx, sqlInterruptSessionContacts, pq.Array(contactIDs)); err != nil {
+	if _, err := tx.ExecContext(ctx, sqlInterruptSessionContacts, pq.Array(contactIDs), pq.Array(uuids)); err != nil {
 		return fmt.Errorf("error exiting sessions: %w", err)
 	}
 
