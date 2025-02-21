@@ -769,7 +769,73 @@ func WriteSessionOutputsToStorage(ctx context.Context, rt *runtime.Runtime, orgI
 	return nil
 }
 
-// ExitSessions exits sessions and their runs. It batches the given session ids and exits each batch in a transaction.
+// InterruptSessions interrupts waiting sessions and their runs
+func InterruptSessions(ctx context.Context, db *sqlx.DB, uuids []flows.SessionUUID) error {
+	// split into batches and exit each batch in a transaction
+	for batch := range slices.Chunk(uuids, 100) {
+		tx, err := db.BeginTxx(ctx, nil)
+		if err != nil {
+			return fmt.Errorf("error starting transaction to interrupt sessions: %w", err)
+		}
+
+		if err := interruptSessionBatch(ctx, tx, batch); err != nil {
+			return fmt.Errorf("error interrupting batch of sessions: %w", err)
+		}
+
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("error committing session interrupts: %w", err)
+		}
+	}
+
+	return nil
+}
+
+const sqlInterruptSessions = `
+   UPDATE flows_flowsession
+      SET status = 'I', ended_on = NOW(), current_flow_id = NULL
+    WHERE uuid = ANY ($1) AND status = 'W'
+RETURNING contact_id`
+
+// TODO instead of having an index on session_uuid.. rework this to fetch the sessions and extract a list of run uuids?
+const sqlInterruptSessionRuns = `
+UPDATE flows_flowrun
+   SET exited_on = NOW(), status = 'I', modified_on = NOW()
+ WHERE session_uuid = ANY($1) AND status IN ('A', 'W')`
+
+const sqlInterruptSessionContacts = `
+ UPDATE contacts_contact 
+    SET current_session_uuid = NULL, current_flow_id = NULL, modified_on = NOW() 
+  WHERE id = ANY($1) AND current_session_uuid = ANY($2)`
+
+// interrupts sessions and their runs inside the given transaction
+func interruptSessionBatch(ctx context.Context, tx *sqlx.Tx, uuids []flows.SessionUUID) error {
+	contactIDs := make([]ContactID, 0, len(uuids))
+
+	// first update the sessions themselves and get the contact ids
+	err := tx.SelectContext(ctx, &contactIDs, sqlInterruptSessions, pq.Array(uuids))
+	if err != nil {
+		return fmt.Errorf("error exiting sessions: %w", err)
+	}
+
+	// then the runs that belong to these sessions
+	if _, err = tx.ExecContext(ctx, sqlInterruptSessionRuns, pq.Array(uuids)); err != nil {
+		return fmt.Errorf("error exiting session runs: %w", err)
+	}
+
+	// and finally the contacts from each session
+	if _, err := tx.ExecContext(ctx, sqlInterruptSessionContacts, pq.Array(contactIDs)); err != nil {
+		return fmt.Errorf("error exiting sessions: %w", err)
+	}
+
+	// delete any session wait/timeout fires for these contacts
+	if _, err := DeleteSessionContactFires(ctx, tx, contactIDs); err != nil {
+		return fmt.Errorf("error deleting session contact fires: %w", err)
+	}
+
+	return nil
+}
+
+// deprecated - replace with InterruptSessions
 func ExitSessions(ctx context.Context, db *sqlx.DB, sessionIDs []SessionID, status SessionStatus) error {
 	if len(sessionIDs) == 0 {
 		return nil
@@ -917,26 +983,22 @@ func InterruptSessionsForChannel(ctx context.Context, db *sqlx.DB, channelID Cha
 	return nil
 }
 
-const sqlWaitingSessionIDsForFlows = `
-SELECT id
-  FROM flows_flowsession
- WHERE status = 'W' AND current_flow_id = ANY($1);`
+const sqlWaitingSessionUUIDsForFlows = `
+SELECT DISTINCT session_uuid
+  FROM flows_flowrun
+ WHERE status IN ('A', 'W') AND flow_id = ANY($1);`
 
 // InterruptSessionsForFlows interrupts any waiting sessions currently in the given flows
 func InterruptSessionsForFlows(ctx context.Context, db *sqlx.DB, flowIDs []FlowID) error {
-	if len(flowIDs) == 0 {
-		return nil
-	}
+	var sessionUUIDs []flows.SessionUUID
 
-	sessionIDs := make([]SessionID, 0, len(flowIDs))
-
-	err := db.SelectContext(ctx, &sessionIDs, sqlWaitingSessionIDsForFlows, pq.Array(flowIDs))
+	err := db.SelectContext(ctx, &sessionUUIDs, sqlWaitingSessionUUIDsForFlows, pq.Array(flowIDs))
 	if err != nil {
 		return fmt.Errorf("error selecting waiting sessions for flows: %w", err)
 	}
 
-	if err := ExitSessions(ctx, db, sessionIDs, SessionStatusInterrupted); err != nil {
-		return fmt.Errorf("error exiting sessions: %w", err)
+	if err := InterruptSessions(ctx, db, sessionUUIDs); err != nil {
+		return fmt.Errorf("error interrupting sessions: %w", err)
 	}
 
 	return nil
