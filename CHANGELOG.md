@@ -1,3 +1,9 @@
+v10.1.49 (2025-02-21)
+-------------------------
+ * Reduce webhook service fetch limit to 256KiB
+ * Switch how we interrupt by flow to use run.session_uuid instead of run.session_id
+ * Queue messages to courier with rich quick replies
+
 v10.1.48 (2025-02-19)
 -------------------------
  * Stop writing contactfire.extra so we can drop it
