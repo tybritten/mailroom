@@ -341,7 +341,7 @@ func TestGetWaitingSessionForContact(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	sessionID := testdata.InsertWaitingSession(rt, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+	sessionID, sessionUUID := testdata.InsertWaitingSession(rt, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
 	testdata.InsertFlowSession(rt, testdata.Cathy, models.FlowTypeMessaging, models.SessionStatusCompleted, testdata.Favorites, models.NilCallID)
 	testdata.InsertWaitingSession(rt, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
 
@@ -352,6 +352,7 @@ func TestGetWaitingSessionForContact(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, session)
 	assert.Equal(t, sessionID, session.ID())
+	assert.Equal(t, sessionUUID, session.UUID())
 }
 
 func TestInterruptSessionsForContacts(t *testing.T) {
@@ -496,8 +497,8 @@ func TestInterruptSessionsForFlows(t *testing.T) {
 
 func insertSessionAndRun(rt *runtime.Runtime, contact *testdata.Contact, sessionType models.FlowType, status models.SessionStatus, flow *testdata.Flow, connID models.CallID) (models.SessionID, models.FlowRunID) {
 	// create session and add a run with same status
-	sessionID := testdata.InsertFlowSession(rt, contact, sessionType, status, flow, connID)
-	runID := testdata.InsertFlowRun(rt, testdata.Org1, sessionID, contact, flow, models.RunStatus(status), "")
+	sessionID, sessionUUID := testdata.InsertFlowSession(rt, contact, sessionType, status, flow, connID)
+	runID := testdata.InsertFlowRun(rt, testdata.Org1, sessionID, sessionUUID, contact, flow, models.RunStatus(status), "")
 
 	// mark contact as being in that flow
 	rt.DB.MustExec(`UPDATE contacts_contact SET current_flow_id = $2 WHERE id = $1`, contact.ID, flow.ID)
