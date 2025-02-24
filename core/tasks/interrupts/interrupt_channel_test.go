@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/interrupts"
@@ -21,12 +22,12 @@ func TestInterruptChannel(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 
-	insertSession := func(org *testdata.Org, contact *testdata.Contact, flow *testdata.Flow, connectionID models.CallID) models.SessionID {
+	insertSession := func(org *testdata.Org, contact *testdata.Contact, flow *testdata.Flow, connectionID models.CallID) (models.SessionID, flows.SessionUUID) {
 		sessionID, sessionUUID := testdata.InsertWaitingSession(rt, contact, models.FlowTypeMessaging, flow, connectionID)
 
 		// give session one waiting run too
 		testdata.InsertFlowRun(rt, org, sessionID, sessionUUID, contact, flow, models.RunStatusWaiting, "")
-		return sessionID
+		return sessionID, sessionUUID
 	}
 
 	// twilio call
@@ -35,9 +36,12 @@ func TestInterruptChannel(t *testing.T) {
 	// vonage call
 	vonageCallID := testdata.InsertCall(rt, testdata.Org1, testdata.VonageChannel, testdata.George)
 
-	sessionID1 := insertSession(testdata.Org1, testdata.Cathy, testdata.Favorites, models.NilCallID)
-	sessionID2 := insertSession(testdata.Org1, testdata.George, testdata.Favorites, vonageCallID)
-	sessionID3 := insertSession(testdata.Org1, testdata.Alexandria, testdata.Favorites, twilioCallID)
+	sessionID1, _ := insertSession(testdata.Org1, testdata.Cathy, testdata.Favorites, models.NilCallID)
+	sessionID2, sessionUUID2 := insertSession(testdata.Org1, testdata.George, testdata.Favorites, vonageCallID)
+	sessionID3, sessionUUID3 := insertSession(testdata.Org1, testdata.Alexandria, testdata.Favorites, twilioCallID)
+
+	rt.DB.MustExec(`UPDATE ivr_call SET session_uuid = $2 WHERE id = $1`, vonageCallID, sessionUUID2)
+	rt.DB.MustExec(`UPDATE ivr_call SET session_uuid = $2 WHERE id = $1`, twilioCallID, sessionUUID3)
 
 	testdata.InsertOutgoingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "how can we help", nil, models.MsgStatusPending, false)
 	testdata.InsertOutgoingMsg(rt, testdata.Org1, testdata.VonageChannel, testdata.Bob, "this failed", nil, models.MsgStatusQueued, false)
