@@ -64,7 +64,7 @@ func TestResponseForSprint(t *testing.T) {
 
 	provider := p.(*service)
 
-	conn, err := models.InsertCall(ctx, rt.DB, testdata.Org1.ID, testdata.VonageChannel.ID, models.NilStartID, testdata.Bob.ID, testdata.Bob.URNID, models.CallDirectionOut, models.CallStatusInProgress, "EX123")
+	call, err := models.InsertCall(ctx, rt.DB, testdata.Org1.ID, testdata.VonageChannel.ID, models.NilStartID, testdata.Bob.ID, testdata.Bob.URNID, models.CallDirectionOut, models.CallStatusInProgress, "EX123")
 	require.NoError(t, err)
 
 	indentMarshal = false
@@ -128,7 +128,7 @@ func TestResponseForSprint(t *testing.T) {
 	}
 
 	for i, tc := range tcs {
-		response, err := provider.responseForSprint(ctx, rt.RP, channel, conn, resumeURL, tc.events)
+		response, err := provider.responseForSprint(ctx, rt.RP, channel, call, resumeURL, tc.events)
 		assert.NoError(t, err, "%d: unexpected error")
 		assert.Equal(t, tc.expected, response, "%d: unexpected response", i)
 	}

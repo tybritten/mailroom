@@ -56,13 +56,13 @@ func (t *WaitExpiredTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 
 	if session.SessionType() == models.FlowTypeVoice {
 		// load our call
-		conn, err := models.GetCallByID(ctx, rt.DB, oa.OrgID(), session.CallID())
+		call, err := models.GetCallByID(ctx, rt.DB, oa.OrgID(), session.CallID())
 		if err != nil {
 			return fmt.Errorf("error loading call for voice session: %w", err)
 		}
 
 		// hang up our call
-		clog, err := ivr.HangupCall(ctx, rt, conn)
+		clog, err := ivr.HangupCall(ctx, rt, call)
 		if err != nil {
 			return fmt.Errorf("error hanging up call for voice session: %w", err)
 		}
