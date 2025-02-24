@@ -30,7 +30,7 @@ func handleIVRCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa 
 	}
 
 	// if our call is no longer in progress, return
-	if call.Status() != models.CallStatusInProgress {
+	if call.Status() != models.CallStatusWired && call.Status() != models.CallStatusInProgress {
 		return nil
 	}
 
