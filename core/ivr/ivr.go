@@ -314,7 +314,7 @@ func StartIVRFlow(
 
 	// check that call on service side is in the state we need to continue
 	if errorReason := svc.CheckStartRequest(r); errorReason != "" {
-		err := call.MarkErrored(ctx, rt.DB, dates.Now(), flow.IVRRetryWait(), errorReason)
+		err := call.SetErrored(ctx, rt.DB, dates.Now(), flow.IVRRetryWait(), errorReason)
 		if err != nil {
 			return fmt.Errorf("unable to mark call as errored: %w", err)
 		}
@@ -366,12 +366,6 @@ func StartIVRFlow(
 			Build()
 	}
 
-	// mark our call as started
-	err = call.MarkStarted(ctx, rt.DB, time.Now())
-	if err != nil {
-		return fmt.Errorf("error updating call status: %w", err)
-	}
-
 	// we set the call on the session before our event hooks fire so that IVR messages can be created with the right call reference
 	hook := func(ctx context.Context, tx *sqlx.Tx, rp *redis.Pool, oa *models.OrgAssets, sessions []*models.Session) error {
 		for _, session := range sessions {
@@ -390,9 +384,13 @@ func StartIVRFlow(
 		return fmt.Errorf("no ivr session created")
 	}
 
+	// mark our call as started
+	if err := call.SetInProgress(ctx, rt.DB, sessions[0].UUID(), time.Now()); err != nil {
+		return fmt.Errorf("error updating call status: %w", err)
+	}
+
 	// have our service output our session status
-	err = svc.WriteSessionResponse(ctx, rt, oa, channel, call, sessions[0], urn, resumeURL, r, w)
-	if err != nil {
+	if err := svc.WriteSessionResponse(ctx, rt, oa, channel, call, sessions[0], urn, resumeURL, r, w); err != nil {
 		return fmt.Errorf("error writing ivr response for start: %w", err)
 	}
 
@@ -617,7 +615,7 @@ func HandleIVRStatus(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAss
 			return fmt.Errorf("unable to load flow: %d: %w", start.FlowID, err)
 		}
 
-		call.MarkErrored(ctx, rt.DB, dates.Now(), flow.IVRRetryWait(), errorReason)
+		call.SetErrored(ctx, rt.DB, dates.Now(), flow.IVRRetryWait(), errorReason)
 
 		if call.Status() == models.CallStatusErrored {
 			return svc.WriteEmptyResponse(w, fmt.Sprintf("status updated: %s, next_attempt: %s", call.Status(), call.NextAttempt()))

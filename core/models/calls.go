@@ -8,6 +8,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/null/v3"
 )
 
@@ -64,6 +65,7 @@ type Call struct {
 		ModifiedOn   time.Time     `db:"modified_on"`
 		ExternalID   string        `db:"external_id"`
 		Status       CallStatus    `db:"status"`
+		SessionUUID  null.String   `db:"session_uuid"`
 		Direction    CallDirection `db:"direction"`
 		StartedOn    *time.Time    `db:"started_on"`
 		EndedOn      *time.Time    `db:"ended_on"`
@@ -79,17 +81,18 @@ type Call struct {
 	}
 }
 
-func (c *Call) ID() CallID              { return c.c.ID }
-func (c *Call) Status() CallStatus      { return c.c.Status }
-func (c *Call) ExternalID() string      { return c.c.ExternalID }
-func (c *Call) OrgID() OrgID            { return c.c.OrgID }
-func (c *Call) ContactID() ContactID    { return c.c.ContactID }
-func (c *Call) ContactURNID() URNID     { return c.c.ContactURNID }
-func (c *Call) ChannelID() ChannelID    { return c.c.ChannelID }
-func (c *Call) StartID() StartID        { return c.c.StartID }
-func (c *Call) ErrorReason() CallError  { return CallError(c.c.ErrorReason) }
-func (c *Call) ErrorCount() int         { return c.c.ErrorCount }
-func (c *Call) NextAttempt() *time.Time { return c.c.NextAttempt }
+func (c *Call) ID() CallID                     { return c.c.ID }
+func (c *Call) Status() CallStatus             { return c.c.Status }
+func (c *Call) SessionUUID() flows.SessionUUID { return flows.SessionUUID(c.c.SessionUUID) }
+func (c *Call) ExternalID() string             { return c.c.ExternalID }
+func (c *Call) OrgID() OrgID                   { return c.c.OrgID }
+func (c *Call) ContactID() ContactID           { return c.c.ContactID }
+func (c *Call) ContactURNID() URNID            { return c.c.ContactURNID }
+func (c *Call) ChannelID() ChannelID           { return c.c.ChannelID }
+func (c *Call) StartID() StartID               { return c.c.StartID }
+func (c *Call) ErrorReason() CallError         { return CallError(c.c.ErrorReason) }
+func (c *Call) ErrorCount() int                { return c.c.ErrorCount }
+func (c *Call) NextAttempt() *time.Time        { return c.c.NextAttempt }
 
 const sqlInsertCall = `
 INSERT INTO ivr_call
@@ -309,12 +312,13 @@ func (c *Call) UpdateExternalID(ctx context.Context, db DBorTx, id string) error
 	return nil
 }
 
-// MarkStarted updates the status for this call as well as sets the started on date
-func (c *Call) MarkStarted(ctx context.Context, db DBorTx, now time.Time) error {
+// SetInProgress sets the status of this call to IN_PROGRESS and records the session UUID and started time
+func (c *Call) SetInProgress(ctx context.Context, db DBorTx, sessionUUID flows.SessionUUID, now time.Time) error {
 	c.c.Status = CallStatusInProgress
+	c.c.SessionUUID = null.String(sessionUUID)
 	c.c.StartedOn = &now
 
-	_, err := db.ExecContext(ctx, `UPDATE ivr_call SET status = $2, started_on = $3, modified_on = NOW() WHERE id = $1`, c.c.ID, c.c.Status, c.c.StartedOn)
+	_, err := db.ExecContext(ctx, `UPDATE ivr_call SET status = $2, session_uuid = $3, started_on = $4, modified_on = NOW() WHERE id = $1`, c.c.ID, c.c.Status, c.c.SessionUUID, c.c.StartedOn)
 	if err != nil {
 		return fmt.Errorf("error marking call as started: %w", err)
 	}
@@ -322,8 +326,8 @@ func (c *Call) MarkStarted(ctx context.Context, db DBorTx, now time.Time) error 
 	return nil
 }
 
-// MarkErrored updates the status for this call to errored and schedules a retry if appropriate
-func (c *Call) MarkErrored(ctx context.Context, db DBorTx, now time.Time, retryWait *time.Duration, errorReason CallError) error {
+// SetErrored sets the status of this call to ERRORED and schedules a retry if appropriate
+func (c *Call) SetErrored(ctx context.Context, db DBorTx, now time.Time, retryWait *time.Duration, errorReason CallError) error {
 	c.c.Status = CallStatusErrored
 	c.c.ErrorReason = null.String(errorReason)
 	c.c.EndedOn = &now
