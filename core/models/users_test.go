@@ -49,4 +49,8 @@ func TestLoadUsers(t *testing.T) {
 		assert.Equal(t, modelUser, oa.UserByID(expected.id))
 		assert.Equal(t, modelUser, oa.UserByEmail(expected.email))
 	}
+
+	sysID, err := models.GetSystemUserID(ctx, rt.DB.DB)
+	assert.NoError(t, err)
+	assert.NotEqual(t, sysID, models.NilUserID)
 }

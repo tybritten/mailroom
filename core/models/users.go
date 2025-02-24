@@ -92,7 +92,7 @@ func loadUsers(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.User, err
 
 func GetSystemUserID(ctx context.Context, db *sql.DB) (UserID, error) {
 	var id UserID
-	err := db.QueryRowContext(ctx, "SELECT id FROM users_user WHERE username = 'system'").Scan(&id)
+	err := db.QueryRowContext(ctx, "SELECT id FROM users_user WHERE email = 'system'").Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("error getting system user id: %w", err)
 	}
