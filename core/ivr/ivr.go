@@ -187,7 +187,7 @@ func RequestCall(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 	channel := callChannel.Asset().(*models.Channel)
 
 	// create our call object
-	conn, err := models.InsertCall(
+	call, err := models.InsertCall(
 		ctx, rt.DB, oa.OrgID(), channel.ID(), start.StartID, contact.ID(), models.URNID(urnID),
 		models.CallDirectionOut, models.CallStatusPending, "",
 	)
@@ -195,7 +195,7 @@ func RequestCall(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 		return nil, fmt.Errorf("error creating call: %w", err)
 	}
 
-	clog, err := RequestStartForCall(ctx, rt, channel, telURN, conn)
+	clog, err := RequestStartForCall(ctx, rt, channel, telURN, call)
 
 	// log any error inserting our channel log, but continue
 	if clog != nil {
@@ -204,7 +204,7 @@ func RequestCall(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 		}
 	}
 
-	return conn, err
+	return call, err
 }
 
 func RequestStartForCall(ctx context.Context, rt *runtime.Runtime, channel *models.Channel, telURN urns.URN, call *models.Call) (*models.ChannelLog, error) {

@@ -59,23 +59,23 @@ const (
 // Call models an IVR call
 type Call struct {
 	c struct {
-		ID           CallID        `json:"id"              db:"id"`
-		CreatedOn    time.Time     `json:"created_on"      db:"created_on"`
-		ModifiedOn   time.Time     `json:"modified_on"     db:"modified_on"`
-		ExternalID   string        `json:"external_id"     db:"external_id"`
-		Status       CallStatus    `json:"status"          db:"status"`
-		Direction    CallDirection `json:"direction"       db:"direction"`
-		StartedOn    *time.Time    `json:"started_on"      db:"started_on"`
-		EndedOn      *time.Time    `json:"ended_on"        db:"ended_on"`
-		Duration     int           `json:"duration"        db:"duration"`
-		ErrorReason  null.String   `json:"error_reason"    db:"error_reason"`
-		ErrorCount   int           `json:"error_count"     db:"error_count"`
-		NextAttempt  *time.Time    `json:"next_attempt"    db:"next_attempt"`
-		ChannelID    ChannelID     `json:"channel_id"      db:"channel_id"`
-		ContactID    ContactID     `json:"contact_id"      db:"contact_id"`
-		ContactURNID URNID         `json:"contact_urn_id"  db:"contact_urn_id"`
-		OrgID        OrgID         `json:"org_id"          db:"org_id"`
-		StartID      StartID       `json:"start_id"        db:"start_id"`
+		ID           CallID        `db:"id"`
+		CreatedOn    time.Time     `db:"created_on"`
+		ModifiedOn   time.Time     `db:"modified_on"`
+		ExternalID   string        `db:"external_id"`
+		Status       CallStatus    `db:"status"`
+		Direction    CallDirection `db:"direction"`
+		StartedOn    *time.Time    `db:"started_on"`
+		EndedOn      *time.Time    `db:"ended_on"`
+		Duration     int           `db:"duration"`
+		ErrorReason  null.String   `db:"error_reason"`
+		ErrorCount   int           `db:"error_count"`
+		NextAttempt  *time.Time    `db:"next_attempt"`
+		ChannelID    ChannelID     `db:"channel_id"`
+		ContactID    ContactID     `db:"contact_id"`
+		ContactURNID URNID         `db:"contact_urn_id"`
+		OrgID        OrgID         `db:"org_id"`
+		StartID      StartID       `db:"start_id"`
 	}
 }
 

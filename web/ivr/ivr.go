@@ -206,24 +206,24 @@ func handleCallback(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	}
 
 	// load our call
-	conn, err := models.GetCallByID(ctx, rt.DB, oa.OrgID(), request.ConnectionID)
+	call, err := models.GetCallByID(ctx, rt.DB, oa.OrgID(), request.ConnectionID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load call with id: %d: %w", request.ConnectionID, err)
 	}
 
 	// load our contact
-	contact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, conn.ContactID())
+	contact, err := models.LoadContact(ctx, rt.ReadonlyDB, oa, call.ContactID())
 	if err != nil {
-		return conn, svc.WriteErrorResponse(w, fmt.Errorf("no such contact: %w", err))
+		return call, svc.WriteErrorResponse(w, fmt.Errorf("no such contact: %w", err))
 	}
 	if contact.Status() != models.ContactStatusActive {
-		return conn, svc.WriteErrorResponse(w, fmt.Errorf("no contact with id: %d", conn.ContactID()))
+		return call, svc.WriteErrorResponse(w, fmt.Errorf("no contact with id: %d", call.ContactID()))
 	}
 
 	// load the URN for this call
-	urn, err := models.URNForID(ctx, rt.DB, oa, conn.ContactURNID())
+	urn, err := models.URNForID(ctx, rt.DB, oa, call.ContactURNID())
 	if err != nil {
-		return conn, svc.WriteErrorResponse(w, fmt.Errorf("unable to find call urn: %d", conn.ContactURNID()))
+		return call, svc.WriteErrorResponse(w, fmt.Errorf("unable to find call urn: %d", call.ContactURNID()))
 	}
 
 	// make sure our URN is indeed present on our contact, no funny business
@@ -234,19 +234,19 @@ func handleCallback(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 		}
 	}
 	if !found {
-		return conn, svc.WriteErrorResponse(w, fmt.Errorf("unable to find URN: %s on contact: %d", urn, conn.ContactID()))
+		return call, svc.WriteErrorResponse(w, fmt.Errorf("unable to find URN: %s on contact: %d", urn, call.ContactID()))
 	}
 
-	resumeURL := buildResumeURL(rt.Config, ch, conn, urn)
+	resumeURL := buildResumeURL(rt.Config, ch, call, urn)
 
 	// if this a start, start our contact
 	switch request.Action {
 	case actionStart:
-		err = ivr.StartIVRFlow(ctx, rt, svc, resumeURL, oa, ch, conn, contact, urn, conn.StartID(), r, w)
+		err = ivr.StartIVRFlow(ctx, rt, svc, resumeURL, oa, ch, call, contact, urn, call.StartID(), r, w)
 	case actionResume:
-		err = ivr.ResumeIVRFlow(ctx, rt, resumeURL, svc, oa, ch, conn, contact, urn, r, w)
+		err = ivr.ResumeIVRFlow(ctx, rt, resumeURL, svc, oa, ch, call, contact, urn, r, w)
 	case actionStatus:
-		err = ivr.HandleIVRStatus(ctx, rt, oa, svc, conn, r, w)
+		err = ivr.HandleIVRStatus(ctx, rt, oa, svc, call, r, w)
 
 	default:
 		err = svc.WriteErrorResponse(w, fmt.Errorf("unknown action: %s", request.Action))
@@ -255,10 +255,10 @@ func handleCallback(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	// had an error? mark our call as errored and log it
 	if err != nil {
 		slog.Error("error while handling IVR", "error", err, "http_request", r)
-		return conn, ivr.HandleAsFailure(ctx, rt.DB, svc, conn, w, err)
+		return call, ivr.HandleAsFailure(ctx, rt.DB, svc, call, w, err)
 	}
 
-	return conn, nil
+	return call, nil
 }
 
 // handleStatus handles all incoming IVR events / status updates
@@ -285,7 +285,7 @@ func handleStatus(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets
 	}
 
 	// load our call
-	conn, err := models.GetCallByExternalID(ctx, rt.DB, ch.ID(), externalID)
+	call, err := models.GetCallByExternalID(ctx, rt.DB, ch.ID(), externalID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, svc.WriteEmptyResponse(w, "unknown call, ignoring")
 	}
@@ -293,13 +293,13 @@ func handleStatus(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets
 		return nil, svc.WriteErrorResponse(w, fmt.Errorf("unable to load call with id: %s: %w", externalID, err))
 	}
 
-	err = ivr.HandleIVRStatus(ctx, rt, oa, svc, conn, r, w)
+	err = ivr.HandleIVRStatus(ctx, rt, oa, svc, call, r, w)
 
 	// had an error? mark our call as errored and log it
 	if err != nil {
 		slog.Error("error while handling status", "error", err, "http_request", r)
-		return conn, ivr.HandleAsFailure(ctx, rt.DB, svc, conn, w, err)
+		return call, ivr.HandleAsFailure(ctx, rt.DB, svc, call, w, err)
 	}
 
-	return conn, nil
+	return call, nil
 }
