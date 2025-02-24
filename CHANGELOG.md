@@ -1,3 +1,7 @@
+v10.1.51 (2025-02-24)
+-------------------------
+ * Start writing Call.session_uuid
+
 v10.1.50 (2025-02-24)
 -------------------------
  * Rework interrupting by channel as well
