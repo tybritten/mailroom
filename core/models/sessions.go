@@ -966,10 +966,9 @@ func getWaitingSessionsForContacts(ctx context.Context, db DBorTx, contactIDs []
 }
 
 const sqlSelectWaitingSessionsForChannel = `
-SELECT fs.uuid
-  FROM flows_flowsession fs
-  JOIN ivr_call cc ON fs.call_id = cc.id
- WHERE fs.status = 'W' AND cc.channel_id = $1;`
+SELECT session_uuid 
+  FROM ivr_call 
+ WHERE channel_id = $1 AND status NOT IN ('D', 'F') AND session_uuid IS NOT NULL;`
 
 // InterruptSessionsForChannel interrupts any waiting sessions with calls on the given channel
 func InterruptSessionsForChannel(ctx context.Context, db *sqlx.DB, channelID ChannelID) error {
