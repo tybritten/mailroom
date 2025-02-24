@@ -1,3 +1,7 @@
+v10.1.52 (2025-02-24)
+-------------------------
+ * Lookup system user by email instead of username
+
 v10.1.51 (2025-02-24)
 -------------------------
  * Start writing Call.session_uuid
