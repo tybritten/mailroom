@@ -921,69 +921,73 @@ func exitSessionBatch(ctx context.Context, tx *sqlx.Tx, sessionIDs []SessionID, 
 	return nil
 }
 
-func getWaitingSessionsForContacts(ctx context.Context, db DBorTx, contactIDs []ContactID) ([]SessionID, error) {
-	sessionIDs := make([]SessionID, 0, len(contactIDs))
-
-	err := db.SelectContext(ctx, &sessionIDs, `SELECT id FROM flows_flowsession WHERE status = 'W' AND contact_id = ANY($1)`, pq.Array(contactIDs))
-	if err != nil {
-		return nil, fmt.Errorf("error selecting waiting sessions for contacts: %w", err)
-	}
-
-	return sessionIDs, nil
-}
-
-// InterruptSessionsForContacts interrupts any waiting sessions for the given contacts
+// InterruptSessionsForContacts interrupts any waiting sessions for the given contacts, returning the number of sessions interrupted
 func InterruptSessionsForContacts(ctx context.Context, db *sqlx.DB, contactIDs []ContactID) (int, error) {
-	sessionIDs, err := getWaitingSessionsForContacts(ctx, db, contactIDs)
+	sessionUUIDs, err := getWaitingSessionsForContacts(ctx, db, contactIDs)
 	if err != nil {
 		return 0, err
 	}
 
-	if err := ExitSessions(ctx, db, sessionIDs, SessionStatusInterrupted); err != nil {
+	if err := InterruptSessions(ctx, db, sessionUUIDs); err != nil {
 		return 0, fmt.Errorf("error exiting sessions: %w", err)
 	}
 
-	return len(sessionIDs), nil
+	return len(sessionUUIDs), nil
 }
 
 // InterruptSessionsForContactsTx interrupts any waiting sessions for the given contacts inside the given transaction.
 // This version is used for interrupting during flow starts where contacts are already batched and we have an open transaction.
 func InterruptSessionsForContactsTx(ctx context.Context, tx *sqlx.Tx, contactIDs []ContactID) error {
-	sessionIDs, err := getWaitingSessionsForContacts(ctx, tx, contactIDs)
+	sessionUUIDs, err := getWaitingSessionsForContacts(ctx, tx, contactIDs)
 	if err != nil {
 		return err
 	}
 
-	if err := exitSessionBatch(ctx, tx, sessionIDs, SessionStatusInterrupted); err != nil {
-		return fmt.Errorf("error exiting sessions: %w", err)
+	if len(sessionUUIDs) > 0 {
+		if err := interruptSessionBatch(ctx, tx, sessionUUIDs); err != nil {
+			return fmt.Errorf("error exiting sessions: %w", err)
+		}
 	}
 
 	return nil
 }
 
-const sqlWaitingSessionIDsForChannel = `
-SELECT fs.id
+const sqlSelectWaitingSessionsForContacts = `
+SELECT current_session_uuid FROM contacts_contact WHERE id = ANY($1) AND current_session_uuid IS NOT NULL`
+
+func getWaitingSessionsForContacts(ctx context.Context, db DBorTx, contactIDs []ContactID) ([]flows.SessionUUID, error) {
+	sessionUUIDs := make([]flows.SessionUUID, 0, len(contactIDs))
+
+	if err := db.SelectContext(ctx, &sessionUUIDs, sqlSelectWaitingSessionsForContacts, pq.Array(contactIDs)); err != nil {
+		return nil, fmt.Errorf("error selecting current sessions for contacts: %w", err)
+	}
+
+	return sessionUUIDs, nil
+}
+
+const sqlSelectWaitingSessionsForChannel = `
+SELECT fs.uuid
   FROM flows_flowsession fs
   JOIN ivr_call cc ON fs.call_id = cc.id
  WHERE fs.status = 'W' AND cc.channel_id = $1;`
 
 // InterruptSessionsForChannel interrupts any waiting sessions with calls on the given channel
 func InterruptSessionsForChannel(ctx context.Context, db *sqlx.DB, channelID ChannelID) error {
-	sessionIDs := make([]SessionID, 0, 10)
+	sessionUUIDs := make([]flows.SessionUUID, 0, 10)
 
-	err := db.SelectContext(ctx, &sessionIDs, sqlWaitingSessionIDsForChannel, channelID)
+	err := db.SelectContext(ctx, &sessionUUIDs, sqlSelectWaitingSessionsForChannel, channelID)
 	if err != nil {
 		return fmt.Errorf("error selecting waiting sessions for channel %d: %w", channelID, err)
 	}
 
-	if err := ExitSessions(ctx, db, sessionIDs, SessionStatusInterrupted); err != nil {
-		return fmt.Errorf("error exiting sessions: %w", err)
+	if err := InterruptSessions(ctx, db, sessionUUIDs); err != nil {
+		return fmt.Errorf("error interrupting sessions for channel: %w", err)
 	}
 
 	return nil
 }
 
-const sqlWaitingSessionUUIDsForFlows = `
+const sqlSelectWaitingSessionsForFlows = `
 SELECT DISTINCT session_uuid
   FROM flows_flowrun
  WHERE status IN ('A', 'W') AND flow_id = ANY($1);`
@@ -992,7 +996,7 @@ SELECT DISTINCT session_uuid
 func InterruptSessionsForFlows(ctx context.Context, db *sqlx.DB, flowIDs []FlowID) error {
 	var sessionUUIDs []flows.SessionUUID
 
-	err := db.SelectContext(ctx, &sessionUUIDs, sqlWaitingSessionUUIDsForFlows, pq.Array(flowIDs))
+	err := db.SelectContext(ctx, &sessionUUIDs, sqlSelectWaitingSessionsForFlows, pq.Array(flowIDs))
 	if err != nil {
 		return fmt.Errorf("error selecting waiting sessions for flows: %w", err)
 	}

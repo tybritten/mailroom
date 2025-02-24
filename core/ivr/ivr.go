@@ -429,9 +429,8 @@ func ResumeIVRFlow(
 
 	// check if call has been marked as errored - it maybe have been updated by status callback
 	if call.Status() == models.CallStatusErrored || call.Status() == models.CallStatusFailed {
-		err = models.ExitSessions(ctx, rt.DB, []models.SessionID{session.ID()}, models.SessionStatusInterrupted)
-		if err != nil {
-			slog.Error("error interrupting session", "error", err)
+		if err = models.InterruptSessions(ctx, rt.DB, []flows.SessionUUID{session.UUID()}); err != nil {
+			slog.Error("error interrupting session for errored call", "error", err)
 		}
 
 		return svc.WriteErrorResponse(w, fmt.Errorf("ending call due to previous status callback"))
