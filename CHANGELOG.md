@@ -1,3 +1,8 @@
+v10.1.50 (2025-02-24)
+-------------------------
+ * Rework interrupting by channel as well
+ * Replace last places that we fetch sessions by contact and status=W
+
 v10.1.49 (2025-02-21)
 -------------------------
  * Reduce webhook service fetch limit to 256KiB
