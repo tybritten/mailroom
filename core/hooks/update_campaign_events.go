@@ -42,11 +42,7 @@ func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtim
 			case *events.ContactFieldChangedEvent:
 				field := oa.FieldByKey(event.Field.Key)
 				if field == nil {
-					slog.Debug("unable to find field with key, ignoring for campaign updates",
-						"field_key", event.Field.Key,
-						"field_name", event.Field.Name,
-						"session_id", s.SessionID(),
-					)
+					slog.Debug("unable to find field with key, ignoring for campaign updates", "session", s.SessionUUID(), slog.Group("field", "key", event.Field.Key, "name", event.Field.Name))
 					continue
 				}
 				fieldChanges[field.ID()] = true

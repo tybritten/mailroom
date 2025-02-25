@@ -21,7 +21,7 @@ func init() {
 func handleIVRCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.IVRCreatedEvent)
 
-	slog.Debug("ivr created", "contact", scene.ContactUUID(), "session", scene.SessionID(), "text", event.Msg.Text())
+	slog.Debug("ivr created", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "text", event.Msg.Text())
 
 	// get our call
 	call := scene.Session().Call()

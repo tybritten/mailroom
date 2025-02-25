@@ -20,7 +20,7 @@ func init() {
 func handleContactStatusChanged(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ContactStatusChangedEvent)
 
-	slog.Debug("contact status changed", "contact", scene.ContactUUID(), "session", scene.SessionID(), "status", event.Status)
+	slog.Debug("contact status changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "status", event.Status)
 
 	scene.AppendToEventPreCommitHook(hooks.CommitStatusChangesHook, event)
 	scene.AppendToEventPostCommitHook(hooks.ContactModifiedHook, event)

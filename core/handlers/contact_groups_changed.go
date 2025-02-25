@@ -20,7 +20,7 @@ func init() {
 func handleContactGroupsChanged(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ContactGroupsChangedEvent)
 
-	slog.Debug("contact groups changed", "contact", scene.ContactUUID(), "session", scene.SessionID(), "groups_removed", len(event.GroupsRemoved), "groups_added", len(event.GroupsAdded))
+	slog.Debug("contact groups changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "groups_removed", len(event.GroupsRemoved), "groups_added", len(event.GroupsAdded))
 
 	// remove each of our groups
 	for _, g := range event.GroupsRemoved {

@@ -26,7 +26,7 @@ func handleInputLabelsAdded(ctx context.Context, rt *runtime.Runtime, tx *sqlx.T
 
 	event := e.(*events.InputLabelsAddedEvent)
 
-	slog.Debug("input labels added", "contact", scene.ContactUUID(), "session", scene.SessionID(), "labels", event.Labels)
+	slog.Debug("input labels added", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "labels", event.Labels)
 
 	// if the sprint had input, then it was started by a msg event and we should have the message ID saved on the session
 	inputMsgID := scene.Session().IncomingMsgID()

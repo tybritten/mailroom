@@ -20,7 +20,7 @@ func init() {
 func handleContactURNsChanged(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ContactURNsChangedEvent)
 
-	slog.Debug("contact urns changed", "contact", scene.ContactUUID(), "session", scene.SessionID(), "urns", event.URNs)
+	slog.Debug("contact urns changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "urns", event.URNs)
 
 	var flow *models.Flow
 	if scene.Session() != nil {

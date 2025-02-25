@@ -19,7 +19,7 @@ func init() {
 func handleEmailSent(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.EmailSentEvent)
 
-	slog.Debug("email sent", "contact", scene.ContactUUID(), "session", scene.SessionID(), "subject", event.Subject, "body", event.Body)
+	slog.Debug("email sent", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "subject", event.Subject, "body", event.Body)
 
 	return nil
 }

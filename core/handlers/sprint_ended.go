@@ -19,7 +19,7 @@ func init() {
 func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*models.SprintEndedEvent)
 
-	slog.Debug("sprint ended", "contact", scene.ContactUUID(), "session", scene.SessionID())
+	slog.Debug("sprint ended", "contact", scene.ContactUUID(), "session", scene.SessionUUID())
 
 	currentFlowChanged := false
 

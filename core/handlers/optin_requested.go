@@ -21,7 +21,7 @@ func init() {
 func handleOptInRequested(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.OptInRequestedEvent)
 
-	slog.Debug("optin requested", "contact", scene.ContactUUID(), "session", scene.SessionID(), slog.Group("optin", "uuid", event.OptIn.UUID, "name", event.OptIn.Name))
+	slog.Debug("optin requested", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), slog.Group("optin", "uuid", event.OptIn.UUID, "name", event.OptIn.Name))
 
 	urn := event.URN
 	var err error

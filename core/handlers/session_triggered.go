@@ -19,7 +19,7 @@ func init() {
 func handleSessionTriggered(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.SessionTriggeredEvent)
 
-	slog.Debug("session triggered", "contact", scene.ContactUUID(), "session", scene.SessionID(), slog.Group("flow", "uuid", event.Flow.UUID, "name", event.Flow.Name))
+	slog.Debug("session triggered", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), slog.Group("flow", "uuid", event.Flow.UUID, "name", event.Flow.Name))
 
 	scene.AppendToEventPreCommitHook(hooks.CreateStartsHook, event)
 

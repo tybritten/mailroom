@@ -20,7 +20,7 @@ func init() {
 func handleMsgReceived(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.MsgReceivedEvent)
 
-	slog.Debug("msg received", "contact", scene.ContactUUID(), "session", scene.SessionID(), "text", event.Msg.Text(), "urn", event.Msg.URN())
+	slog.Debug("msg received", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "text", event.Msg.Text(), "urn", event.Msg.URN())
 
 	// update the contact's last seen date
 	scene.AppendToEventPreCommitHook(hooks.ContactLastSeenHook, event)

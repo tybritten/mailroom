@@ -21,7 +21,7 @@ func init() {
 func handleTicketOpened(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.TicketOpenedEvent)
 
-	slog.Debug("ticket opened", "contact", scene.ContactUUID(), "session", scene.SessionID(), "ticket", event.Ticket.UUID)
+	slog.Debug("ticket opened", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "ticket", event.Ticket.UUID)
 
 	var topicID models.TopicID
 	if event.Ticket.Topic != nil {

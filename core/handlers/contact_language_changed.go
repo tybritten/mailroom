@@ -20,7 +20,7 @@ func init() {
 func handleContactLanguageChanged(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ContactLanguageChangedEvent)
 
-	slog.Debug("contact language changed", "contact", scene.ContactUUID(), "session", scene.SessionID(), "language", event.Language)
+	slog.Debug("contact language changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "language", event.Language)
 
 	scene.AppendToEventPreCommitHook(hooks.CommitLanguageChangesHook, event)
 	scene.AppendToEventPostCommitHook(hooks.ContactModifiedHook, event)
