@@ -26,8 +26,7 @@ func TestBulkCampaignTrigger(t *testing.T) {
 	defer rc.Close()
 
 	// create a waiting session for Cathy
-	testdata.InsertWaitingSession(rt, testdata.Cathy, models.FlowTypeVoice, testdata.IVRFlow, models.NilCallID)
-	rt.DB.MustExec(`UPDATE contacts_contact SET current_flow_id = $2 WHERE id = $1`, testdata.Cathy.ID, testdata.IVRFlow.ID)
+	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeVoice, testdata.IVRFlow, models.NilCallID)
 
 	// create task for event #3 (Pick A Number, start mode SKIP)
 	task := &campaigns.BulkCampaignTriggerTask{EventID: testdata.RemindersEvent3.ID, ContactIDs: []models.ContactID{testdata.Bob.ID, testdata.Cathy.ID, testdata.Alexandria.ID}}

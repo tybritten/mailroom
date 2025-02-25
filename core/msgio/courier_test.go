@@ -32,7 +32,7 @@ func TestNewCourierMsg(t *testing.T) {
 	testFred := testdata.InsertContact(rt, testdata.Org1, "", "Fred", "eng", models.ContactStatusActive)
 	testdata.InsertContactURN(rt, testdata.Org1, testFred, "tel:+593979123456", 1000, map[string]string{fmt.Sprintf("optin:%d", optInID): "sesame"})
 
-	testdata.InsertWaitingSession(rt, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
 
 	oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, testdata.Org1.ID, models.RefreshOptIns)
 	require.NoError(t, err)

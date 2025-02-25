@@ -19,14 +19,6 @@ func TestInterrupts(t *testing.T) {
 
 	oa := testdata.Org1.Load(rt)
 
-	insertSession := func(org *testdata.Org, contact *testdata.Contact, flow *testdata.Flow, connectionID models.CallID) models.SessionID {
-		sessionID, sessionUUID := testdata.InsertWaitingSession(rt, contact, models.FlowTypeMessaging, flow, connectionID)
-
-		// give session one waiting run too
-		testdata.InsertFlowRun(rt, org, sessionID, sessionUUID, contact, flow, models.RunStatusWaiting, "")
-		return sessionID
-	}
-
 	tcs := []struct {
 		contactIDs       []models.ContactID
 		flowIDs          []models.FlowID
@@ -69,13 +61,13 @@ func TestInterrupts(t *testing.T) {
 		sessionIDs := make([]models.SessionID, 5)
 
 		// insert our dummy contact sessions
-		sessionIDs[0] = insertSession(testdata.Org1, testdata.Cathy, testdata.Favorites, models.NilCallID)
-		sessionIDs[1] = insertSession(testdata.Org1, testdata.George, testdata.Favorites, models.NilCallID)
-		sessionIDs[2] = insertSession(testdata.Org1, testdata.Alexandria, testdata.Favorites, twilioCallID)
-		sessionIDs[3] = insertSession(testdata.Org1, testdata.Bob, testdata.PickANumber, models.NilCallID)
+		sessionIDs[0], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+		sessionIDs[1], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+		sessionIDs[2], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Alexandria, models.FlowTypeVoice, testdata.Favorites, twilioCallID)
+		sessionIDs[3], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Bob, models.FlowTypeMessaging, testdata.PickANumber, models.NilCallID)
 
 		// a session we always end explicitly
-		sessionIDs[4] = insertSession(testdata.Org1, testdata.Bob, testdata.Favorites, models.NilCallID)
+		sessionIDs[4], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Bob, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
 
 		// create our task
 		task := &interrupts.InterruptSessionsTask{

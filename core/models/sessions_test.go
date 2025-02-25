@@ -341,9 +341,9 @@ func TestGetWaitingSessionForContact(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	sessionID, sessionUUID := testdata.InsertWaitingSession(rt, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+	sessionID, sessionUUID := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
 	testdata.InsertFlowSession(rt, testdata.Cathy, models.FlowTypeMessaging, models.SessionStatusCompleted, testdata.Favorites, models.NilCallID)
-	testdata.InsertWaitingSession(rt, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
 
 	oa := testdata.Org1.Load(rt)
 	mc, fc, _ := testdata.Cathy.Load(rt, oa)
