@@ -77,18 +77,28 @@ func TestSessionContactFires(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, tx.Commit())
 
-	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND session_uuid = $2`, testdata.Bob.ID, modelSessions[0].UUID()).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND session_uuid = $2`, testdata.Bob.ID, modelSessions[0].UUID()).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND session_uuid = $2`, testdata.Cathy.ID, modelSessions[1].UUID()).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND session_uuid = $2`, testdata.Bob.ID, modelSessions[0].UUID()).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'S' AND session_uuid = $2`, testdata.Bob.ID, modelSessions[0].UUID()).Returns(1)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND session_uuid = $2`, testdata.Cathy.ID, modelSessions[1].UUID()).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND session_uuid = $2`, testdata.Cathy.ID, modelSessions[1].UUID()).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'S' AND session_uuid = $2`, testdata.Cathy.ID, modelSessions[1].UUID()).Returns(1)
 
-	num, err := models.DeleteSessionContactFires(ctx, rt.DB, []models.ContactID{testdata.Bob.ID})
+	num, err := models.DeleteSessionContactFires(ctx, rt.DB, []models.ContactID{testdata.Bob.ID}, true) // all
+	assert.NoError(t, err)
+	assert.Equal(t, 3, num)
+
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type IN ('T', 'E', 'S')`, testdata.Bob.ID).Returns(0)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'C'`, testdata.Bob.ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.Cathy.ID).Returns(3)
+
+	num, err = models.DeleteSessionContactFires(ctx, rt.DB, []models.ContactID{testdata.Cathy.ID}, false) // waits only
 	assert.NoError(t, err)
 	assert.Equal(t, 2, num)
 
-	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type IN ('E', 'T')`, testdata.Bob.ID).Returns(0)
-	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'C'`, testdata.Bob.ID).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.Cathy.ID).Returns(2)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T'`, testdata.Cathy.ID).Returns(0)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E'`, testdata.Cathy.ID).Returns(0)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'S'`, testdata.Cathy.ID).Returns(1)
 }
 
 func TestCampaignContactFires(t *testing.T) {

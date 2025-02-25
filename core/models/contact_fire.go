@@ -98,10 +98,15 @@ func DeleteContactFires(ctx context.Context, rt *runtime.Runtime, fires []*Conta
 }
 
 // DeleteSessionContactFires deletes session wait/timeout fires for the given contacts
-func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []ContactID) (int, error) {
-	res, err := db.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = ANY($1) AND fire_type IN ('E', 'T') AND scope = ''`, pq.Array(contactIDs))
+func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []ContactID, incSessionExpiration bool) (int, error) {
+	types := []ContactFireType{ContactFireTypeWaitTimeout, ContactFireTypeWaitExpiration}
+	if incSessionExpiration {
+		types = append(types, ContactFireTypeSessionExpiration)
+	}
+
+	res, err := db.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = ANY($1) AND fire_type = ANY($2) AND scope = ''`, pq.Array(contactIDs), pq.Array(types))
 	if err != nil {
-		return 0, fmt.Errorf("error deleting session wait/timeout contact fires: %w", err)
+		return 0, fmt.Errorf("error deleting session contact fires: %w", err)
 	}
 
 	numDeleted, _ := res.RowsAffected()
