@@ -38,7 +38,7 @@ func (c *FiresCron) AllInstances() bool {
 
 func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	start := time.Now()
-	numExpires, numTimeouts, numCampaigns := 0, 0, 0
+	numWaitTimeouts, numWaitExpires, numSessionExpires, numCampaignEvents := 0, 0, 0, 0
 
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -60,11 +60,13 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 		grouped := make(map[orgAndGrouping][]*models.ContactFire, 25)
 		for _, f := range fires {
 			og := orgAndGrouping{orgID: f.OrgID}
-			if f.Type == models.ContactFireTypeWaitExpiration {
-				og.grouping = "expires"
-			} else if f.Type == models.ContactFireTypeWaitTimeout {
-				og.grouping = "timeouts"
-			} else if f.Type == models.ContactFireTypeCampaign {
+			if f.Type == models.ContactFireTypeWaitTimeout {
+				og.grouping = "wait_timeouts"
+			} else if f.Type == models.ContactFireTypeWaitExpiration {
+				og.grouping = "wait_expires"
+			} else if f.Type == models.ContactFireTypeSessionExpiration {
+				og.grouping = "session_expires"
+			} else if f.Type == models.ContactFireTypeCampaignEvent {
 				og.grouping = "campaign:" + f.Scope
 			} else {
 				return nil, fmt.Errorf("unknown contact fire type: %s", f.Type)
@@ -74,20 +76,8 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 
 		for og, fs := range grouped {
 			for batch := range slices.Chunk(fs, c.taskBatchSize) {
-				if og.grouping == "expires" {
-					// turn expires into bulk expire tasks
-					es := make([]*WaitExpiration, len(batch))
-					for i, f := range batch {
-						es[i] = &WaitExpiration{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
-					}
-
-					// put expirations in throttled queue but high priority so they get priority over flow starts etc
-					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &BulkWaitExpireTask{Expirations: es}, true); err != nil {
-						return nil, fmt.Errorf("error queuing bulk session expire task for org #%d: %w", og.orgID, err)
-					}
-					numExpires += len(batch)
-				} else if og.grouping == "timeouts" {
-					// turn timeouts into bulk timeout tasks
+				if og.grouping == "wait_timeouts" {
+					// turn wait timeouts into bulk wait timeout tasks
 					ts := make([]*WaitTimeout, len(batch))
 					for i, f := range batch {
 						ts[i] = &WaitTimeout{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
@@ -95,9 +85,33 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 
 					// queue to throttled queue but high priority so they get priority over flow starts etc
 					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &BulkWaitTimeoutTask{Timeouts: ts}, true); err != nil {
-						return nil, fmt.Errorf("error queuing bulk session timeout task for org #%d: %w", og.orgID, err)
+						return nil, fmt.Errorf("error queuing bulk wait timeout task for org #%d: %w", og.orgID, err)
 					}
-					numTimeouts += len(batch)
+					numWaitTimeouts += len(batch)
+				} else if og.grouping == "wait_expires" {
+					// turn wait expires into bulk wait expire tasks
+					es := make([]*WaitExpiration, len(batch))
+					for i, f := range batch {
+						es[i] = &WaitExpiration{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
+					}
+
+					// put expirations in throttled queue but high priority so they get priority over flow starts etc
+					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &BulkWaitExpireTask{Expirations: es}, true); err != nil {
+						return nil, fmt.Errorf("error queuing bulk wait expire task for org #%d: %w", og.orgID, err)
+					}
+					numWaitExpires += len(batch)
+				} else if og.grouping == "session_expires" {
+					// turn session timeouts into bulk session expire tasks
+					ss := make([]flows.SessionUUID, len(batch))
+					for i, f := range batch {
+						ss[i] = flows.SessionUUID(f.SessionUUID)
+					}
+
+					// queue to throttled queue but high priority so they get priority over flow starts etc
+					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &BulkSessionExpireTask{SessionUUIDs: ss}, true); err != nil {
+						return nil, fmt.Errorf("error queuing bulk session expire task for org #%d: %w", og.orgID, err)
+					}
+					numSessionExpires += len(batch)
 				} else if strings.HasPrefix(og.grouping, "campaign:") {
 					// turn campaign fires into bulk campaign tasks
 					cids := make([]models.ContactID, len(batch))
@@ -111,7 +125,7 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &campaigns.BulkCampaignTriggerTask{ContactIDs: cids, EventID: models.CampaignEventID(eventID)}, true); err != nil {
 						return nil, fmt.Errorf("error queuing bulk campaign trigger task for org #%d: %w", og.orgID, err)
 					}
-					numCampaigns += len(batch)
+					numCampaignEvents += len(batch)
 				}
 
 				if err := models.DeleteContactFires(ctx, rt, batch); err != nil {
@@ -126,5 +140,5 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 		}
 	}
 
-	return map[string]any{"wait_expires": numExpires, "wait_timeouts": numTimeouts, "campaigns": numCampaigns}, nil
+	return map[string]any{"wait_timeouts": numWaitTimeouts, "wait_expires": numWaitExpires, "session_expires": numSessionExpires, "campaign_events": numCampaignEvents}, nil
 }

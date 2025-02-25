@@ -55,7 +55,7 @@ func TestSessionContactFires(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeCampaign, "235", time.Now().Add(2*time.Second), "")
+	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeCampaignEvent, "235", time.Now().Add(2*time.Second), "")
 
 	testFlows := testdata.ImportFlows(rt, testdata.Org1, "testdata/session_test_flows.json")
 	flow := testFlows[0]
