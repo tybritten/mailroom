@@ -22,8 +22,7 @@ func TestStartFlowTask(t *testing.T) {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
-	sID, sUUID := testdata.InsertWaitingSession(rt, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
-	testdata.InsertFlowRun(rt, testdata.Org1, sID, sUUID, testdata.George, testdata.Favorites, models.RunStatusWaiting, "")
+	testdata.InsertWaitingSession(rt, testdata.Org1, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
 
 	tcs := []struct {
 		flowID                   models.FlowID

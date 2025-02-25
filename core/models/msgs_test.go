@@ -623,7 +623,7 @@ func TestMsgTemplating(t *testing.T) {
 }
 
 func insertTestSession(t *testing.T, ctx context.Context, rt *runtime.Runtime, contact *testdata.Contact) *models.Session {
-	testdata.InsertWaitingSession(rt, contact, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+	testdata.InsertWaitingSession(rt, testdata.Org1, contact, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
 
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
