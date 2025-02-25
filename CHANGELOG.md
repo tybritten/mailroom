@@ -1,3 +1,10 @@
+v10.1.53 (2025-02-25)
+-------------------------
+ * Add bulk_session_expire task type to handle session expiration (S) contact fires
+ * Use more session UUID based exiting of sessions
+ * Tweak event handlers to log session UUID instead of ID
+ * Use Call.session_uuid to interrupt by channel
+
 v10.1.52 (2025-02-24)
 -------------------------
  * Lookup system user by email instead of username
