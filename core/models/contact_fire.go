@@ -15,9 +15,10 @@ type ContactFireID int64
 type ContactFireType string
 
 const (
-	ContactFireTypeWaitExpiration ContactFireType = "E"
-	ContactFireTypeWaitTimeout    ContactFireType = "T"
-	ContactFireTypeCampaign       ContactFireType = "C"
+	ContactFireTypeWaitTimeout       ContactFireType = "T"
+	ContactFireTypeWaitExpiration    ContactFireType = "E"
+	ContactFireTypeSessionExpiration ContactFireType = "S"
+	ContactFireTypeCampaignEvent     ContactFireType = "C"
 )
 
 type ContactFire struct {
@@ -50,7 +51,7 @@ func NewContactFireForSession(orgID OrgID, s *Session, typ ContactFireType, fire
 }
 
 func NewContactFireForCampaign(orgID OrgID, contactID ContactID, eventID CampaignEventID, fireOn time.Time) *ContactFire {
-	return newContactFire(orgID, contactID, ContactFireTypeCampaign, fmt.Sprint(eventID), fireOn, "", "")
+	return newContactFire(orgID, contactID, ContactFireTypeCampaignEvent, fmt.Sprint(eventID), fireOn, "", "")
 }
 
 const sqlSelectDueContactFires = `
