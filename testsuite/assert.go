@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
@@ -91,4 +92,24 @@ func AssertContactInFlow(t *testing.T, rt *runtime.Runtime, contact *testdata.Co
 	// check flow of the waiting session and contact is correct
 	assertdb.Query(t, rt.DB, `SELECT current_flow_id FROM flows_flowsession WHERE contact_id = $1 AND status = 'W'`, contact.ID).Returns(int64(flow.ID))
 	assertdb.Query(t, rt.DB, `SELECT current_flow_id FROM contacts_contact WHERE id = $1`, contact.ID).Returns(int64(flow.ID))
+}
+
+func AssertContactFires(t *testing.T, rt *runtime.Runtime, contactID models.ContactID, expected map[string]time.Time) {
+	var fires []*models.ContactFire
+	err := rt.DB.Select(&fires, `SELECT * FROM contacts_contactfire WHERE contact_id = $1`, contactID)
+	require.NoError(t, err)
+
+	actual := make(map[string]time.Time, len(fires))
+	for _, f := range fires {
+		key := string(f.Type)
+		if f.Scope != "" {
+			key += "/" + f.Scope
+		}
+		if f.SessionUUID != "" {
+			key += ":" + string(f.SessionUUID)
+		}
+		actual[key] = f.FireOn
+	}
+
+	assert.Equal(t, expected, actual)
 }

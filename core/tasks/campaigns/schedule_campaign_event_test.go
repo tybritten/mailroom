@@ -4,13 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jmoiron/sqlx"
-	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks/campaigns"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestScheduleCampaignEvent(t *testing.T) {
@@ -37,24 +33,25 @@ func TestScheduleCampaignEvent(t *testing.T) {
 	testsuite.FlushTasks(t, rt)
 
 	// cathy has no value for joined and alexandia has a value too far in past, but bob and george will have values...
-	assertContactFires(t, rt.DB, testdata.RemindersEvent1.ID, map[models.ContactID]time.Time{
-		testdata.Bob.ID:    time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC),  // 12:00 in PST
-		testdata.George.ID: time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC), // 12:00 in PST with DST
+	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{
+		"C/10000": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC), // 12:00 in PST
+	})
+	testsuite.AssertContactFires(t, rt, testdata.George.ID, map[string]time.Time{
+		"C/10000": time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC), // 12:00 in PST with DST
 	})
 
 	// schedule second event...
 	testsuite.QueueBatchTask(t, rt, testdata.Org1, &campaigns.ScheduleCampaignEventTask{CampaignEventID: testdata.RemindersEvent2.ID})
 	testsuite.FlushTasks(t, rt)
 
-	assertContactFires(t, rt.DB, testdata.RemindersEvent2.ID, map[models.ContactID]time.Time{
-		testdata.Bob.ID:    time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC),
-		testdata.George.ID: time.Date(2030, 8, 18, 11, 42, 0, 0, time.UTC),
-	})
-
 	// fires for first event unaffected
-	assertContactFires(t, rt.DB, testdata.RemindersEvent1.ID, map[models.ContactID]time.Time{
-		testdata.Bob.ID:    time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC),
-		testdata.George.ID: time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC),
+	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{
+		"C/10000": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC),
+		"C/10001": time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC),
+	})
+	testsuite.AssertContactFires(t, rt, testdata.George.ID, map[string]time.Time{
+		"C/10000": time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC),
+		"C/10001": time.Date(2030, 8, 18, 11, 42, 0, 0, time.UTC),
 	})
 
 	// remove alexandria from campaign group
@@ -70,8 +67,16 @@ func TestScheduleCampaignEvent(t *testing.T) {
 	testsuite.FlushTasks(t, rt)
 
 	// only cathy is in the group and new enough to have a fire
-	assertContactFires(t, rt.DB, event3.ID, map[models.ContactID]time.Time{
-		testdata.Cathy.ID: time.Date(2035, 1, 1, 0, 5, 0, 0, time.UTC),
+	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{
+		"C/10000": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC),
+		"C/10001": time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC),
+	})
+	testsuite.AssertContactFires(t, rt, testdata.George.ID, map[string]time.Time{
+		"C/10000": time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC),
+		"C/10001": time.Date(2030, 8, 18, 11, 42, 0, 0, time.UTC),
+	})
+	testsuite.AssertContactFires(t, rt, testdata.Cathy.ID, map[string]time.Time{
+		"C/30000": time.Date(2035, 1, 1, 0, 5, 0, 0, time.UTC),
 	})
 
 	// create new campaign event based on last_seen_on + 1 day
@@ -83,25 +88,9 @@ func TestScheduleCampaignEvent(t *testing.T) {
 	testsuite.QueueBatchTask(t, rt, testdata.Org1, &campaigns.ScheduleCampaignEventTask{CampaignEventID: event4.ID})
 	testsuite.FlushTasks(t, rt)
 
-	assertContactFires(t, rt.DB, event4.ID, map[models.ContactID]time.Time{
-		testdata.Bob.ID: time.Date(2040, 1, 2, 0, 0, 0, 0, time.UTC),
+	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{
+		"C/10000": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC),
+		"C/10001": time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC),
+		"C/30001": time.Date(2040, 1, 2, 0, 0, 0, 0, time.UTC),
 	})
-}
-
-func assertContactFires(t *testing.T, db *sqlx.DB, eventID models.CampaignEventID, expected map[models.ContactID]time.Time) {
-	type idAndTime struct {
-		ContactID models.ContactID `db:"contact_id"`
-		FireOn    time.Time        `db:"fire_on"`
-	}
-
-	actualAsSlice := make([]idAndTime, 0)
-	err := db.Select(&actualAsSlice, `SELECT contact_id, fire_on FROM contacts_contactfire WHERE scope = $1::text`, eventID)
-	require.NoError(t, err)
-
-	actual := make(map[models.ContactID]time.Time)
-	for _, it := range actualAsSlice {
-		actual[it.ContactID] = it.FireOn
-	}
-
-	assert.Equal(t, expected, actual)
 }

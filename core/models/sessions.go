@@ -17,6 +17,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/aws/s3x"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
@@ -192,14 +193,14 @@ func (s *Session) FlowSession(ctx context.Context, rt *runtime.Runtime, sa flows
 	return session, nil
 }
 
-func (s *Session) calculateFires(oa *OrgAssets, sprint flows.Sprint, incSessionExpires bool) []*ContactFire {
+func (s *Session) calculateFires(oa *OrgAssets, sprint flows.Sprint, initial bool) []*ContactFire {
 	waitExpiresOn, waitTimeout, queuesToCourier := getWaitProperties(oa, sprint.Events())
 	var waitTimeoutOn *time.Time
 	if waitTimeout != nil {
 		if queuesToCourier {
 			s.timeout = waitTimeout
 		} else {
-			ton := time.Now().Add(*waitTimeout)
+			ton := dates.Now().Add(*waitTimeout)
 			waitTimeoutOn = &ton
 		}
 	}
@@ -207,16 +208,16 @@ func (s *Session) calculateFires(oa *OrgAssets, sprint flows.Sprint, incSessionE
 	fs := make([]*ContactFire, 0, 3)
 
 	if waitTimeoutOn != nil {
-		fs = append(fs, NewContactFireForSession(oa.OrgID(), s, ContactFireTypeWaitTimeout, *waitTimeoutOn))
+		fs = append(fs, newContactFireForSession(oa.OrgID(), s, ContactFireTypeWaitTimeout, *waitTimeoutOn))
 	}
 	if waitExpiresOn != nil {
-		fs = append(fs, NewContactFireForSession(oa.OrgID(), s, ContactFireTypeWaitExpiration, *waitExpiresOn))
+		fs = append(fs, newContactFireForSession(oa.OrgID(), s, ContactFireTypeWaitExpiration, *waitExpiresOn))
 	}
-	if incSessionExpires {
+	if initial && s.Status() == SessionStatusWaiting {
 		// session expiration time is the creation time + 30 days + random time between 0 and 24 hours
 		sessionExpiresOn := s.CreatedOn().Add(SessionExpires).Add(time.Duration(random.IntN(86_400)) * time.Second)
 
-		fs = append(fs, NewContactFireForSession(oa.OrgID(), s, ContactFireTypeSessionExpiration, sessionExpiresOn))
+		fs = append(fs, newContactFireForSession(oa.OrgID(), s, ContactFireTypeSessionExpiration, sessionExpiresOn))
 	}
 
 	return fs
@@ -348,13 +349,12 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	}
 
 	// write our new session state to the db
-	_, err = tx.NamedExecContext(ctx, updateSQL, s.s)
-	if err != nil {
+	if _, err := tx.NamedExecContext(ctx, updateSQL, s.s); err != nil {
 		return fmt.Errorf("error updating session: %w", err)
 	}
 
 	// clear and recreate any wait expires/timeout fires
-	if _, err := DeleteSessionContactFires(ctx, tx, []ContactID{s.ContactID()}, false); err != nil {
+	if _, err := DeleteSessionContactFires(ctx, tx, []ContactID{s.ContactID()}, s.Status() != SessionStatusWaiting); err != nil {
 		return fmt.Errorf("error deleting session contact fires: %w", err)
 	}
 

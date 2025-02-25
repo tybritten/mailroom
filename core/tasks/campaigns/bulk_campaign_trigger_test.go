@@ -41,7 +41,7 @@ func TestBulkCampaignTrigger(t *testing.T) {
 
 	// check we recorded recent triggers for this event
 	assertredis.Keys(t, rc, "recent_campaign_fires:*", []string{"recent_campaign_fires:10002"})
-	assertredis.ZRange(t, rc, "recent_campaign_fires:10002", 0, -1, []string{"6MBPV0gqT9|10001", "PLQQFoOgV9|10003"})
+	assertredis.ZRange(t, rc, "recent_campaign_fires:10002", 0, -1, []string{"BPV0gqT9PL|10001", "QQFoOgV99A|10003"})
 
 	// create task for event #2 (single message, start mode PASSIVE)
 	task = &campaigns.BulkCampaignTriggerTask{EventID: testdata.RemindersEvent2.ID, ContactIDs: []models.ContactID{testdata.Bob.ID, testdata.Cathy.ID, testdata.Alexandria.ID}}
@@ -60,8 +60,8 @@ func TestBulkCampaignTrigger(t *testing.T) {
 
 	// check we recorded recent triggers for this event
 	assertredis.Keys(t, rc, "recent_campaign_fires:*", []string{"recent_campaign_fires:10001", "recent_campaign_fires:10002"})
-	assertredis.ZRange(t, rc, "recent_campaign_fires:10001", 0, -1, []string{"/cgnkcW6vA|10001", "YAnU/8BkiR|10000", "uI8bPiuaeA|10003"})
-	assertredis.ZRange(t, rc, "recent_campaign_fires:10002", 0, -1, []string{"6MBPV0gqT9|10001", "PLQQFoOgV9|10003"})
+	assertredis.ZRange(t, rc, "recent_campaign_fires:10001", 0, -1, []string{"gnkcW6vAYA|10001", "nU/8BkiRuI|10000", "8bPiuaeAX6|10003"})
+	assertredis.ZRange(t, rc, "recent_campaign_fires:10002", 0, -1, []string{"BPV0gqT9PL|10001", "QQFoOgV99A|10003"})
 
 	// create task for event #1 (Favorites, start mode INTERRUPT)
 	task = &campaigns.BulkCampaignTriggerTask{EventID: testdata.RemindersEvent1.ID, ContactIDs: []models.ContactID{testdata.Bob.ID, testdata.Cathy.ID, testdata.Alexandria.ID}}
