@@ -17,6 +17,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/aws/s3x"
+	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/envs"
@@ -212,7 +213,8 @@ func (s *Session) calculateFires(oa *OrgAssets, sprint flows.Sprint, incSessionE
 		fs = append(fs, NewContactFireForSession(oa.OrgID(), s, ContactFireTypeWaitExpiration, *waitExpiresOn))
 	}
 	if incSessionExpires {
-		sessionExpiresOn := s.CreatedOn().Add(SessionExpires)
+		// session expiration time is the creation time + 30 days + random time between 0 and 24 hours
+		sessionExpiresOn := s.CreatedOn().Add(SessionExpires).Add(time.Duration(random.IntN(86_400)) * time.Second)
 
 		fs = append(fs, NewContactFireForSession(oa.OrgID(), s, ContactFireTypeSessionExpiration, sessionExpiresOn))
 	}
