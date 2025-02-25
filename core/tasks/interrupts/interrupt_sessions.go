@@ -51,7 +51,7 @@ func (t *InterruptSessionsTask) Perform(ctx context.Context, rt *runtime.Runtime
 		}
 	}
 	if len(t.SessionIDs) > 0 {
-		if err := models.ExitSessions(ctx, db, t.SessionIDs, models.SessionStatusInterrupted); err != nil {
+		if err := models.LegacyExitSessions(ctx, db, t.SessionIDs, models.SessionStatusInterrupted); err != nil {
 			return fmt.Errorf("error interrupting sessions: %w", err)
 		}
 	}
