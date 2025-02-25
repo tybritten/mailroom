@@ -20,7 +20,7 @@ func init() {
 func handleContactFieldChanged(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ContactFieldChangedEvent)
 
-	slog.Debug("contact field changed", "contact", scene.ContactUUID(), "session", scene.SessionID(), "field", event.Field.Key, "value", event.Value)
+	slog.Debug("contact field changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "field", event.Field.Key, "value", event.Value)
 
 	scene.AppendToEventPreCommitHook(hooks.CommitFieldChangesHook, event)
 	scene.AppendToEventPreCommitHook(hooks.UpdateCampaignEventsHook, event)

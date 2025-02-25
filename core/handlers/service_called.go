@@ -22,7 +22,7 @@ func init() {
 func handleServiceCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ServiceCalledEvent)
 
-	slog.Debug("service called", "contact", scene.ContactUUID(), "session", scene.SessionID(), "service", event.Service)
+	slog.Debug("service called", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "service", event.Service)
 
 	var classifier *models.Classifier
 
@@ -35,7 +35,7 @@ func handleServiceCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 
 	// create a log for each HTTP call
 	for _, httpLog := range event.HTTPLogs {
-		slog.Debug("http requested", "contact", scene.ContactUUID(), "session", scene.SessionID(), "url", httpLog.URL, "status", httpLog.Status, "elapsed_ms", httpLog.ElapsedMS)
+		slog.Debug("http requested", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "url", httpLog.URL, "status", httpLog.Status, "elapsed_ms", httpLog.ElapsedMS)
 
 		var log *models.HTTPLog
 

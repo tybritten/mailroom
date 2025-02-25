@@ -30,11 +30,7 @@ func (h *commitFieldChangesHook) Apply(ctx context.Context, rt *runtime.Runtime,
 			event := e.(*events.ContactFieldChangedEvent)
 			field := oa.FieldByKey(event.Field.Key)
 			if field == nil {
-				slog.Debug("unable to find field with key, ignoring",
-					"field_key", event.Field.Key,
-					"field_name", event.Field.Name,
-					"session_id", scene.SessionID(),
-				)
+				slog.Debug("unable to find field with key, ignoring", "session", scene.SessionUUID(), slog.Group("field", "key", event.Field.Key, "name", event.Field.Name))
 				continue
 			}
 

@@ -21,7 +21,7 @@ func init() {
 func handleWebhookCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.WebhookCalledEvent)
 
-	slog.Debug("webhook called", "contact", scene.ContactUUID(), "session", scene.SessionID(), "url", event.URL, "status", event.Status, "elapsed_ms", event.ElapsedMS)
+	slog.Debug("webhook called", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "url", event.URL, "status", event.Status, "elapsed_ms", event.ElapsedMS)
 
 	// if this was a resthook and the status was 410, that means we should remove it
 	if event.Status == flows.CallStatusSubscriberGone {

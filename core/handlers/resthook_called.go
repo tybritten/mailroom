@@ -20,7 +20,7 @@ func init() {
 func handleResthookCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ResthookCalledEvent)
 
-	slog.Debug("resthook called", "contact", scene.ContactUUID(), "session", scene.SessionID(), "resthook", event.Resthook)
+	slog.Debug("resthook called", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "resthook", event.Resthook)
 
 	// look up our resthook id
 	resthook := oa.ResthookBySlug(event.Resthook)

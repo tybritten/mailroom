@@ -19,7 +19,7 @@ func init() {
 func handleBroadcastCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.BroadcastCreatedEvent)
 
-	slog.Debug("broadcast created", "contact", scene.ContactUUID(), "session", scene.SessionID(), "translations", event.Translations[event.BaseLanguage])
+	slog.Debug("broadcast created", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "translations", event.Translations[event.BaseLanguage])
 
 	scene.AppendToEventPostCommitHook(hooks.CreateBroadcastsHook, event)
 

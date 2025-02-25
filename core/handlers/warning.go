@@ -29,7 +29,7 @@ func handleWarning(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *mo
 	flow, _ := scene.Session().LocateEvent(e)
 	logMsg := warningsLogs[event.Text]
 	if logMsg != "" {
-		slog.Error(logMsg, "session", scene.SessionID(), "flow", flow.UUID(), "text", event.Text)
+		slog.Error(logMsg, "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "text", event.Text, slog.Group("flow", "uuid", flow.UUID, "name", flow.Name))
 	}
 
 	return nil
