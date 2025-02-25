@@ -769,8 +769,8 @@ func WriteSessionOutputsToStorage(ctx context.Context, rt *runtime.Runtime, orgI
 	return nil
 }
 
-// InterruptSessions interrupts waiting sessions and their runs
-func InterruptSessions(ctx context.Context, db *sqlx.DB, uuids []flows.SessionUUID) error {
+// ExitSessions exits waiting sessions and their runs
+func ExitSessions(ctx context.Context, db *sqlx.DB, uuids []flows.SessionUUID, status SessionStatus) error {
 	// split into batches and exit each batch in a transaction
 	for batch := range slices.Chunk(uuids, 100) {
 		tx, err := db.BeginTxx(ctx, nil)
@@ -778,7 +778,7 @@ func InterruptSessions(ctx context.Context, db *sqlx.DB, uuids []flows.SessionUU
 			return fmt.Errorf("error starting transaction to interrupt sessions: %w", err)
 		}
 
-		if err := interruptSessionBatch(ctx, tx, batch); err != nil {
+		if err := exitSessionBatch(ctx, tx, batch, status); err != nil {
 			tx.Rollback()
 			return fmt.Errorf("error interrupting batch of sessions: %w", err)
 		}
@@ -791,39 +791,40 @@ func InterruptSessions(ctx context.Context, db *sqlx.DB, uuids []flows.SessionUU
 	return nil
 }
 
-const sqlInterruptSessions = `
+const sqlExitSessions = `
    UPDATE flows_flowsession
-      SET status = 'I', ended_on = NOW(), current_flow_id = NULL
-    WHERE uuid = ANY ($1) AND status = 'W'
+      SET status = $2, ended_on = NOW(), current_flow_id = NULL
+    WHERE uuid = ANY($1) AND status = 'W'
 RETURNING contact_id`
 
 // TODO instead of having an index on session_uuid.. rework this to fetch the sessions and extract a list of run uuids?
-const sqlInterruptSessionRuns = `
+const sqlExitSessionRuns = `
 UPDATE flows_flowrun
-   SET exited_on = NOW(), status = 'I', modified_on = NOW()
+   SET exited_on = NOW(), status = $2, modified_on = NOW()
  WHERE session_uuid = ANY($1) AND status IN ('A', 'W')`
 
-const sqlInterruptSessionContacts = `
+const sqlExitSessionContacts = `
  UPDATE contacts_contact 
     SET current_session_uuid = NULL, current_flow_id = NULL, modified_on = NOW() 
   WHERE id = ANY($1) AND current_session_uuid = ANY($2)`
 
-// interrupts sessions and their runs inside the given transaction
-func interruptSessionBatch(ctx context.Context, tx *sqlx.Tx, uuids []flows.SessionUUID) error {
+// exits sessions and their runs inside the given transaction
+func exitSessionBatch(ctx context.Context, tx *sqlx.Tx, uuids []flows.SessionUUID, status SessionStatus) error {
+	runStatus := RunStatus(status) // session status codes are subset of run status codes
 	contactIDs := make([]ContactID, 0, len(uuids))
 
 	// first update the sessions themselves and get the contact ids
-	if err := tx.SelectContext(ctx, &contactIDs, sqlInterruptSessions, pq.Array(uuids)); err != nil {
+	if err := tx.SelectContext(ctx, &contactIDs, sqlExitSessions, pq.Array(uuids), status); err != nil {
 		return fmt.Errorf("error exiting sessions: %w", err)
 	}
 
 	// then the runs that belong to these sessions
-	if _, err := tx.ExecContext(ctx, sqlInterruptSessionRuns, pq.Array(uuids)); err != nil {
+	if _, err := tx.ExecContext(ctx, sqlExitSessionRuns, pq.Array(uuids), runStatus); err != nil {
 		return fmt.Errorf("error exiting session runs: %w", err)
 	}
 
 	// and finally the contacts from each session
-	if _, err := tx.ExecContext(ctx, sqlInterruptSessionContacts, pq.Array(contactIDs), pq.Array(uuids)); err != nil {
+	if _, err := tx.ExecContext(ctx, sqlExitSessionContacts, pq.Array(contactIDs), pq.Array(uuids)); err != nil {
 		return fmt.Errorf("error exiting sessions: %w", err)
 	}
 
@@ -836,7 +837,7 @@ func interruptSessionBatch(ctx context.Context, tx *sqlx.Tx, uuids []flows.Sessi
 }
 
 // deprecated - replace with InterruptSessions
-func ExitSessions(ctx context.Context, db *sqlx.DB, sessionIDs []SessionID, status SessionStatus) error {
+func LegacyExitSessions(ctx context.Context, db *sqlx.DB, sessionIDs []SessionID, status SessionStatus) error {
 	if len(sessionIDs) == 0 {
 		return nil
 	}
@@ -848,7 +849,7 @@ func ExitSessions(ctx context.Context, db *sqlx.DB, sessionIDs []SessionID, stat
 			return fmt.Errorf("error starting transaction to exit sessions: %w", err)
 		}
 
-		if err := exitSessionBatch(ctx, tx, idBatch, status); err != nil {
+		if err := legacyExitSessionBatch(ctx, tx, idBatch, status); err != nil {
 			return fmt.Errorf("error exiting batch of sessions: %w", err)
 		}
 
@@ -860,31 +861,31 @@ func ExitSessions(ctx context.Context, db *sqlx.DB, sessionIDs []SessionID, stat
 	return nil
 }
 
-const sqlExitSessions = `
+const sqlLegacyExitSessions = `
    UPDATE flows_flowsession
       SET status = $3, ended_on = $2, current_flow_id = NULL
     WHERE id = ANY ($1) AND status = 'W'
 RETURNING contact_id`
 
-const sqlExitSessionRuns = `
+const sqlLegacyExitSessionRuns = `
 UPDATE flows_flowrun
    SET exited_on = $2, status = $3, modified_on = NOW()
  WHERE session_id = ANY($1) AND status IN ('A', 'W')`
 
-const sqlExitSessionContacts = `
+const sqlLegacyExitSessionContacts = `
  UPDATE contacts_contact 
     SET current_session_uuid = NULL, current_flow_id = NULL, modified_on = NOW() 
   WHERE id = ANY($1)`
 
 // exits sessions and their runs inside the given transaction
-func exitSessionBatch(ctx context.Context, tx *sqlx.Tx, sessionIDs []SessionID, status SessionStatus) error {
+func legacyExitSessionBatch(ctx context.Context, tx *sqlx.Tx, sessionIDs []SessionID, status SessionStatus) error {
 	runStatus := RunStatus(status) // session status codes are subset of run status codes
 	contactIDs := make([]ContactID, 0, len(sessionIDs))
 
 	// first update the sessions themselves and get the contact ids
 	start := time.Now()
 
-	err := tx.SelectContext(ctx, &contactIDs, sqlExitSessions, pq.Array(sessionIDs), time.Now(), status)
+	err := tx.SelectContext(ctx, &contactIDs, sqlLegacyExitSessions, pq.Array(sessionIDs), time.Now(), status)
 	if err != nil {
 		return fmt.Errorf("error exiting sessions: %w", err)
 	}
@@ -894,7 +895,7 @@ func exitSessionBatch(ctx context.Context, tx *sqlx.Tx, sessionIDs []SessionID, 
 	// then the runs that belong to these sessions
 	start = time.Now()
 
-	res, err := tx.ExecContext(ctx, sqlExitSessionRuns, pq.Array(sessionIDs), time.Now(), runStatus)
+	res, err := tx.ExecContext(ctx, sqlLegacyExitSessionRuns, pq.Array(sessionIDs), time.Now(), runStatus)
 	if err != nil {
 		return fmt.Errorf("error exiting session runs: %w", err)
 	}
@@ -905,7 +906,7 @@ func exitSessionBatch(ctx context.Context, tx *sqlx.Tx, sessionIDs []SessionID, 
 	// and finally the contacts from each session
 	start = time.Now()
 
-	res, err = tx.ExecContext(ctx, sqlExitSessionContacts, pq.Array(contactIDs))
+	res, err = tx.ExecContext(ctx, sqlLegacyExitSessionContacts, pq.Array(contactIDs))
 	if err != nil {
 		return fmt.Errorf("error exiting sessions: %w", err)
 	}
@@ -928,7 +929,7 @@ func InterruptSessionsForContacts(ctx context.Context, db *sqlx.DB, contactIDs [
 		return 0, err
 	}
 
-	if err := InterruptSessions(ctx, db, sessionUUIDs); err != nil {
+	if err := ExitSessions(ctx, db, sessionUUIDs, SessionStatusInterrupted); err != nil {
 		return 0, fmt.Errorf("error exiting sessions: %w", err)
 	}
 
@@ -944,7 +945,7 @@ func InterruptSessionsForContactsTx(ctx context.Context, tx *sqlx.Tx, contactIDs
 	}
 
 	if len(sessionUUIDs) > 0 {
-		if err := interruptSessionBatch(ctx, tx, sessionUUIDs); err != nil {
+		if err := exitSessionBatch(ctx, tx, sessionUUIDs, SessionStatusInterrupted); err != nil {
 			return fmt.Errorf("error exiting sessions: %w", err)
 		}
 	}
@@ -979,7 +980,7 @@ func InterruptSessionsForChannel(ctx context.Context, db *sqlx.DB, channelID Cha
 		return fmt.Errorf("error selecting waiting sessions for channel %d: %w", channelID, err)
 	}
 
-	if err := InterruptSessions(ctx, db, sessionUUIDs); err != nil {
+	if err := ExitSessions(ctx, db, sessionUUIDs, SessionStatusInterrupted); err != nil {
 		return fmt.Errorf("error interrupting sessions for channel: %w", err)
 	}
 
@@ -1000,7 +1001,7 @@ func InterruptSessionsForFlows(ctx context.Context, db *sqlx.DB, flowIDs []FlowI
 		return fmt.Errorf("error selecting waiting sessions for flows: %w", err)
 	}
 
-	if err := InterruptSessions(ctx, db, sessionUUIDs); err != nil {
+	if err := ExitSessions(ctx, db, sessionUUIDs, SessionStatusInterrupted); err != nil {
 		return fmt.Errorf("error interrupting sessions: %w", err)
 	}
 

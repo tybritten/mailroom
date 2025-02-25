@@ -427,7 +427,7 @@ func ResumeIVRFlow(
 
 	// check if call has been marked as errored - it maybe have been updated by status callback
 	if call.Status() == models.CallStatusErrored || call.Status() == models.CallStatusFailed {
-		if err = models.InterruptSessions(ctx, rt.DB, []flows.SessionUUID{session.UUID()}); err != nil {
+		if err = models.ExitSessions(ctx, rt.DB, []flows.SessionUUID{session.UUID()}, models.SessionStatusInterrupted); err != nil {
 			slog.Error("error interrupting session for errored call", "error", err)
 		}
 
@@ -509,7 +509,7 @@ func ResumeIVRFlow(
 			return fmt.Errorf("error writing ivr response for resume: %w", err)
 		}
 	} else {
-		err = models.ExitSessions(ctx, rt.DB, []models.SessionID{session.ID()}, models.SessionStatusCompleted)
+		err = models.ExitSessions(ctx, rt.DB, []flows.SessionUUID{session.UUID()}, models.SessionStatusCompleted)
 		if err != nil {
 			slog.Error("error closing session", "error", err)
 		}
