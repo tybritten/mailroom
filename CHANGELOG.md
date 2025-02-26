@@ -1,3 +1,8 @@
+v10.1.54 (2025-02-26)
+-------------------------
+ * Add random time component to session expiration fires
+ * Start writing session expiration contact fires
+
 v10.1.53 (2025-02-25)
 -------------------------
  * Add bulk_session_expire task type to handle session expiration (S) contact fires
