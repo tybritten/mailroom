@@ -22,32 +22,32 @@ func TestInterrupts(t *testing.T) {
 	tcs := []struct {
 		contactIDs       []models.ContactID
 		flowIDs          []models.FlowID
-		expectedStatuses [5]string
+		expectedStatuses [4]string
 	}{
 		{
 			contactIDs:       nil,
 			flowIDs:          nil,
-			expectedStatuses: [5]string{"W", "W", "W", "W", "I"},
+			expectedStatuses: [4]string{"W", "W", "W", "W"},
 		},
 		{
 			contactIDs:       []models.ContactID{testdata.Cathy.ID},
 			flowIDs:          nil,
-			expectedStatuses: [5]string{"I", "W", "W", "W", "I"},
+			expectedStatuses: [4]string{"I", "W", "W", "W"},
 		},
 		{
 			contactIDs:       []models.ContactID{testdata.Cathy.ID, testdata.George.ID},
 			flowIDs:          nil,
-			expectedStatuses: [5]string{"I", "I", "W", "W", "I"},
+			expectedStatuses: [4]string{"I", "I", "W", "W"},
 		},
 		{
 			contactIDs:       nil,
 			flowIDs:          []models.FlowID{testdata.PickANumber.ID},
-			expectedStatuses: [5]string{"W", "W", "W", "I", "I"},
+			expectedStatuses: [4]string{"W", "W", "W", "I"},
 		},
 		{
 			contactIDs:       []models.ContactID{testdata.Cathy.ID, testdata.George.ID},
 			flowIDs:          []models.FlowID{testdata.PickANumber.ID},
-			expectedStatuses: [5]string{"I", "I", "W", "I", "I"},
+			expectedStatuses: [4]string{"I", "I", "W", "I"},
 		},
 	}
 
@@ -58,7 +58,7 @@ func TestInterrupts(t *testing.T) {
 		// twilio call
 		twilioCallID := testdata.InsertCall(rt, testdata.Org1, testdata.TwilioChannel, testdata.Alexandria)
 
-		sessionIDs := make([]models.SessionID, 5)
+		sessionIDs := make([]models.SessionID, 4)
 
 		// insert our dummy contact sessions
 		sessionIDs[0], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
@@ -66,12 +66,8 @@ func TestInterrupts(t *testing.T) {
 		sessionIDs[2], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Alexandria, models.FlowTypeVoice, testdata.Favorites, twilioCallID)
 		sessionIDs[3], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Bob, models.FlowTypeMessaging, testdata.PickANumber, models.NilCallID)
 
-		// a session we always end explicitly
-		sessionIDs[4], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Bob, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
-
 		// create our task
 		task := &interrupts.InterruptSessionsTask{
-			SessionIDs: []models.SessionID{sessionIDs[4]},
 			ContactIDs: tc.contactIDs,
 			FlowIDs:    tc.flowIDs,
 		}
