@@ -1,3 +1,8 @@
+v10.1.56 (2025-02-26)
+-------------------------
+ * Stop writing flowrun.session_id
+ * Remove final code exiting sessions by id
+
 v10.1.55 (2025-02-26)
 -------------------------
  * Reorganize cron tasks into a crons package
