@@ -13,7 +13,7 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
-	"github.com/nyaruka/mailroom/core/tasks/ivr"
+	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
@@ -176,7 +176,7 @@ func TriggerIVRFlow(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 	}
 
 	// create our batch of all our contacts
-	task := &ivr.StartIVRFlowBatchTask{FlowStartBatch: start.CreateBatch(contactIDs, true, true, len(contactIDs))}
+	task := &starts.StartIVRFlowBatchTask{FlowStartBatch: start.CreateBatch(contactIDs, true, true, len(contactIDs))}
 
 	// queue this to our ivr starter, it will take care of creating the calls then calling back in
 	rc := rt.RP.Get()

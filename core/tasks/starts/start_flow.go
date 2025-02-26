@@ -12,7 +12,6 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/search"
 	"github.com/nyaruka/mailroom/core/tasks"
-	"github.com/nyaruka/mailroom/core/tasks/ivr"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
@@ -130,7 +129,7 @@ func createFlowStartBatches(ctx context.Context, rt *runtime.Runtime, oa *models
 		// task is different if we are an IVR flow
 		var batchTask tasks.Task
 		if flow.FlowType() == models.FlowTypeVoice {
-			batchTask = &ivr.StartIVRFlowBatchTask{FlowStartBatch: batch}
+			batchTask = &StartIVRFlowBatchTask{FlowStartBatch: batch}
 		} else {
 			batchTask = &StartFlowBatchTask{FlowStartBatch: batch}
 		}

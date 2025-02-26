@@ -29,6 +29,8 @@ func TestDeindexDeletedOrgsCron(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	testsuite.ReindexElastic(ctx)
+
 	// no orgs to deindex
 	assertRun(map[string]any{"contacts": map[models.OrgID]int{}})
 

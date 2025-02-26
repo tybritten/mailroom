@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSyncAndroidChannelsCron(t *testing.T) {
+func TestSyncAndroidChannels(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
 	rt.Config.AndroidCredentialsFile = `testdata/android.json`

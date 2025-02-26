@@ -24,7 +24,6 @@ import (
 	_ "github.com/nyaruka/mailroom/core/tasks/handler"
 	_ "github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	_ "github.com/nyaruka/mailroom/core/tasks/interrupts"
-	_ "github.com/nyaruka/mailroom/core/tasks/ivr"
 	_ "github.com/nyaruka/mailroom/core/tasks/msgs"
 	_ "github.com/nyaruka/mailroom/core/tasks/starts"
 	_ "github.com/nyaruka/mailroom/services/ivr/twiml"

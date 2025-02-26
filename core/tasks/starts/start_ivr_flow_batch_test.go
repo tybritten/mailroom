@@ -1,4 +1,4 @@
-package ivr_test
+package starts_test
 
 import (
 	"fmt"
