@@ -22,32 +22,35 @@ const (
 )
 
 type ContactFire struct {
-	ID        ContactFireID   `db:"id"`
-	OrgID     OrgID           `db:"org_id"`
-	ContactID ContactID       `db:"contact_id"`
-	Type      ContactFireType `db:"fire_type"`
-	Scope     string          `db:"scope"`
-	FireOn    time.Time       `db:"fire_on"`
-
-	SessionUUID null.String `db:"session_uuid"`
-	SprintUUID  null.String `db:"sprint_uuid"`
+	ID          ContactFireID   `db:"id"`
+	OrgID       OrgID           `db:"org_id"`
+	ContactID   ContactID       `db:"contact_id"`
+	Type        ContactFireType `db:"fire_type"`
+	Scope       string          `db:"scope"`
+	FireOn      time.Time       `db:"fire_on"`
+	SessionUUID null.String     `db:"session_uuid"`
+	SprintUUID  null.String     `db:"sprint_uuid"` // set for wait expirations and timeouts
 }
 
 func newContactFire(orgID OrgID, contactID ContactID, typ ContactFireType, scope string, fireOn time.Time, sessionUUID flows.SessionUUID, sprintUUID flows.SprintUUID) *ContactFire {
 	return &ContactFire{
-		OrgID:     orgID,
-		ContactID: contactID,
-		Type:      typ,
-		Scope:     scope,
-		FireOn:    fireOn,
-
+		OrgID:       orgID,
+		ContactID:   contactID,
+		Type:        typ,
+		Scope:       scope,
+		FireOn:      fireOn,
 		SessionUUID: null.String(sessionUUID),
 		SprintUUID:  null.String(sprintUUID),
 	}
 }
 
-func NewContactFireForSession(orgID OrgID, s *Session, typ ContactFireType, fireOn time.Time) *ContactFire {
-	return newContactFire(orgID, s.ContactID(), typ, "", fireOn, s.UUID(), s.LastSprintUUID())
+func newContactFireForSession(orgID OrgID, s *Session, typ ContactFireType, fireOn time.Time) *ContactFire {
+	var sprintUUID flows.SprintUUID
+	if typ == ContactFireTypeWaitTimeout || typ == ContactFireTypeWaitExpiration {
+		sprintUUID = s.LastSprintUUID()
+	}
+
+	return newContactFire(orgID, s.ContactID(), typ, "", fireOn, s.UUID(), sprintUUID)
 }
 
 func NewContactFireForCampaign(orgID OrgID, contactID ContactID, eventID CampaignEventID, fireOn time.Time) *ContactFire {
@@ -98,10 +101,15 @@ func DeleteContactFires(ctx context.Context, rt *runtime.Runtime, fires []*Conta
 }
 
 // DeleteSessionContactFires deletes session wait/timeout fires for the given contacts
-func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []ContactID) (int, error) {
-	res, err := db.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = ANY($1) AND fire_type IN ('E', 'T') AND scope = ''`, pq.Array(contactIDs))
+func DeleteSessionContactFires(ctx context.Context, db DBorTx, contactIDs []ContactID, incSessionExpiration bool) (int, error) {
+	types := []ContactFireType{ContactFireTypeWaitTimeout, ContactFireTypeWaitExpiration}
+	if incSessionExpiration {
+		types = append(types, ContactFireTypeSessionExpiration)
+	}
+
+	res, err := db.ExecContext(ctx, `DELETE FROM contacts_contactfire WHERE contact_id = ANY($1) AND fire_type = ANY($2) AND scope = ''`, pq.Array(contactIDs), pq.Array(types))
 	if err != nil {
-		return 0, fmt.Errorf("error deleting session wait/timeout contact fires: %w", err)
+		return 0, fmt.Errorf("error deleting session contact fires: %w", err)
 	}
 
 	numDeleted, _ := res.RowsAffected()

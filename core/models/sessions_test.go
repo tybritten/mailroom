@@ -2,11 +2,15 @@ package models_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/gocommon/random"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/test"
 	"github.com/nyaruka/mailroom/core/models"
@@ -20,6 +24,11 @@ import (
 func TestSessionCreationAndUpdating(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
+	dates.SetNowFunc(dates.NewSequentialNow(time.Date(2025, 2, 25, 16, 45, 0, 0, time.UTC), time.Second))
+	random.SetGenerator(random.NewSeededGenerator(123))
+
+	defer dates.SetNowFunc(time.Now)
+	defer random.SetGenerator(random.DefaultGenerator)
 	defer testsuite.Reset(testsuite.ResetData)
 
 	testFlows := testdata.ImportFlows(rt, testdata.Org1, "testdata/session_test_flows.json")
@@ -64,9 +73,11 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 			"status": "W", "session_type": "M", "current_flow_id": int64(flow.ID), "ended_on": nil,
 		})
 
-	// check we have contact fires for wait expiration and timeout
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = '' AND session_uuid = $2`, testdata.Bob.ID, modelSessions[0].UUID()).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = '' AND session_uuid = $2`, testdata.Bob.ID, modelSessions[0].UUID()).Returns(1)
+	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{
+		fmt.Sprintf("T:%s", modelSessions[0].UUID()): time.Date(2025, 2, 25, 16, 50, 11, 0, time.UTC), // 5 minutes in future
+		fmt.Sprintf("E:%s", modelSessions[0].UUID()): time.Date(2025, 2, 25, 16, 55, 7, 0, time.UTC),  // 10 minutes in future
+		fmt.Sprintf("S:%s", modelSessions[0].UUID()): time.Date(2025, 3, 28, 9, 55, 36, 0, time.UTC),  // 30 days + rand(1 - 24 hours) in future
+	})
 
 	// reload contact and check current session/flow are set
 	modelContact, _, _ = testdata.Bob.Load(rt, oa)
@@ -91,9 +102,11 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assert.Equal(t, flow.ID, session.CurrentFlowID())
 	assert.Nil(t, session.Timeout())
 
-	// check we have a contact fire for wait expiration but not timeout (wait doesn't have a timeout)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Bob.ID).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Bob.ID).Returns(0)
+	// check we have a new contact fire for wait expiration but not timeout (wait doesn't have a timeout)
+	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{
+		fmt.Sprintf("E:%s", modelSessions[0].UUID()): time.Date(2025, 2, 25, 16, 55, 27, 0, time.UTC), // updated
+		fmt.Sprintf("S:%s", modelSessions[0].UUID()): time.Date(2025, 3, 28, 9, 55, 36, 0, time.UTC),  // unchanged
+	})
 
 	// reload contact and check current session/flow are set
 	modelContact, _, _ = testdata.Bob.Load(rt, oa)
@@ -124,9 +137,8 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id FROM flows_flowsession`).
 		Columns(map[string]any{"status": "C", "session_type": "M", "current_flow_id": nil})
 
-	// check we have no contact fires for wait expiration or timeout
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Bob.ID).Returns(0)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Bob.ID).Returns(0)
+	// check we have no contact fires
+	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{})
 
 	// reload contact and check current session/flow are cleared
 	modelContact, _, _ = testdata.Bob.Load(rt, oa)
@@ -178,9 +190,8 @@ func TestSingleSprintSession(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT status, session_type, current_flow_id FROM flows_flowsession`).
 		Columns(map[string]any{"status": "C", "session_type": "M", "current_flow_id": nil})
 
-	// check we have no contact fires for wait expiration or timeout
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Bob.ID).Returns(0)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Bob.ID).Returns(0)
+	// check we have no contact fires
+	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{})
 
 	// reload contact and check current session/flow aren't set
 	modelContact, _, _ = testdata.Bob.Load(rt, oa)
@@ -191,6 +202,11 @@ func TestSingleSprintSession(t *testing.T) {
 func TestSessionWithSubflows(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
+	dates.SetNowFunc(dates.NewSequentialNow(time.Date(2025, 2, 25, 16, 45, 0, 0, time.UTC), time.Second))
+	random.SetGenerator(random.NewSeededGenerator(123))
+
+	defer dates.SetNowFunc(time.Now)
+	defer random.SetGenerator(random.DefaultGenerator)
 	defer testsuite.Reset(testsuite.ResetData)
 
 	testFlows := testdata.ImportFlows(rt, testdata.Org1, "testdata/session_test_flows.json")
@@ -241,8 +257,10 @@ func TestSessionWithSubflows(t *testing.T) {
 		})
 
 	// check we have a contact fire for wait expiration but not timeout
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Cathy.ID).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Cathy.ID).Returns(0)
+	testsuite.AssertContactFires(t, rt, testdata.Cathy.ID, map[string]time.Time{
+		fmt.Sprintf("E:%s", modelSessions[0].UUID()): time.Date(2025, 2, 25, 16, 55, 15, 0, time.UTC), // 10 minutes in future
+		fmt.Sprintf("S:%s", modelSessions[0].UUID()): time.Date(2025, 3, 28, 9, 55, 36, 0, time.UTC),  // 30 days + rand(1 - 24 hours) in future
+	})
 
 	// reload contact and check current session/flow are set
 	modelContact, _, _ = testdata.Cathy.Load(rt, oa)
@@ -268,8 +286,7 @@ func TestSessionWithSubflows(t *testing.T) {
 	assert.Nil(t, session.Timeout())
 
 	// check we have no contact fires for wait expiration or timeout
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Bob.ID).Returns(0)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Bob.ID).Returns(0)
+	testsuite.AssertContactFires(t, rt, testdata.Cathy.ID, map[string]time.Time{})
 
 	// reload contact and check current session/flow aren't set
 	modelContact, _, _ = testdata.Cathy.Load(rt, oa)
@@ -280,6 +297,11 @@ func TestSessionWithSubflows(t *testing.T) {
 func TestSessionFailedStart(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 
+	dates.SetNowFunc(dates.NewSequentialNow(time.Date(2025, 2, 25, 16, 45, 0, 0, time.UTC), time.Second))
+	random.SetGenerator(random.NewSeededGenerator(123))
+
+	defer dates.SetNowFunc(time.Now)
+	defer random.SetGenerator(random.DefaultGenerator)
 	defer testsuite.Reset(testsuite.ResetData)
 
 	testFlows := testdata.ImportFlows(rt, testdata.Org1, "testdata/ping_pong.json")
@@ -326,9 +348,8 @@ func TestSessionFailedStart(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE flow_id = $1`, pong.ID).Returns(50)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE status = 'F' AND exited_on IS NOT NULL`).Returns(101)
 
-	// check we have no contact fires for wait expiration or timeout
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'E' AND scope = ''`, testdata.Bob.ID).Returns(0)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'T' AND scope = ''`, testdata.Bob.ID).Returns(0)
+	// check we have no contact fires
+	testsuite.AssertContactFires(t, rt, testdata.Cathy.ID, map[string]time.Time{})
 
 	// reload contact and check current session/flow aren't set
 	modelContact, _, _ = testdata.Cathy.Load(rt, oa)
