@@ -27,9 +27,9 @@ func TestInterruptChannel(t *testing.T) {
 	// vonage call
 	vonageCallID := testdata.InsertCall(rt, testdata.Org1, testdata.VonageChannel, testdata.George)
 
-	sessionID1, _ := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
-	sessionID2, sessionUUID2 := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.George, models.FlowTypeVoice, testdata.Favorites, vonageCallID)
-	sessionID3, sessionUUID3 := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Alexandria, models.FlowTypeVoice, testdata.Favorites, twilioCallID)
+	sessionUUID1 := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+	sessionUUID2 := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.George, models.FlowTypeVoice, testdata.Favorites, vonageCallID)
+	sessionUUID3 := testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Alexandria, models.FlowTypeVoice, testdata.Favorites, twilioCallID)
 
 	rt.DB.MustExec(`UPDATE ivr_call SET session_uuid = $2 WHERE id = $1`, vonageCallID, sessionUUID2)
 	rt.DB.MustExec(`UPDATE ivr_call SET session_uuid = $2 WHERE id = $1`, twilioCallID, sessionUUID3)
@@ -40,9 +40,9 @@ func TestInterruptChannel(t *testing.T) {
 	testdata.InsertOutgoingMsg(rt, testdata.Org1, testdata.VonageChannel, testdata.George, "no URN", nil, models.MsgStatusErrored, false)
 	testdata.InsertOutgoingMsg(rt, testdata.Org1, testdata.VonageChannel, testdata.George, "no URN", nil, models.MsgStatusFailed, false)
 
-	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE id = $1`, sessionID1).Returns("W")
-	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE id = $1`, sessionID2).Returns("W")
-	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE id = $1`, sessionID3).Returns("W")
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE uuid = $1`, sessionUUID1).Returns("W")
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE uuid = $1`, sessionUUID2).Returns("W")
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE uuid = $1`, sessionUUID3).Returns("W")
 
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE status = 'F' and failed_reason = 'R' and channel_id = $1`, testdata.VonageChannel.ID).Returns(0)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE status = 'F' and channel_id = $1`, testdata.VonageChannel.ID).Returns(1)
@@ -56,9 +56,9 @@ func TestInterruptChannel(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE status = 'F' and failed_reason = 'R' and channel_id = $1`, testdata.VonageChannel.ID).Returns(0)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE status = 'F' and failed_reason = 'R' and channel_id = $1`, testdata.TwilioChannel.ID).Returns(1)
 
-	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE id = $1`, sessionID1).Returns("W")
-	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE id = $1`, sessionID2).Returns("W")
-	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE id = $1`, sessionID3).Returns("I")
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE uuid = $1`, sessionUUID1).Returns("W")
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE uuid = $1`, sessionUUID2).Returns("W")
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE uuid = $1`, sessionUUID3).Returns("I")
 
 	testdata.InsertErroredOutgoingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "Hi", 1, time.Now().Add(-time.Hour), false)
 	testdata.InsertErroredOutgoingMsg(rt, testdata.Org1, testdata.VonageChannel, testdata.Bob, "Hi", 2, time.Now().Add(-time.Minute), false)
@@ -84,9 +84,9 @@ func TestInterruptChannel(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE status = 'F' and channel_id = $1`, testdata.VonageChannel.ID).Returns(7)
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE status = 'F' and failed_reason = 'R' and channel_id = $1`, testdata.TwilioChannel.ID).Returns(1)
 
-	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE id = $1`, sessionID1).Returns("W")
-	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE id = $1`, sessionID2).Returns("I")
-	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE id = $1`, sessionID3).Returns("I")
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE uuid = $1`, sessionUUID1).Returns("W")
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE uuid = $1`, sessionUUID2).Returns("I")
+	assertdb.Query(t, rt.DB, `SELECT status FROM flows_flowsession WHERE uuid = $1`, sessionUUID3).Returns("I")
 
 	// vonage queues should be cleared
 	testsuite.AssertCourierQueues(t, map[string][]int{
