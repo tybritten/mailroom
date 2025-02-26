@@ -73,8 +73,8 @@ func TestBroadcast(t *testing.T) {
 	polls := testdata.InsertOptIn(rt, testdata.Org1, "Polls")
 
 	createRun := func(org *testdata.Org, contact *testdata.Contact, nodeUUID flows.NodeUUID) {
-		sessionID, sessionUUID := testdata.InsertFlowSession(rt, contact, models.FlowTypeMessaging, models.SessionStatusWaiting, testdata.Favorites, models.NilCallID)
-		testdata.InsertFlowRun(rt, org, sessionID, sessionUUID, contact, testdata.Favorites, models.RunStatusWaiting, nodeUUID)
+		sessionUUID := testdata.InsertFlowSession(rt, contact, models.FlowTypeMessaging, models.SessionStatusWaiting, testdata.Favorites, models.NilCallID)
+		testdata.InsertFlowRun(rt, org, sessionUUID, contact, testdata.Favorites, models.RunStatusWaiting, nodeUUID)
 	}
 
 	// put bob and george in a flows at different nodes

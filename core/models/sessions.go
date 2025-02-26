@@ -560,6 +560,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 
 	// create all our session objects
 	sessions := make([]*Session, 0, len(ss))
+	runs := make([]*FlowRun, 0, len(sessions))
 	waitingSessionsI := make([]any, 0, len(ss))
 	endedSessionsI := make([]any, 0, len(ss))
 	completedCallIDs := make([]CallID, 0, 1)
@@ -572,6 +573,8 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 			return nil, fmt.Errorf("error creating session objects: %w", err)
 		}
 		sessions = append(sessions, session)
+		runs = append(runs, session.runs...)
+		fires = append(fires, session.calculateFires(oa, sprints[i], true)...)
 
 		if session.Status() == SessionStatusWaiting {
 			waitingSessionsI = append(waitingSessionsI, &session.s)
@@ -623,17 +626,6 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 	err = BulkQuery(ctx, "insert waiting sessions", tx, insertWaitingSQL, waitingSessionsI)
 	if err != nil {
 		return nil, fmt.Errorf("error inserting waiting sessions: %w", err)
-	}
-
-	// now that sessions have ids, set it on runs and generates fires
-	runs := make([]*FlowRun, 0, len(sessions))
-	for i, s := range sessions {
-		for _, r := range s.runs {
-			r.SessionID = s.ID()
-			runs = append(runs, r)
-		}
-
-		fires = append(fires, s.calculateFires(oa, sprints[i], true)...)
 	}
 
 	// insert all runs

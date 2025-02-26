@@ -54,7 +54,6 @@ type FlowRun struct {
 	ContactID       ContactID         `db:"contact_id"`
 	FlowID          FlowID            `db:"flow_id"`
 	OrgID           OrgID             `db:"org_id"`
-	SessionID       SessionID         `db:"session_id"`
 	SessionUUID     flows.SessionUUID `db:"session_uuid"`
 	StartID         StartID           `db:"start_id"`
 
@@ -86,7 +85,6 @@ func newRun(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, session *Session, f
 		ContactID:   ContactID(fr.Contact().ID()),
 		FlowID:      flowID,
 		OrgID:       oa.OrgID(),
-		SessionID:   session.ID(),
 		SessionUUID: session.UUID(),
 		StartID:     NilStartID,
 		PathNodes:   pathNodes,
@@ -114,9 +112,9 @@ func newRun(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, session *Session, f
 const sqlInsertRun = `
 INSERT INTO
 flows_flowrun(uuid, created_on, modified_on, exited_on, status, responded, results, path_nodes, path_times,
-	          current_node_uuid, contact_id, flow_id, org_id, session_id, session_uuid, start_id)
+	          current_node_uuid, contact_id, flow_id, org_id, session_uuid, start_id)
 	   VALUES(:uuid, :created_on, NOW(), :exited_on, :status, :responded, :results, :path_nodes, :path_times,
-	          :current_node_uuid, :contact_id, :flow_id, :org_id, :session_id, :session_uuid, :start_id)
+	          :current_node_uuid, :contact_id, :flow_id, :org_id, :session_uuid, :start_id)
 RETURNING id
 `
 

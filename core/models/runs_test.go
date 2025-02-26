@@ -18,7 +18,7 @@ func TestInsertAndUpdateRuns(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
-	sessionID, sessionUUID := testdata.InsertFlowSession(rt, testdata.Cathy, models.FlowTypeMessaging, models.SessionStatusWaiting, testdata.Favorites, models.NilCallID)
+	sessionUUID := testdata.InsertFlowSession(rt, testdata.Cathy, models.FlowTypeMessaging, models.SessionStatusWaiting, testdata.Favorites, models.NilCallID)
 
 	t1 := time.Date(2024, 12, 3, 14, 29, 30, 0, time.UTC)
 	t2 := time.Date(2024, 12, 3, 15, 13, 45, 0, time.UTC)
@@ -37,7 +37,6 @@ func TestInsertAndUpdateRuns(t *testing.T) {
 		ContactID:       testdata.Cathy.ID,
 		FlowID:          testdata.Favorites.ID,
 		OrgID:           testdata.Org1.ID,
-		SessionID:       sessionID,
 		SessionUUID:     sessionUUID,
 		StartID:         models.NilStartID,
 	}
@@ -59,7 +58,7 @@ func TestInsertAndUpdateRuns(t *testing.T) {
 	run.ModifiedOn = t3
 	run.ExitedOn = &t3
 	run.PathNodes = []string{"1895cae0-d3c0-4470-83df-0b4cf9449438", "3ea3c026-e1c0-4950-bb94-d4c532b1459f", "5f0d8d24-0178-4b10-ae35-b3ccdc785777"}
-	run.PathTimes = pq.GenericArray{A: []interface{}{t1, t2, t3}}
+	run.PathTimes = pq.GenericArray{A: []any{t1, t2, t3}}
 
 	tx = rt.DB.MustBegin()
 	err = models.UpdateRuns(ctx, tx, []*models.FlowRun{run})
@@ -83,8 +82,8 @@ func TestGetContactIDsAtNode(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetData)
 
 	createRun := func(org *testdata.Org, contact *testdata.Contact, nodeUUID flows.NodeUUID) {
-		sessionID, sessionUUID := testdata.InsertFlowSession(rt, contact, models.FlowTypeMessaging, models.SessionStatusWaiting, testdata.Favorites, models.NilCallID)
-		testdata.InsertFlowRun(rt, org, sessionID, sessionUUID, contact, testdata.Favorites, models.RunStatusWaiting, nodeUUID)
+		sessionUUID := testdata.InsertFlowSession(rt, contact, models.FlowTypeMessaging, models.SessionStatusWaiting, testdata.Favorites, models.NilCallID)
+		testdata.InsertFlowRun(rt, org, sessionUUID, contact, testdata.Favorites, models.RunStatusWaiting, nodeUUID)
 	}
 
 	createRun(testdata.Org1, testdata.Alexandria, "2fe26b10-2bb1-4115-9401-33a8a0d5d52a")

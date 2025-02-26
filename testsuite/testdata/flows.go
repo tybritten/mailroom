@@ -93,7 +93,7 @@ func InsertFlowStart(rt *runtime.Runtime, org *Org, user *User, flow *Flow, cont
 }
 
 // InsertFlowSession inserts a flow session
-func InsertFlowSession(rt *runtime.Runtime, contact *Contact, sessionType models.FlowType, status models.SessionStatus, currentFlow *Flow, callID models.CallID) (models.SessionID, flows.SessionUUID) {
+func InsertFlowSession(rt *runtime.Runtime, contact *Contact, sessionType models.FlowType, status models.SessionStatus, currentFlow *Flow, callID models.CallID) flows.SessionUUID {
 	now := time.Now()
 	uuid := flows.SessionUUID(uuids.NewV4())
 
@@ -102,33 +102,30 @@ func InsertFlowSession(rt *runtime.Runtime, contact *Contact, sessionType models
 		endedOn = &now
 	}
 
-	var id models.SessionID
-	must(rt.DB.Get(&id,
+	rt.DB.MustExec(
 		`INSERT INTO flows_flowsession(uuid, contact_id, status, output, created_on, session_type, current_flow_id, call_id, ended_on) 
 		 VALUES($1, $2, $3, '{}', NOW(), $4, $5, $6, $7) RETURNING id`, uuid, contact.ID, status, sessionType, currentFlow.ID, callID, endedOn,
-	))
-	return id, uuid
+	)
+	return uuid
 }
 
 // InsertWaitingSession inserts a waiting flow session with a corresponding waiting run, and updates the contact
-func InsertWaitingSession(rt *runtime.Runtime, org *Org, contact *Contact, sessionType models.FlowType, currentFlow *Flow, callID models.CallID) (models.SessionID, flows.SessionUUID) {
+func InsertWaitingSession(rt *runtime.Runtime, org *Org, contact *Contact, sessionType models.FlowType, currentFlow *Flow, callID models.CallID) flows.SessionUUID {
 	uuid := flows.SessionUUID(uuids.NewV4())
 
-	var id models.SessionID
-	must(rt.DB.Get(&id,
+	rt.DB.MustExec(
 		`INSERT INTO flows_flowsession(uuid, contact_id, status, last_sprint_uuid, output, created_on, session_type, current_flow_id, call_id) 
 		 VALUES($1, $2, 'W', $3, '{"status":"waiting"}', NOW(), $4, $5, $6) RETURNING id`, uuid, contact.ID, uuids.NewV4(), sessionType, currentFlow.ID, callID,
-	))
+	)
 
-	InsertFlowRun(rt, org, id, uuid, contact, currentFlow, models.RunStatusWaiting, flows.NodeUUID(uuids.NewV4()))
+	InsertFlowRun(rt, org, uuid, contact, currentFlow, models.RunStatusWaiting, flows.NodeUUID(uuids.NewV4()))
 
 	rt.DB.MustExec(`UPDATE contacts_contact SET current_session_uuid = $2, current_flow_id = $3 WHERE id = $1`, contact.ID, uuid, currentFlow.ID)
-
-	return id, uuid
+	return uuid
 }
 
 // InsertFlowRun inserts a flow run
-func InsertFlowRun(rt *runtime.Runtime, org *Org, sessionID models.SessionID, sessionUUID flows.SessionUUID, contact *Contact, flow *Flow, status models.RunStatus, currentNodeUUID flows.NodeUUID) models.FlowRunID {
+func InsertFlowRun(rt *runtime.Runtime, org *Org, sessionUUID flows.SessionUUID, contact *Contact, flow *Flow, status models.RunStatus, currentNodeUUID flows.NodeUUID) models.FlowRunID {
 	now := time.Now()
 
 	var exitedOn *time.Time
@@ -138,8 +135,8 @@ func InsertFlowRun(rt *runtime.Runtime, org *Org, sessionID models.SessionID, se
 
 	var id models.FlowRunID
 	must(rt.DB.Get(&id,
-		`INSERT INTO flows_flowrun(uuid, org_id, session_id, session_uuid, contact_id, flow_id, status, responded, current_node_uuid, created_on, modified_on, exited_on) 
-		 VALUES($1, $2, $3, $4, $5, $6, $7, TRUE, $8, NOW(), NOW(), $9) RETURNING id`, uuids.NewV4(), org.ID, sessionID, sessionUUID, contact.ID, flow.ID, status, null.String(currentNodeUUID), exitedOn,
+		`INSERT INTO flows_flowrun(uuid, org_id, session_uuid, contact_id, flow_id, status, responded, current_node_uuid, created_on, modified_on, exited_on) 
+		 VALUES($1, $2, $3, $4, $5, $6, TRUE, $7, NOW(), NOW(), $8) RETURNING id`, uuids.NewV4(), org.ID, sessionUUID, contact.ID, flow.ID, status, null.String(currentNodeUUID), exitedOn,
 	))
 	return id
 }

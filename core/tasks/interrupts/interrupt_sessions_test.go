@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/goflow/flows"
 	_ "github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks/interrupts"
@@ -58,13 +59,13 @@ func TestInterrupts(t *testing.T) {
 		// twilio call
 		twilioCallID := testdata.InsertCall(rt, testdata.Org1, testdata.TwilioChannel, testdata.Alexandria)
 
-		sessionIDs := make([]models.SessionID, 4)
+		sessionUUIDs := make([]flows.SessionUUID, 4)
 
 		// insert our dummy contact sessions
-		sessionIDs[0], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
-		sessionIDs[1], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
-		sessionIDs[2], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Alexandria, models.FlowTypeVoice, testdata.Favorites, twilioCallID)
-		sessionIDs[3], _ = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Bob, models.FlowTypeMessaging, testdata.PickANumber, models.NilCallID)
+		sessionUUIDs[0] = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Cathy, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+		sessionUUIDs[1] = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.George, models.FlowTypeMessaging, testdata.Favorites, models.NilCallID)
+		sessionUUIDs[2] = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Alexandria, models.FlowTypeVoice, testdata.Favorites, twilioCallID)
+		sessionUUIDs[3] = testdata.InsertWaitingSession(rt, testdata.Org1, testdata.Bob, models.FlowTypeMessaging, testdata.PickANumber, models.NilCallID)
 
 		// create our task
 		task := &interrupts.InterruptSessionsTask{
@@ -77,14 +78,14 @@ func TestInterrupts(t *testing.T) {
 		assert.NoError(t, err)
 
 		// check session statuses are as expected
-		for j, sID := range sessionIDs {
+		for j, sUUID := range sessionUUIDs {
 			var status string
-			err := rt.DB.Get(&status, `SELECT status FROM flows_flowsession WHERE id = $1`, sID)
+			err := rt.DB.Get(&status, `SELECT status FROM flows_flowsession WHERE uuid = $1`, sUUID)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedStatuses[j], status, "%d: status mismatch for session #%d", i, j)
 
 			// check for runs with a different status to the session
-			assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE session_id = $1 AND status != $2`, sID, tc.expectedStatuses[j]).
+			assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowrun WHERE session_uuid = $1 AND status != $2`, sUUID, tc.expectedStatuses[j]).
 				Returns(0, "%d: unexpected un-interrupted runs for session #%d", i, j)
 		}
 	}
