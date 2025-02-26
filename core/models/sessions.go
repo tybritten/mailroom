@@ -29,7 +29,6 @@ import (
 	"github.com/nyaruka/null/v3"
 )
 
-type SessionID int64
 type SessionStatus string
 
 const (
@@ -56,7 +55,6 @@ type SessionCommitHook func(context.Context, *sqlx.Tx, *redis.Pool, *OrgAssets, 
 // Session is the mailroom type for a FlowSession
 type Session struct {
 	s struct {
-		ID             SessionID         `db:"id"`
 		UUID           flows.SessionUUID `db:"uuid"`
 		SessionType    FlowType          `db:"session_type"`
 		Status         SessionStatus     `db:"status"`
@@ -93,7 +91,6 @@ type Session struct {
 	findStep func(flows.StepUUID) (flows.Run, flows.Step)
 }
 
-func (s *Session) ID() SessionID                      { return s.s.ID }
 func (s *Session) UUID() flows.SessionUUID            { return s.s.UUID }
 func (s *Session) ContactID() ContactID               { return s.s.ContactID }
 func (s *Session) SessionType() FlowType              { return s.s.SessionType }
@@ -264,8 +261,7 @@ SET
 	ended_on = :ended_on,
 	current_flow_id = :current_flow_id
 WHERE 
-	id = :id
-`
+	uuid = :uuid`
 
 const sqlUpdateSessionNoOutput = `
 UPDATE 
@@ -277,8 +273,7 @@ SET
 	ended_on = :ended_on,
 	current_flow_id = :current_flow_id
 WHERE 
-	id = :id
-`
+	uuid = :uuid`
 
 // Update updates the session based on the state passed in from our engine session, this also takes care of applying any event hooks
 func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *OrgAssets, fs flows.Session, sprint flows.Sprint, contact *Contact, hook SessionCommitHook) error {
@@ -423,14 +418,12 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contact, true))
 
 	// apply all our events to generate hooks
-	err = HandleEvents(ctx, rt, tx, oa, s.scene, eventsToHandle)
-	if err != nil {
-		return fmt.Errorf("error applying events: %d: %w", s.ID(), err)
+	if err := HandleEvents(ctx, rt, tx, oa, s.scene, eventsToHandle); err != nil {
+		return fmt.Errorf("error handling events for session %s: %w", s.UUID(), err)
 	}
 
 	// gather all our pre commit events, group them by hook and apply them
-	err = ApplyEventPreCommitHooks(ctx, rt, tx, oa, []*Scene{s.scene})
-	if err != nil {
+	if err := ApplyEventPreCommitHooks(ctx, rt, tx, oa, []*Scene{s.scene}); err != nil {
 		return fmt.Errorf("error applying pre commit hook: %T: %w", hook, err)
 	}
 
@@ -530,26 +523,22 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 const sqlInsertWaitingSession = `
 INSERT INTO
 	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output,  output_url,  contact_id,  created_on,  current_flow_id,  call_id)
-               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output, :output_url, :contact_id, :created_on, :current_flow_id, :call_id)
-RETURNING id`
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output, :output_url, :contact_id, :created_on, :current_flow_id, :call_id)`
 
 const sqlInsertWaitingSessionNoOutput = `
 INSERT INTO
 	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output_url,  contact_id,  created_on,  current_flow_id,  call_id)
-               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output_url, :contact_id, :created_on, :current_flow_id, :call_id)
-RETURNING id`
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output_url, :contact_id, :created_on, :current_flow_id, :call_id)`
 
 const sqlInsertEndedSession = `
 INSERT INTO
 	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output,  output_url,  contact_id,  created_on,  ended_on,  call_id)
-               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output, :output_url, :contact_id, :created_on, :ended_on, :call_id)
-RETURNING id`
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output, :output_url, :contact_id, :created_on, :ended_on, :call_id)`
 
 const sqlInsertEndedSessionNoOutput = `
 INSERT INTO
 	flows_flowsession( uuid,  session_type,  status,  last_sprint_uuid,  output_url,  contact_id,  created_on,  ended_on,  call_id)
-               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output_url, :contact_id, :created_on, :ended_on, :call_id)
-RETURNING id`
+               VALUES(:uuid, :session_type, :status, :last_sprint_uuid, :output_url, :contact_id, :created_on, :ended_on, :call_id)`
 
 // InsertSessions writes the passed in session to our database, writes any runs that need to be created
 // as well as appying any events created in the session
@@ -663,9 +652,8 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 
 		eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contacts[i], false))
 
-		err = HandleEvents(ctx, rt, tx, oa, s.Scene(), eventsToHandle)
-		if err != nil {
-			return nil, fmt.Errorf("error applying events for session: %d: %w", s.ID(), err)
+		if err := HandleEvents(ctx, rt, tx, oa, s.Scene(), eventsToHandle); err != nil {
+			return nil, fmt.Errorf("error applying events for session %s: %w", s.UUID(), err)
 		}
 
 		scenes = append(scenes, s.Scene())
@@ -682,7 +670,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 }
 
 const sqlSelectSessionByUUID = `
-SELECT id, uuid, session_type, status, last_sprint_uuid, output, output_url, contact_id, created_on, ended_on, current_flow_id, call_id
+SELECT uuid, session_type, status, last_sprint_uuid, output, output_url, contact_id, created_on, ended_on, current_flow_id, call_id
   FROM flows_flowsession fs
  WHERE uuid = $1`
 

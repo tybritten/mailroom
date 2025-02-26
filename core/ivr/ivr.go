@@ -419,10 +419,10 @@ func ResumeIVRFlow(
 	}
 
 	if session.CallID() == models.NilCallID {
-		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("active session: %d has no call", session.ID()))
+		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("active session %s has no call", session.UUID()))
 	}
 	if session.CallID() != call.ID() {
-		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("active session: %d does not match call: %d", session.ID(), session.CallID()))
+		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("active session %s does not match call: %d", session.UUID(), session.CallID()))
 	}
 
 	// check if call has been marked as errored - it maybe have been updated by status callback

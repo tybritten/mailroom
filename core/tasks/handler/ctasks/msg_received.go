@@ -151,7 +151,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 			flow, err = oa.FlowByID(session.CurrentFlowID())
 			if err == models.ErrNotFound {
 				if err := models.ExitSessions(ctx, rt.DB, []flows.SessionUUID{session.UUID()}, models.SessionStatusFailed); err != nil {
-					return fmt.Errorf("error ending session #%d: %w", session.ID(), err)
+					return fmt.Errorf("error ending session %s: %w", session.UUID(), err)
 				}
 				session = nil
 			} else if err != nil {
