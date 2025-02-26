@@ -12,18 +12,17 @@ import (
 )
 
 func init() {
-	RegisterCron("sync_android_channels", &SyncAndroidChannelsCron{})
+	Register("sync_android_channels", &SyncAndroidChannelsCron{})
 }
 
-type SyncAndroidChannelsCron struct {
-}
+type SyncAndroidChannelsCron struct{}
 
 func (s *SyncAndroidChannelsCron) AllInstances() bool {
 	return true
 }
 
 func (s *SyncAndroidChannelsCron) Next(last time.Time) time.Time {
-	return CronNext(last, time.Minute*10)
+	return Next(last, time.Minute*10)
 
 }
 

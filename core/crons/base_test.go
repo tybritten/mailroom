@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNextFire(t *testing.T) {
+func TestNext(t *testing.T) {
 	tcs := []struct {
 		last     time.Time
 		interval time.Duration
@@ -27,7 +27,7 @@ func TestNextFire(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		actual := crons.CronNext(tc.last, tc.interval)
+		actual := crons.Next(tc.last, tc.interval)
 		assert.Equal(t, tc.expected, actual, "next fire mismatch for %s + %s", tc.last, tc.interval)
 	}
 }
@@ -37,7 +37,7 @@ type TestCron struct {
 }
 
 func (c *TestCron) Next(last time.Time) time.Time {
-	return crons.CronNext(last, time.Minute*5)
+	return crons.Next(last, time.Minute*5)
 }
 
 func (c *TestCron) AllInstances() bool {
@@ -49,7 +49,7 @@ func (c *TestCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any
 	return map[string]any{"foo": 123}, nil
 }
 
-func TestCronStats(t *testing.T) {
+func TestStats(t *testing.T) {
 	_, rt := testsuite.Runtime()
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -57,12 +57,12 @@ func TestCronStats(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetRedis)
 
 	cron := &TestCron{}
-	crons.RegisterCron("test1", cron)
+	crons.Register("test1", cron)
 
 	wg := &sync.WaitGroup{}
 	quit := make(chan bool)
 
-	crons.StartCrons(rt, wg, quit)
+	crons.StartAll(rt, wg, quit)
 
 	for !cron.ran {
 		time.Sleep(time.Millisecond * 10)

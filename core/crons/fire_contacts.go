@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	RegisterCron("contact_fires", &FireContactsCron{FetchBatchSize: 5_000, TaskBatchSize: 100})
+	Register("contact_fires", &FireContactsCron{FetchBatchSize: 5_000, TaskBatchSize: 100})
 }
 
 type FireContactsCron struct {
@@ -26,7 +26,7 @@ type FireContactsCron struct {
 }
 
 func (c *FireContactsCron) Next(last time.Time) time.Time {
-	return CronNext(last, 30*time.Second)
+	return Next(last, 30*time.Second)
 }
 
 func (c *FireContactsCron) AllInstances() bool {

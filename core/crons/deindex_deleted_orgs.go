@@ -12,18 +12,18 @@ import (
 )
 
 const (
-	deindexContactsSetKey = "deindex:contacts"
-	deleteBatchSize       = 10000
+	deindexContactsSetKey  = "deindex:contacts"
+	deindexDeleteBatchSize = 10000
 )
 
 func init() {
-	RegisterCron("deindex_deleted_orgs", &DeindexDeletedOrgsCron{})
+	Register("deindex_deleted_orgs", &DeindexDeletedOrgsCron{})
 }
 
 type DeindexDeletedOrgsCron struct{}
 
 func (c *DeindexDeletedOrgsCron) Next(last time.Time) time.Time {
-	return CronNext(last, time.Minute*5)
+	return Next(last, time.Minute*5)
 }
 
 func (c *DeindexDeletedOrgsCron) AllInstances() bool {
@@ -43,7 +43,7 @@ func (c *DeindexDeletedOrgsCron) Run(ctx context.Context, rt *runtime.Runtime) (
 	contactsDeindexed := make(map[models.OrgID]int, len(orgIDs))
 
 	for _, orgID := range orgIDs {
-		deindexed, err := search.DeindexContactsByOrg(ctx, rt, models.OrgID(orgID), deleteBatchSize)
+		deindexed, err := search.DeindexContactsByOrg(ctx, rt, models.OrgID(orgID), deindexDeleteBatchSize)
 		if err != nil {
 			return nil, err
 		}
@@ -59,8 +59,8 @@ func (c *DeindexDeletedOrgsCron) Run(ctx context.Context, rt *runtime.Runtime) (
 	return map[string]any{"contacts": contactsDeindexed}, nil
 }
 
-// MarkForDeindexing marks the given org for de-indexing
-func MarkForDeindexing(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
+// MarkOrgForDeindexing marks the given org for de-indexing
+func MarkOrgForDeindexing(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
 	rc := rt.RP.Get()
 	defer rc.Close()
 

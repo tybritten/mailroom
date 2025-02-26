@@ -34,7 +34,7 @@ func TestDeindexDeletedOrgsCron(t *testing.T) {
 	// no orgs to deindex
 	assertRun(map[string]any{"contacts": map[models.OrgID]int{}})
 
-	err := crons.MarkForDeindexing(ctx, rt, testdata.Org1.ID)
+	err := crons.MarkOrgForDeindexing(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
 
 	assertRun(map[string]any{"contacts": map[models.OrgID]int{1: 124}})

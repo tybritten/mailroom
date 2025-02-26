@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	outboxThreshold = 10_000
+	throttleOutboxThreshold = 10_000
 )
 
 func init() {
-	RegisterCron("throttle_queue", &ThrottleQueueCron{Queue: tasks.ThrottledQueue})
+	Register("throttle_queue", &ThrottleQueueCron{Queue: tasks.ThrottledQueue})
 }
 
 type ThrottleQueueCron struct {
@@ -24,7 +24,7 @@ type ThrottleQueueCron struct {
 }
 
 func (c *ThrottleQueueCron) Next(last time.Time) time.Time {
-	return CronNext(last, time.Second*10)
+	return Next(last, time.Second*10)
 }
 
 func (c *ThrottleQueueCron) AllInstances() bool {
@@ -49,7 +49,7 @@ func (c *ThrottleQueueCron) Run(ctx context.Context, rt *runtime.Runtime) (map[s
 			return nil, fmt.Errorf("error org assets for org #%d: %w", ownerID, err)
 		}
 
-		if oa.Org().OutboxCount() >= outboxThreshold {
+		if oa.Org().OutboxCount() >= throttleOutboxThreshold {
 			c.Queue.Pause(rc, ownerID)
 			numPaused++
 		} else {

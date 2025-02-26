@@ -14,13 +14,13 @@ import (
 )
 
 func init() {
-	RegisterCron("fire_schedules", &FireSchedulesCron{})
+	Register("fire_schedules", &FireSchedulesCron{})
 }
 
 type FireSchedulesCron struct{}
 
 func (c *FireSchedulesCron) Next(last time.Time) time.Time {
-	return CronNext(last, time.Minute)
+	return Next(last, time.Minute)
 }
 
 func (c *FireSchedulesCron) AllInstances() bool {

@@ -11,13 +11,13 @@ import (
 )
 
 func init() {
-	RegisterCron("retry_errored_messages", &RetryMessagesCron{})
+	Register("retry_errored_messages", &RetryMessagesCron{})
 }
 
 type RetryMessagesCron struct{}
 
 func (c *RetryMessagesCron) Next(last time.Time) time.Time {
-	return CronNext(last, time.Minute)
+	return Next(last, time.Minute)
 }
 
 func (c *RetryMessagesCron) AllInstances() bool {

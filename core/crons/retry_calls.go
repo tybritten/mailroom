@@ -12,13 +12,13 @@ import (
 )
 
 func init() {
-	RegisterCron("retry_calls", &RetryCallsCron{})
+	Register("retry_calls", &RetryCallsCron{})
 }
 
 type RetryCallsCron struct{}
 
 func (c *RetryCallsCron) Next(last time.Time) time.Time {
-	return CronNext(last, time.Minute)
+	return Next(last, time.Minute)
 }
 
 func (c *RetryCallsCron) AllInstances() bool {

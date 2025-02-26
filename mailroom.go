@@ -156,7 +156,7 @@ func (mr *Mailroom) Start() error {
 	mr.webserver = web.NewServer(mr.ctx, mr.rt, mr.wg)
 	mr.webserver.Start()
 
-	crons.StartCrons(mr.rt, mr.wg, mr.quit)
+	crons.StartAll(mr.rt, mr.wg, mr.quit)
 
 	mr.startMetricsReporter(time.Minute)
 

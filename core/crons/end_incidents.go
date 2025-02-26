@@ -13,13 +13,13 @@ import (
 )
 
 func init() {
-	RegisterCron("end_incidents", &EndIncidentsCron{})
+	Register("end_incidents", &EndIncidentsCron{})
 }
 
 type EndIncidentsCron struct{}
 
 func (c *EndIncidentsCron) Next(last time.Time) time.Time {
-	return CronNext(last, time.Minute*3)
+	return Next(last, time.Minute*3)
 }
 
 func (c *EndIncidentsCron) AllInstances() bool {
@@ -37,7 +37,7 @@ func (c *EndIncidentsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 
 	for _, incident := range incidents {
 		if incident.Type == models.IncidentTypeWebhooksUnhealthy {
-			ended, err := checkWebhookIncident(ctx, rt, incident)
+			ended, err := c.checkWebhookIncident(ctx, rt, incident)
 			if err != nil {
 				return nil, fmt.Errorf("error checking webhook incident #%d: %w", incident.ID, err)
 			}
@@ -50,8 +50,8 @@ func (c *EndIncidentsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 	return map[string]any{"ended": numEnded}, nil
 }
 
-func checkWebhookIncident(ctx context.Context, rt *runtime.Runtime, incident *models.Incident) (bool, error) {
-	nodeUUIDs, err := getWebhookIncidentNodes(rt, incident)
+func (c *EndIncidentsCron) checkWebhookIncident(ctx context.Context, rt *runtime.Runtime, incident *models.Incident) (bool, error) {
+	nodeUUIDs, err := c.getWebhookIncidentNodes(rt, incident)
 
 	if err != nil {
 		return false, fmt.Errorf("error getting webhook nodes: %w", err)
@@ -72,7 +72,7 @@ func checkWebhookIncident(ctx context.Context, rt *runtime.Runtime, incident *mo
 	}
 
 	if len(healthyNodeUUIDs) > 0 {
-		if err := removeWebhookIncidentNodes(rt, incident, healthyNodeUUIDs); err != nil {
+		if err := c.removeWebhookIncidentNodes(rt, incident, healthyNodeUUIDs); err != nil {
 			return false, fmt.Errorf("error removing nodes from webhook incident: %w", err)
 		}
 	}
@@ -92,7 +92,7 @@ func checkWebhookIncident(ctx context.Context, rt *runtime.Runtime, incident *mo
 	return false, nil
 }
 
-func getWebhookIncidentNodes(rt *runtime.Runtime, incident *models.Incident) ([]flows.NodeUUID, error) {
+func (c *EndIncidentsCron) getWebhookIncidentNodes(rt *runtime.Runtime, incident *models.Incident) ([]flows.NodeUUID, error) {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
@@ -109,7 +109,7 @@ func getWebhookIncidentNodes(rt *runtime.Runtime, incident *models.Incident) ([]
 	return nodeUUIDs, nil
 }
 
-func removeWebhookIncidentNodes(rt *runtime.Runtime, incident *models.Incident, nodes []flows.NodeUUID) error {
+func (c *EndIncidentsCron) removeWebhookIncidentNodes(rt *runtime.Runtime, incident *models.Incident, nodes []flows.NodeUUID) error {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
