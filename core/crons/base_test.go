@@ -64,9 +64,7 @@ func TestStats(t *testing.T) {
 
 	crons.StartAll(rt, wg, quit)
 
-	for !cron.ran {
-		time.Sleep(time.Millisecond * 10)
-	}
+	time.Sleep(time.Millisecond * 100)
 
 	assertredis.Exists(t, rc, "cron_stats:last_start")
 	assertredis.Exists(t, rc, "cron_stats:last_time")
