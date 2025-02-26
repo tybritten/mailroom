@@ -1,4 +1,4 @@
-package ivr
+package crons
 
 import (
 	"context"
@@ -8,26 +8,25 @@ import (
 
 	"github.com/nyaruka/mailroom/core/ivr"
 	"github.com/nyaruka/mailroom/core/models"
-	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	tasks.RegisterCron("retry_ivr_calls", &RetryCron{})
+	Register("retry_calls", &RetryCallsCron{})
 }
 
-type RetryCron struct{}
+type RetryCallsCron struct{}
 
-func (c *RetryCron) Next(last time.Time) time.Time {
-	return tasks.CronNext(last, time.Minute)
+func (c *RetryCallsCron) Next(last time.Time) time.Time {
+	return Next(last, time.Minute)
 }
 
-func (c *RetryCron) AllInstances() bool {
+func (c *RetryCallsCron) AllInstances() bool {
 	return false
 }
 
 // RetryCalls looks for calls that need to be retried and retries them
-func (c *RetryCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+func (c *RetryCallsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	log := slog.With("comp", "ivr_cron_retryer")
 
 	// find all calls that need restarting

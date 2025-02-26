@@ -1,4 +1,4 @@
-package tasks
+package crons
 
 import (
 	"context"
@@ -12,21 +12,21 @@ import (
 )
 
 const (
-	cronStatsExpires       = 60 * 60 * 48 // 2 days
-	cronStatsKeyBase       = "cron_stats"
-	cronStatsLastStartKey  = cronStatsKeyBase + ":last_start"
-	cronStatsLastTimeKey   = cronStatsKeyBase + ":last_time"
-	cronStatsLastResultKey = cronStatsKeyBase + ":last_result"
-	cronStatsCallCountKey  = cronStatsKeyBase + ":call_count"
-	cronStatsTotalTimeKey  = cronStatsKeyBase + ":total_time"
+	statsExpires       = 60 * 60 * 48 // 2 days
+	statsKeyBase       = "cron_stats"
+	statsLastStartKey  = statsKeyBase + ":last_start"
+	statsLastTimeKey   = statsKeyBase + ":last_time"
+	statsLastResultKey = statsKeyBase + ":last_result"
+	statsCallCountKey  = statsKeyBase + ":call_count"
+	statsTotalTimeKey  = statsKeyBase + ":total_time"
 )
 
 var statsKeys = []string{
-	cronStatsLastStartKey,
-	cronStatsLastTimeKey,
-	cronStatsLastResultKey,
-	cronStatsCallCountKey,
-	cronStatsTotalTimeKey,
+	statsLastStartKey,
+	statsLastTimeKey,
+	statsLastResultKey,
+	statsCallCountKey,
+	statsTotalTimeKey,
 }
 
 // Cron is a task to be repeated on a schedule
@@ -44,19 +44,19 @@ type Cron interface {
 
 var registeredCrons = map[string]Cron{}
 
-// RegisterCron registers a new cron job
-func RegisterCron(name string, c Cron) {
+// Register registers a new cron job
+func Register(name string, c Cron) {
 	registeredCrons[name] = c
 }
 
-// StartCrons starts all registered cron jobs
-func StartCrons(rt *runtime.Runtime, wg *sync.WaitGroup, quit chan bool) {
+// StartAll starts all registered cron jobs
+func StartAll(rt *runtime.Runtime, wg *sync.WaitGroup, quit chan bool) {
 	for name, c := range registeredCrons {
-		crons.Start(rt, wg, name, c.AllInstances(), recordCronExecution(name, c.Run), c.Next, time.Minute*5, quit)
+		crons.Start(rt, wg, name, c.AllInstances(), recordExecution(name, c.Run), c.Next, time.Minute*5, quit)
 	}
 }
 
-func recordCronExecution(name string, r func(context.Context, *runtime.Runtime) (map[string]any, error)) func(context.Context, *runtime.Runtime) error {
+func recordExecution(name string, r func(context.Context, *runtime.Runtime) (map[string]any, error)) func(context.Context, *runtime.Runtime) error {
 	return func(ctx context.Context, rt *runtime.Runtime) error {
 		log := slog.With("cron", name)
 		started := time.Now()
@@ -71,13 +71,13 @@ func recordCronExecution(name string, r func(context.Context, *runtime.Runtime) 
 		rc := rt.RP.Get()
 		defer rc.Close()
 
-		rc.Send("HSET", cronStatsLastStartKey, name, started.Format(time.RFC3339))
-		rc.Send("HSET", cronStatsLastTimeKey, name, elapsedSeconds)
-		rc.Send("HSET", cronStatsLastResultKey, name, jsonx.MustMarshal(results))
-		rc.Send("HINCRBY", cronStatsCallCountKey, name, 1)
-		rc.Send("HINCRBYFLOAT", cronStatsTotalTimeKey, name, elapsedSeconds)
+		rc.Send("HSET", statsLastStartKey, name, started.Format(time.RFC3339))
+		rc.Send("HSET", statsLastTimeKey, name, elapsedSeconds)
+		rc.Send("HSET", statsLastResultKey, name, jsonx.MustMarshal(results))
+		rc.Send("HINCRBY", statsCallCountKey, name, 1)
+		rc.Send("HINCRBYFLOAT", statsTotalTimeKey, name, elapsedSeconds)
 		for _, key := range statsKeys {
-			rc.Send("EXPIRE", key, cronStatsExpires)
+			rc.Send("EXPIRE", key, statsExpires)
 		}
 
 		if err := rc.Flush(); err != nil {
@@ -101,8 +101,8 @@ func recordCronExecution(name string, r func(context.Context, *runtime.Runtime) 
 	}
 }
 
-// CronNext returns the next time we should fire based on the passed in time and interval
-func CronNext(last time.Time, interval time.Duration) time.Time {
+// Next returns the next time we should fire based on the passed in time and interval
+func Next(last time.Time, interval time.Duration) time.Time {
 	if interval >= time.Second && interval < time.Minute {
 		return last.Add(interval - ((time.Duration(last.Second()) * time.Second) % interval))
 	} else if interval == time.Minute {

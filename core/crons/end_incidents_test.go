@@ -1,4 +1,4 @@
-package incidents_test
+package crons_test
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
+	"github.com/nyaruka/mailroom/core/crons"
 	"github.com/nyaruka/mailroom/core/models"
-	"github.com/nyaruka/mailroom/core/tasks/incidents"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/nyaruka/redisx/assertredis"
@@ -54,7 +54,7 @@ func TestEndIncidents(t *testing.T) {
 	id2, err := models.IncidentWebhooksUnhealthy(ctx, rt.DB, rt.RP, oa2, []flows.NodeUUID{"07d69080-475b-4395-aa96-ea6c28ea6cb6"})
 	require.NoError(t, err)
 
-	cron := &incidents.EndIncidentsCron{}
+	cron := &crons.EndIncidentsCron{}
 	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"ended": 1}, res)

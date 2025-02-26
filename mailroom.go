@@ -15,6 +15,7 @@ import (
 	"github.com/nyaruka/gocommon/aws/cwatch"
 	"github.com/nyaruka/gocommon/aws/dynamo"
 	"github.com/nyaruka/gocommon/aws/s3x"
+	"github.com/nyaruka/mailroom/core/crons"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
@@ -155,7 +156,7 @@ func (mr *Mailroom) Start() error {
 	mr.webserver = web.NewServer(mr.ctx, mr.rt, mr.wg)
 	mr.webserver.Start()
 
-	tasks.StartCrons(mr.rt, mr.wg, mr.quit)
+	crons.StartAll(mr.rt, mr.wg, mr.quit)
 
 	mr.startMetricsReporter(time.Minute)
 

@@ -1,10 +1,10 @@
-package starts_test
+package crons_test
 
 import (
 	"testing"
 
+	"github.com/nyaruka/mailroom/core/crons"
 	"github.com/nyaruka/mailroom/core/models"
-	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/utils/queues"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +19,7 @@ func TestThrottleQueue(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetRedis | testsuite.ResetData)
 
 	queue := queues.NewFairSorted("test")
-	cron := &starts.ThrottleQueueCron{Queue: queue}
+	cron := &crons.ThrottleQueueCron{Queue: queue}
 	res, err := cron.Run(ctx, rt)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"paused": 0, "resumed": 0}, res)

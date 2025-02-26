@@ -1,13 +1,13 @@
-package ivr_test
+package crons_test
 
 import (
 	"testing"
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/mailroom/core/crons"
 	"github.com/nyaruka/mailroom/core/ivr"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
-	ivrtasks "github.com/nyaruka/mailroom/core/tasks/ivr"
 	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRetryCallsCron(t *testing.T) {
+func TestRetryCalls(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -23,7 +23,7 @@ func TestRetryCallsCron(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetAll)
 
 	// register our mock client
-	ivr.RegisterServiceType(models.ChannelType("ZZ"), NewMockProvider)
+	ivr.RegisterServiceType(models.ChannelType("ZZ"), testsuite.NewIVRServiceFactory)
 
 	// update our twilio channel to be of type 'ZZ' and set max_concurrent_events to 1
 	rt.DB.MustExec(`UPDATE channels_channel SET channel_type = 'ZZ', config = '{"max_concurrent_events": 1}' WHERE id = $1`, testdata.TwilioChannel.ID)
@@ -37,8 +37,8 @@ func TestRetryCallsCron(t *testing.T) {
 	err = tasks.Queue(rc, tasks.BatchQueue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 	require.NoError(t, err)
 
-	service.callError = nil
-	service.callID = ivr.CallID("call1")
+	testsuite.IVRService.CallError = nil
+	testsuite.IVRService.CallID = ivr.CallID("call1")
 
 	testsuite.FlushTasks(t, rt)
 
@@ -49,7 +49,7 @@ func TestRetryCallsCron(t *testing.T) {
 	rt.DB.MustExec(`UPDATE ivr_call SET status = 'E', next_attempt = NOW() WHERE external_id = 'call1';`)
 
 	// fire our retries
-	cron := &ivrtasks.RetryCron{}
+	cron := &crons.RetryCallsCron{}
 	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"retried": 1}, res)

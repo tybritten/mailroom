@@ -1,4 +1,4 @@
-package schedules
+package crons
 
 import (
 	"context"
@@ -14,21 +14,21 @@ import (
 )
 
 func init() {
-	tasks.RegisterCron("fire_schedules", &schedulesCron{})
+	Register("fire_schedules", &FireSchedulesCron{})
 }
 
-type schedulesCron struct{}
+type FireSchedulesCron struct{}
 
-func (c *schedulesCron) Next(last time.Time) time.Time {
-	return tasks.CronNext(last, time.Minute)
+func (c *FireSchedulesCron) Next(last time.Time) time.Time {
+	return Next(last, time.Minute)
 }
 
-func (c *schedulesCron) AllInstances() bool {
+func (c *FireSchedulesCron) AllInstances() bool {
 	return false
 }
 
 // checkSchedules looks up any expired schedules and fires them, setting the next fire as needed
-func (c *schedulesCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+func (c *FireSchedulesCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	// we sleep 1 second since we fire right on the minute and want to make sure to fire
 	// things that are schedules right at the minute as well (and DB time may be slightly drifted)
 	time.Sleep(time.Second * 1)

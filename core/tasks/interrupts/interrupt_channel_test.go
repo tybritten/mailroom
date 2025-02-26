@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/mailroom/core/crons"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/interrupts"
-	"github.com/nyaruka/mailroom/core/tasks/msgs"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/stretchr/testify/require"
@@ -66,7 +66,7 @@ func TestInterruptChannel(t *testing.T) {
 	testdata.InsertErroredOutgoingMsg(rt, testdata.Org1, testdata.VonageChannel, testdata.Bob, "Hi", 2, time.Now().Add(-time.Minute), true) // high priority
 
 	// just to create courier queues
-	cron := &msgs.RetryMessagesCron{}
+	cron := &crons.RetryMessagesCron{}
 	_, err := cron.Run(ctx, rt)
 	require.NoError(t, err)
 

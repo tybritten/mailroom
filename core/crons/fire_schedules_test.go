@@ -1,4 +1,4 @@
-package schedules
+package crons_test
 
 import (
 	"testing"
@@ -6,13 +6,14 @@ import (
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/mailroom/core/crons"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckSchedules(t *testing.T) {
+func TestFireSchedules(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -39,7 +40,7 @@ func TestCheckSchedules(t *testing.T) {
 	testdata.InsertSchedule(rt, testdata.Org1, models.RepeatPeriodDaily, time.Now().Add(-time.Hour))
 
 	// run our task
-	cron := &schedulesCron{}
+	cron := &crons.FireSchedulesCron{}
 	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"broadcasts": 2, "triggers": 2, "noops": 1}, res)

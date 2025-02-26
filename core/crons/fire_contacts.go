@@ -1,4 +1,4 @@
-package contacts
+package crons
 
 import (
 	"context"
@@ -12,31 +12,28 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/campaigns"
+	"github.com/nyaruka/mailroom/core/tasks/contacts"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	tasks.RegisterCron("contact_fires", &FiresCron{fetchBatchSize: 5_000, taskBatchSize: 100})
+	Register("contact_fires", &FireContactsCron{FetchBatchSize: 5_000, TaskBatchSize: 100})
 }
 
-type FiresCron struct {
-	fetchBatchSize int
-	taskBatchSize  int
+type FireContactsCron struct {
+	FetchBatchSize int
+	TaskBatchSize  int
 }
 
-func NewFiresCron(fetchBatchSize, taskBatchSize int) *FiresCron {
-	return &FiresCron{fetchBatchSize: fetchBatchSize, taskBatchSize: taskBatchSize}
+func (c *FireContactsCron) Next(last time.Time) time.Time {
+	return Next(last, 30*time.Second)
 }
 
-func (c *FiresCron) Next(last time.Time) time.Time {
-	return tasks.CronNext(last, 30*time.Second)
-}
-
-func (c *FiresCron) AllInstances() bool {
+func (c *FireContactsCron) AllInstances() bool {
 	return false
 }
 
-func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
+func (c *FireContactsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]any, error) {
 	start := time.Now()
 	numWaitTimeouts, numWaitExpires, numSessionExpires, numCampaignEvents := 0, 0, 0, 0
 
@@ -44,7 +41,7 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 	defer rc.Close()
 
 	for {
-		fires, err := models.LoadDueContactfires(ctx, rt, c.fetchBatchSize)
+		fires, err := models.LoadDueContactfires(ctx, rt, c.FetchBatchSize)
 		if err != nil {
 			return nil, fmt.Errorf("error loading due contact fires: %w", err)
 		}
@@ -75,28 +72,28 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 		}
 
 		for og, fs := range grouped {
-			for batch := range slices.Chunk(fs, c.taskBatchSize) {
+			for batch := range slices.Chunk(fs, c.TaskBatchSize) {
 				if og.grouping == "wait_timeouts" {
 					// turn wait timeouts into bulk wait timeout tasks
-					ts := make([]*WaitTimeout, len(batch))
+					ts := make([]*contacts.WaitTimeout, len(batch))
 					for i, f := range batch {
-						ts[i] = &WaitTimeout{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
+						ts[i] = &contacts.WaitTimeout{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
 					}
 
 					// queue to throttled queue but high priority so they get priority over flow starts etc
-					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &BulkWaitTimeoutTask{Timeouts: ts}, true); err != nil {
+					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &contacts.BulkWaitTimeoutTask{Timeouts: ts}, true); err != nil {
 						return nil, fmt.Errorf("error queuing bulk wait timeout task for org #%d: %w", og.orgID, err)
 					}
 					numWaitTimeouts += len(batch)
 				} else if og.grouping == "wait_expires" {
 					// turn wait expires into bulk wait expire tasks
-					es := make([]*WaitExpiration, len(batch))
+					es := make([]*contacts.WaitExpiration, len(batch))
 					for i, f := range batch {
-						es[i] = &WaitExpiration{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
+						es[i] = &contacts.WaitExpiration{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
 					}
 
 					// put expirations in throttled queue but high priority so they get priority over flow starts etc
-					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &BulkWaitExpireTask{Expirations: es}, true); err != nil {
+					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &contacts.BulkWaitExpireTask{Expirations: es}, true); err != nil {
 						return nil, fmt.Errorf("error queuing bulk wait expire task for org #%d: %w", og.orgID, err)
 					}
 					numWaitExpires += len(batch)
@@ -108,7 +105,7 @@ func (c *FiresCron) Run(ctx context.Context, rt *runtime.Runtime) (map[string]an
 					}
 
 					// queue to throttled queue but high priority so they get priority over flow starts etc
-					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &BulkSessionExpireTask{SessionUUIDs: ss}, true); err != nil {
+					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &contacts.BulkSessionExpireTask{SessionUUIDs: ss}, true); err != nil {
 						return nil, fmt.Errorf("error queuing bulk session expire task for org #%d: %w", og.orgID, err)
 					}
 					numSessionExpires += len(batch)

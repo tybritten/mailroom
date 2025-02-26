@@ -1,4 +1,4 @@
-package contacts_test
+package crons_test
 
 import (
 	"cmp"
@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/goflow/flows"
+	"github.com/nyaruka/mailroom/core/crons"
 	_ "github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
@@ -20,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFiresCron(t *testing.T) {
+func TestFireContacts(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 	rc := rt.RP.Get()
 	defer rc.Close()
@@ -39,7 +40,7 @@ func TestFiresCron(t *testing.T) {
 	testdata.InsertContactFire(rt, testdata.Org1, testdata.Alexandria, models.ContactFireTypeCampaignEvent, "6789", time.Now().Add(-time.Second), "")
 	testdata.InsertContactFire(rt, testdata.Org2, testdata.Org2Contact, models.ContactFireTypeWaitTimeout, "", time.Now().Add(-time.Second), "8edf3b3c-0081-4d31-b199-1502b3190eb7")
 
-	cron := contacts.NewFiresCron(3, 5)
+	cron := &crons.FireContactsCron{FetchBatchSize: 3, TaskBatchSize: 5}
 	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"wait_timeouts": 2, "wait_expires": 2, "session_expires": 1, "campaign_events": 1}, res)

@@ -1,4 +1,4 @@
-package msgs
+package crons
 
 import (
 	"context"
@@ -7,18 +7,17 @@ import (
 
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/msgio"
-	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	tasks.RegisterCron("retry_errored_messages", &RetryMessagesCron{})
+	Register("retry_errored_messages", &RetryMessagesCron{})
 }
 
 type RetryMessagesCron struct{}
 
 func (c *RetryMessagesCron) Next(last time.Time) time.Time {
-	return tasks.CronNext(last, time.Minute)
+	return Next(last, time.Minute)
 }
 
 func (c *RetryMessagesCron) AllInstances() bool {
