@@ -1,4 +1,4 @@
-package incidents
+package crons
 
 import (
 	"context"
@@ -9,18 +9,17 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
-	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	tasks.RegisterCron("end_incidents", &EndIncidentsCron{})
+	RegisterCron("end_incidents", &EndIncidentsCron{})
 }
 
 type EndIncidentsCron struct{}
 
 func (c *EndIncidentsCron) Next(last time.Time) time.Time {
-	return tasks.CronNext(last, time.Minute*3)
+	return CronNext(last, time.Minute*3)
 }
 
 func (c *EndIncidentsCron) AllInstances() bool {

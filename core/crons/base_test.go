@@ -1,4 +1,4 @@
-package tasks_test
+package crons_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/mailroom/core/tasks"
+	"github.com/nyaruka/mailroom/core/crons"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/redisx/assertredis"
@@ -27,7 +27,7 @@ func TestNextFire(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		actual := tasks.CronNext(tc.last, tc.interval)
+		actual := crons.CronNext(tc.last, tc.interval)
 		assert.Equal(t, tc.expected, actual, "next fire mismatch for %s + %s", tc.last, tc.interval)
 	}
 }
@@ -37,7 +37,7 @@ type TestCron struct {
 }
 
 func (c *TestCron) Next(last time.Time) time.Time {
-	return tasks.CronNext(last, time.Minute*5)
+	return crons.CronNext(last, time.Minute*5)
 }
 
 func (c *TestCron) AllInstances() bool {
@@ -57,12 +57,12 @@ func TestCronStats(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetRedis)
 
 	cron := &TestCron{}
-	tasks.RegisterCron("test1", cron)
+	crons.RegisterCron("test1", cron)
 
 	wg := &sync.WaitGroup{}
 	quit := make(chan bool)
 
-	tasks.StartCrons(rt, wg, quit)
+	crons.StartCrons(rt, wg, quit)
 
 	for !cron.ran {
 		time.Sleep(time.Millisecond * 10)

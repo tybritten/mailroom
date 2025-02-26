@@ -1,10 +1,10 @@
-package search_test
+package crons_test
 
 import (
 	"testing"
 
+	"github.com/nyaruka/mailroom/core/crons"
 	"github.com/nyaruka/mailroom/core/models"
-	"github.com/nyaruka/mailroom/core/tasks/search"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +18,7 @@ func TestDeindexDeletedOrgsCron(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetElastic | testsuite.ResetRedis)
 
-	cron := &search.DeindexDeletedOrgsCron{}
+	cron := &crons.DeindexDeletedOrgsCron{}
 
 	assertRun := func(expected map[string]any) {
 		res, err := cron.Run(ctx, rt)
@@ -32,7 +32,7 @@ func TestDeindexDeletedOrgsCron(t *testing.T) {
 	// no orgs to deindex
 	assertRun(map[string]any{"contacts": map[models.OrgID]int{}})
 
-	err := search.MarkForDeindexing(ctx, rt, testdata.Org1.ID)
+	err := crons.MarkForDeindexing(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
 
 	assertRun(map[string]any{"contacts": map[models.OrgID]int{1: 124}})

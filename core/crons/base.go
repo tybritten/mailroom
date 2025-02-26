@@ -1,4 +1,4 @@
-package tasks
+package crons
 
 import (
 	"context"

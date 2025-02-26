@@ -1,12 +1,12 @@
-package msgs_test
+package crons_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
+	"github.com/nyaruka/mailroom/core/crons"
 	"github.com/nyaruka/mailroom/core/models"
-	"github.com/nyaruka/mailroom/core/tasks/msgs"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +20,7 @@ func TestRetryErroredMessages(t *testing.T) {
 	defer testsuite.Reset(testsuite.ResetData | testsuite.ResetRedis)
 
 	// nothing to retry
-	cron := &msgs.RetryMessagesCron{}
+	cron := &crons.RetryMessagesCron{}
 	_, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 

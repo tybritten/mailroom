@@ -1,10 +1,10 @@
-package channels_test
+package crons_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/nyaruka/mailroom/core/tasks/channels"
+	"github.com/nyaruka/mailroom/core/crons"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +31,7 @@ func TestSyncAndroidChannelsCron(t *testing.T) {
 
 	time.Sleep(5 * time.Millisecond)
 
-	cron := &channels.SyncAndroidChannelsCron{}
+	cron := &crons.SyncAndroidChannelsCron{}
 	res, err := cron.Run(ctx, rt)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{"synced": 2, "errored": 1}, res)

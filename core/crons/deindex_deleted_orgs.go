@@ -1,4 +1,4 @@
-package search
+package crons
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/search"
-	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
@@ -18,13 +17,13 @@ const (
 )
 
 func init() {
-	tasks.RegisterCron("deindex_deleted_orgs", &DeindexDeletedOrgsCron{})
+	RegisterCron("deindex_deleted_orgs", &DeindexDeletedOrgsCron{})
 }
 
 type DeindexDeletedOrgsCron struct{}
 
 func (c *DeindexDeletedOrgsCron) Next(last time.Time) time.Time {
-	return tasks.CronNext(last, time.Minute*5)
+	return CronNext(last, time.Minute*5)
 }
 
 func (c *DeindexDeletedOrgsCron) AllInstances() bool {

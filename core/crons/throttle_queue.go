@@ -1,4 +1,4 @@
-package starts
+package crons
 
 import (
 	"context"
@@ -16,7 +16,7 @@ const (
 )
 
 func init() {
-	tasks.RegisterCron("throttle_queue", &ThrottleQueueCron{Queue: tasks.ThrottledQueue})
+	RegisterCron("throttle_queue", &ThrottleQueueCron{Queue: tasks.ThrottledQueue})
 }
 
 type ThrottleQueueCron struct {
@@ -24,7 +24,7 @@ type ThrottleQueueCron struct {
 }
 
 func (c *ThrottleQueueCron) Next(last time.Time) time.Time {
-	return tasks.CronNext(last, time.Second*10)
+	return CronNext(last, time.Second*10)
 }
 
 func (c *ThrottleQueueCron) AllInstances() bool {
