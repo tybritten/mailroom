@@ -72,7 +72,13 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			Contact: testdata.Cathy,
 			URN:     urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)),
 			URNID:   testdata.Cathy.URNID,
-			Content: &flows.MsgContent{Text: "test outgoing", QuickReplies: []flows.QuickReply{{Text: "yes"}, {Text: "no"}}},
+			Content: &flows.MsgContent{
+				Text: "test outgoing",
+				QuickReplies: []flows.QuickReply{
+					{Text: "yes", Extra: "if you want"},
+					{Text: "no"},
+				},
+			},
 			Templating: flows.NewMsgTemplating(
 				assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"),
 				[]*flows.TemplatingComponent{{Type: "body", Name: "body", Variables: map[string]int{"1": 0}}},
@@ -222,6 +228,10 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 	rt.DB.MustExec(`UPDATE orgs_org SET is_suspended = FALSE`)
 	models.FlushCache()
 
+	// check encoding of quick replies
+	assertdb.Query(t, rt.DB, `SELECT quick_replies[1] FROM msgs_msg WHERE id = 2`).Returns("yes\nif you want")
+	assertdb.Query(t, rt.DB, `SELECT quick_replies[2] FROM msgs_msg WHERE id = 2`).Returns("no")
+
 	oa, err := models.GetOrgAssetsWithRefresh(ctx, rt, testdata.Org1.ID, models.RefreshOrg)
 	require.NoError(t, err)
 	channel := oa.ChannelByUUID(testdata.TwilioChannel.UUID)
@@ -237,17 +247,17 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		return msg
 	}
 
-	for i := 0; i < 19; i++ {
+	for range 19 {
 		msg := newOutgoing("foo")
 		assert.Equal(t, models.MsgStatusQueued, msg.Status())
 		assert.Equal(t, models.NilMsgFailedReason, msg.FailedReason())
 	}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		msg := newOutgoing("foo")
 		assert.Equal(t, models.MsgStatusFailed, msg.Status())
 		assert.Equal(t, models.MsgFailedLooping, msg.FailedReason())
 	}
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		msg := newOutgoing("bar")
 		assert.Equal(t, models.MsgStatusQueued, msg.Status())
 		assert.Equal(t, models.NilMsgFailedReason, msg.FailedReason())

@@ -54,7 +54,7 @@ func TestNewCourierMsg(t *testing.T) {
 		&flows.MsgContent{
 			Text:         "Hi there",
 			Attachments:  []utils.Attachment{utils.Attachment("image/jpeg:https://dl-foo.com/image.jpg")},
-			QuickReplies: []flows.QuickReply{{Text: "yes"}, {Text: "no"}},
+			QuickReplies: []flows.QuickReply{{Text: "yes", Extra: "if you really want"}, {Text: "no"}},
 		},
 		flows.NewMsgTemplating(
 			assets.NewTemplateReference(testdata.ReviveTemplate.UUID, "revive_issue"),
@@ -93,7 +93,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"metadata": {"topic": "purchase"},
 		"org_id": 1,
 		"origin": "flow",
-		"quick_replies": [{"text": "yes"}, {"text": "no"}],
+		"quick_replies": [{"text": "yes", "extra": "if you really want"}, {"text": "no"}],
 		"session": {
 			"uuid": "%s",
 			"status": "W",
