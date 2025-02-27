@@ -44,7 +44,7 @@ func NewSceneForContact(contact *flows.Contact, userID UserID) *Scene {
 	}
 }
 
-// SessionID returns the session UUID for this scene if any
+// SessionUUID returns the session UUID for this scene if any
 func (s *Scene) SessionUUID() flows.SessionUUID {
 	if s.session == nil {
 		return ""
