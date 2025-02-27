@@ -645,7 +645,7 @@ func TestVonageIVR(t *testing.T) {
 }
 
 func getCallLogs(t *testing.T, ctx context.Context, rt *runtime.Runtime) []*clogs.Log {
-	var logUUIDs []clogs.LogUUID
+	var logUUIDs []clogs.UUID
 	err := rt.DB.Select(&logUUIDs, `SELECT unnest(log_uuids) FROM ivr_call ORDER BY id`)
 	require.NoError(t, err)
 

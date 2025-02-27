@@ -318,11 +318,11 @@ type fetchAttachmentResponse struct {
 		URL         string `json:"url"`
 		Size        int    `json:"size"`
 	} `json:"attachment"`
-	LogUUID clogs.LogUUID `json:"log_uuid"`
+	LogUUID clogs.UUID `json:"log_uuid"`
 }
 
 // FetchAttachment calls courier to fetch the given attachment
-func FetchAttachment(ctx context.Context, rt *runtime.Runtime, ch *models.Channel, attURL string, msgID models.MsgID) (utils.Attachment, clogs.LogUUID, error) {
+func FetchAttachment(ctx context.Context, rt *runtime.Runtime, ch *models.Channel, attURL string, msgID models.MsgID) (utils.Attachment, clogs.UUID, error) {
 	payload := jsonx.MustMarshal(&fetchAttachmentRequest{
 		ChannelType: ch.Type(),
 		ChannelUUID: ch.UUID(),

@@ -29,7 +29,7 @@ func init() {
 
 type ivrHandlerFn func(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, ch *models.Channel, svc ivr.Service, r *http.Request, w http.ResponseWriter) (*models.Call, error)
 
-func newIVRHandler(handler ivrHandlerFn, logType clogs.LogType) web.Handler {
+func newIVRHandler(handler ivrHandlerFn, logType clogs.Type) web.Handler {
 	return func(ctx context.Context, rt *runtime.Runtime, r *http.Request, w http.ResponseWriter) error {
 		channelUUID := assets.ChannelUUID(r.PathValue("uuid"))
 
