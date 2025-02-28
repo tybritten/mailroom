@@ -238,8 +238,10 @@ func (m *Msg) Attachments() []utils.Attachment {
 
 func (m *Msg) QuickReplies() []flows.QuickReply {
 	qrs := make([]flows.QuickReply, len(m.m.QuickReplies))
-	for i := range m.m.QuickReplies {
-		qrs[i] = flows.QuickReply{Text: m.m.QuickReplies[i]}
+	for i, mqr := range m.m.QuickReplies {
+		qr := flows.QuickReply{}
+		qr.UnmarshalText([]byte(mqr))
+		qrs[i] = qr
 	}
 	return qrs
 }
@@ -412,7 +414,8 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 	}
 	if len(out.QuickReplies()) > 0 {
 		for _, qr := range out.QuickReplies() {
-			m.QuickReplies = append(m.QuickReplies, qr.Text)
+			mqr, _ := qr.MarshalText()
+			m.QuickReplies = append(m.QuickReplies, string(mqr))
 		}
 	}
 
