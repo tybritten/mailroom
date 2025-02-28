@@ -150,5 +150,5 @@ ON CONFLICT DO NOTHING`
 
 // InsertContactFires inserts the given contact fires (no error on conflict)
 func InsertContactFires(ctx context.Context, db DBorTx, fs []*ContactFire) error {
-	return BulkQuery(ctx, "inserted contact fires", db, sqlInsertContactFires, fs)
+	return BulkQueryBatches(ctx, "inserted contact fires", db, sqlInsertContactFires, 1000, fs)
 }
