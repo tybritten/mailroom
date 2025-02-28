@@ -10,7 +10,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/uuids"
-	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/runtime"
 )
@@ -68,13 +67,11 @@ const (
 // Campaign is our struct for a campaign and all its events
 type Campaign struct {
 	c struct {
-		ID        CampaignID       `json:"id"`
-		UUID      CampaignUUID     `json:"uuid"`
-		Name      string           `json:"name"`
-		GroupID   GroupID          `json:"group_id"`
-		GroupUUID assets.GroupUUID `json:"group_uuid"`
-		GroupName string           `json:"group_name"`
-		Events    []*CampaignEvent `json:"events"`
+		ID      CampaignID       `json:"id"`
+		UUID    CampaignUUID     `json:"uuid"`
+		Name    string           `json:"name"`
+		GroupID GroupID          `json:"group_id"`
+		Events  []*CampaignEvent `json:"events"`
 	}
 }
 
@@ -89,9 +86,6 @@ func (c *Campaign) Name() string { return c.c.Name }
 
 // GroupID returns the id of the group this campaign works against
 func (c *Campaign) GroupID() GroupID { return c.c.GroupID }
-
-// GroupUUID returns the uuid of the group this campaign works against
-func (c *Campaign) GroupUUID() assets.GroupUUID { return c.c.GroupUUID }
 
 // Events returns the list of events for this campaign
 func (c *Campaign) Events() []*CampaignEvent { return c.c.Events }
@@ -121,7 +115,12 @@ func (e *CampaignEvent) UnmarshalJSON(data []byte) error {
 
 // QualifiesByGroup returns whether the passed in contact qualifies for this event by group membership
 func (e *CampaignEvent) QualifiesByGroup(contact *flows.Contact) bool {
-	return contact.Groups().FindByUUID(e.Campaign().GroupUUID()) != nil
+	for _, g := range contact.Groups().All() {
+		if g.Asset().(*Group).ID() == e.campaign.c.GroupID {
+			return true
+		}
+	}
+	return false
 }
 
 // QualifiesByField returns whether the passed in contact qualifies for this event by group membership
@@ -254,7 +253,7 @@ func (e *CampaignEvent) FlowID() FlowID { return e.e.FlowID }
 
 // loadCampaigns loads all the campaigns for the passed in org
 func loadCampaigns(ctx context.Context, db *sql.DB, orgID OrgID) ([]*Campaign, error) {
-	rows, err := db.QueryContext(ctx, selectCampaignsSQL, orgID)
+	rows, err := db.QueryContext(ctx, sqlSelectCampaignsByOrg, orgID)
 	if err != nil {
 		return nil, fmt.Errorf("error querying campaigns for org: %d: %w", orgID, err)
 	}
@@ -281,46 +280,22 @@ func loadCampaigns(ctx context.Context, db *sql.DB, orgID OrgID) ([]*Campaign, e
 	return campaigns, nil
 }
 
-const selectCampaignsSQL = `
+const sqlSelectCampaignsByOrg = `
 SELECT ROW_TO_JSON(r) FROM (SELECT
-	c.id as id,
-	c.uuid as uuid,
-	c.name as name,
-	cc.name as group_name,
-	cc.uuid as group_uuid,
-	c.group_id,
-	(SELECT ARRAY_AGG(evs) FROM (
-		SELECT
-			e.id as id,
-            e.uuid as uuid,
-			e.event_type as event_type,
-			e.start_mode as start_mode,
-			e.relative_to_id as relative_to_id,
-			f.key as relative_to_key,
-            e.offset as offset,
-			e.unit as unit,
-			e.delivery_hour as delivery_hour,
-			e.flow_id as flow_id
-		FROM 
-			campaigns_campaignevent e
-			JOIN contacts_contactfield f on e.relative_to_id = f.id
-		WHERE 
-			e.campaign_id = c.id AND
-			e.is_active = TRUE AND
-			f.is_active = TRUE
-		ORDER BY
-			e.relative_to_id,
-			e.offset
-    ) evs) as events
-FROM 
-	campaigns_campaign c
-	JOIN contacts_contactgroup cc on c.group_id = cc.id
-WHERE 
-	c.org_id = $1 AND
-	c.is_active = TRUE AND
-	c.is_archived = FALSE
-) r;
-`
+    c.id,
+    c.uuid,
+    c.name,
+    c.group_id,
+    (SELECT ARRAY_AGG(evs) FROM (
+        SELECT e.id, e.uuid, e.event_type, e.start_mode, e.relative_to_id, f.key AS relative_to_key, e.offset, e.unit, e.delivery_hour, e.flow_id
+          FROM campaigns_campaignevent e
+          JOIN contacts_contactfield f ON f.id = e.relative_to_id
+         WHERE e.campaign_id = c.id AND e.is_active = TRUE AND f.is_active = TRUE
+      ORDER BY e.relative_to_id, e.offset
+    ) evs) AS events
+ FROM campaigns_campaign c
+WHERE c.org_id = $1 AND c.is_active = TRUE AND c.is_archived = FALSE
+) r;`
 
 // DeleteUnfiredEventsForGroupRemoval deletes any unfired events for all campaigns that are
 // based on the passed in group id for all the passed in contacts.
