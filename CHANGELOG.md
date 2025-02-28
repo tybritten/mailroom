@@ -1,3 +1,7 @@
+v10.1.58 (2025-02-28)
+-------------------------
+ * Add missing import in mailroom cmd for new web package
+
 v10.1.57 (2025-02-28)
 -------------------------
  * Add endpoint to schedule fires for a new campaign event
