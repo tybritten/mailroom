@@ -422,7 +422,11 @@ func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 	}
 
 	// add all our new event fires
-	return InsertContactFires(ctx, rt.DB, fas)
+	if err := InsertContactFires(ctx, rt.DB, fas); err != nil {
+		return fmt.Errorf("error inserting new contact fires for event #%d: %w", eventID, err)
+	}
+
+	return nil
 }
 
 type eligibleContact struct {
