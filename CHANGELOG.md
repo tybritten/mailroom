@@ -1,3 +1,11 @@
+v10.1.57 (2025-02-28)
+-------------------------
+ * Add endpoint to schedule fires for a new campaign event
+ * Ensure that campaign event fires are inserted in batches
+ * Add support for extra field on quick replies
+ * Update all dependencies
+ * Stop using flowsession.id completely
+
 v10.1.56 (2025-02-26)
 -------------------------
  * Stop writing flowrun.session_id
