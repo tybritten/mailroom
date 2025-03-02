@@ -80,7 +80,7 @@ func (c *FireContactsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 						ts[i] = &contacts.WaitTimeout{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
 					}
 
-					// queue to throttled queue but high priority so they get priority over flow starts etc
+					// queue to throttled queue but high priority
 					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &contacts.BulkWaitTimeoutTask{Timeouts: ts}, true); err != nil {
 						return nil, fmt.Errorf("error queuing bulk wait timeout task for org #%d: %w", og.orgID, err)
 					}
@@ -92,7 +92,7 @@ func (c *FireContactsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 						es[i] = &contacts.WaitExpiration{ContactID: f.ContactID, SessionUUID: flows.SessionUUID(f.SessionUUID), SprintUUID: flows.SprintUUID(f.SprintUUID)}
 					}
 
-					// put expirations in throttled queue but high priority so they get priority over flow starts etc
+					// queue to throttled queue but high priority
 					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &contacts.BulkWaitExpireTask{Expirations: es}, true); err != nil {
 						return nil, fmt.Errorf("error queuing bulk wait expire task for org #%d: %w", og.orgID, err)
 					}
@@ -104,7 +104,7 @@ func (c *FireContactsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 						ss[i] = flows.SessionUUID(f.SessionUUID)
 					}
 
-					// queue to throttled queue but high priority so they get priority over flow starts etc
+					// queue to throttled queue but high priority
 					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &contacts.BulkSessionExpireTask{SessionUUIDs: ss}, true); err != nil {
 						return nil, fmt.Errorf("error queuing bulk session expire task for org #%d: %w", og.orgID, err)
 					}
@@ -118,7 +118,7 @@ func (c *FireContactsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 
 					eventID, _ := strconv.Atoi(strings.TrimPrefix(og.grouping, "campaign:"))
 
-					// queue to throttled queue with low priority
+					// queue to throttled queue but high priority
 					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &campaigns.BulkCampaignTriggerTask{ContactIDs: cids, EventID: models.CampaignEventID(eventID)}, true); err != nil {
 						return nil, fmt.Errorf("error queuing bulk campaign trigger task for org #%d: %w", og.orgID, err)
 					}
