@@ -75,8 +75,8 @@ var Bothub = &Classifier{3, "859b436d-3005-4e43-9ad5-3de5f26ede4c"}
 
 var RemindersCampaign = &Campaign{10000, "72aa12c5-cc11-4bc7-9406-044047845c70"}
 var RemindersEvent1 = &CampaignEvent{10000, "f842414d-5787-400f-b807-17d004823c5a"} // Favorites flow, interrupts
-var RemindersEvent2 = &CampaignEvent{10001, "27e44553-ab35-482b-a4d4-6f000ec611ab"} // Message event, passive
-var RemindersEvent3 = &CampaignEvent{10002, "3e4f06c2-e04f-47ca-a047-f5252b3160ea"} // Pick A Number flow, skips
+var RemindersEvent2 = &CampaignEvent{10001, "ea84a3d7-92e4-4a8b-b01f-db11ff83bbb6"} // Message event, passive
+var RemindersEvent3 = &CampaignEvent{10002, "27e44553-ab35-482b-a4d4-6f000ec611ab"} // Pick A Number flow, skips
 
 // secondary org.. only a few things
 var Org2 = &Org{2, "3ae7cdeb-fd96-46e5-abc4-a4622f349921"}
