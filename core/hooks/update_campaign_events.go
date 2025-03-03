@@ -54,7 +54,7 @@ func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtim
 		}
 
 		// those events that need deleting
-		deleteEvents := make(map[models.CampaignEventID]bool, len(groupRemoves)+len(fieldChanges))
+		deleteEvents := make(map[*models.CampaignEvent]bool, len(groupRemoves)+len(fieldChanges))
 
 		// those events we need to add
 		addEvents := make(map[*models.CampaignEvent]bool, len(groupAdds)+len(fieldChanges))
@@ -65,7 +65,7 @@ func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtim
 				for _, e := range c.Events() {
 					// only delete events that we qualify for or that were changed
 					if e.QualifiesByField(s.Contact()) || fieldChanges[e.RelativeToID()] {
-						deleteEvents[e.ID()] = true
+						deleteEvents[e] = true
 					}
 				}
 			}
@@ -77,7 +77,7 @@ func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtim
 			for _, e := range fieldEvents {
 				// only recalculate the events if this contact qualifies for this event or this group was removed
 				if e.QualifiesByGroup(s.Contact()) || groupRemoves[e.Campaign().GroupID()] {
-					deleteEvents[e.ID()] = true
+					deleteEvents[e] = true
 					addEvents[e] = true
 				}
 			}
@@ -85,7 +85,7 @@ func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtim
 
 		// ok, create all our deletes
 		for e := range deleteEvents {
-			deletes = append(deletes, &models.FireDelete{ContactID: s.ContactID(), EventID: e})
+			deletes = append(deletes, &models.FireDelete{ContactID: s.ContactID(), EventID: e.ID(), FireVersion: e.FireVersion()})
 		}
 
 		// add in all the events we qualify for in campaigns we are now part of

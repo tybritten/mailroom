@@ -136,11 +136,27 @@ func TestCampaignContactFires(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'C'`, testdata.Cathy.ID).Returns(0)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.George.ID).Returns(3)
 
-	// test deleting specific contact/event combinations
-	err = models.DeleteCampaignContactFires(ctx, rt.DB, []*models.FireDelete{{testdata.Bob.ID, testdata.RemindersEvent1.ID}, {testdata.George.ID, testdata.RemindersEvent3.ID}})
+	// test deleting specific contact/event combinations (with or without version)
+	err = models.DeleteCampaignContactFires(ctx, rt.DB, []*models.FireDelete{
+		{ContactID: testdata.Bob.ID, EventID: testdata.RemindersEvent1.ID},
+		{ContactID: testdata.George.ID, EventID: testdata.RemindersEvent3.ID, FireVersion: 1},
+	})
 	assert.NoError(t, err)
 
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE fire_type = 'C'`).Returns(4)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.Bob.ID).Returns(2)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.George.ID).Returns(2)
+
+	rt.DB.MustExec(`UPDATE contacts_contactfire SET scope = scope || ':123' WHERE fire_type = 'C'`)
+
+	// test deleting specific contact/event combinations when fire scope has version
+	err = models.DeleteCampaignContactFires(ctx, rt.DB, []*models.FireDelete{
+		{ContactID: testdata.Bob.ID, EventID: testdata.RemindersEvent2.ID, FireVersion: 123},
+		{ContactID: testdata.George.ID, EventID: testdata.RemindersEvent2.ID, FireVersion: 123},
+	})
+	assert.NoError(t, err)
+
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE fire_type = 'C'`).Returns(2)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.Bob.ID).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.George.ID).Returns(1)
 }
