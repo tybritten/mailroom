@@ -3,6 +3,7 @@ package crons
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -116,10 +117,10 @@ func (c *FireContactsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 						cids[i] = f.ContactID
 					}
 
-					eventID, _ := strconv.Atoi(strings.TrimPrefix(og.grouping, "campaign:"))
+					eventID, fireVersion := c.parseCampaignEventScope(strings.TrimPrefix(og.grouping, "campaign:"))
 
 					// queue to throttled queue but high priority
-					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &campaigns.BulkCampaignTriggerTask{ContactIDs: cids, EventID: models.CampaignEventID(eventID)}, true); err != nil {
+					if err := tasks.Queue(rc, tasks.ThrottledQueue, og.orgID, &campaigns.BulkCampaignTriggerTask{ContactIDs: cids, EventID: models.CampaignEventID(eventID), FireVersion: fireVersion}, true); err != nil {
 						return nil, fmt.Errorf("error queuing bulk campaign trigger task for org #%d: %w", og.orgID, err)
 					}
 					numCampaignEvents += len(batch)
@@ -138,4 +139,19 @@ func (c *FireContactsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 	}
 
 	return map[string]any{"wait_timeouts": numWaitTimeouts, "wait_expires": numWaitExpires, "session_expires": numSessionExpires, "campaign_events": numCampaignEvents}, nil
+}
+
+var campaignEventScopePattern = regexp.MustCompile(`^(\d+)(?:\:(\d+))?$`)
+
+func (c *FireContactsCron) parseCampaignEventScope(scope string) (models.CampaignEventID, int) {
+	var eventID, fireVersion int
+	match := campaignEventScopePattern.FindStringSubmatch(scope)
+	if len(match) > 1 {
+		eventID, _ = strconv.Atoi(match[1])
+	}
+	if len(match) > 2 {
+		fireVersion, _ = strconv.Atoi(match[2])
+	}
+
+	return models.CampaignEventID(eventID), fireVersion
 }

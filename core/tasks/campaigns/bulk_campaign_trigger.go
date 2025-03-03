@@ -33,8 +33,9 @@ func init() {
 
 // BulkCampaignTriggerTask is the task to handle triggering campaign events
 type BulkCampaignTriggerTask struct {
-	EventID    models.CampaignEventID `json:"event_id"`
-	ContactIDs []models.ContactID     `json:"contact_ids"`
+	EventID     models.CampaignEventID `json:"event_id"`
+	ContactIDs  []models.ContactID     `json:"contact_ids"`
+	FireVersion int                    `json:"fire_version"`
 }
 
 func (t *BulkCampaignTriggerTask) Type() string {
