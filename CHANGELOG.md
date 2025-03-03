@@ -1,3 +1,7 @@
+v10.1.59 (2025-03-03)
+-------------------------
+ * Delete campaign fires with and without fire version when re-scheduling
+
 v10.1.58 (2025-02-28)
 -------------------------
  * Add missing import in mailroom cmd for new web package
