@@ -1064,7 +1064,7 @@ func CalculateDynamicGroups(ctx context.Context, db DBorTx, oa *OrgAssets, conta
 				}
 
 				if scheduled != nil {
-					newFires = append(newFires, NewContactFireForCampaign(oa.OrgID(), ContactID(contact.ID()), ce.ID, *scheduled))
+					newFires = append(newFires, NewContactFireForCampaign(oa.OrgID(), ContactID(contact.ID()), ce, *scheduled))
 				}
 			}
 		}

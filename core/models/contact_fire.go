@@ -53,8 +53,8 @@ func newContactFireForSession(orgID OrgID, s *Session, typ ContactFireType, fire
 	return newContactFire(orgID, s.ContactID(), typ, "", fireOn, s.UUID(), sprintUUID)
 }
 
-func NewContactFireForCampaign(orgID OrgID, contactID ContactID, eventID CampaignEventID, fireOn time.Time) *ContactFire {
-	return newContactFire(orgID, contactID, ContactFireTypeCampaignEvent, fmt.Sprint(eventID), fireOn, "", "")
+func NewContactFireForCampaign(orgID OrgID, contactID ContactID, ce *CampaignEvent, fireOn time.Time) *ContactFire {
+	return newContactFire(orgID, contactID, ContactFireTypeCampaignEvent, fmt.Sprintf("%d:%d", ce.ID, ce.FireVersion), fireOn, "", "")
 }
 
 const sqlSelectDueContactFires = `

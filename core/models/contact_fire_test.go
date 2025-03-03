@@ -19,13 +19,18 @@ func TestContactFires(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
+	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
+	require.NoError(t, err)
+
 	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-5*time.Second), "46aa1e25-9c01-44d7-8223-e43036627505")
 	testdata.InsertContactFire(rt, testdata.Org1, testdata.Bob, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-4*time.Second), "531e84a7-d883-40a0-8e7a-b4dde4428ce1")
 	testdata.InsertContactFire(rt, testdata.Org2, testdata.Org2Contact, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-3*time.Second), "7c73b6e4-ae33-45a6-9126-be474234b69d")
 	testdata.InsertContactFire(rt, testdata.Org2, testdata.Org2Contact, models.ContactFireTypeWaitTimeout, "", time.Now().Add(-2*time.Second), "7c73b6e4-ae33-45a6-9126-be474234b69d")
 
-	err := models.InsertContactFires(ctx, rt.DB, []*models.ContactFire{
-		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, testdata.RemindersEvent1.ID, time.Now().Add(2*time.Second)),
+	remindersEvent1 := oa.CampaignEventByID(testdata.RemindersEvent1.ID)
+
+	err = models.InsertContactFires(ctx, rt.DB, []*models.ContactFire{
+		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, remindersEvent1, time.Now().Add(2*time.Second)),
 	})
 	assert.NoError(t, err)
 
@@ -33,7 +38,7 @@ func TestContactFires(t *testing.T) {
 
 	// if we add another with same contact+type+scope as an existing.. nothing
 	err = models.InsertContactFires(ctx, rt.DB, []*models.ContactFire{
-		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, testdata.RemindersEvent1.ID, time.Now().Add(2*time.Second)),
+		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, remindersEvent1, time.Now().Add(2*time.Second)),
 	})
 	assert.NoError(t, err)
 
@@ -106,21 +111,28 @@ func TestCampaignContactFires(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
+	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
+	require.NoError(t, err)
+
+	remindersEvent1 := oa.CampaignEventByID(testdata.RemindersEvent1.ID)
+	remindersEvent2 := oa.CampaignEventByID(testdata.RemindersEvent2.ID)
+	remindersEvent3 := oa.CampaignEventByID(testdata.RemindersEvent3.ID)
+
 	testdata.InsertContactFire(rt, testdata.Org1, testdata.Cathy, models.ContactFireTypeWaitExpiration, "", time.Now().Add(-4*time.Second), "531e84a7-d883-40a0-8e7a-b4dde4428ce1")
 
 	fires := []*models.ContactFire{
-		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, testdata.RemindersEvent1.ID, time.Now()),
-		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, testdata.RemindersEvent2.ID, time.Now()),
-		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, testdata.RemindersEvent3.ID, time.Now()),
-		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Cathy.ID, testdata.RemindersEvent1.ID, time.Now()),
-		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Cathy.ID, testdata.RemindersEvent2.ID, time.Now()),
-		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Cathy.ID, testdata.RemindersEvent3.ID, time.Now()),
-		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.George.ID, testdata.RemindersEvent1.ID, time.Now()),
-		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.George.ID, testdata.RemindersEvent2.ID, time.Now()),
-		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.George.ID, testdata.RemindersEvent3.ID, time.Now()),
+		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, remindersEvent1, time.Now()),
+		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, remindersEvent2, time.Now()),
+		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Bob.ID, remindersEvent3, time.Now()),
+		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Cathy.ID, remindersEvent1, time.Now()),
+		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Cathy.ID, remindersEvent2, time.Now()),
+		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.Cathy.ID, remindersEvent3, time.Now()),
+		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.George.ID, remindersEvent1, time.Now()),
+		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.George.ID, remindersEvent2, time.Now()),
+		models.NewContactFireForCampaign(testdata.Org1.ID, testdata.George.ID, remindersEvent3, time.Now()),
 	}
 
-	err := models.InsertContactFires(ctx, rt.DB, fires)
+	err = models.InsertContactFires(ctx, rt.DB, fires)
 	assert.NoError(t, err)
 
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE fire_type = 'E'`).Returns(1)
@@ -136,9 +148,9 @@ func TestCampaignContactFires(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1 AND fire_type = 'C'`, testdata.Cathy.ID).Returns(0)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.George.ID).Returns(3)
 
-	// test deleting specific contact/event combinations (with or without version)
+	// test deleting specific contact/event combinations
 	err = models.DeleteCampaignContactFires(ctx, rt.DB, []*models.FireDelete{
-		{ContactID: testdata.Bob.ID, EventID: testdata.RemindersEvent1.ID},
+		{ContactID: testdata.Bob.ID, EventID: testdata.RemindersEvent1.ID, FireVersion: 1},
 		{ContactID: testdata.George.ID, EventID: testdata.RemindersEvent3.ID, FireVersion: 1},
 	})
 	assert.NoError(t, err)
@@ -146,17 +158,4 @@ func TestCampaignContactFires(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE fire_type = 'C'`).Returns(4)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.Bob.ID).Returns(2)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.George.ID).Returns(2)
-
-	rt.DB.MustExec(`UPDATE contacts_contactfire SET scope = scope || ':123' WHERE fire_type = 'C'`)
-
-	// test deleting specific contact/event combinations when fire scope has version
-	err = models.DeleteCampaignContactFires(ctx, rt.DB, []*models.FireDelete{
-		{ContactID: testdata.Bob.ID, EventID: testdata.RemindersEvent2.ID, FireVersion: 123},
-		{ContactID: testdata.George.ID, EventID: testdata.RemindersEvent2.ID, FireVersion: 123},
-	})
-	assert.NoError(t, err)
-
-	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE fire_type = 'C'`).Returns(2)
-	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.Bob.ID).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM contacts_contactfire WHERE contact_id = $1`, testdata.George.ID).Returns(1)
 }

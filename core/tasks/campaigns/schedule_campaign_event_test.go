@@ -34,10 +34,10 @@ func TestScheduleCampaignEvent(t *testing.T) {
 
 	// cathy has no value for joined and alexandia has a value too far in past, but bob and george will have values...
 	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{
-		"C/10000": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC), // 12:00 in PST
+		"C/10000:1": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC), // 12:00 in PST
 	})
 	testsuite.AssertContactFires(t, rt, testdata.George.ID, map[string]time.Time{
-		"C/10000": time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC), // 12:00 in PST with DST
+		"C/10000:1": time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC), // 12:00 in PST with DST
 	})
 
 	// schedule second event...
@@ -46,12 +46,12 @@ func TestScheduleCampaignEvent(t *testing.T) {
 
 	// fires for first event unaffected
 	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{
-		"C/10000": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC),
-		"C/10001": time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC),
+		"C/10000:1": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC),
+		"C/10001:1": time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC),
 	})
 	testsuite.AssertContactFires(t, rt, testdata.George.ID, map[string]time.Time{
-		"C/10000": time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC),
-		"C/10001": time.Date(2030, 8, 18, 11, 42, 0, 0, time.UTC),
+		"C/10000:1": time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC),
+		"C/10001:1": time.Date(2030, 8, 18, 11, 42, 0, 0, time.UTC),
 	})
 
 	// remove alexandria from campaign group
@@ -68,15 +68,15 @@ func TestScheduleCampaignEvent(t *testing.T) {
 
 	// only cathy is in the group and new enough to have a fire
 	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{
-		"C/10000": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC),
-		"C/10001": time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC),
+		"C/10000:1": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC),
+		"C/10001:1": time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC),
 	})
 	testsuite.AssertContactFires(t, rt, testdata.George.ID, map[string]time.Time{
-		"C/10000": time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC),
-		"C/10001": time.Date(2030, 8, 18, 11, 42, 0, 0, time.UTC),
+		"C/10000:1": time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC),
+		"C/10001:1": time.Date(2030, 8, 18, 11, 42, 0, 0, time.UTC),
 	})
 	testsuite.AssertContactFires(t, rt, testdata.Cathy.ID, map[string]time.Time{
-		"C/30000": time.Date(2035, 1, 1, 0, 5, 0, 0, time.UTC),
+		"C/30000:1": time.Date(2035, 1, 1, 0, 5, 0, 0, time.UTC),
 	})
 
 	// create new campaign event based on last_seen_on + 1 day
@@ -89,8 +89,8 @@ func TestScheduleCampaignEvent(t *testing.T) {
 	testsuite.FlushTasks(t, rt)
 
 	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{
-		"C/10000": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC),
-		"C/10001": time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC),
-		"C/30001": time.Date(2040, 1, 2, 0, 0, 0, 0, time.UTC),
+		"C/10000:1": time.Date(2030, 1, 5, 20, 0, 0, 0, time.UTC),
+		"C/10001:1": time.Date(2030, 1, 1, 0, 10, 0, 0, time.UTC),
+		"C/30001:1": time.Date(2040, 1, 2, 0, 0, 0, 0, time.UTC),
 	})
 }
