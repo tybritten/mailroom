@@ -128,19 +128,21 @@ func DeleteAllCampaignContactFires(ctx context.Context, db DBorTx, contactIDs []
 
 // FireDelete is a helper struct for deleting specific campaign event fires
 type FireDelete struct {
-	ContactID ContactID       `db:"contact_id"`
-	EventID   CampaignEventID `db:"event_id"`
+	ContactID   ContactID       `db:"contact_id"`
+	EventID     CampaignEventID `db:"event_id"`
+	FireVersion int             `db:"fire_version"`
 }
 
-const sqlDeleteContactFires = `
+// note that : is escaped as \x3A to stop sqlx mistakenly treating it as a named variable
+const sqlDeleteCampaignContactFires = `
 DELETE FROM contacts_contactfire WHERE id IN (
-    SELECT cf.id FROM contacts_contactfire cf, (VALUES(:contact_id, :event_id)) AS f(contact_id, event_id)
-     WHERE cf.contact_id = f.contact_id::int AND fire_type = 'C' AND cf.scope = f.event_id::text
+    SELECT cf.id FROM contacts_contactfire cf, (VALUES(:contact_id, :event_id, :fire_version)) AS f(contact_id, event_id, fire_version)
+     WHERE cf.contact_id = f.contact_id::int AND fire_type = 'C' AND (cf.scope = f.event_id::text OR cf.scope = f.event_id || E'\x3A' || f.fire_version)
 )`
 
 // DeleteCampaignContactFires deletes *specific* campaign event fires for the given contacts
 func DeleteCampaignContactFires(ctx context.Context, db DBorTx, deletes []*FireDelete) error {
-	return BulkQueryBatches(ctx, "deleting campaign event fires", db, sqlDeleteContactFires, 1000, deletes)
+	return BulkQueryBatches(ctx, "deleting campaign event fires", db, sqlDeleteCampaignContactFires, 1000, deletes)
 }
 
 var sqlInsertContactFires = `

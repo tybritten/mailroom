@@ -231,28 +231,16 @@ func (e *CampaignEvent) ScheduleForTime(tz *time.Location, now time.Time, start 
 	return &scheduled, nil
 }
 
-// ID returns the database id for this campaign event
-func (e *CampaignEvent) ID() CampaignEventID { return e.e.ID }
-
-// UUID returns the UUID of this campaign event
+func (e *CampaignEvent) ID() CampaignEventID     { return e.e.ID }
 func (e *CampaignEvent) UUID() CampaignEventUUID { return e.e.UUID }
+func (e *CampaignEvent) FireVersion() int        { return e.e.FireVersion }
 
-// RelativeToID returns the ID of the field this event is relative to
 func (e *CampaignEvent) RelativeToID() FieldID { return e.e.RelativeToID }
-
-// RelativeToKey returns the key of the field this event is relative to
 func (e *CampaignEvent) RelativeToKey() string { return e.e.RelativeToKey }
+func (e *CampaignEvent) Offset() int           { return e.e.Offset }
+func (e *CampaignEvent) Unit() OffsetUnit      { return e.e.Unit }
+func (e *CampaignEvent) DeliveryHour() int     { return e.e.DeliveryHour }
 
-// Offset returns the offset for thi campaign event
-func (e *CampaignEvent) Offset() int { return e.e.Offset }
-
-// Unit returns the unit for this campaign event
-func (e *CampaignEvent) Unit() OffsetUnit { return e.e.Unit }
-
-// DeliveryHour returns the hour this event should send at, if any
-func (e *CampaignEvent) DeliveryHour() int { return e.e.DeliveryHour }
-
-// Campaign returns the campaign this event is part of
 func (e *CampaignEvent) Campaign() *Campaign { return e.campaign }
 
 // StartMode returns the start mode for this campaign event
@@ -315,8 +303,9 @@ func DeleteUnfiredEventsForGroupRemoval(ctx context.Context, tx DBorTx, oa *OrgA
 		for _, e := range c.Events() {
 			for _, cid := range contactIDs {
 				fds = append(fds, &FireDelete{
-					EventID:   e.ID(),
-					ContactID: cid,
+					ContactID:   cid,
+					EventID:     e.e.ID,
+					FireVersion: e.e.FireVersion,
 				})
 			}
 		}
