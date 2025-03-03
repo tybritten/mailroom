@@ -64,7 +64,7 @@ func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtim
 			for _, c := range oa.CampaignByGroupID(g) {
 				for _, e := range c.Events() {
 					// only delete events that we qualify for or that were changed
-					if e.QualifiesByField(s.Contact()) || fieldChanges[e.RelativeToID()] {
+					if e.QualifiesByField(s.Contact()) || fieldChanges[e.RelativeToID] {
 						deleteEvents[e] = true
 					}
 				}
@@ -85,7 +85,7 @@ func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtim
 
 		// ok, create all our deletes
 		for e := range deleteEvents {
-			deletes = append(deletes, &models.FireDelete{ContactID: s.ContactID(), EventID: e.ID(), FireVersion: e.FireVersion()})
+			deletes = append(deletes, &models.FireDelete{ContactID: s.ContactID(), EventID: e.ID, FireVersion: e.FireVersion})
 		}
 
 		// add in all the events we qualify for in campaigns we are now part of
@@ -112,7 +112,7 @@ func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtim
 			}
 
 			// ok we have a new fire date, add it to our list of fires to insert
-			inserts = append(inserts, models.NewContactFireForCampaign(oa.OrgID(), s.ContactID(), ce.ID(), *scheduled))
+			inserts = append(inserts, models.NewContactFireForCampaign(oa.OrgID(), s.ContactID(), ce.ID, *scheduled))
 		}
 	}
 

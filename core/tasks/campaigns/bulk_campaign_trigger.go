@@ -57,19 +57,19 @@ func (t *BulkCampaignTriggerTask) Perform(ctx context.Context, rt *runtime.Runti
 		return nil
 	}
 
-	flow, err := oa.FlowByID(event.FlowID())
+	flow, err := oa.FlowByID(event.FlowID)
 	if err == models.ErrNotFound {
-		slog.Info("skipping campaign trigger for flow that no longer exists", "event_id", t.EventID, "flow_id", event.FlowID())
+		slog.Info("skipping campaign trigger for flow that no longer exists", "event_id", t.EventID, "flow_id", event.FlowID)
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("error loading campaign event flow #%d: %w", event.FlowID(), err)
+		return fmt.Errorf("error loading campaign event flow #%d: %w", event.FlowID, err)
 	}
 
 	// if event start mode is skip, filter out contact ids that are already in a flow
 	// TODO move inside runner.StartFlow so check happens inside contact locks
 	contactIDs := t.ContactIDs
-	if event.StartMode() == models.StartModeSkip {
+	if event.StartMode == models.StartModeSkip {
 		contactIDs, err = models.FilterContactIDsByNotInFlow(ctx, rt.DB, contactIDs)
 		if err != nil {
 			return fmt.Errorf("error filtering contacts by not in flow: %w", err)
@@ -88,15 +88,15 @@ func (t *BulkCampaignTriggerTask) Perform(ctx context.Context, rt *runtime.Runti
 	flowRef := assets.NewFlowReference(flow.UUID(), flow.Name())
 	campaignRef := triggers.NewCampaignReference(triggers.CampaignUUID(event.Campaign().UUID()), event.Campaign().Name())
 	options := &runner.StartOptions{
-		Interrupt: event.StartMode() != models.StartModePassive,
+		Interrupt: event.StartMode != models.StartModePassive,
 		TriggerBuilder: func(contact *flows.Contact) flows.Trigger {
-			return triggers.NewBuilder(oa.Env(), flowRef, contact).Campaign(campaignRef, triggers.CampaignEventUUID(event.UUID())).Build()
+			return triggers.NewBuilder(oa.Env(), flowRef, contact).Campaign(campaignRef, triggers.CampaignEventUUID(event.UUID)).Build()
 		},
 	}
 
 	_, err = runner.StartFlow(ctx, rt, oa, flow, contactIDs, options, models.NilStartID)
 	if err != nil {
-		return fmt.Errorf("error starting flow for campaign event #%d: %w", event.ID(), err)
+		return fmt.Errorf("error starting flow for campaign event #%d: %w", event.ID, err)
 	}
 
 	// store recent fires in redis for this event
