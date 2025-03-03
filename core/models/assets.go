@@ -304,8 +304,8 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 		for _, c := range oa.campaigns {
 			oa.campaignsByGroup[c.GroupID()] = append(oa.campaignsByGroup[c.GroupID()], c)
 			for _, e := range c.Events() {
-				oa.campaignEventsByField[e.RelativeToID()] = append(oa.campaignEventsByField[e.RelativeToID()], e)
-				oa.campaignEventsByID[e.ID()] = e
+				oa.campaignEventsByField[e.RelativeToID] = append(oa.campaignEventsByField[e.RelativeToID], e)
+				oa.campaignEventsByID[e.ID] = e
 			}
 		}
 	} else {

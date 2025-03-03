@@ -1060,11 +1060,11 @@ func CalculateDynamicGroups(ctx context.Context, db DBorTx, oa *OrgAssets, conta
 			for _, contact := range eligibleContacts {
 				scheduled, err := ce.ScheduleForContact(tz, now, contact)
 				if err != nil {
-					return fmt.Errorf("error calculating schedule for event: %d: %w", ce.ID(), err)
+					return fmt.Errorf("error calculating schedule for event: %d: %w", ce.ID, err)
 				}
 
 				if scheduled != nil {
-					newFires = append(newFires, NewContactFireForCampaign(oa.OrgID(), ContactID(contact.ID()), ce.ID(), *scheduled))
+					newFires = append(newFires, NewContactFireForCampaign(oa.OrgID(), ContactID(contact.ID()), ce.ID, *scheduled))
 				}
 			}
 		}
