@@ -141,7 +141,7 @@ func (c *FireContactsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[st
 	return map[string]any{"wait_timeouts": numWaitTimeouts, "wait_expires": numWaitExpires, "session_expires": numSessionExpires, "campaign_events": numCampaignEvents}, nil
 }
 
-var campaignEventScopePattern = regexp.MustCompile(`^(\d+)(?:\:(\d+))?$`)
+var campaignEventScopePattern = regexp.MustCompile(`^(\d+):(\d+)$`)
 
 func (c *FireContactsCron) parseCampaignEventScope(scope string) (models.CampaignEventID, int) {
 	var eventID, fireVersion int
