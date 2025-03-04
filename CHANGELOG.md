@@ -1,3 +1,7 @@
+v10.1.61 (2025-03-04)
+-------------------------
+ * Remove deletion of campaign event fires by event id only
+
 v10.1.60 (2025-03-04)
 -------------------------
  * Create campaign event fires with fire version in scope
