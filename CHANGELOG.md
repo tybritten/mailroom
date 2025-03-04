@@ -1,3 +1,8 @@
+v10.1.62 (2025-03-04)
+-------------------------
+ * Mark campaign events as READY when scheduling task completes
+ * No-op campaign trigger tasks where fire version doesn't match current model
+
 v10.1.61 (2025-03-04)
 -------------------------
  * Remove deletion of campaign event fires by event id only
