@@ -57,46 +57,22 @@ func (t *BulkCampaignTriggerTask) Perform(ctx context.Context, rt *runtime.Runti
 		return nil
 	}
 
-	flow, err := oa.FlowByID(ce.FlowID)
-	if err == models.ErrNotFound {
-		slog.Info("skipping campaign trigger for flow that no longer exists", "event_id", t.EventID, "flow_id", ce.FlowID)
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("error loading campaign event flow #%d: %w", ce.FlowID, err)
-	}
-
 	// if event start mode is skip, filter out contact ids that are already in a flow
 	// TODO move inside runner.StartFlow so check happens inside contact locks
 	contactIDs := t.ContactIDs
-	if ce.StartMode == models.StartModeSkip {
+	if ce.StartMode == models.CampaignEventModeSkip {
+		var err error
 		contactIDs, err = models.FilterContactIDsByNotInFlow(ctx, rt.DB, contactIDs)
 		if err != nil {
 			return fmt.Errorf("error filtering contacts by not in flow: %w", err)
 		}
 	}
-
-	// if this is an ivr flow, we need to create a task to perform the start there
-	if flow.FlowType() == models.FlowTypeVoice {
-		err := handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), contactIDs, nil)
-		if err != nil {
-			return fmt.Errorf("error triggering ivr flow start: %w", err)
-		}
+	if len(contactIDs) == 0 {
 		return nil
 	}
 
-	flowRef := assets.NewFlowReference(flow.UUID(), flow.Name())
-	campaignRef := triggers.NewCampaignReference(triggers.CampaignUUID(ce.Campaign().UUID()), ce.Campaign().Name())
-	options := &runner.StartOptions{
-		Interrupt: ce.StartMode != models.StartModePassive,
-		TriggerBuilder: func(contact *flows.Contact) flows.Trigger {
-			return triggers.NewBuilder(oa.Env(), flowRef, contact).Campaign(campaignRef, triggers.CampaignEventUUID(ce.UUID)).Build()
-		},
-	}
-
-	_, err = runner.StartFlow(ctx, rt, oa, flow, contactIDs, options, models.NilStartID)
-	if err != nil {
-		return fmt.Errorf("error starting flow for campaign event #%d: %w", ce.ID, err)
+	if err := t.triggerFlow(ctx, rt, oa, ce, contactIDs); err != nil {
+		return err
 	}
 
 	// store recent fires in redis for this event
@@ -114,6 +90,42 @@ func (t *BulkCampaignTriggerTask) Perform(ctx context.Context, rt *runtime.Runti
 		if err != nil {
 			return fmt.Errorf("error adding recent trigger to set: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func (t *BulkCampaignTriggerTask) triggerFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, ce *models.CampaignEvent, contactIDs []models.ContactID) error {
+	flow, err := oa.FlowByID(ce.FlowID)
+	if err == models.ErrNotFound {
+		slog.Info("skipping campaign trigger for flow that no longer exists", "event_id", t.EventID, "flow_id", ce.FlowID)
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("error loading campaign event flow #%d: %w", ce.FlowID, err)
+	}
+
+	// if this is an ivr flow, we need to create a task to perform the start there
+	if flow.FlowType() == models.FlowTypeVoice {
+		err := handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), contactIDs, nil)
+		if err != nil {
+			return fmt.Errorf("error triggering ivr flow start: %w", err)
+		}
+		return nil
+	}
+
+	flowRef := assets.NewFlowReference(flow.UUID(), flow.Name())
+	campaignRef := triggers.NewCampaignReference(triggers.CampaignUUID(ce.Campaign().UUID()), ce.Campaign().Name())
+	options := &runner.StartOptions{
+		Interrupt: ce.StartMode != models.CampaignEventModePassive,
+		TriggerBuilder: func(contact *flows.Contact) flows.Trigger {
+			return triggers.NewBuilder(oa.Env(), flowRef, contact).Campaign(campaignRef, triggers.CampaignEventUUID(ce.UUID)).Build()
+		},
+	}
+
+	_, err = runner.StartFlow(ctx, rt, oa, flow, contactIDs, options, models.NilStartID)
+	if err != nil {
+		return fmt.Errorf("error starting flow for campaign event #%d: %w", ce.ID, err)
 	}
 
 	return nil
