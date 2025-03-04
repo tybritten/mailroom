@@ -112,7 +112,7 @@ func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtim
 			}
 
 			// ok we have a new fire date, add it to our list of fires to insert
-			inserts = append(inserts, models.NewContactFireForCampaign(oa.OrgID(), s.ContactID(), ce.ID, *scheduled))
+			inserts = append(inserts, models.NewContactFireForCampaign(oa.OrgID(), s.ContactID(), ce, *scheduled))
 		}
 	}
 

@@ -315,18 +315,18 @@ func AddCampaignEventsForGroupAddition(ctx context.Context, tx DBorTx, oa *OrgAs
 		// for each campaign that may have changed from this group change
 		for _, c := range oa.CampaignByGroupID(groupID) {
 			// check each event
-			for _, e := range c.Events() {
+			for _, ce := range c.Events() {
 				// and if we qualify by field
-				if e.QualifiesByField(contact) {
+				if ce.QualifiesByField(contact) {
 					// calculate our scheduled fire
-					scheduled, err := e.ScheduleForContact(tz, time.Now(), contact)
+					scheduled, err := ce.ScheduleForContact(tz, time.Now(), contact)
 					if err != nil {
-						return fmt.Errorf("error calculating schedule for event: %d and contact: %d: %w", e.ID, c.ID(), err)
+						return fmt.Errorf("error calculating schedule for event #%d and contact #%d: %w", ce.ID, contact.ID(), err)
 					}
 
 					// if we have one, add it to our list for our batch commit
 					if scheduled != nil {
-						fas = append(fas, NewContactFireForCampaign(oa.OrgID(), ContactID(contact.ID()), e.ID, *scheduled))
+						fas = append(fas, NewContactFireForCampaign(oa.OrgID(), ContactID(contact.ID()), ce, *scheduled))
 					}
 				}
 			}
@@ -339,19 +339,19 @@ func AddCampaignEventsForGroupAddition(ctx context.Context, tx DBorTx, oa *OrgAs
 
 // ScheduleCampaignEvent calculates event fires for a new campaign event
 func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, eventID CampaignEventID) error {
-	event := oa.CampaignEventByID(eventID)
-	if event == nil {
+	ce := oa.CampaignEventByID(eventID)
+	if ce == nil {
 		return fmt.Errorf("can't find campaign event with id %d", eventID)
 	}
 
-	field := oa.FieldByKey(event.RelativeToKey)
+	field := oa.FieldByKey(ce.RelativeToKey)
 	if field == nil {
-		return fmt.Errorf("can't find field with key %s", event.RelativeToKey)
+		return fmt.Errorf("can't find field with key %s", ce.RelativeToKey)
 	}
 
-	eligible, err := campaignEventEligibleContacts(ctx, rt.DB, event.campaign.GroupID(), field)
+	eligible, err := campaignEventEligibleContacts(ctx, rt.DB, ce.campaign.GroupID(), field)
 	if err != nil {
-		return fmt.Errorf("unable to calculate eligible contacts for event %d: %w", eventID, err)
+		return fmt.Errorf("unable to calculate eligible contacts for event %d: %w", ce.ID, err)
 	}
 
 	fas := make([]*ContactFire, 0, len(eligible))
@@ -361,19 +361,19 @@ func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 		start := *el.RelToValue
 
 		// calculate next fire for this contact
-		scheduled, err := event.ScheduleForTime(tz, time.Now(), start)
+		scheduled, err := ce.ScheduleForTime(tz, time.Now(), start)
 		if err != nil {
-			return fmt.Errorf("error calculating offset for start: %s and event: %d: %w", start, eventID, err)
+			return fmt.Errorf("error calculating offset for start: %s and event #%d: %w", start, ce.ID, err)
 		}
 
 		if scheduled != nil {
-			fas = append(fas, NewContactFireForCampaign(oa.OrgID(), el.ContactID, eventID, *scheduled))
+			fas = append(fas, NewContactFireForCampaign(oa.OrgID(), el.ContactID, ce, *scheduled))
 		}
 	}
 
 	// add all our new event fires
 	if err := InsertContactFires(ctx, rt.DB, fas); err != nil {
-		return fmt.Errorf("error inserting new contact fires for event #%d: %w", eventID, err)
+		return fmt.Errorf("error inserting new contact fires for event #%d: %w", ce.ID, err)
 	}
 
 	return nil
