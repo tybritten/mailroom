@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/mailroom/core/tasks/campaigns"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
@@ -13,6 +14,9 @@ func TestScheduleCampaignEvent(t *testing.T) {
 	_, rt := testsuite.Runtime()
 
 	defer testsuite.Reset(testsuite.ResetAll)
+
+	// set campaign event status to (S)CHEDULING (done by RP)
+	rt.DB.MustExec(`UPDATE campaigns_campaignevent SET status = 'S' WHERE id = $1`, testdata.RemindersEvent1.ID)
 
 	// add bob, george and alexandria to doctors group which campaign is based on
 	testdata.DoctorsGroup.Add(rt, testdata.Bob, testdata.George, testdata.Alexandria)
@@ -39,6 +43,9 @@ func TestScheduleCampaignEvent(t *testing.T) {
 	testsuite.AssertContactFires(t, rt, testdata.George.ID, map[string]time.Time{
 		"C/10000:1": time.Date(2030, 8, 23, 19, 0, 0, 0, time.UTC), // 12:00 in PST with DST
 	})
+
+	// campaign event itself is now marked as (R)EADY
+	assertdb.Query(t, rt.DB, `SELECT status FROM campaigns_campaignevent WHERE id = $1`, testdata.RemindersEvent1.ID).Returns("R")
 
 	// schedule second event...
 	testsuite.QueueBatchTask(t, rt, testdata.Org1, &campaigns.ScheduleCampaignEventTask{CampaignEventID: testdata.RemindersEvent2.ID})

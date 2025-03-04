@@ -337,7 +337,7 @@ func AddCampaignEventsForGroupAddition(ctx context.Context, tx DBorTx, oa *OrgAs
 	return InsertContactFires(ctx, tx, fas)
 }
 
-// ScheduleCampaignEvent calculates event fires for a new campaign event
+// ScheduleCampaignEvent calculates event fires for new or updated campaign events
 func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, eventID CampaignEventID) error {
 	ce := oa.CampaignEventByID(eventID)
 	if ce == nil {
@@ -374,6 +374,11 @@ func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 	// add all our new event fires
 	if err := InsertContactFires(ctx, rt.DB, fas); err != nil {
 		return fmt.Errorf("error inserting new contact fires for event #%d: %w", ce.ID, err)
+	}
+
+	ce.Status = CampaignEventStatusReady
+	if _, err := rt.DB.ExecContext(ctx, `UPDATE campaigns_campaignevent SET status = 'R' WHERE id = $1`, ce.ID); err != nil {
+		return fmt.Errorf("error updating status for event #%d: %w", ce.ID, err)
 	}
 
 	return nil
