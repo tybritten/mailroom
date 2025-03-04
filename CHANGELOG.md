@@ -1,3 +1,7 @@
+v10.1.60 (2025-03-04)
+-------------------------
+ * Create campaign event fires with fire version in scope
+
 v10.1.59 (2025-03-03)
 -------------------------
  * Delete campaign fires with and without fire version when re-scheduling
