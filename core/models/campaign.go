@@ -13,23 +13,15 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-// CampaignID is our type for campaign ids
 type CampaignID int
-
-// CampaignEventID is our type for campaign event ids
-type CampaignEventID int
-
-// CampaignUUID is our type for campaign UUIDs
 type CampaignUUID uuids.UUID
 
-// CampaignEventUUID is our type for campaign event UUIDs
+type CampaignEventID int
 type CampaignEventUUID uuids.UUID
-
-// OffsetUnit defines what time unit our offset is in
-type OffsetUnit string
-
-// StartMode defines how a campaign event should be started
-type StartMode string
+type CampaignEventType string
+type CampaignEventStatus string
+type CampaignEventMode string
+type CampaignEventUnit string
 
 const (
 	// CreatedOnKey is key of created on system field
@@ -38,29 +30,23 @@ const (
 	// LastSeenOnKey is key of last seen on system field
 	LastSeenOnKey = "last_seen_on"
 
-	// OffsetMinute means our offset is in minutes
-	OffsetMinute = OffsetUnit("M")
-
-	// OffsetHour means our offset is in hours
-	OffsetHour = OffsetUnit("H")
-
-	// OffsetDay means our offset is in days
-	OffsetDay = OffsetUnit("D")
-
-	// OffsetWeek means our offset is in weeks
-	OffsetWeek = OffsetUnit("W")
-
 	// NilDeliveryHour is our constant for not having a set delivery hour
 	NilDeliveryHour = -1
 
-	// StartModeInterrupt means the flow for this campaign event should interrupt other flows
-	StartModeInterrupt = StartMode("I")
+	CampaignEventTypeMessage = CampaignEventType("M")
+	CampaignEventTypeFlow    = CampaignEventType("F")
 
-	// StartModeSkip means the flow should be skipped if the user is active in another flow
-	StartModeSkip = StartMode("S")
+	CampaignEventStatusScheduling = CampaignEventStatus("S")
+	CampaignEventStatusReady      = CampaignEventStatus("R")
 
-	// StartModePassive means the flow should be started without interrupting the user in other flows
-	StartModePassive = StartMode("P")
+	CampaignEventModeInterrupt = CampaignEventMode("I") // should interrupt other flows
+	CampaignEventModeSkip      = CampaignEventMode("S") // should be skipped if the user is in another flow
+	CampaignEventModePassive   = CampaignEventMode("P") // flow is a background flow and should run that way
+
+	CampaignEventUnitMinutes = CampaignEventUnit("M")
+	CampaignEventUnitHours   = CampaignEventUnit("H")
+	CampaignEventUnitDays    = CampaignEventUnit("D")
+	CampaignEventUnitWeeks   = CampaignEventUnit("W")
 )
 
 // Campaign is our struct for a campaign and all its events
@@ -74,40 +60,24 @@ type Campaign struct {
 	}
 }
 
-// ID return the database id of this campaign
-func (c *Campaign) ID() CampaignID { return c.c.ID }
-
-// UUID returns the UUID of this campaign
-func (c *Campaign) UUID() CampaignUUID { return c.c.UUID }
-
-// Name returns the name of this campaign
-func (c *Campaign) Name() string { return c.c.Name }
-
-// GroupID returns the id of the group this campaign works against
-func (c *Campaign) GroupID() GroupID { return c.c.GroupID }
-
-// Events returns the list of events for this campaign
+func (c *Campaign) ID() CampaignID           { return c.c.ID }
+func (c *Campaign) UUID() CampaignUUID       { return c.c.UUID }
+func (c *Campaign) Name() string             { return c.c.Name }
+func (c *Campaign) GroupID() GroupID         { return c.c.GroupID }
 func (c *Campaign) Events() []*CampaignEvent { return c.c.Events }
-
-type CampaignEventStatus string
-
-const (
-	CampaignEventStatusScheduling = CampaignEventStatus("S")
-	CampaignEventStatusReady      = CampaignEventStatus("R")
-)
 
 // CampaignEvent is our struct for an individual campaign event
 type CampaignEvent struct {
 	ID            CampaignEventID     `json:"id"`
 	UUID          CampaignEventUUID   `json:"uuid"`
-	EventType     string              `json:"event_type"`
+	EventType     CampaignEventType   `json:"event_type"`
 	Status        CampaignEventStatus `json:"status"`
 	FireVersion   int                 `json:"fire_version"`
-	StartMode     StartMode           `json:"start_mode"`
+	StartMode     CampaignEventMode   `json:"start_mode"`
 	RelativeToID  FieldID             `json:"relative_to_id"`
 	RelativeToKey string              `json:"relative_to_key"`
 	Offset        int                 `json:"offset"`
-	Unit          OffsetUnit          `json:"unit"`
+	Unit          CampaignEventUnit   `json:"unit"`
 	DeliveryHour  int                 `json:"delivery_hour"`
 	FlowID        FlowID              `json:"flow_id"`
 
@@ -177,18 +147,14 @@ func (e *CampaignEvent) ScheduleForContact(tz *time.Location, now time.Time, con
 	}
 
 	// calculate our next fire
-	scheduled, err := e.ScheduleForTime(tz, now, start)
-	if err != nil {
-		return nil, fmt.Errorf("error calculating offset for start: %s and event: %d: %w", start, e.ID, err)
-	}
+	scheduled := e.ScheduleForTime(tz, now, start)
 
 	return scheduled, nil
 }
 
 // ScheduleForTime calculates the next fire (if any) for the passed in time and timezone
-func (e *CampaignEvent) ScheduleForTime(tz *time.Location, now time.Time, start time.Time) (*time.Time, error) {
-	// convert to our timezone
-	start = start.In(tz)
+func (e *CampaignEvent) ScheduleForTime(tz *time.Location, now, start time.Time) *time.Time {
+	start = start.In(tz) // convert to our timezone
 
 	// round to next minute, floored at 0 s/ns if we aren't already at 0
 	scheduled := start
@@ -198,16 +164,14 @@ func (e *CampaignEvent) ScheduleForTime(tz *time.Location, now time.Time, start 
 
 	// create our offset
 	switch e.Unit {
-	case OffsetMinute:
+	case CampaignEventUnitMinutes:
 		scheduled = scheduled.Add(time.Minute * time.Duration(e.Offset))
-	case OffsetHour:
+	case CampaignEventUnitHours:
 		scheduled = scheduled.Add(time.Hour * time.Duration(e.Offset))
-	case OffsetDay:
+	case CampaignEventUnitDays:
 		scheduled = scheduled.AddDate(0, 0, e.Offset)
-	case OffsetWeek:
+	case CampaignEventUnitWeeks:
 		scheduled = scheduled.AddDate(0, 0, e.Offset*7)
-	default:
-		return nil, fmt.Errorf("unknown offset unit: %s", e.Unit)
 	}
 
 	// now set our delivery hour if set
@@ -217,10 +181,10 @@ func (e *CampaignEvent) ScheduleForTime(tz *time.Location, now time.Time, start 
 
 	// if this is in the past, this is a no op
 	if scheduled.Before(now) {
-		return nil, nil
+		return nil
 	}
 
-	return &scheduled, nil
+	return &scheduled
 }
 
 func (e *CampaignEvent) Campaign() *Campaign { return e.campaign }
@@ -360,13 +324,8 @@ func ScheduleCampaignEvent(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 	for _, el := range eligible {
 		start := *el.RelToValue
 
-		// calculate next fire for this contact
-		scheduled, err := ce.ScheduleForTime(tz, time.Now(), start)
-		if err != nil {
-			return fmt.Errorf("error calculating offset for start: %s and event #%d: %w", start, ce.ID, err)
-		}
-
-		if scheduled != nil {
+		// calculate next fire for this contact if any
+		if scheduled := ce.ScheduleForTime(tz, time.Now(), start); scheduled != nil {
 			fas = append(fas, NewContactFireForCampaign(oa.OrgID(), el.ContactID, ce, *scheduled))
 		}
 	}
