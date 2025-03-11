@@ -196,6 +196,8 @@ github.com/nyaruka/gocommon v1.60.5 h1:V10rosGzVArRspilfbi65TyHBZzjLQbwmaBeicr2D
 github.com/nyaruka/gocommon v1.60.5/go.mod h1:kFJuOq8COneV7ssfK6xgCMJ8gP8fQifLQnNXBnE4YL0=
 github.com/nyaruka/goflow v0.230.0 h1:9KyNxP1MR2GmDtRnjsXMm/jwSEaG39ZPhyikxUlqUBY=
 github.com/nyaruka/goflow v0.230.0/go.mod h1:spXtSWgS7dusHIfUFCvJGjSMc7d4FX9Abl6S7tg49ks=
+github.com/nyaruka/goflow v0.231.0 h1:D8cw1WckqFNuWsjnNCcel0dCEgy4V44/S+zTmNeW5bw=
+github.com/nyaruka/goflow v0.231.0/go.mod h1:XbhNItfb4pApAEFavoKAMkRgzNUpasIYAo5BaaeDnH8=
 github.com/nyaruka/null/v2 v2.0.3 h1:rdmMRQyVzrOF3Jff/gpU/7BDR9mQX0lcLl4yImsA3kw=
 github.com/nyaruka/null/v2 v2.0.3/go.mod h1:OCVeCkCXwrg5/qE6RU0c1oUVZBy+ZDrT+xYg1XSaIWA=
 github.com/nyaruka/null/v3 v3.0.0 h1:JvOiNuKmRBFHxzZFt4sWii+ewmMkCQ1vO7X0clTNn6E=
