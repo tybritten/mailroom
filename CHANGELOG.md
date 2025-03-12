@@ -1,3 +1,8 @@
+v10.1.63 (2025-03-12)
+-------------------------
+ * Send message type campaign events as non-persistent broadcasts
+ * Update to latest goflow
+
 v10.1.62 (2025-03-04)
 -------------------------
  * Mark campaign events as READY when scheduling task completes
