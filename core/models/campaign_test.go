@@ -4,9 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
+	"github.com/nyaruka/null/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,9 +22,15 @@ func TestLoadCampaigns(t *testing.T) {
 	event1 := oa.CampaignEventByID(testdata.RemindersEvent1.ID)
 	assert.Equal(t, testdata.RemindersEvent1.ID, event1.ID)
 	assert.Equal(t, testdata.RemindersEvent1.UUID, event1.UUID)
+	assert.Nil(t, event1.Translations)
 
 	event2 := oa.CampaignEventByID(testdata.RemindersEvent2.ID)
 	assert.Equal(t, testdata.RemindersEvent2.UUID, event2.UUID)
+	assert.Equal(t, flows.BroadcastTranslations{
+		"eng": &flows.MsgContent{Text: "Hi @contact.name, it is time to consult with your patients."},
+		"fra": &flows.MsgContent{Text: "Bonjour @contact.name, il est temps de consulter vos patients."},
+	}, event2.Translations)
+	assert.Equal(t, null.String("eng"), event2.BaseLanguage)
 
 	event3 := oa.CampaignEventByID(testdata.RemindersEvent3.ID)
 	assert.Equal(t, testdata.RemindersEvent3.UUID, event3.UUID)
