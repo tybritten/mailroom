@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/dates"
+	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/triggers"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/msgio"
 	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
@@ -71,8 +73,14 @@ func (t *BulkCampaignTriggerTask) Perform(ctx context.Context, rt *runtime.Runti
 		return nil
 	}
 
-	if err := t.triggerFlow(ctx, rt, oa, ce, contactIDs); err != nil {
-		return err
+	if ce.EventType == models.CampaignEventTypeFlow {
+		if err := t.triggerFlow(ctx, rt, oa, ce, contactIDs); err != nil {
+			return err
+		}
+	} else {
+		if err := t.triggerBroadcast(ctx, rt, oa, ce, contactIDs); err != nil {
+			return err
+		}
 	}
 
 	// store recent fires in redis for this event
@@ -127,6 +135,25 @@ func (t *BulkCampaignTriggerTask) triggerFlow(ctx context.Context, rt *runtime.R
 	if err != nil {
 		return fmt.Errorf("error starting flow for campaign event #%d: %w", ce.ID, err)
 	}
+
+	return nil
+}
+
+func (t *BulkCampaignTriggerTask) triggerBroadcast(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, ce *models.CampaignEvent, contactIDs []models.ContactID) error {
+	// interrupt the contacts if desired
+	if ce.StartMode != models.CampaignEventModePassive {
+		if _, err := models.InterruptSessionsForContacts(ctx, rt.DB, contactIDs); err != nil {
+			return fmt.Errorf("error interrupting contacts: %w", err)
+		}
+	}
+
+	bcast := models.NewBroadcast(oa.OrgID(), ce.Translations, i18n.Language(ce.BaseLanguage), true, models.NilOptInID, nil, contactIDs, nil, "", models.NoExclusions, models.NilUserID)
+	msgs, err := bcast.CreateMessages(ctx, rt, oa, &models.BroadcastBatch{ContactIDs: contactIDs})
+	if err != nil {
+		return fmt.Errorf("error creating campaign event messages: %w", err)
+	}
+
+	msgio.QueueMessages(ctx, rt, rt.DB, msgs)
 
 	return nil
 }

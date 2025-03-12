@@ -61,14 +61,14 @@ func TestBulkCampaignTrigger(t *testing.T) {
 	testsuite.AssertContactInFlow(t, rt, testdata.Bob, testdata.PickANumber)
 	testsuite.AssertContactInFlow(t, rt, testdata.Alexandria, testdata.PickANumber)
 
-	// but also have a completed session for the single message flow
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE contact_id = $1 AND status = 'C'`, testdata.Cathy.ID).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE contact_id = $1 AND status = 'C'`, testdata.Bob.ID).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT count(*) FROM flows_flowsession WHERE contact_id = $1 AND status = 'C'`, testdata.Alexandria.ID).Returns(1)
+	// and should have a queued message
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'Hi Cathy, it is time to consult with your patients.' AND status = 'Q'`).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'Hi Bob, it is time to consult with your patients.' AND status = 'Q'`).Returns(1)
+	assertdb.Query(t, rt.DB, `SELECT count(*) FROM msgs_msg WHERE text = 'Hi Alexandia, it is time to consult with your patients.' AND status = 'Q'`).Returns(1)
 
 	// check we recorded recent triggers for this event
 	assertredis.Keys(t, rc, "recent_campaign_fires:*", []string{"recent_campaign_fires:10001", "recent_campaign_fires:10002"})
-	assertredis.ZRange(t, rc, "recent_campaign_fires:10001", 0, -1, []string{"gnkcW6vAYA|10001", "nU/8BkiRuI|10000", "8bPiuaeAX6|10003"})
+	assertredis.ZRange(t, rc, "recent_campaign_fires:10001", 0, -1, []string{"vWOxKKbX2M|10001", "sZZ/N3THKK|10000", "LrT60Tr9/c|10003"})
 	assertredis.ZRange(t, rc, "recent_campaign_fires:10002", 0, -1, []string{"BPV0gqT9PL|10001", "QQFoOgV99A|10003"})
 
 	// create task for event #1 (Favorites, start mode INTERRUPT)

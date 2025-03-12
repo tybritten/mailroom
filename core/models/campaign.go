@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/runtime"
+	"github.com/nyaruka/null/v3"
 )
 
 type CampaignID int
@@ -68,18 +69,22 @@ func (c *Campaign) Events() []*CampaignEvent { return c.c.Events }
 
 // CampaignEvent is our struct for an individual campaign event
 type CampaignEvent struct {
-	ID            CampaignEventID     `json:"id"`
-	UUID          CampaignEventUUID   `json:"uuid"`
-	EventType     CampaignEventType   `json:"event_type"`
-	Status        CampaignEventStatus `json:"status"`
-	FireVersion   int                 `json:"fire_version"`
-	StartMode     CampaignEventMode   `json:"start_mode"`
-	RelativeToID  FieldID             `json:"relative_to_id"`
-	RelativeToKey string              `json:"relative_to_key"`
-	Offset        int                 `json:"offset"`
-	Unit          CampaignEventUnit   `json:"unit"`
-	DeliveryHour  int                 `json:"delivery_hour"`
-	FlowID        FlowID              `json:"flow_id"`
+	ID          CampaignEventID     `json:"id"`
+	UUID        CampaignEventUUID   `json:"uuid"`
+	EventType   CampaignEventType   `json:"event_type"`
+	Status      CampaignEventStatus `json:"status"`
+	FireVersion int                 `json:"fire_version"`
+	StartMode   CampaignEventMode   `json:"start_mode"`
+
+	RelativeToID  FieldID           `json:"relative_to_id"`
+	RelativeToKey string            `json:"relative_to_key"`
+	Offset        int               `json:"offset"`
+	Unit          CampaignEventUnit `json:"unit"`
+	DeliveryHour  int               `json:"delivery_hour"`
+
+	FlowID       FlowID                      `json:"flow_id"`
+	Translations flows.BroadcastTranslations `json:"translations"`
+	BaseLanguage null.String                 `json:"base_language"`
 
 	campaign *Campaign
 }
@@ -225,7 +230,7 @@ SELECT ROW_TO_JSON(r) FROM (SELECT
     c.name,
     c.group_id,
     (SELECT ARRAY_AGG(evs) FROM (
-        SELECT e.id, e.uuid, e.event_type, e.status, e.fire_version, e.start_mode, e.relative_to_id, f.key AS relative_to_key, e.offset, e.unit, e.delivery_hour, e.flow_id
+        SELECT e.id, e.uuid, e.event_type, e.status, e.fire_version, e.start_mode, e.relative_to_id, f.key AS relative_to_key, e.offset, e.unit, e.delivery_hour, e.flow_id, e.translations, e.base_language
           FROM campaigns_campaignevent e
           JOIN contacts_contactfield f ON f.id = e.relative_to_id
          WHERE e.campaign_id = c.id AND e.is_active = TRUE AND f.is_active = TRUE
