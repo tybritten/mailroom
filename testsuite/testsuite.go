@@ -22,8 +22,8 @@ import (
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/redisx/assertredis"
-	"github.com/nyaruka/rp-indexer/v9/indexers"
-	ixruntime "github.com/nyaruka/rp-indexer/v9/runtime"
+	"github.com/nyaruka/rp-indexer/v10/indexers"
+	ixruntime "github.com/nyaruka/rp-indexer/v10/runtime"
 )
 
 var _db *sqlx.DB
