@@ -1,3 +1,7 @@
+v10.1.64 (2025-03-18)
+-------------------------
+ * Use constant time check for shared secret with rapidpro
+
 v10.1.63 (2025-03-12)
 -------------------------
  * Send message type campaign events as non-persistent broadcasts
