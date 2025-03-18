@@ -409,20 +409,13 @@ func ResumeIVRFlow(
 		return fmt.Errorf("error creating flow contact: %w", err)
 	}
 
-	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, c, contact)
+	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, c, contact, call.SessionUUID())
 	if err != nil {
 		return fmt.Errorf("error loading session for contact: %w", err)
 	}
 
 	if session == nil || session.SessionType() != models.FlowTypeVoice {
 		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("no active IVR session for contact"))
-	}
-
-	if session.CallID() == models.NilCallID {
-		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("active session %s has no call", session.UUID()))
-	}
-	if session.CallID() != call.ID() {
-		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("active session %s does not match call: %d", session.UUID(), session.CallID()))
 	}
 
 	// check if call has been marked as errored - it maybe have been updated by status callback

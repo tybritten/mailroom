@@ -172,30 +172,27 @@ func InsertCall(ctx context.Context, db *sqlx.DB, orgID OrgID, channelID Channel
 
 const sqlSelectCallByID = `
 SELECT
-	cc.id as id, 
-	cc.created_on as created_on, 
-	cc.modified_on as modified_on, 
-	cc.external_id as external_id,  
-	cc.status as status, 
-	cc.direction as direction, 
-	cc.started_on as started_on, 
-	cc.ended_on as ended_on, 
-	cc.duration as duration, 
-	cc.error_reason as error_reason,
-	cc.error_count as error_count,
-	cc.next_attempt as next_attempt, 
-	cc.channel_id as channel_id, 
-	cc.contact_id as contact_id, 
-	cc.contact_urn_id as contact_urn_id, 
-	cc.org_id as org_id, 
-	fsc.flowstart_id as start_id
-FROM
-	ivr_call as cc
-LEFT OUTER JOIN 
-	flows_flowstart_calls fsc ON cc.id = fsc.call_id
-WHERE
-	cc.org_id = $1 AND cc.id = $2
-`
+    cc.id,
+    cc.created_on,
+    cc.modified_on,
+    cc.external_id,
+    cc.status,
+    cc.direction,
+    cc.started_on,
+    cc.ended_on,
+    cc.duration,
+    cc.error_reason,
+    cc.error_count,
+    cc.next_attempt,
+    cc.channel_id,
+    cc.contact_id,
+    cc.contact_urn_id,
+    cc.session_uuid,
+    cc.org_id,
+    fsc.flowstart_id AS start_id
+           FROM ivr_call as cc
+LEFT OUTER JOIN flows_flowstart_calls fsc ON cc.id = fsc.call_id
+          WHERE cc.org_id = $1 AND cc.id = $2`
 
 // GetCallByID loads a call by id
 func GetCallByID(ctx context.Context, db DBorTx, orgID OrgID, id CallID) (*Call, error) {
@@ -209,33 +206,29 @@ func GetCallByID(ctx context.Context, db DBorTx, orgID OrgID, id CallID) (*Call,
 
 const sqlSelectCallByExternalID = `
 SELECT
-	cc.id as id, 
-	cc.created_on as created_on, 
-	cc.modified_on as modified_on, 
-	cc.external_id as external_id,  
-	cc.status as status, 
-	cc.direction as direction, 
-	cc.started_on as started_on, 
-	cc.ended_on as ended_on, 
-	cc.duration as duration, 
-	cc.error_reason as error_reason,
-	cc.error_count as error_count,
-	cc.next_attempt as next_attempt, 
-	cc.channel_id as channel_id, 
-	cc.contact_id as contact_id, 
-	cc.contact_urn_id as contact_urn_id, 
-	cc.org_id as org_id, 
-	fsc.flowstart_id as start_id
-FROM
-	ivr_call as cc
-LEFT OUTER JOIN 
-	flows_flowstart_calls fsc ON cc.id = fsc.call_id
-WHERE
-	cc.channel_id = $1 AND cc.external_id = $2
-ORDER BY
-	cc.id DESC
-LIMIT 1
-`
+    cc.id, 
+    cc.created_on,
+    cc.modified_on,
+    cc.external_id,
+    cc.status,
+    cc.direction,
+    cc.started_on,
+    cc.ended_on,
+    cc.duration,
+    cc.error_reason,
+    cc.error_count,
+    cc.next_attempt,
+    cc.channel_id,
+    cc.contact_id,
+    cc.contact_urn_id,
+    cc.session_uuid,
+    cc.org_id,
+    fsc.flowstart_id AS start_id
+           FROM ivr_call as cc
+LEFT OUTER JOIN flows_flowstart_calls fsc ON cc.id = fsc.call_id
+          WHERE cc.channel_id = $1 AND cc.external_id = $2
+       ORDER BY cc.id DESC
+          LIMIT 1`
 
 // GetCallByExternalID loads a call by its external ID
 func GetCallByExternalID(ctx context.Context, db DBorTx, channelID ChannelID, externalID string) (*Call, error) {
@@ -249,34 +242,29 @@ func GetCallByExternalID(ctx context.Context, db DBorTx, channelID ChannelID, ex
 
 const sqlSelectRetryCalls = `
 SELECT
-	cc.id as id, 
-	cc.created_on as created_on, 
-	cc.modified_on as modified_on, 
-	cc.external_id as external_id,  
-	cc.status as status, 
-	cc.direction as direction, 
-	cc.started_on as started_on, 
-	cc.ended_on as ended_on, 
-	cc.duration as duration, 
-	cc.error_reason as error_reason,
-	cc.error_count as error_count,
-	cc.next_attempt as next_attempt, 
-	cc.channel_id as channel_id, 
-	cc.contact_id as contact_id, 
-	cc.contact_urn_id as contact_urn_id, 
-	cc.org_id as org_id, 
-	fsc.flowstart_id as start_id
-FROM
-	ivr_call as cc
-LEFT OUTER JOIN 
-	flows_flowstart_calls fsc ON cc.id = fsc.call_id
-WHERE
-	cc.status IN ('Q', 'E') AND next_attempt < NOW()
-ORDER BY 
-	cc.next_attempt ASC
-LIMIT
-    $1
-`
+    cc.id, 
+    cc.created_on,
+    cc.modified_on,
+    cc.external_id,
+    cc.status,
+    cc.direction,
+    cc.started_on,
+    cc.ended_on,
+    cc.duration,
+    cc.error_reason,
+    cc.error_count,
+    cc.next_attempt,
+    cc.channel_id,
+    cc.contact_id,
+    cc.contact_urn_id,
+    cc.session_uuid,
+    cc.org_id,
+    fsc.flowstart_id AS start_id
+           FROM ivr_call as cc
+LEFT OUTER JOIN flows_flowstart_calls fsc ON cc.id = fsc.call_id
+          WHERE cc.status IN ('Q', 'E') AND next_attempt < NOW()
+       ORDER BY cc.next_attempt ASC
+          LIMIT $1`
 
 // LoadCallsToRetry returns up to limit calls that need to be retried
 func LoadCallsToRetry(ctx context.Context, db *sqlx.DB, limit int) ([]*Call, error) {

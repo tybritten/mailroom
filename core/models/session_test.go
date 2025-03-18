@@ -369,7 +369,7 @@ func TestGetWaitingSessionForContact(t *testing.T) {
 	oa := testdata.Org1.Load(rt)
 	mc, fc, _ := testdata.Cathy.Load(rt, oa)
 
-	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, mc, fc)
+	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, mc, fc, mc.CurrentSessionUUID())
 	assert.NoError(t, err)
 	assert.NotNil(t, session)
 	assert.Equal(t, sessionUUID, session.UUID())

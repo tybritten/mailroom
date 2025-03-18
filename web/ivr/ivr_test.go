@@ -116,7 +116,6 @@ func TestTwilioIVR(t *testing.T) {
 		testdata.George.ID, models.CallStatusWired, "Call3").Returns(1)
 
 	tcs := []struct {
-		label              string
 		url                string
 		form               url.Values
 		expectedStatus     int
@@ -124,17 +123,15 @@ func TestTwilioIVR(t *testing.T) {
 		expectedContains   []string
 		expectedConnStatus map[string]string
 	}{
-		{
-			label:              "handle start on wired call",
+		{ // 0: handle start on wired call
 			url:                fmt.Sprintf("/ivr/c/%s/handle?action=start&connection=1", testdata.TwilioChannel.UUID),
 			form:               nil,
 			expectedStatus:     200,
 			expectedContains:   []string{`<Gather numDigits="1" timeout="30"`, `<Say language="en-US">Hello there. Please enter one or two.  This flow was triggered by Cathy</Say>`},
 			expectedConnStatus: map[string]string{"Call1": "I", "Call2": "W", "Call3": "W"},
 		},
-		{
-			label: "handle resume but without digits we're waiting for",
-			url:   fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
+		{ // 1: handle resume but without digits we're waiting for
+			url: fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallStatus": []string{"in-progress"},
 				"wait_type":  []string{"gather"},
@@ -144,9 +141,8 @@ func TestTwilioIVR(t *testing.T) {
 			expectedContains:   []string{`<Gather numDigits="1" timeout="30"`, `<Say language="en-US">Sorry, that is not one or two, try again.</Say>`},
 			expectedConnStatus: map[string]string{"Call1": "I", "Call2": "W", "Call3": "W"},
 		},
-		{
-			label: "handle resume with digits we're waiting for",
-			url:   fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
+		{ // 2: handle resume with digits we're waiting for
+			url: fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallStatus": []string{"in-progress"},
 				"wait_type":  []string{"gather"},
@@ -156,9 +152,8 @@ func TestTwilioIVR(t *testing.T) {
 			expectedContains:   []string{`<Gather timeout="30"`, `<Say language="en-US">Great! You said One. Ok, now enter a number 1 to 100 then press pound.</Say>`},
 			expectedConnStatus: map[string]string{"Call1": "I", "Call2": "W", "Call3": "W"},
 		},
-		{
-			label: "handle resume with digits that are out of range specified in flow",
-			url:   fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
+		{ // 3: handle resume with digits that are out of range specified in flow
+			url: fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallStatus": []string{"in-progress"},
 				"wait_type":  []string{"gather"},
@@ -168,9 +163,8 @@ func TestTwilioIVR(t *testing.T) {
 			expectedContains:   []string{`<Gather timeout="30"`, `<Say language="en-US">Sorry, that&#39;s too big. Enter a number 1 to 100 then press pound.</Say>`},
 			expectedConnStatus: map[string]string{"Call1": "I", "Call2": "W", "Call3": "W"},
 		},
-		{
-			label: "handle resume with digits that are in range specified in flow",
-			url:   fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
+		{ // 4: handle resume with digits that are in range specified in flow
+			url: fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallStatus": []string{"in-progress"},
 				"wait_type":  []string{"gather"},
@@ -180,9 +174,8 @@ func TestTwilioIVR(t *testing.T) {
 			expectedContains:   []string{`<Say language="en-US">You picked the number 56, excellent choice. Ok now tell me briefly why you are happy today.</Say>`, `<Record action=`},
 			expectedConnStatus: map[string]string{"Call1": "I", "Call2": "W", "Call3": "W"},
 		},
-		{
-			label: "handle resume with missing recording that should start a call forward",
-			url:   fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
+		{ // 5: handle resume with missing recording that should start a call forward
+			url: fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallStatus": []string{"in-progress"},
 				"wait_type":  []string{"record"},
@@ -197,9 +190,8 @@ func TestTwilioIVR(t *testing.T) {
 			},
 			expectedConnStatus: map[string]string{"Call1": "I", "Call2": "W", "Call3": "W"},
 		},
-		{
-			label: "handle resume call forwarding result",
-			url:   fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
+		{ // 6: handle resume call forwarding result
+			url: fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=1", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallStatus":     []string{"in-progress"},
 				"DialCallStatus": []string{"answered"},
@@ -209,9 +201,8 @@ func TestTwilioIVR(t *testing.T) {
 			expectedContains:   []string{`<Say language="en-US">Great, they answered.</Say>`, `<Hangup></Hangup>`},
 			expectedConnStatus: map[string]string{"Call1": "I", "Call2": "W", "Call3": "W"},
 		},
-		{
-			label: "status update that call 1 is complete",
-			url:   fmt.Sprintf("/ivr/c/%s/status", testdata.TwilioChannel.UUID),
+		{ // 7: status update that call 1 is complete
+			url: fmt.Sprintf("/ivr/c/%s/status", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallSid":      []string{"Call1"},
 				"CallStatus":   []string{"completed"},
@@ -221,17 +212,15 @@ func TestTwilioIVR(t *testing.T) {
 			expectedResponse:   `<Response><!--status updated: D--></Response>`,
 			expectedConnStatus: map[string]string{"Call1": "D", "Call2": "W", "Call3": "W"},
 		},
-		{
-			label:              "start call 2",
+		{ // 8: start call 2
 			url:                fmt.Sprintf("/ivr/c/%s/handle?action=start&connection=2", testdata.TwilioChannel.UUID),
 			form:               nil,
 			expectedStatus:     200,
 			expectedContains:   []string{"Hello there. Please enter one or two."},
 			expectedConnStatus: map[string]string{"Call1": "D", "Call2": "I", "Call3": "W"},
 		},
-		{
-			label: "resume with status that says call completed on Twilio side",
-			url:   fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=2", testdata.TwilioChannel.UUID),
+		{ // 9: resume with status that says call completed on Twilio side
+			url: fmt.Sprintf("/ivr/c/%s/handle?action=resume&connection=2", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallStatus": []string{"completed"},
 				"wait_type":  []string{"gather"},
@@ -241,9 +230,8 @@ func TestTwilioIVR(t *testing.T) {
 			expectedResponse:   `<Response><!--call completed--><Say>An error has occurred, please try again later.</Say><Hangup></Hangup></Response>`,
 			expectedConnStatus: map[string]string{"Call1": "D", "Call2": "D", "Call3": "W"},
 		},
-		{
-			label: "call3 started with answered_by telling us it's a machine",
-			url:   fmt.Sprintf("/ivr/c/%s/handle?action=start&connection=3", testdata.TwilioChannel.UUID),
+		{ // 10: call 3 started with answered_by telling us it's a machine
+			url: fmt.Sprintf("/ivr/c/%s/handle?action=start&connection=3", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallStatus": []string{"in-progress"},
 				"AnsweredBy": []string{"machine_start"},
@@ -252,9 +240,8 @@ func TestTwilioIVR(t *testing.T) {
 			expectedContains:   []string{`<Response><!--status updated: E, next_attempt: `, `<Say>An error has occurred, please try again later.</Say><Hangup></Hangup></Response>`},
 			expectedConnStatus: map[string]string{"Call1": "D", "Call2": "D", "Call3": "E"},
 		},
-		{
-			label: "then Twilio will call the status callback to say that we're done but don't overwrite the error status",
-			url:   fmt.Sprintf("/ivr/c/%s/status", testdata.TwilioChannel.UUID),
+		{ // 11: then Twilio will call the status callback to say that we're done but don't overwrite the error status
+			url: fmt.Sprintf("/ivr/c/%s/status", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallSid":      []string{"Call3"},
 				"CallStatus":   []string{"completed"},
@@ -264,9 +251,8 @@ func TestTwilioIVR(t *testing.T) {
 			expectedResponse:   `<Response><!--status D ignored, already errored--></Response>`,
 			expectedConnStatus: map[string]string{"Call1": "D", "Call2": "D", "Call3": "E"},
 		},
-		{
-			label: "we don't have a call trigger so incoming call creates a missed call event",
-			url:   fmt.Sprintf("/ivr/c/%s/incoming", testdata.TwilioChannel.UUID),
+		{ // 12: we don't have a call trigger so incoming call creates a missed call event
+			url: fmt.Sprintf("/ivr/c/%s/incoming", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallSid":    []string{"Call4"},
 				"CallStatus": []string{"ringing"},
@@ -276,9 +262,8 @@ func TestTwilioIVR(t *testing.T) {
 			expectedResponse:   `<Response><!--missed call handled--></Response>`,
 			expectedConnStatus: map[string]string{"Call1": "D", "Call2": "D", "Call3": "E", "Call4": "I"},
 		},
-		{
-			label: "",
-			url:   fmt.Sprintf("/ivr/c/%s/status", testdata.TwilioChannel.UUID),
+		{ // 13
+			url: fmt.Sprintf("/ivr/c/%s/status", testdata.TwilioChannel.UUID),
 			form: url.Values{
 				"CallSid":      []string{"Call4"},
 				"CallStatus":   []string{"failed"},
@@ -299,21 +284,21 @@ func TestTwilioIVR(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		assert.Equal(t, tc.expectedStatus, resp.StatusCode, "status code mismatch in %s", tc.label)
+		assert.Equal(t, tc.expectedStatus, resp.StatusCode, "%d: status code mismatch", i)
 
 		body, _ := io.ReadAll(resp.Body)
 
 		if tc.expectedResponse != "" {
-			assert.Equal(t, `<?xml version="1.0" encoding="UTF-8"?>`+"\n"+tc.expectedResponse, string(body), "response mismatch in %s", tc.label)
+			assert.Equal(t, `<?xml version="1.0" encoding="UTF-8"?>`+"\n"+tc.expectedResponse, string(body), "%d: response mismatch", i)
 		}
 
 		for _, needle := range tc.expectedContains {
-			assert.Containsf(t, string(body), needle, "%d does not contain expected body", i)
+			assert.Containsf(t, string(body), needle, "%d: does not contain expected body", i)
 		}
 
 		for connExtID, expStatus := range tc.expectedConnStatus {
 			assertdb.Query(t, rt.DB, `SELECT status FROM ivr_call WHERE external_id = $1`, connExtID).
-				Columns(map[string]any{"status": expStatus}, "status mismatch for connection '%s' in test '%s'", connExtID, tc.label)
+				Columns(map[string]any{"status": expStatus}, "%d: status mismatch for connection '%s'", i, connExtID)
 		}
 	}
 
