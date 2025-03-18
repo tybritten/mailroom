@@ -134,12 +134,15 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	trigger, keyword := models.FindMatchingMsgTrigger(oa, channel, flowContact, t.Text)
 
 	// look for a waiting session for this contact
-	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, contact, flowContact)
-	if err != nil {
-		return fmt.Errorf("error loading active session for contact: %w", err)
-	}
-
+	var session *models.Session
 	var flow *models.Flow
+
+	if contact.CurrentSessionUUID() != "" {
+		session, err = models.GetWaitingSessionForContact(ctx, rt, oa, contact, flowContact, contact.CurrentSessionUUID())
+		if err != nil {
+			return fmt.Errorf("error loading waiting session for contact: %w", err)
+		}
+	}
 
 	if session != nil {
 		// if we have a waiting voice session, we want to leave it as is and let this message be handled as inbox below

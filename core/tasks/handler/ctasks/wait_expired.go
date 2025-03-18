@@ -43,7 +43,7 @@ func (t *WaitExpiredTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	}
 
 	// look for a waiting session for this contact
-	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, contact, flowContact)
+	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, contact, flowContact, t.SessionUUID)
 	if err != nil {
 		return fmt.Errorf("error loading waiting session for contact: %w", err)
 	}
