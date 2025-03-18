@@ -74,10 +74,7 @@ func Start(rt *runtime.Runtime, wg *sync.WaitGroup, name string, allInstances bo
 
 			// calculate our next fire time
 			nextFire := next(lastFire)
-			wait = time.Until(nextFire)
-			if wait < time.Duration(0) {
-				wait = time.Duration(0)
-			}
+			wait = max(time.Until(nextFire), time.Duration(0))
 		}
 	}()
 }
