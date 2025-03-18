@@ -418,13 +418,6 @@ func ResumeIVRFlow(
 		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("no active IVR session for contact"))
 	}
 
-	if session.CallID() == models.NilCallID {
-		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("active session %s has no call", session.UUID()))
-	}
-	if session.CallID() != call.ID() {
-		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("active session %s does not match call: %d", session.UUID(), session.CallID()))
-	}
-
 	// check if call has been marked as errored - it maybe have been updated by status callback
 	if call.Status() == models.CallStatusErrored || call.Status() == models.CallStatusFailed {
 		if err = models.ExitSessions(ctx, rt.DB, []flows.SessionUUID{session.UUID()}, models.SessionStatusInterrupted); err != nil {
