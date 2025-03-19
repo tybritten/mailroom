@@ -140,7 +140,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	if mc.CurrentSessionUUID() != "" {
 		session, err = models.GetWaitingSessionForContact(ctx, rt, oa, fc, mc.CurrentSessionUUID())
 		if err != nil {
-			return fmt.Errorf("error loading waiting session for contact: %w", err)
+			return fmt.Errorf("error loading waiting session for contact #%d: %w", mc.ID(), err)
 		}
 	}
 

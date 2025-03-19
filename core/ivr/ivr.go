@@ -411,7 +411,7 @@ func ResumeIVRFlow(
 
 	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, fc, call.SessionUUID())
 	if err != nil {
-		return fmt.Errorf("error loading session for contact: %w", err)
+		return fmt.Errorf("error loading IVR session for contact #%d: %w", mc.ID(), err)
 	}
 
 	if session == nil || session.SessionType() != models.FlowTypeVoice {

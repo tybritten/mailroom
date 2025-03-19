@@ -45,7 +45,7 @@ func (t *WaitExpiredTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	// look for a waiting session for this contact
 	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, fc, t.SessionUUID)
 	if err != nil {
-		return fmt.Errorf("error loading waiting session for contact: %w", err)
+		return fmt.Errorf("error loading waiting session for contact #%d: %w", mc.ID(), err)
 	}
 
 	// if we didn't find a session or it is another session or if it's been modified since, ignore this task
