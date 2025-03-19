@@ -404,6 +404,11 @@ func ResumeIVRFlow(
 	oa *models.OrgAssets, channel *models.Channel, call *models.Call, mc *models.Contact, urn urns.URN,
 	r *http.Request, w http.ResponseWriter) error {
 
+	// if call doesn't have an associated session then we shouldn't be here
+	if call.SessionUUID() == "" {
+		return HandleAsFailure(ctx, rt.DB, svc, call, w, errors.New("can't resume call without session"))
+	}
+
 	fc, err := mc.FlowContact(oa)
 	if err != nil {
 		return fmt.Errorf("error creating flow contact: %w", err)
@@ -411,7 +416,7 @@ func ResumeIVRFlow(
 
 	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, fc, call.SessionUUID())
 	if err != nil {
-		return fmt.Errorf("error loading IVR session for contact #%d: %w", mc.ID(), err)
+		return fmt.Errorf("error loading session for contact #%d and call #%d: %w", mc.ID(), call.ID(), err)
 	}
 
 	if session == nil || session.SessionType() != models.FlowTypeVoice {
