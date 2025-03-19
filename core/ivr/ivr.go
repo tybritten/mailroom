@@ -401,15 +401,15 @@ func StartIVRFlow(
 func ResumeIVRFlow(
 	ctx context.Context, rt *runtime.Runtime,
 	resumeURL string, svc Service,
-	oa *models.OrgAssets, channel *models.Channel, call *models.Call, c *models.Contact, urn urns.URN,
+	oa *models.OrgAssets, channel *models.Channel, call *models.Call, mc *models.Contact, urn urns.URN,
 	r *http.Request, w http.ResponseWriter) error {
 
-	contact, err := c.FlowContact(oa)
+	fc, err := mc.FlowContact(oa)
 	if err != nil {
 		return fmt.Errorf("error creating flow contact: %w", err)
 	}
 
-	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, c, contact, call.SessionUUID())
+	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, fc, call.SessionUUID())
 	if err != nil {
 		return fmt.Errorf("error loading session for contact: %w", err)
 	}
@@ -468,13 +468,13 @@ func ResumeIVRFlow(
 	var svcErr error
 	switch res := ivrResume.(type) {
 	case InputResume:
-		resume, svcErr, err = buildMsgResume(ctx, rt, svc, channel, contact, urn, call, oa, res)
+		resume, svcErr, err = buildMsgResume(ctx, rt, svc, channel, fc, urn, call, oa, res)
 		if resume != nil {
 			session.SetIncomingMsg(models.MsgID(resume.(*resumes.MsgResume).Msg().ID()), null.NullString)
 		}
 
 	case DialResume:
-		resume, svcErr, err = buildDialResume(oa, contact, res)
+		resume, svcErr, err = buildDialResume(oa, fc, res)
 
 	default:
 		return fmt.Errorf("unknown resume type: %vvv", ivrResume)
@@ -490,7 +490,7 @@ func ResumeIVRFlow(
 		return svc.WriteErrorResponse(w, fmt.Errorf("no resume found, ending call"))
 	}
 
-	session, err = runner.ResumeFlow(ctx, rt, oa, session, c, resume, hook)
+	session, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, hook)
 	if err != nil {
 		return fmt.Errorf("error resuming ivr flow: %w", err)
 	}

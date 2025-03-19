@@ -34,17 +34,17 @@ func (t *WaitTimeoutTask) UseReadOnly() bool {
 	return true
 }
 
-func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
-	log := slog.With("ctask", "wait_timeout", "contact_id", contact.ID(), "session_uuid", t.SessionUUID)
+func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, mc *models.Contact) error {
+	log := slog.With("ctask", "wait_timeout", "contact_id", mc.ID(), "session_uuid", t.SessionUUID)
 
 	// build our flow contact
-	flowContact, err := contact.FlowContact(oa)
+	fc, err := mc.FlowContact(oa)
 	if err != nil {
 		return fmt.Errorf("error creating flow contact: %w", err)
 	}
 
 	// look for a waiting session for this contact
-	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, contact, flowContact, t.SessionUUID)
+	session, err := models.GetWaitingSessionForContact(ctx, rt, oa, fc, t.SessionUUID)
 	if err != nil {
 		return fmt.Errorf("error loading waiting session for contact: %w", err)
 	}
@@ -59,9 +59,9 @@ func (t *WaitTimeoutTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		return nil
 	}
 
-	resume := resumes.NewWaitTimeout(oa.Env(), flowContact)
+	resume := resumes.NewWaitTimeout(oa.Env(), fc)
 
-	_, err = runner.ResumeFlow(ctx, rt, oa, session, contact, resume, nil)
+	_, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, nil)
 	if err != nil {
 		// if we errored, and it's the wait rejecting the timeout event because the flow no longer has a timeout, log and ignore
 		var eerr *engine.Error

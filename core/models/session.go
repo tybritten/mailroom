@@ -675,7 +675,7 @@ SELECT uuid, session_type, status, last_sprint_uuid, output, output_url, contact
  WHERE uuid = $1`
 
 // GetWaitingSessionForContact returns the waiting session for the passed in contact, if any
-func GetWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, mc *Contact, fc *flows.Contact, uuid flows.SessionUUID) (*Session, error) {
+func GetWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, fc *flows.Contact, uuid flows.SessionUUID) (*Session, error) {
 	rows, err := rt.DB.QueryxContext(ctx, sqlSelectSessionByUUID, uuid)
 	if err != nil {
 		return nil, fmt.Errorf("error selecting session %s: %w", uuid, err)

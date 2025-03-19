@@ -44,8 +44,8 @@ func (t *EventReceivedTask) UseReadOnly() bool {
 	return !t.NewContact
 }
 
-func (t *EventReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
-	_, err := t.handle(ctx, rt, oa, contact, nil)
+func (t *EventReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, mc *models.Contact) error {
+	_, err := t.handle(ctx, rt, oa, mc, nil)
 	if err != nil {
 		return err
 	}
@@ -55,15 +55,15 @@ func (t *EventReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa
 
 // Handle let's us reuse this task's code for handling incoming calls.. which we need to perform inline in the IVR web
 // handler rather than as a queued task.
-func (t *EventReceivedTask) Handle(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact, call *models.Call) (*models.Session, error) {
-	return t.handle(ctx, rt, oa, contact, call)
+func (t *EventReceivedTask) Handle(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, mc *models.Contact, call *models.Call) (*models.Session, error) {
+	return t.handle(ctx, rt, oa, mc, call)
 }
 
-func (t *EventReceivedTask) handle(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact, call *models.Call) (*models.Session, error) {
+func (t *EventReceivedTask) handle(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, mc *models.Contact, call *models.Call) (*models.Session, error) {
 	channel := oa.ChannelByID(t.ChannelID)
 
 	// if contact is blocked or channel no longer exists, nothing to do
-	if contact.Status() == models.ContactStatusBlocked || channel == nil {
+	if mc.Status() == models.ContactStatusBlocked || channel == nil {
 		return nil, nil
 	}
 
@@ -74,27 +74,27 @@ func (t *EventReceivedTask) handle(ctx context.Context, rt *runtime.Runtime, oa 
 	}
 
 	if t.EventType == models.EventTypeStopContact {
-		err := contact.Stop(ctx, rt.DB, oa)
+		err := mc.Stop(ctx, rt.DB, oa)
 		if err != nil {
 			return nil, fmt.Errorf("error stopping contact: %w", err)
 		}
 	}
 
 	if models.ContactSeenEvents[t.EventType] {
-		err := contact.UpdateLastSeenOn(ctx, rt.DB, t.CreatedOn)
+		err := mc.UpdateLastSeenOn(ctx, rt.DB, t.CreatedOn)
 		if err != nil {
 			return nil, fmt.Errorf("error updating contact last_seen_on: %w", err)
 		}
 	}
 
 	// make sure this URN is our highest priority (this is usually a noop)
-	err := contact.UpdatePreferredURN(ctx, rt.DB, oa, t.URNID, channel)
+	err := mc.UpdatePreferredURN(ctx, rt.DB, oa, t.URNID, channel)
 	if err != nil {
 		return nil, fmt.Errorf("error changing primary URN: %w", err)
 	}
 
 	// build our flow contact
-	flowContact, err := contact.FlowContact(oa)
+	flowContact, err := mc.FlowContact(oa)
 	if err != nil {
 		return nil, fmt.Errorf("error creating flow contact: %w", err)
 	}
@@ -144,7 +144,7 @@ func (t *EventReceivedTask) handle(ctx context.Context, rt *runtime.Runtime, oa 
 
 	// if this is an IVR flow and we don't have a call, trigger that asynchronously
 	if flow.FlowType() == models.FlowTypeVoice && call == nil {
-		err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{contact.ID()}, nil)
+		err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{mc.ID()}, nil)
 		if err != nil {
 			return nil, fmt.Errorf("error while triggering ivr flow: %w", err)
 		}
@@ -177,7 +177,7 @@ func (t *EventReceivedTask) handle(ctx context.Context, rt *runtime.Runtime, oa 
 	var trig flows.Trigger
 
 	if t.EventType == models.EventTypeIncomingCall {
-		urn := contact.URNForID(t.URNID)
+		urn := mc.URNForID(t.URNID)
 		trig = tb.Channel(channel.Reference(), triggers.ChannelEventTypeIncomingCall).WithCall(urn).Build()
 	} else if t.EventType == models.EventTypeOptIn && flowOptIn != nil {
 		trig = tb.OptIn(flowOptIn, triggers.OptInEventTypeStarted).Build()
@@ -199,7 +199,7 @@ func (t *EventReceivedTask) handle(ctx context.Context, rt *runtime.Runtime, oa 
 		}
 	}
 
-	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{contact}, []flows.Trigger{trig}, hook, flow.FlowType().Interrupts(), models.NilStartID)
+	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{trig}, hook, flow.FlowType().Interrupts(), models.NilStartID)
 	if err != nil {
 		return nil, fmt.Errorf("error starting flow for contact: %w", err)
 	}

@@ -47,7 +47,7 @@ func (t *MsgReceivedTask) UseReadOnly() bool {
 	return !t.NewContact
 }
 
-func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *models.Contact) error {
+func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, mc *models.Contact) error {
 	channel := oa.ChannelByID(t.ChannelID)
 
 	// fetch the attachments on the message (i.e. ask courier to fetch them)
@@ -73,7 +73,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	}
 
 	// if contact is blocked, or channel no longer exists or is disabled, ignore this message but mark it as handled and archived
-	if contact.Status() == models.ContactStatusBlocked || channel == nil {
+	if mc.Status() == models.ContactStatusBlocked || channel == nil {
 		err := models.MarkMessageHandled(ctx, rt.DB, t.MsgID, models.MsgStatusHandled, models.VisibilityArchived, models.NilFlowID, models.NilTicketID, attachments, logUUIDs)
 		if err != nil {
 			return fmt.Errorf("error updating message for deleted contact: %w", err)
@@ -94,16 +94,16 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	msgIn.SetID(flows.MsgID(t.MsgID))
 
 	// if we have URNs make sure the message URN is our highest priority (this is usually a noop)
-	if len(contact.URNs()) > 0 {
-		if err := contact.UpdatePreferredURN(ctx, rt.DB, oa, t.URNID, channel); err != nil {
+	if len(mc.URNs()) > 0 {
+		if err := mc.UpdatePreferredURN(ctx, rt.DB, oa, t.URNID, channel); err != nil {
 			return fmt.Errorf("error changing primary URN: %w", err)
 		}
 	}
 
 	// stopped contact? they are unstopped if they send us an incoming message
 	recalcGroups := t.NewContact
-	if contact.Status() == models.ContactStatusStopped {
-		if err := contact.Unstop(ctx, rt.DB); err != nil {
+	if mc.Status() == models.ContactStatusStopped {
+		if err := mc.Unstop(ctx, rt.DB); err != nil {
 			return fmt.Errorf("error unstopping contact: %w", err)
 		}
 
@@ -111,34 +111,34 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	}
 
 	// build our flow contact
-	flowContact, err := contact.FlowContact(oa)
+	fc, err := mc.FlowContact(oa)
 	if err != nil {
 		return fmt.Errorf("error creating flow contact: %w", err)
 	}
 
 	// if this is a new or newly unstopped contact, we need to calculate dynamic groups and campaigns
 	if recalcGroups {
-		err = models.CalculateDynamicGroups(ctx, rt.DB, oa, []*flows.Contact{flowContact})
+		err = models.CalculateDynamicGroups(ctx, rt.DB, oa, []*flows.Contact{fc})
 		if err != nil {
 			return fmt.Errorf("unable to initialize new contact: %w", err)
 		}
 	}
 
 	// look up any open tickes for this contact and forward this message to that
-	ticket, err := models.LoadOpenTicketForContact(ctx, rt.DB, contact)
+	ticket, err := models.LoadOpenTicketForContact(ctx, rt.DB, mc)
 	if err != nil {
 		return fmt.Errorf("unable to look up open tickets for contact: %w", err)
 	}
 
 	// find any matching triggers
-	trigger, keyword := models.FindMatchingMsgTrigger(oa, channel, flowContact, t.Text)
+	trigger, keyword := models.FindMatchingMsgTrigger(oa, channel, fc, t.Text)
 
 	// look for a waiting session for this contact
 	var session *models.Session
 	var flow *models.Flow
 
-	if contact.CurrentSessionUUID() != "" {
-		session, err = models.GetWaitingSessionForContact(ctx, rt, oa, contact, flowContact, contact.CurrentSessionUUID())
+	if mc.CurrentSessionUUID() != "" {
+		session, err = models.GetWaitingSessionForContact(ctx, rt, oa, fc, mc.CurrentSessionUUID())
 		if err != nil {
 			return fmt.Errorf("error loading waiting session for contact: %w", err)
 		}
@@ -190,21 +190,21 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 				ivrMsgHook := func(ctx context.Context, tx *sqlx.Tx) error {
 					return markMsgHandled(ctx, tx, msgIn, flow, attachments, ticket, logUUIDs)
 				}
-				err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{contact.ID()}, ivrMsgHook)
+				err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{mc.ID()}, ivrMsgHook)
 				if err != nil {
 					return fmt.Errorf("error while triggering ivr flow: %w", err)
 				}
 				return nil
 			}
 
-			tb := triggers.NewBuilder(oa.Env(), flow.Reference(), flowContact).Msg(msgIn)
+			tb := triggers.NewBuilder(oa.Env(), flow.Reference(), fc).Msg(msgIn)
 			if keyword != "" {
 				tb = tb.WithMatch(&triggers.KeywordMatch{Type: trigger.KeywordMatchType(), Keyword: keyword})
 			}
 
 			// otherwise build the trigger and start the flow directly
 			trigger := tb.Build()
-			_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{contact}, []flows.Trigger{trigger}, flowMsgHook, flow.FlowType().Interrupts(), models.NilStartID)
+			_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{trigger}, flowMsgHook, flow.FlowType().Interrupts(), models.NilStartID)
 			if err != nil {
 				return fmt.Errorf("error starting flow for contact: %w", err)
 			}
@@ -214,8 +214,8 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 
 	// if there is a session, resume it
 	if session != nil && flow != nil {
-		resume := resumes.NewMsg(oa.Env(), flowContact, msgIn)
-		_, err = runner.ResumeFlow(ctx, rt, oa, session, contact, resume, flowMsgHook)
+		resume := resumes.NewMsg(oa.Env(), fc, msgIn)
+		_, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, flowMsgHook)
 		if err != nil {
 			return fmt.Errorf("error resuming flow for contact: %w", err)
 		}
@@ -223,7 +223,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	}
 
 	// this message didn't trigger and new sessions or resume any existing ones, so handle as inbox
-	if err = handleAsInbox(ctx, rt, oa, flowContact, msgIn, attachments, logUUIDs, ticket); err != nil {
+	if err = handleAsInbox(ctx, rt, oa, fc, msgIn, attachments, logUUIDs, ticket); err != nil {
 		return fmt.Errorf("error handling inbox message: %w", err)
 	}
 	return nil
