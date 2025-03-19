@@ -15,6 +15,9 @@ type Stats struct {
 
 	CronTaskCount    map[string]int           // number of cron tasks run by type
 	CronTaskDuration map[string]time.Duration // total time spent running cron tasks
+
+	WebhookCallCount    int           // number of webhook calls
+	WebhookCallDuration time.Duration // total time spent handling webhook calls
 }
 
 func newStats() *Stats {
@@ -52,6 +55,16 @@ func (s *Stats) ToMetrics() []types.MetricDatum {
 		)
 	}
 
+	var avgWebhookDuration time.Duration
+	if s.WebhookCallCount > 0 {
+		avgWebhookDuration = s.WebhookCallDuration / time.Duration(s.WebhookCallCount)
+	}
+
+	metrics = append(metrics,
+		cwatch.Datum("WebhookCallCount", float64(s.WebhookCallCount), types.StandardUnitCount),
+		cwatch.Datum("WebhookCallDuration", float64(avgWebhookDuration)/float64(time.Second), types.StandardUnitSeconds),
+	)
+
 	return metrics
 }
 
@@ -78,6 +91,13 @@ func (c *StatsCollector) RecordCronTask(name string, d time.Duration) {
 	c.mutex.Lock()
 	c.stats.CronTaskCount[name]++
 	c.stats.CronTaskDuration[name] += d
+	c.mutex.Unlock()
+}
+
+func (c *StatsCollector) RecordWebhookCall(d time.Duration) {
+	c.mutex.Lock()
+	c.stats.WebhookCallCount++
+	c.stats.WebhookCallDuration += d
 	c.mutex.Unlock()
 }
 
