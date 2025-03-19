@@ -206,5 +206,14 @@ func (t *EventReceivedTask) handle(ctx context.Context, rt *runtime.Runtime, oa 
 	if len(sessions) == 0 {
 		return nil, nil
 	}
+
+	// if we started a voice session, attach it to the call so it can be resumed later
+	if sessions[0].SessionType() == models.FlowTypeVoice && call != nil {
+		if err := call.SetInProgress(ctx, rt.DB, sessions[0].UUID(), t.CreatedOn); err != nil {
+			return nil, fmt.Errorf("error updating call #%d to in progress: %w", call.ID(), err)
+		}
+		return nil, nil
+	}
+
 	return sessions[0], nil
 }
