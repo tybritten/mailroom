@@ -202,13 +202,13 @@ func handleCallback(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 
 	request := &IVRRequest{}
 	if err := web.DecodeAndValidateForm(request, r); err != nil {
-		return nil, fmt.Errorf("request failed validation: %w", err)
+		return nil, fmt.Errorf("IVR callback request failed validation: %w", err)
 	}
 
 	// load our call
 	call, err := models.GetCallByID(ctx, rt.DB, oa.OrgID(), request.ConnectionID)
 	if err != nil {
-		return nil, fmt.Errorf("unable to load call with id: %d: %w", request.ConnectionID, err)
+		return nil, fmt.Errorf("unable to load call #%d: %w", request.ConnectionID, err)
 	}
 
 	// load our contact
