@@ -50,6 +50,8 @@ func handleWebhookCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 		scene.AppendToEventPreCommitHook(hooks.InsertHTTPLogsHook, httpLog)
 	}
 
+	rt.Stats.RecordWebhookCall(time.Duration(event.ElapsedMS) * time.Millisecond)
+
 	// pass node and response time to the hook that monitors webhook health
 	scene.AppendToEventPreCommitHook(hooks.MonitorWebhooks, &hooks.WebhookCall{NodeUUID: nodeUUID, Event: event})
 
