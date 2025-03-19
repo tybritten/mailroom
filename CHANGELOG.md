@@ -1,3 +1,8 @@
+v10.1.65 (2025-03-19)
+-------------------------
+ * Record count and avergage duration of webhook calls as metrics
+ * Load waiting session by explicit UUID for timed events and IVR
+
 v10.1.64 (2025-03-18)
 -------------------------
  * Use constant time check for shared secret with rapidpro
