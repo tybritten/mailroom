@@ -1,3 +1,7 @@
+v10.1.66 (2025-03-19)
+-------------------------
+ * Improve error messages when loading contact sessions
+
 v10.1.65 (2025-03-19)
 -------------------------
  * Record count and avergage duration of webhook calls as metrics
