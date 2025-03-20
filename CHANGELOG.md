@@ -1,3 +1,7 @@
+v10.1.67 (2025-03-20)
+-------------------------
+ * Update incoming IVR call with session UUID
+
 v10.1.66 (2025-03-19)
 -------------------------
  * Improve error messages when loading contact sessions
