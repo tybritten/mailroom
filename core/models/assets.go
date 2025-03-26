@@ -36,13 +36,14 @@ const (
 	RefreshGlobals     = Refresh(1 << 7)
 	RefreshGroups      = Refresh(1 << 8)
 	RefreshLabels      = Refresh(1 << 9)
-	RefreshLocations   = Refresh(1 << 10)
-	RefreshOptIns      = Refresh(1 << 11)
-	RefreshResthooks   = Refresh(1 << 12)
-	RefreshTemplates   = Refresh(1 << 13)
-	RefreshTopics      = Refresh(1 << 14)
-	RefreshTriggers    = Refresh(1 << 15)
-	RefreshUsers       = Refresh(1 << 16)
+	RefreshLLMs        = Refresh(1 << 10)
+	RefreshLocations   = Refresh(1 << 11)
+	RefreshOptIns      = Refresh(1 << 12)
+	RefreshResthooks   = Refresh(1 << 13)
+	RefreshTemplates   = Refresh(1 << 14)
+	RefreshTopics      = Refresh(1 << 15)
+	RefreshTriggers    = Refresh(1 << 16)
+	RefreshUsers       = Refresh(1 << 17)
 )
 
 // OrgAssets is our top level cache of all things contained in an org. It is used to build
@@ -83,6 +84,9 @@ type OrgAssets struct {
 
 	labels       []assets.Label
 	labelsByUUID map[assets.LabelUUID]*Label
+
+	llms       []assets.LLM
+	llmsByUUID map[assets.LLMUUID]*LLM
 
 	optIns       []assets.OptIn
 	optInsByID   map[OptInID]*OptIn
@@ -256,7 +260,7 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	if prev == nil || refresh&RefreshLabels > 0 {
 		oa.labels, err = loadAssetType(ctx, db, orgID, "labels", loadLabels)
 		if err != nil {
-			return nil, fmt.Errorf("error loading group labels for org %d: %w", orgID, err)
+			return nil, fmt.Errorf("error loading labels for org %d: %w", orgID, err)
 		}
 		oa.labelsByUUID = make(map[assets.LabelUUID]*Label)
 		for _, l := range oa.labels {
@@ -265,6 +269,20 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 	} else {
 		oa.labels = prev.labels
 		oa.labelsByUUID = prev.labelsByUUID
+	}
+
+	if prev == nil || refresh&RefreshLLMs > 0 {
+		oa.llms, err = loadAssetType(ctx, db, orgID, "llms", loadLLMs)
+		if err != nil {
+			return nil, fmt.Errorf("error loading LLMs for org %d: %w", orgID, err)
+		}
+		oa.llmsByUUID = make(map[assets.LLMUUID]*LLM)
+		for _, l := range oa.llms {
+			oa.llmsByUUID[l.UUID()] = l.(*LLM)
+		}
+	} else {
+		oa.llms = prev.llms
+		oa.llmsByUUID = prev.llmsByUUID
 	}
 
 	if prev == nil || refresh&RefreshOptIns > 0 {
@@ -638,6 +656,14 @@ func (a *OrgAssets) Labels() ([]assets.Label, error) {
 
 func (a *OrgAssets) LabelByUUID(uuid assets.LabelUUID) *Label {
 	return a.labelsByUUID[uuid]
+}
+
+func (a *OrgAssets) LLMs() ([]assets.LLM, error) {
+	return a.llms, nil
+}
+
+func (a *OrgAssets) LLMByUUID(uuid assets.LLMUUID) *LLM {
+	return a.llmsByUUID[uuid]
 }
 
 func (a *OrgAssets) Triggers() []*Trigger {
