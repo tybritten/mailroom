@@ -37,7 +37,7 @@ var IVRFlow = &Flow{10003, "2f81d0ea-4d75-4843-9371-3f7465311cce"}
 var IncomingExtraFlow = &Flow{10006, "376d3de6-7f0e-408c-80d6-b1919738bc80"}
 var ParentTimeoutFlow = &Flow{10007, "81c0f323-7e06-4e0c-a960-19c20f17117c"}
 var ChildTimeoutFlow = &Flow{10008, "7a7ab82c-9fff-49f3-a390-a2957fd60834"}
-var CampaignFlow = &Flow{10009, "3a92a964-3a8d-420b-9206-2cd9d884ac30"}
+var BackgroundFlow = &Flow{10009, "1ff89517-5735-466b-be31-682b49521cbf"}
 
 var CreatedOnField = &Field{1, "606de307-a799-47fc-8802-edc9301e0e04"}
 var LastSeenOnField = &Field{2, "53499958-0a0a-48a5-bb5f-8f9f4d8af77b"}
@@ -74,9 +74,9 @@ var Wit = &Classifier{2, "ff2a817c-040a-4eb2-8404-7d92e8b79dd0"}
 var Bothub = &Classifier{3, "859b436d-3005-4e43-9ad5-3de5f26ede4c"}
 
 var RemindersCampaign = &Campaign{10000, "72aa12c5-cc11-4bc7-9406-044047845c70"}
-var RemindersEvent1 = &CampaignEvent{10000, "f842414d-5787-400f-b807-17d004823c5a"} // Favorites flow, interrupts
-var RemindersEvent2 = &CampaignEvent{10001, "ea84a3d7-92e4-4a8b-b01f-db11ff83bbb6"} // Message event, passive
-var RemindersEvent3 = &CampaignEvent{10002, "27e44553-ab35-482b-a4d4-6f000ec611ab"} // Pick A Number flow, skips
+var RemindersEvent1 = &CampaignEvent{10000, "3c8eca88-a5f8-4e27-96f4-e47f19cc0de8"} // Favorites flow, interrupts
+var RemindersEvent2 = &CampaignEvent{10001, "f2a3f8c5-e831-4df3-b046-8d8cdb90f178"} // Message event, passive
+var RemindersEvent3 = &CampaignEvent{10002, "552a7155-66bc-4323-aad0-8421f87a4e0c"} // Pick A Number flow, skips
 
 // secondary org.. only a few things
 var Org2 = &Org{2, "3ae7cdeb-fd96-46e5-abc4-a4622f349921"}
