@@ -214,13 +214,13 @@ func TestServer(t *testing.T) {
 	var session json.RawMessage
 
 	// add a trigger for our campaign flow with 'trigger'
-	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.CampaignFlow, []string{"trigger"}, models.MatchOnly, nil, nil, nil)
+	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.BackgroundFlow, []string{"trigger"}, models.MatchOnly, nil, nil, nil)
 
 	// and a trigger which will trigger an IVR flow
 	testdata.InsertKeywordTrigger(rt, testdata.Org1, testdata.IVRFlow, []string{"ivr"}, models.MatchOnly, nil, nil, nil)
 
 	// also add a catch all
-	testdata.InsertCatchallTrigger(rt, testdata.Org1, testdata.CampaignFlow, nil, nil, nil)
+	testdata.InsertCatchallTrigger(rt, testdata.Org1, testdata.BackgroundFlow, nil, nil, nil)
 
 	tcs := []struct {
 		URL              string
@@ -239,8 +239,8 @@ func TestServer(t *testing.T) {
 
 		// start regular flow again but resume with a message that matches the campaign flow trigger
 		{"/mr/sim/start", "POST", startBody, "", 200, "What is your favorite color?"},
-		{"/mr/sim/resume", "POST", resumeBody, "trigger", 200, "it is time to consult with your patients"},
-		{"/mr/sim/resume", "POST", resumeBody, "I like blue!", 200, "it is time to consult with your patients"},
+		{"/mr/sim/resume", "POST", resumeBody, "trigger", 200, "Nothing to see here"},
+		{"/mr/sim/resume", "POST", resumeBody, "I like blue!", 200, "Nothing to see here"},
 
 		// start favorties again but this time resume with a message that matches the IVR flow trigger
 		{"/mr/sim/start", "POST", startBody, "", 200, "What is your favorite color?"},
