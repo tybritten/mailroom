@@ -49,7 +49,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       0,
 			expectedTotalCount:       0,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 1, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 1, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 1: single group
 			flowID:                   testdata.Favorites.ID,
@@ -61,7 +61,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       2,
 			expectedTotalCount:       121,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 122, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 122, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 2: group and contact (but all already active)
 			flowID:                   testdata.Favorites.ID,
@@ -74,7 +74,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       0,
 			expectedTotalCount:       0,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 122, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 122, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 3: don't exclude started previously
 			flowID:                   testdata.Favorites.ID,
@@ -86,7 +86,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       1,
 			expectedTotalCount:       1,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 122, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 122, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 4: previous group and one new contact
 			flowID:                   testdata.Favorites.ID,
@@ -98,7 +98,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       1,
 			expectedTotalCount:       1,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 5: single contact, no restart
 			flowID:                   testdata.Favorites.ID,
@@ -109,7 +109,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       0,
 			expectedTotalCount:       0,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 6: single contact, include active, but no restart
 			flowID:                   testdata.Favorites.ID,
@@ -121,7 +121,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       0,
 			expectedTotalCount:       0,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 7: single contact, include active and restart
 			flowID:                   testdata.Favorites.ID,
@@ -133,7 +133,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       1,
 			expectedTotalCount:       1,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 8: query start
 			flowID:                   testdata.Favorites.ID,
@@ -145,7 +145,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       1,
 			expectedTotalCount:       1,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 9: query start with invalid query
 			flowID:                   testdata.Favorites.ID,
@@ -157,7 +157,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       0,
 			expectedTotalCount:       0,
 			expectedStatus:           models.StartStatusFailed,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 10: new contact
 			flowID:               testdata.Favorites.ID,
@@ -167,7 +167,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:   1,
 			expectedTotalCount:   1,
 			expectedStatus:       models.StartStatusCompleted,
-			expectedActiveRuns:   map[models.FlowID]int{testdata.Favorites.ID: 124, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:   map[models.FlowID]int{testdata.Favorites.ID: 124, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 11: other messaging flow
 			flowID:                   testdata.PickANumber.ID,
@@ -179,10 +179,10 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       1,
 			expectedTotalCount:       1,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 1, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 1, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 12: background flow
-			flowID:                   testdata.CampaignFlow.ID,
+			flowID:                   testdata.BackgroundFlow.ID,
 			contactIDs:               []models.ContactID{testdata.Bob.ID},
 			excludeInAFlow:           false,
 			excludeStartedPreviously: true,
@@ -191,7 +191,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       1,
 			expectedTotalCount:       1,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 1, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 123, testdata.PickANumber.ID: 1, testdata.BackgroundFlow.ID: 0},
 		},
 		{ // 13: exclude group
 			flowID:                   testdata.Favorites.ID,
@@ -204,7 +204,7 @@ func TestStartFlowTask(t *testing.T) {
 			expectedBatchCount:       1,
 			expectedTotalCount:       1,
 			expectedStatus:           models.StartStatusCompleted,
-			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 124, testdata.PickANumber.ID: 0, testdata.CampaignFlow.ID: 0},
+			expectedActiveRuns:       map[models.FlowID]int{testdata.Favorites.ID: 124, testdata.PickANumber.ID: 0, testdata.BackgroundFlow.ID: 0},
 		},
 	}
 
@@ -222,7 +222,7 @@ func TestStartFlowTask(t *testing.T) {
 			WithCreateContact(tc.createContact)
 
 		err := models.InsertFlowStarts(ctx, rt.DB, []*models.FlowStart{start})
-		assert.NoError(t, err)
+		assert.NoError(t, err, "%d: failed to insert start", i)
 
 		err = tasks.Queue(rc, tc.queue, testdata.Org1.ID, &starts.StartFlowTask{FlowStart: start}, false)
 		assert.NoError(t, err)

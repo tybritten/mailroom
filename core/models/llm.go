@@ -77,7 +77,7 @@ func loadLLMs(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.LLM, error
 
 const sqlSelectLLMs = `
 SELECT ROW_TO_JSON(r) FROM (
-      SELECT l.id, l.uuid, l.name, l.llm_type, l.config,
+      SELECT l.id, l.uuid, l.name, l.llm_type, l.config
         FROM ai_llm l
        WHERE l.org_id = $1 AND l.is_active = TRUE
     ORDER BY l.created_on ASC
