@@ -76,8 +76,8 @@ func init() {
 
 // NewServiceFromChannel creates a new Vonage IVR service for the passed in account and and auth token
 func NewServiceFromChannel(httpClient *http.Client, channel *models.Channel) (ivr.Service, error) {
-	appID := channel.ConfigValue(appIDConfig, "")
-	key := channel.ConfigValue(privateKeyConfig, "")
+	appID := channel.Config().GetString(appIDConfig, "")
+	key := channel.Config().GetString(privateKeyConfig, "")
 	if appID == "" || key == "" {
 		return nil, fmt.Errorf("missing %s or %s on channel config", appIDConfig, privateKeyConfig)
 	}
@@ -894,5 +894,5 @@ func (s *service) responseForSprint(ctx context.Context, rp *redis.Pool, channel
 }
 
 func (s *service) RedactValues(ch *models.Channel) []string {
-	return []string{ch.ConfigValue(privateKeyConfig, "")}
+	return []string{ch.Config().GetString(privateKeyConfig, "")}
 }

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -120,6 +121,7 @@ func StringArray[T ~string](vals []T) pq.StringArray {
 // Config is a util for reading config values stored as JSONB
 type Config map[string]any
 
+// GetString returns the value of the key as a string. If the key does not exist, it returns the default value.
 func (c Config) GetString(key, def string) string {
 	if v, ok := c[key]; ok {
 		if s, ok := v.(string); ok {
@@ -129,13 +131,20 @@ func (c Config) GetString(key, def string) string {
 	return def
 }
 
+// GetInt returns the value of the key as an int. If the key does not exist or cannot be converted to an int, it returns the default value.
 func (c Config) GetInt(key string, def int) int {
 	if v, ok := c[key]; ok {
-		if n, ok := v.(float64); ok {
-			return int(n)
+		if f, ok := v.(float64); ok {
+			return int(f)
 		}
 		if n, ok := v.(int); ok {
 			return n
+		}
+		if s, ok := v.(string); ok {
+			n, err := strconv.Atoi(s)
+			if err == nil {
+				return n
+			}
 		}
 	}
 	return def

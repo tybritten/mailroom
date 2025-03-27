@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"strconv"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -209,29 +208,26 @@ func RequestCall(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 
 func RequestStartForCall(ctx context.Context, rt *runtime.Runtime, channel *models.Channel, telURN urns.URN, call *models.Call) (*models.ChannelLog, error) {
 	// the domain that will be used for callbacks, can be specific for channels due to white labeling
-	domain := channel.ConfigValue(models.ChannelConfigCallbackDomain, rt.Config.Domain)
+	domain := channel.Config().GetString(models.ChannelConfigCallbackDomain, rt.Config.Domain)
 
 	// get max concurrent events if any
-	maxCalls := channel.ConfigValue(models.ChannelConfigMaxConcurrentEvents, "")
-	if maxCalls != "" {
-		maxCalls, _ := strconv.Atoi(maxCalls)
+	maxCalls := channel.Config().GetInt(models.ChannelConfigMaxConcurrentEvents, 0)
 
-		// max calls is set, lets see how many are currently active on this channel
-		if maxCalls > 0 {
-			count, err := models.ActiveCallCount(ctx, rt.DB, channel.ID())
+	// max calls is set, lets see how many are currently active on this channel
+	if maxCalls > 0 {
+		count, err := models.ActiveCallCount(ctx, rt.DB, channel.ID())
+		if err != nil {
+			return nil, fmt.Errorf("error finding number of active calls: %w", err)
+		}
+
+		// we are at max calls, do not move on
+		if count >= maxCalls {
+			slog.Info("call being queued, max concurrent reached", "channel_id", channel.ID())
+			err := call.MarkThrottled(ctx, rt.DB, time.Now())
 			if err != nil {
-				return nil, fmt.Errorf("error finding number of active calls: %w", err)
+				return nil, fmt.Errorf("error marking call as throttled: %w", err)
 			}
-
-			// we are at max calls, do not move on
-			if count >= maxCalls {
-				slog.Info("call being queued, max concurrent reached", "channel_id", channel.ID())
-				err := call.MarkThrottled(ctx, rt.DB, time.Now())
-				if err != nil {
-					return nil, fmt.Errorf("error marking call as throttled: %w", err)
-				}
-				return nil, nil
-			}
+			return nil, nil
 		}
 	}
 
