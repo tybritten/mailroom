@@ -116,3 +116,23 @@ func StringArray[T ~string](vals []T) pq.StringArray {
 	}
 	return a
 }
+
+type Config map[string]any
+
+func (c Config) GetString(key string) string {
+	if v, ok := c[key]; ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+func (c Config) GetInt(key string) int {
+	if v, ok := c[key]; ok {
+		if i, ok := v.(int); ok {
+			return i
+		}
+	}
+	return 0
+}

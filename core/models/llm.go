@@ -7,6 +7,12 @@ import (
 	"fmt"
 
 	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/flows"
+	"github.com/nyaruka/goflow/flows/engine"
+	"github.com/nyaruka/mailroom/core/goflow"
+	"github.com/nyaruka/mailroom/runtime"
+	"github.com/nyaruka/mailroom/services/llm/anthropic"
+	"github.com/nyaruka/mailroom/services/llm/openai"
 	"github.com/nyaruka/null/v3"
 )
 
@@ -18,11 +24,16 @@ const NilLLMID = LLMID(0)
 
 // LLM type constants
 const (
-	LLMTypeOpenAI = "openai"
+	LLMTypeAnthropic = "anthropic"
+	LLMTypeOpenAI    = "openai"
 )
 
 // LLM config key constants
 const (
+	// Anthropic config options
+	AnthropicConfigAPIKey = "api_key"
+	AnthropicConfigModel  = "model"
+
 	// OpenAI config options
 	OpenAIConfigAPIKey = "api_key"
 	OpenAIConfigModel  = "model"
@@ -30,22 +41,22 @@ const (
 
 // Register a LLM service factory with the engine
 func init() {
-	// goflow.RegisterLLMServiceFactory(llmServiceFactory)
+	goflow.RegisterLLMServiceFactory(llmServiceFactory)
 }
 
-// func llmServiceFactory(rt *runtime.Runtime) engine.LLMServiceFactory {
-// 	return func(llm *flows.LLM) (flows.LLMService, error) {
-// 		return llm.Asset().(*LLM).AsService(rt.Config, llm)
-// 	}
-// }
+func llmServiceFactory(rt *runtime.Runtime) engine.LLMServiceFactory {
+	return func(llm *flows.LLM) (flows.LLMService, error) {
+		return llm.Asset().(*LLM).AsService(rt.Config, llm)
+	}
+}
 
 // LLM is our type for a large language model
 type LLM struct {
-	ID_     LLMID             `json:"id"`
-	UUID_   assets.LLMUUID    `json:"uuid"`
-	Type_   string            `json:"llm_type"`
-	Name_   string            `json:"name"`
-	Config_ map[string]string `json:"config"`
+	ID_     LLMID          `json:"id"`
+	UUID_   assets.LLMUUID `json:"uuid"`
+	Type_   string         `json:"llm_type"`
+	Name_   string         `json:"name"`
+	Config_ Config         `json:"config"`
 }
 
 // ID returns the ID
@@ -61,9 +72,28 @@ func (l *LLM) Name() string { return l.Name_ }
 func (l *LLM) Type() string { return l.Type_ }
 
 // AsService builds the corresponding LLMService for the passed in LLM
-// func (l *LLM) AsService(cfg *runtime.Config, llm *flows.LLM) (flows.LLMService, error) {
-//   	TODO
-// }
+func (l *LLM) AsService(cfg *runtime.Config, llm *flows.LLM) (flows.LLMService, error) {
+	switch l.Type() {
+	case LLMTypeAnthropic:
+		apiKey := l.Config_.GetString(AnthropicConfigAPIKey)
+		model := l.Config_.GetString(AnthropicConfigModel)
+		if apiKey == "" || model == "" {
+			return nil, fmt.Errorf("missing %s or %s on Anthropic LLM: %s", AnthropicConfigAPIKey, AnthropicConfigModel, l.UUID())
+		}
+		return anthropic.NewService(llm, apiKey, model), nil
+
+	case LLMTypeOpenAI:
+		apiKey := l.Config_.GetString(OpenAIConfigAPIKey)
+		model := l.Config_.GetString(OpenAIConfigModel)
+		if apiKey == "" || model == "" {
+			return nil, fmt.Errorf("missing %s or %s on OpenAI LLM: %s", OpenAIConfigAPIKey, OpenAIConfigModel, l.UUID())
+		}
+		return openai.NewService(llm, apiKey, model), nil
+
+	default:
+		return nil, fmt.Errorf("unknown type '%s' for LLM: %s", l.Type(), l.UUID())
+	}
+}
 
 // loads the LLMs for the passed in org
 func loadLLMs(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.LLM, error) {

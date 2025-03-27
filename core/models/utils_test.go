@@ -90,3 +90,14 @@ func TestJSONB(t *testing.T) {
 	assert.NotNil(t, foo2.Value)
 	assert.Equal(t, "A", foo2.Value.V.Name)
 }
+
+func TestConfig(t *testing.T) {
+	cfg := models.Config{"foo": "bar", "count": 234}
+
+	assert.Equal(t, "bar", cfg.GetString("foo"))
+	assert.Equal(t, "", cfg.GetString("count"))
+	assert.Equal(t, "", cfg.GetString("xxx"))
+	assert.Equal(t, 0, cfg.GetInt("foo"))
+	assert.Equal(t, 234, cfg.GetInt("count"))
+	assert.Equal(t, 0, cfg.GetInt("xxx"))
+}
