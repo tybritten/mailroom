@@ -73,8 +73,9 @@ var Luis = &Classifier{1, "097e026c-ae79-4740-af67-656dbedf0263"}
 var Wit = &Classifier{2, "ff2a817c-040a-4eb2-8404-7d92e8b79dd0"}
 var Bothub = &Classifier{3, "859b436d-3005-4e43-9ad5-3de5f26ede4c"}
 
-var OpenAI1 = &LLM{1, "62c2bb93-f388-4c72-a2e6-25bee7282240"}
-var OpenAI2 = &LLM{2, "43764a92-2545-4aa0-b005-6ade894acc96"}
+var OpenAI = &LLM{1, "62c2bb93-f388-4c72-a2e6-25bee7282240"}
+var Anthropic = &LLM{2, "43764a92-2545-4aa0-b005-6ade894acc96"}
+var TestLLM = &LLM{3, "e5d8900a-ef54-4d2a-8214-ff7d3e903502"}
 
 var RemindersCampaign = &Campaign{10000, "72aa12c5-cc11-4bc7-9406-044047845c70"}
 var RemindersEvent1 = &CampaignEvent{10000, "3c8eca88-a5f8-4e27-96f4-e47f19cc0de8"} // Favorites flow, interrupts

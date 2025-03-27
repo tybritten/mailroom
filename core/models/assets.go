@@ -85,8 +85,8 @@ type OrgAssets struct {
 	labels       []assets.Label
 	labelsByUUID map[assets.LabelUUID]*Label
 
-	llms       []assets.LLM
-	llmsByUUID map[assets.LLMUUID]*LLM
+	llms     []assets.LLM
+	llmsByID map[LLMID]*LLM
 
 	optIns       []assets.OptIn
 	optInsByID   map[OptInID]*OptIn
@@ -276,13 +276,13 @@ func NewOrgAssets(ctx context.Context, rt *runtime.Runtime, orgID OrgID, prev *O
 		if err != nil {
 			return nil, fmt.Errorf("error loading LLMs for org %d: %w", orgID, err)
 		}
-		oa.llmsByUUID = make(map[assets.LLMUUID]*LLM)
+		oa.llmsByID = make(map[LLMID]*LLM)
 		for _, l := range oa.llms {
-			oa.llmsByUUID[l.UUID()] = l.(*LLM)
+			oa.llmsByID[l.(*LLM).ID()] = l.(*LLM)
 		}
 	} else {
 		oa.llms = prev.llms
-		oa.llmsByUUID = prev.llmsByUUID
+		oa.llmsByID = prev.llmsByID
 	}
 
 	if prev == nil || refresh&RefreshOptIns > 0 {
@@ -662,8 +662,8 @@ func (a *OrgAssets) LLMs() ([]assets.LLM, error) {
 	return a.llms, nil
 }
 
-func (a *OrgAssets) LLMByUUID(uuid assets.LLMUUID) *LLM {
-	return a.llmsByUUID[uuid]
+func (a *OrgAssets) LLMByID(id LLMID) *LLM {
+	return a.llmsByID[id]
 }
 
 func (a *OrgAssets) Triggers() []*Trigger {

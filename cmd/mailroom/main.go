@@ -34,6 +34,7 @@ import (
 	_ "github.com/nyaruka/mailroom/web/docs"
 	_ "github.com/nyaruka/mailroom/web/flow"
 	_ "github.com/nyaruka/mailroom/web/ivr"
+	_ "github.com/nyaruka/mailroom/web/llm"
 	_ "github.com/nyaruka/mailroom/web/msg"
 	_ "github.com/nyaruka/mailroom/web/org"
 	_ "github.com/nyaruka/mailroom/web/po"
