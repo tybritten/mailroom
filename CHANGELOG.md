@@ -1,3 +1,9 @@
+v10.1.69 (2025-03-27)
+-------------------------
+ * Add endpoint to translate using LLM
+ * Implement LLMService for OpenAI and Anthropic
+ * Update deps including goflow which adds LLMs
+
 v10.1.68 (2025-03-20)
 -------------------------
  * Actually fix IVR
