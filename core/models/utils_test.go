@@ -1,6 +1,7 @@
 package models_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
@@ -92,12 +93,19 @@ func TestJSONB(t *testing.T) {
 }
 
 func TestConfig(t *testing.T) {
-	cfg := models.Config{"foo": "bar", "count": 234}
+	var cfg models.Config
+	err := json.Unmarshal([]byte(`{"foo": "bar", "count": 234}`), &cfg)
+	assert.NoError(t, err)
 
-	assert.Equal(t, "bar", cfg.GetString("foo"))
-	assert.Equal(t, "", cfg.GetString("count"))
-	assert.Equal(t, "", cfg.GetString("xxx"))
-	assert.Equal(t, 0, cfg.GetInt("foo"))
-	assert.Equal(t, 234, cfg.GetInt("count"))
-	assert.Equal(t, 0, cfg.GetInt("xxx"))
+	cfg["integer"] = 345 // an actual int
+
+	assert.Equal(t, "bar", cfg.GetString("foo", "default"))
+	assert.Equal(t, "default", cfg.GetString("count", "default"))
+	assert.Equal(t, "default", cfg.GetString("integer", "default"))
+	assert.Equal(t, "default", cfg.GetString("xxx", "default"))
+	assert.Equal(t, 123, cfg.GetInt("foo", 123))
+	assert.Equal(t, 234, cfg.GetInt("count", 123))
+	assert.Equal(t, 345, cfg.GetInt("integer", 123))
+	assert.Equal(t, 123, cfg.GetInt("xxx", 123))
+
 }

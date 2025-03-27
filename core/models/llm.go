@@ -75,16 +75,16 @@ func (l *LLM) Type() string { return l.Type_ }
 func (l *LLM) AsService(cfg *runtime.Config, llm *flows.LLM) (flows.LLMService, error) {
 	switch l.Type() {
 	case LLMTypeAnthropic:
-		apiKey := l.Config_.GetString(AnthropicConfigAPIKey)
-		model := l.Config_.GetString(AnthropicConfigModel)
+		apiKey := l.Config_.GetString(AnthropicConfigAPIKey, "")
+		model := l.Config_.GetString(AnthropicConfigModel, "")
 		if apiKey == "" || model == "" {
 			return nil, fmt.Errorf("missing %s or %s on Anthropic LLM: %s", AnthropicConfigAPIKey, AnthropicConfigModel, l.UUID())
 		}
 		return anthropic.NewService(llm, apiKey, model), nil
 
 	case LLMTypeOpenAI:
-		apiKey := l.Config_.GetString(OpenAIConfigAPIKey)
-		model := l.Config_.GetString(OpenAIConfigModel)
+		apiKey := l.Config_.GetString(OpenAIConfigAPIKey, "")
+		model := l.Config_.GetString(OpenAIConfigModel, "")
 		if apiKey == "" || model == "" {
 			return nil, fmt.Errorf("missing %s or %s on OpenAI LLM: %s", OpenAIConfigAPIKey, OpenAIConfigModel, l.UUID())
 		}
