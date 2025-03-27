@@ -146,12 +146,12 @@ func init() {
 
 // NewServiceFromChannel creates a new Twilio IVR service for the passed in account and and auth token
 func NewServiceFromChannel(httpClient *http.Client, channel *models.Channel) (ivr.Service, error) {
-	accountSID := channel.ConfigValue(accountSIDConfig, "")
-	authToken := channel.ConfigValue(authTokenConfig, "")
+	accountSID := channel.Config().GetString(accountSIDConfig, "")
+	authToken := channel.Config().GetString(authTokenConfig, "")
 	if accountSID == "" || authToken == "" {
 		return nil, fmt.Errorf("missing auth_token or account_sid on channel config: %v for channel: %s", channel.Config(), channel.UUID())
 	}
-	baseURL := channel.ConfigValue(baseURLConfig, channel.ConfigValue(sendURLConfig, BaseURL))
+	baseURL := channel.Config().GetString(baseURLConfig, channel.Config().GetString(sendURLConfig, BaseURL))
 
 	return &service{
 		httpClient:   httpClient,
@@ -572,7 +572,7 @@ func ResponseForSprint(rt *runtime.Runtime, env envs.Environment, urn urns.URN, 
 
 func (s *service) RedactValues(ch *models.Channel) []string {
 	return []string{
-		httpx.BasicAuth(ch.ConfigValue(accountSIDConfig, ""), ch.ConfigValue(authTokenConfig, "")),
-		ch.ConfigValue(authTokenConfig, ""),
+		httpx.BasicAuth(ch.Config().GetString(accountSIDConfig, ""), ch.Config().GetString(authTokenConfig, "")),
+		ch.Config().GetString(authTokenConfig, ""),
 	}
 }

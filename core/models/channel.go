@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"math"
 
 	"github.com/nyaruka/gocommon/dbutil"
 	"github.com/nyaruka/gocommon/i18n"
@@ -50,7 +49,7 @@ type Channel struct {
 	MatchPrefixes_      []string                `json:"match_prefixes"`
 	AllowInternational_ bool                    `json:"allow_international"`
 	MachineDetection_   bool                    `json:"machine_detection"`
-	Config_             map[string]any          `json:"config"`
+	Config_             Config                  `json:"config"`
 }
 
 // ID returns the id of this channel
@@ -99,25 +98,7 @@ func (c *Channel) AllowInternational() bool { return c.AllowInternational_ }
 func (c *Channel) MachineDetection() bool { return c.MachineDetection_ }
 
 // Config returns the config for this channel
-func (c *Channel) Config() map[string]any { return c.Config_ }
-
-// ConfigValue returns the config value for the passed in key
-func (c *Channel) ConfigValue(key string, def string) string {
-	value := c.Config_[key]
-	strValue, isString := value.(string)
-	if isString {
-		return strValue
-	}
-	floatValue, isFloat := value.(float64)
-	if isFloat {
-		return fmt.Sprintf("%d", int64(math.RoundToEven(floatValue)))
-	}
-	boolValue, isBool := value.(bool)
-	if isBool {
-		return fmt.Sprintf("%v", boolValue)
-	}
-	return def
-}
+func (c *Channel) Config() Config { return c.Config_ }
 
 // Reference return a channel reference for this channel
 func (c *Channel) Reference() *assets.ChannelReference {

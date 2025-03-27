@@ -97,15 +97,18 @@ func TestConfig(t *testing.T) {
 	err := json.Unmarshal([]byte(`{"foo": "bar", "count": 234}`), &cfg)
 	assert.NoError(t, err)
 
-	cfg["integer"] = 345 // an actual int
+	cfg["integer"] = 345  // an actual int
+	cfg["numstr"] = "456" // int as string
 
 	assert.Equal(t, "bar", cfg.GetString("foo", "default"))
 	assert.Equal(t, "default", cfg.GetString("count", "default"))
 	assert.Equal(t, "default", cfg.GetString("integer", "default"))
+	assert.Equal(t, "456", cfg.GetString("numstr", "default"))
 	assert.Equal(t, "default", cfg.GetString("xxx", "default"))
 	assert.Equal(t, 123, cfg.GetInt("foo", 123))
 	assert.Equal(t, 234, cfg.GetInt("count", 123))
 	assert.Equal(t, 345, cfg.GetInt("integer", 123))
+	assert.Equal(t, 456, cfg.GetInt("numstr", 123))
 	assert.Equal(t, 123, cfg.GetInt("xxx", 123))
 
 }
