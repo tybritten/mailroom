@@ -116,3 +116,27 @@ func StringArray[T ~string](vals []T) pq.StringArray {
 	}
 	return a
 }
+
+// Config is a util for reading config values stored as JSONB
+type Config map[string]any
+
+func (c Config) GetString(key, def string) string {
+	if v, ok := c[key]; ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return def
+}
+
+func (c Config) GetInt(key string, def int) int {
+	if v, ok := c[key]; ok {
+		if n, ok := v.(float64); ok {
+			return int(n)
+		}
+		if n, ok := v.(int); ok {
+			return n
+		}
+	}
+	return def
+}

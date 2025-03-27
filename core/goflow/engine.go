@@ -17,21 +17,28 @@ var engInit, simulatorInit sync.Once
 
 var emailFactory func(*runtime.Runtime) engine.EmailServiceFactory
 var classificationFactory func(*runtime.Runtime) engine.ClassificationServiceFactory
+var llmFactory func(*runtime.Runtime) engine.LLMServiceFactory
 var airtimeFactory func(*runtime.Runtime) engine.AirtimeServiceFactory
 
-// RegisterEmailServiceFactory can be used by outside callers to register a email factory
+// RegisterEmailServiceFactory can be used by outside callers to register a email service factory
 // for use by the engine
 func RegisterEmailServiceFactory(f func(*runtime.Runtime) engine.EmailServiceFactory) {
 	emailFactory = f
 }
 
-// RegisterClassificationServiceFactory can be used by outside callers to register a classification factory
+// RegisterClassificationServiceFactory can be used by outside callers to register a classification service factory
 // for use by the engine
 func RegisterClassificationServiceFactory(f func(*runtime.Runtime) engine.ClassificationServiceFactory) {
 	classificationFactory = f
 }
 
-// RegisterAirtimeServiceFactory can be used by outside callers to register a airtime factory
+// RegisterLLMServiceFactory can be used by outside callers to register an LLM service factory
+// for use by the engine
+func RegisterLLMServiceFactory(f func(*runtime.Runtime) engine.LLMServiceFactory) {
+	llmFactory = f
+}
+
+// RegisterAirtimeServiceFactory can be used by outside callers to register a airtime serivce factory
 // for use by the engine
 func RegisterAirtimeServiceFactory(f func(*runtime.Runtime) engine.AirtimeServiceFactory) {
 	airtimeFactory = f
@@ -50,6 +57,7 @@ func Engine(rt *runtime.Runtime) flows.Engine {
 		eng = engine.NewBuilder().
 			WithWebhookServiceFactory(webhooks.NewServiceFactory(httpClient, httpRetries, httpAccess, webhookHeaders, rt.Config.WebhooksMaxBodyBytes)).
 			WithClassificationServiceFactory(classificationFactory(rt)).
+			WithLLMServiceFactory(llmFactory(rt)).
 			WithEmailServiceFactory(emailFactory(rt)).
 			WithAirtimeServiceFactory(airtimeFactory(rt)).
 			WithMaxStepsPerSprint(rt.Config.MaxStepsPerSprint).
@@ -75,6 +83,7 @@ func Simulator(ctx context.Context, rt *runtime.Runtime) flows.Engine {
 		simulator = engine.NewBuilder().
 			WithWebhookServiceFactory(webhooks.NewServiceFactory(httpClient, nil, httpAccess, webhookHeaders, rt.Config.WebhooksMaxBodyBytes)).
 			WithClassificationServiceFactory(classificationFactory(rt)). // simulated sessions do real classification
+			WithLLMServiceFactory(llmFactory(rt)).                       // simulated sessions do real LLM calls
 			WithEmailServiceFactory(simulatorEmailServiceFactory).       // but faked emails
 			WithAirtimeServiceFactory(simulatorAirtimeServiceFactory).   // and faked airtime transfers
 			WithMaxStepsPerSprint(rt.Config.MaxStepsPerSprint).
