@@ -9,6 +9,7 @@ import (
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/engine"
+	"github.com/nyaruka/goflow/test/services"
 	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/services/llm/anthropic"
@@ -46,7 +47,7 @@ func init() {
 
 func llmServiceFactory(rt *runtime.Runtime) engine.LLMServiceFactory {
 	return func(llm *flows.LLM) (flows.LLMService, error) {
-		return llm.Asset().(*LLM).AsService(rt.Config, llm)
+		return llm.Asset().(*LLM).AsService(llm)
 	}
 }
 
@@ -72,7 +73,7 @@ func (l *LLM) Name() string { return l.Name_ }
 func (l *LLM) Type() string { return l.Type_ }
 
 // AsService builds the corresponding LLMService for the passed in LLM
-func (l *LLM) AsService(cfg *runtime.Config, llm *flows.LLM) (flows.LLMService, error) {
+func (l *LLM) AsService(llm *flows.LLM) (flows.LLMService, error) {
 	switch l.Type() {
 	case LLMTypeAnthropic:
 		apiKey := l.Config_.GetString(AnthropicConfigAPIKey, "")
@@ -89,6 +90,9 @@ func (l *LLM) AsService(cfg *runtime.Config, llm *flows.LLM) (flows.LLMService, 
 			return nil, fmt.Errorf("missing %s or %s on OpenAI LLM: %s", OpenAIConfigAPIKey, OpenAIConfigModel, l.UUID())
 		}
 		return openai.NewService(llm, apiKey, model), nil
+
+	case "test":
+		return services.NewLLM(), nil
 
 	default:
 		return nil, fmt.Errorf("unknown type '%s' for LLM: %s", l.Type(), l.UUID())
@@ -109,7 +113,7 @@ const sqlSelectLLMs = `
 SELECT ROW_TO_JSON(r) FROM (
       SELECT l.id, l.uuid, l.name, l.llm_type, l.config
         FROM ai_llm l
-       WHERE l.org_id = $1 AND l.is_active = TRUE
+       WHERE l.org_id = $1 AND l.is_active
     ORDER BY l.created_on ASC
 ) r;`
 

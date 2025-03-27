@@ -5,7 +5,7 @@ go 1.24
 require (
 	firebase.google.com/go/v4 v4.15.2
 	github.com/Masterminds/semver v1.5.0
-	github.com/anthropics/anthropic-sdk-go v0.2.0-beta.2
+	github.com/anthropics/anthropic-sdk-go v0.2.0-beta.3
 	github.com/appleboy/go-fcm v1.2.3
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.18.8
@@ -25,7 +25,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.60.5
-	github.com/nyaruka/goflow v0.232.2
+	github.com/nyaruka/goflow v0.232.4
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.9.0
 	github.com/nyaruka/rp-indexer/v10 v10.1.0

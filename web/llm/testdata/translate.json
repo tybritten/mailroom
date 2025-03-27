@@ -1,0 +1,59 @@
+[
+    {
+        "label": "illegal method",
+        "method": "GET",
+        "path": "/mr/llm/translate",
+        "status": 405,
+        "response": {
+            "error": "illegal method: GET"
+        }
+    },
+    {
+        "label": "invalid org_id",
+        "method": "POST",
+        "path": "/mr/llm/translate",
+        "body": {
+            "org_id": 1234,
+            "llm_id": $test_llm_id$,
+            "from_language": "eng",
+            "to_language": "spa",
+            "text": "Hello world"
+        },
+        "status": 500,
+        "response": {
+            "error": "error loading org assets: error loading environment for org 1234: no org with id: 1234"
+        }
+    },
+    {
+        "label": "invalid llm_id",
+        "method": "POST",
+        "path": "/mr/llm/translate",
+        "body": {
+            "org_id": 1,
+            "llm_id": 6789,
+            "from_language": "eng",
+            "to_language": "spa",
+            "text": "Hello world"
+        },
+        "status": 500,
+        "response": {
+            "error": "no such LLM with ID 6789"
+        }
+    },
+    {
+        "label": "using test LLM",
+        "method": "POST",
+        "path": "/mr/llm/translate",
+        "body": {
+            "org_id": 1,
+            "llm_id": $test_llm_id$,
+            "from_language": "eng",
+            "to_language": "spa",
+            "text": "Hello world"
+        },
+        "status": 200,
+        "response": {
+            "text": "You asked:\n\nTranslate the given text using languages with the ISO codes from eng to spa. The @ indicates a variable expression and should be left alone. Only return the translated text\n\nHello world"
+        }
+    }
+]

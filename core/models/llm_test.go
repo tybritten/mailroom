@@ -26,8 +26,9 @@ func TestLLMs(t *testing.T) {
 		name string
 		typ  string
 	}{
-		{testdata.OpenAI1.ID, testdata.OpenAI1.UUID, "GPT-3.5 Turbo!", "openai"},
-		{testdata.OpenAI2.ID, testdata.OpenAI2.UUID, "GPT-4", "openai"},
+		{testdata.OpenAI.ID, testdata.OpenAI.UUID, "GPT-4o", "openai"},
+		{testdata.Anthropic.ID, testdata.Anthropic.UUID, "Claude", "anthropic"},
+		{testdata.TestLLM.ID, testdata.TestLLM.UUID, "Test", "test"},
 	}
 
 	assert.Equal(t, len(tcs), len(llms))
@@ -39,6 +40,6 @@ func TestLLMs(t *testing.T) {
 		assert.Equal(t, tc.typ, c.Type())
 	}
 
-	assert.Equal(t, "GPT-4", oa.LLMByUUID(testdata.OpenAI2.UUID).Name())
-	assert.Nil(t, oa.LLMByUUID("5e9d8fab-5e7e-4f51-b533-261af5dea70d"))
+	assert.Equal(t, "Claude", oa.LLMByID(testdata.Anthropic.ID).Name())
+	assert.Nil(t, oa.LLMByID(1235))
 }
