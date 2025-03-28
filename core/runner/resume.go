@@ -34,7 +34,7 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 	}
 
 	// resume our session
-	sprint, err := fs.Resume(resume)
+	sprint, err := fs.Resume(ctx, resume)
 
 	// had a problem resuming our flow? bail
 	if err != nil {
