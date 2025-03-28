@@ -272,7 +272,7 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 
 func RunFlowAndApplyEvents(t *testing.T, ctx context.Context, rt *runtime.Runtime, env envs.Environment, eng flows.Engine, oa *models.OrgAssets, flowRef *assets.FlowReference, contact *flows.Contact) {
 	trigger := triggers.NewBuilder(env, flowRef, contact).Manual().Build()
-	fs, sprint, err := eng.NewSession(oa.SessionAssets(), trigger)
+	fs, sprint, err := eng.NewSession(ctx, oa.SessionAssets(), trigger)
 	require.NoError(t, err)
 
 	tx, err := rt.DB.BeginTxx(ctx, nil)

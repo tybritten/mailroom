@@ -96,12 +96,12 @@ func RunWebTests(t *testing.T, ctx context.Context, rt *runtime.Runtime, truthFi
 			bodyStr := ""
 			jsonx.MustUnmarshal(tc.Body, &bodyStr)
 			bodyReader := strings.NewReader(bodyStr)
-			req, err = httpx.NewRequest(tc.Method, testURL, bodyReader, tc.Headers)
+			req, err = httpx.NewRequest(ctx, tc.Method, testURL, bodyReader, tc.Headers)
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		} else {
 			bodyReader := bytes.NewReader([]byte(tc.Body))
-			req, err = httpx.NewRequest(tc.Method, testURL, bodyReader, tc.Headers)
+			req, err = httpx.NewRequest(ctx, tc.Method, testURL, bodyReader, tc.Headers)
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		}
@@ -235,7 +235,7 @@ func MakeMultipartRequest(method, url string, parts []MultiPartPart, headers map
 
 	w.Close()
 
-	req, _ := httpx.NewRequest(method, url, bytes.NewReader(b.Bytes()), headers)
+	req, _ := httpx.NewRequest(context.Background(), method, url, bytes.NewReader(b.Bytes()), headers)
 	req.Header.Set("Content-Type", w.FormDataContentType())
 	return req, nil
 }
