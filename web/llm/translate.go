@@ -55,10 +55,13 @@ func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateReque
 		return nil, 0, fmt.Errorf("error creating LLM service: %w", err)
 	}
 
-	instructions := fmt.Sprintf(
-		"Translate the given text using languages with the ISO codes from %s to %s. The @ indicates a variable expression and should be left alone. Only return the translated text",
-		r.FromLanguage, r.ToLanguage,
-	)
+	var instructions string
+	if r.FromLanguage != "und" && r.FromLanguage != "mul" {
+		instructions = fmt.Sprintf("Translate the given text from the language with the ISO code %s to the language with the ISO code %s. ", r.FromLanguage, r.ToLanguage)
+	} else {
+		instructions = fmt.Sprintf("Translate the given text to the language with the ISO code %s. ", r.ToLanguage)
+	}
+	instructions += "The @ indicates a variable expression and should be left untranslated. Only return the translated text."
 
 	output, err := llmSvc.Response(ctx, oa.Env(), instructions, r.Text)
 	if err != nil {
