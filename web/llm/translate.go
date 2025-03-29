@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/nyaruka/gocommon/i18n"
+	"github.com/nyaruka/mailroom/core/ai"
+	"github.com/nyaruka/mailroom/core/ai/prompts"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
@@ -55,14 +57,20 @@ func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateReque
 		return nil, 0, fmt.Errorf("error creating LLM service: %w", err)
 	}
 
-	instructions := fmt.Sprintf(
-		"Translate the given text using languages with the ISO codes from %s to %s. The @ indicates a variable expression and should be left alone. Only return the translated text",
-		r.FromLanguage, r.ToLanguage,
-	)
+	instructionsTpl := prompts.Translate
+	if r.FromLanguage == "und" || r.FromLanguage == "mul" {
+		instructionsTpl = prompts.TranslateUnknownFrom
+	}
+
+	instructions := prompts.Render(instructionsTpl, r)
 
 	output, err := llmSvc.Response(ctx, oa.Env(), instructions, r.Text)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error calling LLM service: %w", err)
+	}
+
+	if output == "<CANT>" {
+		return nil, 0, ai.NewReasoningError("not able to translate", instructions, r.Text, output)
 	}
 
 	return translateResponse{Text: output}, http.StatusOK, nil

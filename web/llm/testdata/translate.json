@@ -14,7 +14,7 @@
         "path": "/mr/llm/translate",
         "body": {
             "org_id": 1234,
-            "llm_id": $test_llm_id$,
+            "llm_id": 3,
             "from_language": "eng",
             "to_language": "spa",
             "text": "Hello world"
@@ -41,19 +41,57 @@
         }
     },
     {
-        "label": "using test LLM",
+        "label": "eng to spa using test LLM",
         "method": "POST",
         "path": "/mr/llm/translate",
         "body": {
             "org_id": 1,
-            "llm_id": $test_llm_id$,
+            "llm_id": 3,
             "from_language": "eng",
             "to_language": "spa",
             "text": "Hello world"
         },
         "status": 200,
         "response": {
-            "text": "You asked:\n\nTranslate the given text using languages with the ISO codes from eng to spa. The @ indicates a variable expression and should be left alone. Only return the translated text\n\nHello world"
+            "text": "You asked:\n\nTranslate the given text from the language with the ISO code eng to the language with the ISO code spa.\nThe @ indicates a variable expression and should be left untranslated.\nOnly return the translated text or <CANT> if you can't translate it.\n\nHello world"
+        }
+    },
+    {
+        "label": "und to spa using test LLM",
+        "method": "POST",
+        "path": "/mr/llm/translate",
+        "body": {
+            "org_id": 1,
+            "llm_id": 3,
+            "from_language": "und",
+            "to_language": "spa",
+            "text": "Hello world"
+        },
+        "status": 200,
+        "response": {
+            "text": "You asked:\n\nTranslate the given text to the language with the ISO code spa.\nThe @ indicates a variable expression and should be left untranslated.\nOnly return the translated text or <CANT> if you can't translate it.\n\nHello world"
+        }
+    },
+    {
+        "label": "trigger failure by LLM",
+        "method": "POST",
+        "path": "/mr/llm/translate",
+        "body": {
+            "org_id": 1,
+            "llm_id": 3,
+            "from_language": "und",
+            "to_language": "spa",
+            "text": "\\return <CANT>"
+        },
+        "status": 422,
+        "response": {
+            "code": "ai:reasoning",
+            "error": "not able to translate",
+            "extra": {
+                "input": "\\return <CANT>",
+                "instructions": "Translate the given text to the language with the ISO code spa.\nThe @ indicates a variable expression and should be left untranslated.\nOnly return the translated text or <CANT> if you can't translate it.",
+                "response": "<CANT>"
+            }
         }
     }
 ]

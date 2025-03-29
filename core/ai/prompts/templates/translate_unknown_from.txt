@@ -1,0 +1,3 @@
+Translate the given text to the language with the ISO code {{ .ToLanguage }}.
+The @ indicates a variable expression and should be left untranslated.
+Only return the translated text or <CANT> if you can't translate it.

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/nyaruka/goflow/contactql"
+	"github.com/nyaruka/mailroom/core/ai"
 	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/core/models"
 )
@@ -40,6 +41,15 @@ func ErrorToResponse(err error) (*ErrorResponse, int) {
 		return &ErrorResponse{
 			Error: ferr.Error(),
 			Code:  "flow:invalid",
+		}, http.StatusUnprocessableEntity
+	}
+
+	var aerr *ai.ReasoningError
+	if errors.As(err, &aerr) {
+		return &ErrorResponse{
+			Error: aerr.Error(),
+			Code:  "ai:reasoning",
+			Extra: map[string]any{"instructions": aerr.Instructions, "input": aerr.Input, "response": aerr.Response},
 		}, http.StatusUnprocessableEntity
 	}
 
