@@ -1,3 +1,9 @@
+v10.1.70 (2025-03-29)
+-------------------------
+ * Handle cases where LLM can't translate input
+ * Update to latest goflow
+ * Add special translation handling for und and mul source languages
+
 v10.1.69 (2025-03-27)
 -------------------------
  * Add endpoint to translate using LLM
