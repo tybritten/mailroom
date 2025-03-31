@@ -35,6 +35,7 @@ func (s *service) Response(ctx context.Context, env envs.Environment, instructio
 		Input: responses.ResponseNewParamsInputUnion{
 			OfString: openai.String(input),
 		},
+		Temperature: openai.Float(0.0),
 	})
 	if err != nil {
 		return "", fmt.Errorf("error calling OpenAI API: %w", err)
