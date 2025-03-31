@@ -18,6 +18,7 @@ func init() {
 	models.RegisterEventHandler(events.TypeMsgWait, NoopHandler)
 	models.RegisterEventHandler(events.TypeRunExpired, NoopHandler)
 	models.RegisterEventHandler(events.TypeRunResultChanged, NoopHandler)
+	models.RegisterEventHandler(events.TypeServiceCalled, NoopHandler)
 	models.RegisterEventHandler(events.TypeWaitTimedOut, NoopHandler)
 	models.RegisterEventHandler(events.TypeDialWait, NoopHandler)
 	models.RegisterEventHandler(events.TypeDialEnded, NoopHandler)

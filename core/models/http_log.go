@@ -18,12 +18,6 @@ const (
 	// LogTypeWebhookCalled is our type for when a flow calls a webhook
 	LogTypeWebhookCalled = "webhook_called"
 
-	// LogTypeIntentsSynced is our type for when we sync intents
-	LogTypeIntentsSynced = "intents_synced"
-
-	// LogTypeClassifierCalled is our type for when we call a classifier
-	LogTypeClassifierCalled = "classifier_called"
-
 	// LogTypeAirtimeTransferred is our type for when we make an airtime transfer
 	LogTypeAirtimeTransferred = "airtime_transferred"
 )
@@ -42,7 +36,6 @@ type HTTPLog struct {
 	NumRetries        int               `db:"num_retries"`
 	CreatedOn         time.Time         `db:"created_on"`
 	FlowID            FlowID            `db:"flow_id"`
-	ClassifierID      ClassifierID      `db:"classifier_id"`
 	AirtimeTransferID AirtimeTransferID `db:"airtime_transfer_id"`
 }
 
@@ -68,13 +61,6 @@ func NewWebhookCalledLog(orgID OrgID, fid FlowID, url string, statusCode int, re
 	return h
 }
 
-// NewClassifierCalledLog creates a new HTTP log for a classifier call
-func NewClassifierCalledLog(orgID OrgID, cid ClassifierID, url string, statusCode int, request, response string, isError bool, elapsed time.Duration, retries int, createdOn time.Time) *HTTPLog {
-	h := newHTTPLog(orgID, LogTypeClassifierCalled, url, statusCode, request, response, isError, elapsed, retries, createdOn)
-	h.ClassifierID = cid
-	return h
-}
-
 // NewAirtimeTransferredLog creates a new HTTP log for an airtime transfer
 func NewAirtimeTransferredLog(orgID OrgID, url string, statusCode int, request, response string, isError bool, elapsed time.Duration, retries int, createdOn time.Time) *HTTPLog {
 	return newHTTPLog(orgID, LogTypeAirtimeTransferred, url, statusCode, request, response, isError, elapsed, retries, createdOn)
@@ -86,8 +72,8 @@ func (h *HTTPLog) SetAirtimeTransferID(tid AirtimeTransferID) {
 }
 
 const insertHTTPLogsSQL = `
-INSERT INTO request_logs_httplog( log_type,  org_id,  url,  status_code,  flow_id,  classifier_id,  airtime_transfer_id,  request,  response,  is_error,  request_time,  num_retries,  created_on)
-					      VALUES(:log_type, :org_id, :url, :status_code, :flow_id, :classifier_id, :airtime_transfer_id, :request, :response, :is_error, :request_time, :num_retries, :created_on)
+INSERT INTO request_logs_httplog( log_type,  org_id,  url,  status_code,  flow_id,  airtime_transfer_id,  request,  response,  is_error,  request_time,  num_retries,  created_on)
+					      VALUES(:log_type, :org_id, :url, :status_code, :flow_id, :airtime_transfer_id, :request, :response, :is_error, :request_time, :num_retries, :created_on)
 RETURNING id
 `
 
