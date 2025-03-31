@@ -6,26 +6,41 @@ import (
 
 	"github.com/nyaruka/goflow/envs"
 	"github.com/nyaruka/goflow/flows"
+	"github.com/nyaruka/mailroom/core/models"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/openai/openai-go/responses"
 	"github.com/openai/openai-go/shared"
 )
 
+const (
+	TypeOpenAI = "openai"
+
+	ConfigAPIKey = "api_key"
+	ConfigModel  = "model"
+)
+
+func init() {
+	models.RegisterLLMService(TypeOpenAI, New)
+}
+
 // an LLM service implementation for OpenAI
 type service struct {
 	client openai.Client
-	llm    *flows.LLM
 	model  string
 }
 
-// NewService creates a new classification service
-func NewService(llm *flows.LLM, apiKey, model string) flows.LLMService {
+func New(m *models.LLM) (flows.LLMService, error) {
+	apiKey := m.Config().GetString(ConfigAPIKey, "")
+	model := m.Config().GetString(ConfigModel, "")
+	if apiKey == "" || model == "" {
+		return nil, fmt.Errorf("missing %s or %s on OpenAI LLM: %s", ConfigAPIKey, ConfigModel, m.UUID())
+	}
+
 	return &service{
 		client: openai.NewClient(option.WithAPIKey(apiKey)),
-		llm:    llm,
 		model:  model,
-	}
+	}, nil
 }
 
 func (s *service) Response(ctx context.Context, env envs.Environment, instructions, input string) (*flows.LLMResponse, error) {
@@ -46,5 +61,3 @@ func (s *service) Response(ctx context.Context, env envs.Environment, instructio
 		TokensUsed: resp.Usage.TotalTokens,
 	}, nil
 }
-
-var _ flows.LLMService = (*service)(nil)
