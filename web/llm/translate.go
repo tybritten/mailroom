@@ -35,10 +35,12 @@ type translateRequest struct {
 }
 
 //	{
-//	  "text": "Hola mundo"
+//	  "text": "Hola mundo",
+//	  "tokens_used": 123
 //	}
 type translateResponse struct {
-	Text string `json:"text"`
+	Text       string `json:"text"`
+	TokensUsed int64  `json:"tokens_used,omitempty"`
 }
 
 func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateRequest) (any, int, error) {
@@ -64,14 +66,14 @@ func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateReque
 
 	instructions := prompts.Render(instructionsTpl, r)
 
-	output, err := llmSvc.Response(ctx, oa.Env(), instructions, r.Text)
+	resp, err := llmSvc.Response(ctx, oa.Env(), instructions, r.Text)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error calling LLM service: %w", err)
 	}
 
-	if output == "<CANT>" {
-		return nil, 0, ai.NewReasoningError("not able to translate", instructions, r.Text, output)
+	if resp.Output == "<CANT>" {
+		return nil, 0, ai.NewReasoningError("not able to translate", instructions, r.Text, resp.Output)
 	}
 
-	return translateResponse{Text: output}, http.StatusOK, nil
+	return translateResponse{Text: resp.Output, TokensUsed: resp.TokensUsed}, http.StatusOK, nil
 }

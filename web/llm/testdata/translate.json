@@ -53,7 +53,8 @@
         },
         "status": 200,
         "response": {
-            "text": "You asked:\n\nTranslate the given text from the language with the ISO code eng to the language with the ISO code spa.\nThe @ indicates a variable expression and should be left untranslated.\nOnly return the translated text or <CANT> if you can't translate it.\n\nHello world"
+            "text": "You asked:\n\nTranslate the given text from the language with the ISO code eng to the language with the ISO code spa.\nThe @ indicates a variable expression and should be left untranslated.\nOnly return the translated text or <CANT> if you can't translate it.\n\nHello world",
+            "tokens_used": 123
         }
     },
     {
@@ -69,7 +70,8 @@
         },
         "status": 200,
         "response": {
-            "text": "You asked:\n\nTranslate the given text to the language with the ISO code spa.\nThe @ indicates a variable expression and should be left untranslated.\nOnly return the translated text or <CANT> if you can't translate it.\n\nHello world"
+            "text": "You asked:\n\nTranslate the given text to the language with the ISO code spa.\nThe @ indicates a variable expression and should be left untranslated.\nOnly return the translated text or <CANT> if you can't translate it.\n\nHello world",
+            "tokens_used": 123
         }
     },
     {
