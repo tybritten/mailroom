@@ -1,3 +1,8 @@
+v10.1.71 (2025-03-31)
+-------------------------
+ * Update to latest goflow
+ * Use temperature zero for LLM calls
+
 v10.1.70 (2025-03-29)
 -------------------------
  * Handle cases where LLM can't translate input
