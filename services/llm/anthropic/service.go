@@ -27,7 +27,7 @@ func NewService(llm *flows.LLM, apiKey, model string) flows.LLMService {
 	}
 }
 
-func (s *service) Response(ctx context.Context, env envs.Environment, instructions, input string) (string, error) {
+func (s *service) Response(ctx context.Context, env envs.Environment, instructions, input string) (*flows.LLMResponse, error) {
 	resp, err := s.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model: anthropic.Model(s.model),
 		Messages: []anthropic.MessageParam{
@@ -51,7 +51,7 @@ func (s *service) Response(ctx context.Context, env envs.Environment, instructio
 		Temperature: anthropic.Float(0.0),
 	})
 	if err != nil {
-		return "", fmt.Errorf("error calling Anthropic API: %w", err)
+		return nil, fmt.Errorf("error calling Anthropic API: %w", err)
 	}
 
 	var output strings.Builder
@@ -61,7 +61,10 @@ func (s *service) Response(ctx context.Context, env envs.Environment, instructio
 		}
 	}
 
-	return output.String(), nil
+	return &flows.LLMResponse{
+		Output:     output.String(),
+		TokensUsed: resp.Usage.InputTokens + resp.Usage.OutputTokens,
+	}, nil
 }
 
 var _ flows.LLMService = (*service)(nil)

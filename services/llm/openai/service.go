@@ -28,7 +28,7 @@ func NewService(llm *flows.LLM, apiKey, model string) flows.LLMService {
 	}
 }
 
-func (s *service) Response(ctx context.Context, env envs.Environment, instructions, input string) (string, error) {
+func (s *service) Response(ctx context.Context, env envs.Environment, instructions, input string) (*flows.LLMResponse, error) {
 	resp, err := s.client.Responses.New(ctx, responses.ResponseNewParams{
 		Model:        shared.ResponsesModel(s.model),
 		Instructions: openai.String(instructions),
@@ -38,10 +38,13 @@ func (s *service) Response(ctx context.Context, env envs.Environment, instructio
 		Temperature: openai.Float(0.0),
 	})
 	if err != nil {
-		return "", fmt.Errorf("error calling OpenAI API: %w", err)
+		return nil, fmt.Errorf("error calling OpenAI API: %w", err)
 	}
 
-	return resp.OutputText(), nil
+	return &flows.LLMResponse{
+		Output:     resp.OutputText(),
+		TokensUsed: resp.Usage.TotalTokens,
+	}, nil
 }
 
 var _ flows.LLMService = (*service)(nil)
