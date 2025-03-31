@@ -48,6 +48,7 @@ func (s *service) Response(ctx context.Context, env envs.Environment, instructio
 				},
 			},
 		},
+		Temperature: anthropic.Float(0.0),
 	})
 	if err != nil {
 		return "", fmt.Errorf("error calling Anthropic API: %w", err)
