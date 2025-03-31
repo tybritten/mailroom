@@ -28,6 +28,8 @@ import (
 	_ "github.com/nyaruka/mailroom/core/tasks/starts"
 	_ "github.com/nyaruka/mailroom/services/ivr/twiml"
 	_ "github.com/nyaruka/mailroom/services/ivr/vonage"
+	_ "github.com/nyaruka/mailroom/services/llm/anthropic"
+	_ "github.com/nyaruka/mailroom/services/llm/openai"
 	_ "github.com/nyaruka/mailroom/web/android"
 	_ "github.com/nyaruka/mailroom/web/campaign"
 	_ "github.com/nyaruka/mailroom/web/contact"
