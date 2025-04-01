@@ -1,3 +1,7 @@
+v10.1.73 (2025-04-01)
+-------------------------
+ * Add LLM service implementation for OpenAI+Azure
+
 v10.1.72 (2025-04-01)
 -------------------------
  * Specify max_tokens for LLM translation requets
