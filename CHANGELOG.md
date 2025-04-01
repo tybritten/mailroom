@@ -1,3 +1,9 @@
+v10.1.72 (2025-04-01)
+-------------------------
+ * Specify max_tokens for LLM translation requets
+ * Stop writing http logs for all classifier requests
+ * Reorganze LLM service code so all service specific stuff is in the service package
+
 v10.1.71 (2025-03-31)
 -------------------------
  * Update to latest goflow
