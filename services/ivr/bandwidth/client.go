@@ -10,7 +10,8 @@ type CallRequest struct {
 	DisconnectURL    string `json:"disconnectUrl"`
 	ApplicationID    string `json:"applicationId"`
 	MachineDetection *struct {
-		Mode string `json:"mode"`
+		Mode        string `json:"mode"`
+		CallbackURL string `json:"callbackUrl"`
 	} `json:"machineDetection"`
 }
 

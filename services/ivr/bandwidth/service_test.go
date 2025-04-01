@@ -42,21 +42,21 @@ func TestResponseForSprint(t *testing.T) {
 			events: []flows.Event{
 				events.NewIVRCreated(flows.NewIVRMsgOut(urn, channelRef, "Hi there", "", "")),
 			},
-			expected: `<Response><SpeakSentence locale="en-US">Hi there</SpeakSentence><Hangup></Hangup></Response>`,
+			expected: `<Response><SpeakSentence locale="en_US">Hi there</SpeakSentence><Hangup></Hangup></Response>`,
 		},
 		{
 			// ivr msg, supported text language specified
 			events: []flows.Event{
 				events.NewIVRCreated(flows.NewIVRMsgOut(urn, channelRef, "Hi there", "", "eng-GB")),
 			},
-			expected: `<Response><SpeakSentence locale="en-GB">Hi there</SpeakSentence><Hangup></Hangup></Response>`,
+			expected: `<Response><SpeakSentence locale="en_GB">Hi there</SpeakSentence><Hangup></Hangup></Response>`,
 		},
 		{
 			// ivr msg, unsupported text language specified
 			events: []flows.Event{
 				events.NewIVRCreated(flows.NewIVRMsgOut(urn, channelRef, "Amakuru", "", "kin")),
 			},
-			expected: `<Response><SpeakSentence locale="en-US">Amakuru</SpeakSentence><Hangup></Hangup></Response>`,
+			expected: `<Response><SpeakSentence locale="en_US">Amakuru</SpeakSentence><Hangup></Hangup></Response>`,
 		},
 		{
 			// ivr msg with audio attachment, text language ignored
@@ -71,7 +71,7 @@ func TestResponseForSprint(t *testing.T) {
 				events.NewIVRCreated(flows.NewIVRMsgOut(urn, channelRef, "hello world", "", "")),
 				events.NewIVRCreated(flows.NewIVRMsgOut(urn, channelRef, "goodbye", "", "")),
 			},
-			expected: `<Response><SpeakSentence locale="en-US">hello world</SpeakSentence><SpeakSentence locale="en-US">goodbye</SpeakSentence><Hangup></Hangup></Response>`,
+			expected: `<Response><SpeakSentence locale="en_US">hello world</SpeakSentence><SpeakSentence locale="en_US">goodbye</SpeakSentence><Hangup></Hangup></Response>`,
 		},
 		{
 			// ivr msg followed by wait for digits
@@ -79,7 +79,7 @@ func TestResponseForSprint(t *testing.T) {
 				events.NewIVRCreated(flows.NewIVRMsgOut(urn, channelRef, "enter a number", "", "")),
 				events.NewMsgWait(nil, expiresOn, hints.NewFixedDigitsHint(1)),
 			},
-			expected: `<Response><Gather maxDigits="1" interDigitTimeout="30" gatherUrl="http://temba.io/resume?session=1&amp;wait_type=gather"><SpeakSentence locale="en-US">enter a number</SpeakSentence></Gather><Redirect redirectUrl="http://temba.io/resume?session=1&amp;wait_type=gather&amp;timeout=true"></Redirect></Response>`,
+			expected: `<Response><Gather maxDigits="1" interDigitTimeout="30" gatherUrl="http://temba.io/resume?session=1&amp;wait_type=gather"><SpeakSentence locale="en_US">enter a number</SpeakSentence></Gather><Redirect redirectUrl="http://temba.io/resume?session=1&amp;wait_type=gather&amp;timeout=true"></Redirect></Response>`,
 		},
 		{
 			// ivr msg followed by wait for terminated digits
@@ -87,7 +87,7 @@ func TestResponseForSprint(t *testing.T) {
 				events.NewIVRCreated(flows.NewIVRMsgOut(urn, channelRef, "enter a number, then press #", "", "")),
 				events.NewMsgWait(nil, expiresOn, hints.NewTerminatedDigitsHint("#")),
 			},
-			expected: `<Response><Gather terminatingDigits="#" interDigitTimeout="30" gatherUrl="http://temba.io/resume?session=1&amp;wait_type=gather"><SpeakSentence locale="en-US">enter a number, then press #</SpeakSentence></Gather><Redirect redirectUrl="http://temba.io/resume?session=1&amp;wait_type=gather&amp;timeout=true"></Redirect></Response>`,
+			expected: `<Response><Gather terminatingDigits="#" interDigitTimeout="30" gatherUrl="http://temba.io/resume?session=1&amp;wait_type=gather"><SpeakSentence locale="en_US">enter a number, then press #</SpeakSentence></Gather><Redirect redirectUrl="http://temba.io/resume?session=1&amp;wait_type=gather&amp;timeout=true"></Redirect></Response>`,
 		},
 		{
 			// ivr msg followed by wait for recording
@@ -95,7 +95,7 @@ func TestResponseForSprint(t *testing.T) {
 				events.NewIVRCreated(flows.NewIVRMsgOut(urn, channelRef, "say something", "", "")),
 				events.NewMsgWait(nil, expiresOn, hints.NewAudioHint()),
 			},
-			expected: `<Response><SpeakSentence locale="en-US">say something</SpeakSentence><Record recordCompleteUrl="http://temba.io/resume?session=1&amp;wait_type=record" maxDuration="600"></Record><Redirect redirectUrl="http://temba.io/resume?session=1&amp;wait_type=record&amp;empty=true"></Redirect></Response>`,
+			expected: `<Response><SpeakSentence locale="en_US">say something</SpeakSentence><Record recordCompleteUrl="http://temba.io/resume?session=1&amp;wait_type=record" maxDuration="600"></Record><Redirect redirectUrl="http://temba.io/resume?session=1&amp;wait_type=record&amp;empty=true"></Redirect></Response>`,
 		},
 		{
 			// dial wait

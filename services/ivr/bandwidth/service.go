@@ -138,14 +138,6 @@ func (s *service) CallIDForRequest(r *http.Request) (string, error) {
 
 // CheckStartRequest implements ivr.Service.
 func (s *service) CheckStartRequest(r *http.Request) models.CallError {
-	body, err := readBody(r)
-	if err != nil {
-		return ""
-	}
-	machineDectection, err := jsonparser.GetString(body, "machineDetectionResult", "value")
-	if machineDectection != "human" {
-		return models.CallErrorMachine
-	}
 	return ""
 }
 
@@ -207,8 +199,9 @@ func (s *service) RequestCall(number urns.URN, handleURL string, statusURL strin
 
 	if machineDetection {
 		callR.MachineDetection = &struct {
-			Mode string "json:\"mode\""
-		}{Mode: "sync"} // if an answering machine answers, just hangup
+			Mode        string "json:\"mode\""
+			CallbackURL string "json:\"callbackUrl\""
+		}{Mode: "async", CallbackURL: statusURL} // if an answering machine answers, just hangup
 	}
 	trace, err := s.makeRequest(http.MethodPost, sendURL, callR)
 	if err != nil {
@@ -317,6 +310,10 @@ type StatusRequest struct {
 	StartTime     time.Time `json:"startTime"`
 	EndTime       time.Time `json:"endTime"`
 	Cause         string    `json:"cause"`
+
+	MachineDetectionResult *struct {
+		Value string `json:"value"`
+	} `json:"machineDetectionResult"`
 }
 
 // StatusForRequest implements ivr.Service.
@@ -332,6 +329,12 @@ func (s *service) StatusForRequest(r *http.Request) (models.CallStatus, models.C
 	if err != nil {
 		slog.Error("error unmarshalling status request body", "error", err, "body", string(body))
 		return models.CallStatusErrored, models.CallErrorProvider, 0
+	}
+
+	if status.EventType == "machineDetectionComplete" {
+		if status.MachineDetectionResult.Value != "human" {
+			return models.CallStatusErrored, models.CallErrorMachine, 0
+		}
 	}
 
 	if status.EventType == "disconnect" || status.EventType == "transferDisconnect" {
@@ -470,6 +473,7 @@ func ResponseForSprint(rt *runtime.Runtime, env envs.Environment, urn urns.URN, 
 				}
 				locales = append(locales, env.DefaultLocale())
 				lang := supportedSayLanguages.ForLocales(locales...)
+				lang = strings.Replace(lang, "-", "_", -1)
 
 				commands = append(commands, &SpeakSentence{Text: event.Msg.Text(), Locale: lang})
 			} else {
