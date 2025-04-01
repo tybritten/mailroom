@@ -16,8 +16,8 @@ import (
 const (
 	TypeOpenAI = "openai"
 
-	ConfigAPIKey = "api_key"
-	ConfigModel  = "model"
+	configAPIKey = "api_key"
+	configModel  = "model"
 )
 
 func init() {
@@ -31,10 +31,10 @@ type service struct {
 }
 
 func New(m *models.LLM) (flows.LLMService, error) {
-	apiKey := m.Config().GetString(ConfigAPIKey, "")
-	model := m.Config().GetString(ConfigModel, "")
+	apiKey := m.Config().GetString(configAPIKey, "")
+	model := m.Config().GetString(configModel, "")
 	if apiKey == "" || model == "" {
-		return nil, fmt.Errorf("missing %s or %s on OpenAI LLM: %s", ConfigAPIKey, ConfigModel, m.UUID())
+		return nil, fmt.Errorf("config incomplete for LLM: %s", m.UUID())
 	}
 
 	return &service{
@@ -50,14 +50,12 @@ func (s *service) Response(ctx context.Context, env envs.Environment, instructio
 		Input: responses.ResponseNewParamsInputUnion{
 			OfString: openai.String(input),
 		},
-		Temperature: openai.Float(0.0),
+		Temperature:     openai.Float(0.0),
+		MaxOutputTokens: openai.Int(int64(maxTokens)),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error calling OpenAI API: %w", err)
 	}
 
-	return &flows.LLMResponse{
-		Output:     resp.OutputText(),
-		TokensUsed: resp.Usage.TotalTokens,
-	}, nil
+	return &flows.LLMResponse{Output: resp.OutputText(), TokensUsed: resp.Usage.TotalTokens}, nil
 }
