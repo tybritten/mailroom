@@ -448,7 +448,7 @@ func (s *service) writeResponse(w http.ResponseWriter, resp *Response) error {
 func (s *service) makeRequest(method string, sendURL string, body any) (*httpx.Trace, error) {
 	bb := jsonx.MustMarshal(body)
 	req, _ := http.NewRequest(method, sendURL, bytes.NewReader(bb))
-	req.SetBasicAuth(s.accountID, s.password)
+	req.SetBasicAuth(s.username, s.password)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
