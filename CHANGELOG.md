@@ -1,3 +1,7 @@
+v10.1.74 (2025-04-02)
+-------------------------
+ * Add Bandwidth as IVR service
+
 v10.1.73 (2025-04-01)
 -------------------------
  * Add LLM service implementation for OpenAI+Azure
