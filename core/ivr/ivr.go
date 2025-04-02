@@ -210,8 +210,8 @@ func RequestStartForCall(ctx context.Context, rt *runtime.Runtime, channel *mode
 	// the domain that will be used for callbacks, can be specific for channels due to white labeling
 	domain := channel.Config().GetString(models.ChannelConfigCallbackDomain, rt.Config.Domain)
 
-	// get max concurrent events if any
-	maxCalls := channel.Config().GetInt(models.ChannelConfigMaxConcurrentEvents, 0)
+	// get max concurrent calls if any
+	maxCalls := channel.Config().GetInt(models.ChannelConfigMaxConcurrentCalls, 0)
 
 	// max calls is set, lets see how many are currently active on this channel
 	if maxCalls > 0 {
