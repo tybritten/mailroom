@@ -1,3 +1,8 @@
+v10.1.77 (2025-04-07)
+-------------------------
+ * Tweak temperature on all LLM services to be non-zero
+ * Tweak LLM prompts and add cmd line tool to test them against real LLMs
+
 v10.1.76 (2025-04-07)
 -------------------------
  * Update to latest goflow that adds support for LLM actions
