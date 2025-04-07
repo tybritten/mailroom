@@ -69,6 +69,12 @@ var tests = []promptTest{
 		input:          "It was satisfactory I guess",
 		expectedOutput: []string{"Neutral"},
 	},
+	{
+		template:       prompts.Categorize,
+		data:           map[string]any{"arg0": "Positive, Negative"},
+		input:          "14",
+		expectedOutput: []string{"<CANT>"},
+	},
 }
 
 func runPromptTests(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID) error {
