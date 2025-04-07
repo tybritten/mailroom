@@ -220,7 +220,7 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 // of the org, e.g. customer support.
 func ApplyModifiers(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, userID UserID, modifiersByContact map[*flows.Contact][]flows.Modifier) (map[*flows.Contact][]flows.Event, error) {
 	// create an environment instance with location support
-	env := flows.NewAssetsEnvironment(oa.Env(), oa.SessionAssets().Locations())
+	env := flows.NewAssetsEnvironment(oa.Env(), oa.SessionAssets())
 
 	eng := goflow.Engine(rt)
 

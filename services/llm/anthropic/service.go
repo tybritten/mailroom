@@ -7,7 +7,6 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
-	"github.com/nyaruka/goflow/envs"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
 )
@@ -42,7 +41,7 @@ func New(m *models.LLM) (flows.LLMService, error) {
 	}, nil
 }
 
-func (s *service) Response(ctx context.Context, env envs.Environment, instructions, input string, maxTokens int) (*flows.LLMResponse, error) {
+func (s *service) Response(ctx context.Context, instructions, input string, maxTokens int) (*flows.LLMResponse, error) {
 	resp, err := s.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model: anthropic.Model(s.model),
 		Messages: []anthropic.MessageParam{

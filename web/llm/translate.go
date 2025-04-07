@@ -66,7 +66,7 @@ func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateReque
 
 	instructions := prompts.Render(instructionsTpl, r)
 
-	resp, err := llmSvc.Response(ctx, oa.Env(), instructions, r.Text, 2500)
+	resp, err := llmSvc.Response(ctx, instructions, r.Text, 2500)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error calling LLM service: %w", err)
 	}
