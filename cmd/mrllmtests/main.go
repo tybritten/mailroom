@@ -10,6 +10,7 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 
 	_ "github.com/nyaruka/mailroom/services/llm/anthropic"
+	_ "github.com/nyaruka/mailroom/services/llm/deepseek"
 	_ "github.com/nyaruka/mailroom/services/llm/openai"
 	_ "github.com/nyaruka/mailroom/services/llm/openai_azure"
 )
