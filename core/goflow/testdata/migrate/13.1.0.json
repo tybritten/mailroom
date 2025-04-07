@@ -4,6 +4,7 @@
     "spec_version": "13.1.0",
     "type": "messaging",
     "language": "base",
+    "expire_after_minutes": 43200,
     "nodes": [
         {
             "uuid": "d26486b1-193d-4512-85f0-c6db696f1e1c",
