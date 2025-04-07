@@ -248,6 +248,10 @@ func (mr *Mailroom) Stop() error {
 	return nil
 }
 
+func (mr *Mailroom) Runtime() *runtime.Runtime {
+	return mr.rt
+}
+
 func openAndCheckDBConnection(url string, maxOpenConns int) (*sql.DB, *sqlx.DB, error) {
 	db, err := sqlx.Open("postgres", url)
 	if err != nil {
