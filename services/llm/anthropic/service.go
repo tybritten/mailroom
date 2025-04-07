@@ -72,9 +72,15 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 	var output strings.Builder
 	for _, content := range resp.Content {
 		if content.Type == "text" {
-			output.WriteString(content.Text)
+			output.WriteString(s.cleanOutput(content.Text))
 		}
 	}
 
 	return &flows.LLMResponse{Output: output.String(), TokensUsed: resp.Usage.InputTokens + resp.Usage.OutputTokens}, nil
+}
+
+func (s *service) cleanOutput(output string) string {
+	output = strings.Replace(output, "<<ASSISTANT_CONVERSATION_START>>", "", -1)
+	output = strings.Replace(output, "<<ASSISTANT_CONVERSATION_END>>", "", -1)
+	return strings.TrimSpace(output)
 }
