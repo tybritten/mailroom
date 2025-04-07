@@ -1,3 +1,7 @@
+v10.1.76 (2025-04-07)
+-------------------------
+ * Update to latest goflow that adds support for LLM actions
+
 v10.1.75 (2025-04-02)
 -------------------------
  * Use channel config max_concurent_calls key
