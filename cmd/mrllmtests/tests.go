@@ -94,10 +94,11 @@ func runPromptTests(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 	for i, test := range tests {
 		instructions := prompts.Render(test.template, test.data)
 
-		fmt.Printf("======== test %d/%d ==============================================\n", i+1, len(tests))
-		fmt.Printf("instructions: %s\n", instructions)
-		fmt.Printf("input: %s\n", test.input)
-		fmt.Printf("-------- models --------------------------------------------------\n")
+		fmt.Printf("======== test %d/%d =============================================\n", i+1, len(tests))
+		fmt.Printf("%s\n", instructions)
+		fmt.Printf("-------- input --------------------------------------------------\n")
+		fmt.Printf("%s\n", test.input)
+		fmt.Printf("-------- output -------------------------------------------------\n")
 
 		for llmName, svc := range svcs {
 			fmt.Printf("%s: ", llmName)

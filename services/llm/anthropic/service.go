@@ -62,7 +62,7 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 				},
 			},
 		},
-		Temperature: anthropic.Float(0.0),
+		Temperature: anthropic.Float(0.000001),
 		MaxTokens:   2500,
 	})
 	if err != nil {

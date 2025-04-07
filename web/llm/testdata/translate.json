@@ -53,7 +53,7 @@
         },
         "status": 200,
         "response": {
-            "text": "You asked:\n\nTranslate the given text from the language with the ISO code eng to the language with the ISO code spa.\nThe @ indicates a variable expression and should be left untranslated.\nOnly return the translated text or <CANT> if you can't translate it.\n\nHello world",
+            "text": "You asked:\n\nTranslate the input text from the language with the ISO code \"eng\" to the language with the ISO code \"spa\".\nAn \"@\" character indicates a variable expression and should be left untranslated.\nReturn only the translated text, without additional explanations.\nReturn \"<CANT>\" if you can't translate it.\n\nHello world",
             "tokens_used": 123
         }
     },
@@ -70,7 +70,7 @@
         },
         "status": 200,
         "response": {
-            "text": "You asked:\n\nTranslate the given text to the language with the ISO code spa.\nThe @ indicates a variable expression and should be left untranslated.\nOnly return the translated text or <CANT> if you can't translate it.\n\nHello world",
+            "text": "You asked:\n\nTranslate the input text to the language with the ISO code \"spa\".\nAn \"@\" character indicates a variable expression and should be left untranslated.\nReturn only the translated text, without additional explanations.\nReturn \"<CANT>\" if you can't translate it.\n\nHello world",
             "tokens_used": 123
         }
     },
@@ -87,11 +87,11 @@
         },
         "status": 422,
         "response": {
-            "code": "ai:reasoning",
             "error": "not able to translate",
+            "code": "ai:reasoning",
             "extra": {
                 "input": "\\return <CANT>",
-                "instructions": "Translate the given text to the language with the ISO code spa.\nThe @ indicates a variable expression and should be left untranslated.\nOnly return the translated text or <CANT> if you can't translate it.",
+                "instructions": "Translate the input text to the language with the ISO code \"spa\".\nAn \"@\" character indicates a variable expression and should be left untranslated.\nReturn only the translated text, without additional explanations.\nReturn \"<CANT>\" if you can't translate it.",
                 "response": "<CANT>"
             }
         }

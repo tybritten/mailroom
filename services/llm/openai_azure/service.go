@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
@@ -67,12 +68,15 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 			openai.SystemMessage(instructions),
 			openai.UserMessage(input),
 		},
-		Temperature: openai.Float(0.0),
+		Temperature: openai.Float(0.000001),
 		MaxTokens:   openai.Int(int64(maxTokens)),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error calling OpenAI+Azure API: %w", err)
 	}
 
-	return &flows.LLMResponse{Output: resp.Choices[0].Message.Content, TokensUsed: resp.Usage.TotalTokens}, nil
+	return &flows.LLMResponse{
+		Output:     strings.TrimSpace(resp.Choices[0].Message.Content),
+		TokensUsed: resp.Usage.TotalTokens,
+	}, nil
 }

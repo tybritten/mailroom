@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
@@ -49,12 +50,15 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		Input: responses.ResponseNewParamsInputUnion{
 			OfString: openai.String(input),
 		},
-		Temperature:     openai.Float(0.0),
+		Temperature:     openai.Float(0.000001),
 		MaxOutputTokens: openai.Int(int64(maxTokens)),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error calling OpenAI API: %w", err)
 	}
 
-	return &flows.LLMResponse{Output: resp.OutputText(), TokensUsed: resp.Usage.TotalTokens}, nil
+	return &flows.LLMResponse{
+		Output:     strings.TrimSpace(resp.OutputText()),
+		TokensUsed: resp.Usage.TotalTokens,
+	}, nil
 }
