@@ -59,9 +59,9 @@ func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateReque
 		return nil, 0, fmt.Errorf("error creating LLM service: %w", err)
 	}
 
-	instructionsTpl := prompts.Translate
+	instructionsTpl := "translate"
 	if r.FromLanguage == "und" || r.FromLanguage == "mul" {
-		instructionsTpl = prompts.TranslateUnknownFrom
+		instructionsTpl = "translate_unknown_from"
 	}
 
 	instructions := prompts.Render(instructionsTpl, r)
