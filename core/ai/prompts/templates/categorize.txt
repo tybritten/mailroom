@@ -1,0 +1,4 @@
+Categorize the input text into one of the categories listed below.
+Only return that category or <CANT> if you can't categorize it.
+
+{{ .arg0 }}

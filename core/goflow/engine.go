@@ -3,6 +3,7 @@ package goflow
 import (
 	"context"
 	"sync"
+	"text/template"
 
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/flows"
@@ -19,6 +20,7 @@ var emailFactory func(*runtime.Runtime) engine.EmailServiceFactory
 var classificationFactory func(*runtime.Runtime) engine.ClassificationServiceFactory
 var llmFactory func(*runtime.Runtime) engine.LLMServiceFactory
 var airtimeFactory func(*runtime.Runtime) engine.AirtimeServiceFactory
+var llmPrompts map[string]*template.Template
 
 // RegisterEmailServiceFactory can be used by outside callers to register a email service factory
 // for use by the engine
@@ -44,6 +46,12 @@ func RegisterAirtimeServiceFactory(f func(*runtime.Runtime) engine.AirtimeServic
 	airtimeFactory = f
 }
 
+// RegisterAirtimeServiceFactory can be used by outside callers to register a airtime serivce factory
+// for use by the engine
+func RegisterLLMPrompts(p map[string]*template.Template) {
+	llmPrompts = p
+}
+
 // Engine returns the global engine instance for use with real sessions
 func Engine(rt *runtime.Runtime) flows.Engine {
 	engInit.Do(func() {
@@ -64,6 +72,7 @@ func Engine(rt *runtime.Runtime) flows.Engine {
 			WithMaxResumesPerSession(rt.Config.MaxResumesPerSession).
 			WithMaxFieldChars(rt.Config.MaxValueLength).
 			WithMaxResultChars(rt.Config.MaxValueLength).
+			WithLLMPrompts(llmPrompts).
 			Build()
 	})
 
@@ -90,6 +99,7 @@ func Simulator(ctx context.Context, rt *runtime.Runtime) flows.Engine {
 			WithMaxResumesPerSession(rt.Config.MaxResumesPerSession).
 			WithMaxFieldChars(rt.Config.MaxValueLength).
 			WithMaxResultChars(rt.Config.MaxValueLength).
+			WithLLMPrompts(llmPrompts).
 			Build()
 	})
 

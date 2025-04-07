@@ -16,7 +16,7 @@ import (
 )
 
 func TestSpecVersion(t *testing.T) {
-	assert.Equal(t, semver.MustParse("13.6.1"), goflow.SpecVersion())
+	assert.Equal(t, semver.MustParse("14.0.0"), goflow.SpecVersion())
 }
 
 func TestReadFlow(t *testing.T) {
@@ -64,8 +64,9 @@ func TestMigrateDefinition(t *testing.T) {
 	v13_3_0 := testsuite.ReadFile("testdata/migrate/13.3.0.json")
 	v13_4_0 := testsuite.ReadFile("testdata/migrate/13.4.0.json")
 	v13_5_0 := testsuite.ReadFile("testdata/migrate/13.5.0.json")
-	//v13_6_0 := testsuite.ReadFile("testdata/migrate/13.6.0.json")
+	v13_6_0 := testsuite.ReadFile("testdata/migrate/13.6.0.json")
 	v13_6_1 := testsuite.ReadFile("testdata/migrate/13.6.1.json")
+	v14_0_0 := testsuite.ReadFile("testdata/migrate/14.0.0.json")
 
 	// 13.0 > 13.1
 	migrated, err := goflow.MigrateDefinition(rt.Config, v13_0_0, semver.MustParse("13.1.0"))
@@ -95,15 +96,20 @@ func TestMigrateDefinition(t *testing.T) {
 	// 13.5 > 13.6
 	migrated, err = goflow.MigrateDefinition(rt.Config, migrated, semver.MustParse("13.6.0"))
 	assert.NoError(t, err)
-	test.AssertEqualJSON(t, v13_6_1, migrated) // because we bump to the latest patch version
+	test.AssertEqualJSON(t, v13_6_0, migrated)
 
 	// 13.6 > 13.6.1
 	migrated, err = goflow.MigrateDefinition(rt.Config, migrated, semver.MustParse("13.6.1"))
 	assert.NoError(t, err)
 	test.AssertEqualJSON(t, v13_6_1, migrated)
 
-	// 13.0 > 13.6.1
-	migrated, err = goflow.MigrateDefinition(rt.Config, v13_0_0, semver.MustParse("13.6.1"))
+	// 13.6.1 > 14.0.0
+	migrated, err = goflow.MigrateDefinition(rt.Config, migrated, semver.MustParse("14.0.0"))
 	assert.NoError(t, err)
-	test.AssertEqualJSON(t, v13_6_1, migrated)
+	test.AssertEqualJSON(t, v14_0_0, migrated)
+
+	// 13.0.0 > 14.0.0
+	migrated, err = goflow.MigrateDefinition(rt.Config, v13_0_0, semver.MustParse("14.0.0"))
+	assert.NoError(t, err)
+	test.AssertEqualJSON(t, v14_0_0, migrated)
 }
