@@ -53,7 +53,7 @@
         "description": "Categorization of a positive message",
         "template": "categorize",
         "data": {
-            "arg0": "Positive, Negative, Neutral"
+            "arg1": "Positive, Negative, Neutral"
         },
         "input": "Thanks you've been very helpful",
         "expected_output": [
@@ -64,7 +64,7 @@
         "description": "Categorization of a positive message with categories in JSON format",
         "template": "categorize",
         "data": {
-            "arg0": "[\"Positive\", \"Negative\", \"Neutral\"]"
+            "arg1": "[\"Positive\", \"Negative\", \"Neutral\"]"
         },
         "input": "Thanks you've been very helpful",
         "expected_output": [
@@ -75,7 +75,7 @@
         "description": "Categorization of a negative message",
         "template": "categorize",
         "data": {
-            "arg0": "Positive, Negative, Neutral"
+            "arg1": "Positive, Negative, Neutral"
         },
         "input": "Please stop sending me these messages!",
         "expected_output": [
@@ -86,7 +86,7 @@
         "description": "Categorization of a neutral message",
         "template": "categorize",
         "data": {
-            "arg0": "Positive, Negative, Neutral"
+            "arg1": "Positive, Negative, Neutral"
         },
         "input": "It was satisfactory I guess",
         "expected_output": [
@@ -97,7 +97,7 @@
         "description": "Categorization of a message with no clear sentiment",
         "template": "categorize",
         "data": {
-            "arg0": "Positive, Negative"
+            "arg1": "Positive, Negative"
         },
         "input": "14",
         "expected_output": [
