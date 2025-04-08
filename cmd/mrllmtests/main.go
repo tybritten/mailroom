@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -15,7 +16,7 @@ import (
 	_ "github.com/nyaruka/mailroom/services/llm/openai_azure"
 )
 
-// mrllmtests is a command line tool to run LLM prompt tests against a local test database with real LLMs.
+// command line tool to run LLM prompt tests against a local test database with real LLMs.
 //
 // go install github.com/nyaruka/mailroom/cmd/mrllmtests; mrllmtests
 func main() {
@@ -27,12 +28,12 @@ func main() {
 	mr := mailroom.NewMailroom(config)
 	err := mr.Start()
 	if err != nil {
-		slog.Error("unable to start mailroom", "error", err)
+		fmt.Printf("unable to start mailroom: %s", err.Error())
 		os.Exit(1)
 	}
 
 	if err := runPromptTests(ctx, mr.Runtime(), models.OrgID(1)); err != nil {
-		slog.Error("error running LLM tests", "error", err)
+		fmt.Printf("error running LLM tests: %s", err.Error())
 		os.Exit(1)
 	}
 
