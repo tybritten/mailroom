@@ -1,3 +1,8 @@
+v10.1.78 (2025-04-08)
+-------------------------
+ * Update to latest goflow
+ * Add DeepSeek as LLM type
+
 v10.1.77 (2025-04-07)
 -------------------------
  * Tweak temperature on all LLM services to be non-zero
