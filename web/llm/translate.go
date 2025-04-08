@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/nyaruka/gocommon/i18n"
 	"github.com/nyaruka/mailroom/core/ai"
@@ -65,11 +66,14 @@ func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateReque
 	}
 
 	instructions := prompts.Render(instructionsTpl, r)
+	start := time.Now()
 
 	resp, err := llmSvc.Response(ctx, instructions, r.Text, 2500)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error calling LLM service: %w", err)
 	}
+
+	llm.RecordCall(rt, time.Since(start), resp.TokensUsed)
 
 	if resp.Output == "<CANT>" {
 		return nil, 0, ai.NewReasoningError("not able to translate", instructions, r.Text, resp.Output)

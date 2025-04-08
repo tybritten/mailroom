@@ -21,7 +21,6 @@ const (
 	apiVersion = "2025-03-01-preview"
 
 	configAPIKey   = "api_key"
-	configModel    = "model"
 	configEndpoint = "endpoint"
 )
 
@@ -37,11 +36,10 @@ type service struct {
 
 func New(m *models.LLM) (flows.LLMService, error) {
 	apiKey := m.Config().GetString(configAPIKey, "")
-	model := m.Config().GetString(configModel, "")
 	endpoint := m.Config().GetString(configEndpoint, "")
 	parsedEndpoint, err := url.Parse(endpoint)
 
-	if apiKey == "" || model == "" || endpoint == "" || err != nil {
+	if apiKey == "" || endpoint == "" || err != nil {
 		return nil, fmt.Errorf("config incomplete for LLM: %s", m.UUID())
 	}
 
@@ -57,7 +55,7 @@ func New(m *models.LLM) (flows.LLMService, error) {
 
 	return &service{
 		client: openai.NewClient(azure.WithEndpoint(bareEndpoint, apiVersion), azure.WithAPIKey(apiKey), option.WithMiddleware(mw)),
-		model:  model,
+		model:  m.Model(),
 	}, nil
 }
 

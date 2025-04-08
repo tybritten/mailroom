@@ -23,7 +23,8 @@ func handleLLMCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *
 
 	llm := oa.SessionAssets().LLMs().Get(event.LLM.UUID)
 	if llm != nil {
-		rt.Stats.RecordLLMCall(llm.Type(), time.Duration(event.ElapsedMS)*time.Millisecond)
+		m := llm.Asset().(*models.LLM)
+		m.RecordCall(rt, time.Duration(event.ElapsedMS)*time.Millisecond, event.TokensUsed)
 	}
 
 	return nil
