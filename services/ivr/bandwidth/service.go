@@ -31,10 +31,10 @@ import (
 const (
 	bandwidthChannelType = models.ChannelType("BW")
 
-	usernameConfig     = "username"
-	passwordConfig     = "password"
-	accountIDConfig    = "account_id"
-	aplicationIDConfig = "application_id"
+	usernameConfig           = "username"
+	passwordConfig           = "password"
+	accountIDConfig          = "account_id"
+	VoiceApplicationIDConfig = "voice_application_id"
 
 	gatherTimeout = 30
 	recordTimeout = 600
@@ -75,12 +75,12 @@ var supportedSayLanguages = i18n.NewBCP47Matcher(
 )
 
 type service struct {
-	httpClient    *http.Client
-	channel       *models.Channel
-	username      string
-	password      string
-	accountID     string
-	applicationID string
+	httpClient         *http.Client
+	channel            *models.Channel
+	username           string
+	password           string
+	accountID          string
+	VoiceApplicationID string
 }
 
 func init() {
@@ -92,18 +92,18 @@ func NewServiceFromChannel(httpClient *http.Client, channel *models.Channel) (iv
 	username := channel.Config().GetString(usernameConfig, "")
 	password := channel.Config().GetString(passwordConfig, "")
 	accountId := channel.Config().GetString(accountIDConfig, "")
-	aplicationID := channel.Config().GetString(aplicationIDConfig, "")
-	if username == "" || password == "" || accountId == "" || aplicationID == "" {
+	applicationID := channel.Config().GetString(VoiceApplicationIDConfig, "")
+	if username == "" || password == "" || accountId == "" || applicationID == "" {
 		return nil, fmt.Errorf("missing username, password or account_id on channel config: %v for channel: %s", channel.Config(), channel.UUID())
 	}
 
 	return &service{
-		httpClient:    httpClient,
-		channel:       channel,
-		username:      username,
-		password:      password,
-		accountID:     accountId,
-		applicationID: aplicationID,
+		httpClient:         httpClient,
+		channel:            channel,
+		username:           username,
+		password:           password,
+		accountID:          accountId,
+		VoiceApplicationID: applicationID,
 	}, nil
 }
 
@@ -194,7 +194,7 @@ func (s *service) RequestCall(number urns.URN, handleURL string, statusURL strin
 		From:          s.channel.Address(),
 		AnswerURL:     handleURL,
 		DisconnectURL: statusURL,
-		ApplicationID: s.applicationID,
+		ApplicationID: s.VoiceApplicationID,
 	}
 
 	if machineDetection {
