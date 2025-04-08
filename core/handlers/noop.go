@@ -16,7 +16,6 @@ func init() {
 	models.RegisterEventHandler(events.TypeEnvironmentRefreshed, noopHandler)
 	models.RegisterEventHandler(events.TypeError, noopHandler)
 	models.RegisterEventHandler(events.TypeFailure, noopHandler)
-	models.RegisterEventHandler(events.TypeLLMCalled, noopHandler)
 	models.RegisterEventHandler(events.TypeMsgWait, noopHandler)
 	models.RegisterEventHandler(events.TypeRunExpired, noopHandler)
 	models.RegisterEventHandler(events.TypeRunResultChanged, noopHandler)
