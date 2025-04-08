@@ -1,3 +1,8 @@
+v10.1.79 (2025-04-08)
+-------------------------
+ * Record LLM calls by type in metrics
+ * Rename config for BW voice application ID
+
 v10.1.78 (2025-04-08)
 -------------------------
  * Update to latest goflow
