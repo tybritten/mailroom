@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"time"
 
@@ -48,6 +49,9 @@ func runPromptTests(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 		svcs[llm.Name()] = svc
 	}
 
+	correctByLLM := make(map[string]int, len(svcs))
+	timeTakenByLLM := make(map[string]time.Duration, len(svcs))
+
 	for i, test := range tests {
 		instructions := prompts.Render(test.Template, test.Data)
 
@@ -57,20 +61,34 @@ func runPromptTests(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 		fmt.Printf("%s\n", test.Input)
 		fmt.Printf("-------- output -------------------------------------------------\n")
 
-		for llmName, svc := range svcs {
+		for _, llmName := range slices.Sorted(maps.Keys(svcs)) {
+			svc := svcs[llmName]
 			fmt.Printf("%s: ", llmName)
 			start := time.Now()
 			resp, err := svc.Response(ctx, instructions, test.Input, 2500)
 			if err != nil {
 				fmt.Print(color(err.Error(), false))
 			} else {
-				allowed := slices.Contains(test.ExpectedOutput, resp.Output)
-				fmt.Print(color(resp.Output, allowed))
-				fmt.Printf(" [tokens=%d, time=%s]", resp.TokensUsed, time.Since(start))
+				correct := slices.Contains(test.ExpectedOutput, resp.Output)
+				timeTaken := time.Since(start)
+
+				fmt.Print(color(resp.Output, correct))
+				fmt.Printf(" [tokens=%d, time=%s]", resp.TokensUsed, timeTaken)
+				if correct {
+					correctByLLM[llmName]++
+					timeTakenByLLM[llmName] += time.Since(start)
+				}
 			}
 
 			fmt.Println()
 		}
+	}
+
+	fmt.Printf("======== summary ==============================================\n")
+	for _, llmName := range slices.Sorted(maps.Keys(svcs)) {
+		allCorrect := correctByLLM[llmName] == len(tests)
+		score := fmt.Sprintf("%s/%d", color(fmt.Sprint(correctByLLM[llmName]), allCorrect), len(tests))
+		fmt.Printf("%s: %s in %s\n", llmName, score, timeTakenByLLM[llmName])
 	}
 
 	return nil
