@@ -1,3 +1,7 @@
+v10.1.82 (2025-04-08)
+-------------------------
+ * Fix categorize LLM prompt
+
 v10.1.81 (2025-04-08)
 -------------------------
  * Improvements to LLM tests command
