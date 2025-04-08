@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"time"
 
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
@@ -48,6 +49,7 @@ type LLM struct {
 	ID_     LLMID          `json:"id"`
 	UUID_   assets.LLMUUID `json:"uuid"`
 	Type_   string         `json:"llm_type"`
+	Model_  string         `json:"model"`
 	Name_   string         `json:"name"`
 	Config_ Config         `json:"config"`
 }
@@ -56,6 +58,7 @@ func (l *LLM) ID() LLMID            { return l.ID_ }
 func (l *LLM) UUID() assets.LLMUUID { return l.UUID_ }
 func (l *LLM) Name() string         { return l.Name_ }
 func (l *LLM) Type() string         { return l.Type_ }
+func (l *LLM) Model() string        { return l.Model_ }
 func (l *LLM) Config() Config       { return l.Config_ }
 
 func (l *LLM) AsService() (flows.LLMService, error) {
@@ -64,6 +67,12 @@ func (l *LLM) AsService() (flows.LLMService, error) {
 		return nil, fmt.Errorf("unknown type '%s' for LLM: %s", l.Type(), l.UUID())
 	}
 	return fn(l)
+}
+
+func (l *LLM) RecordCall(rt *runtime.Runtime, d time.Duration, tokensUsed int64) {
+	// TODO record tokens used ?
+
+	rt.Stats.RecordLLMCall(l.Type(), l.Model(), d)
 }
 
 // loads the LLMs for the passed in org
@@ -78,7 +87,7 @@ func loadLLMs(ctx context.Context, db *sql.DB, orgID OrgID) ([]assets.LLM, error
 
 const sqlSelectLLMs = `
 SELECT ROW_TO_JSON(r) FROM (
-      SELECT l.id, l.uuid, l.name, l.llm_type, l.config
+      SELECT l.id, l.uuid, l.name, l.llm_type, l.model, l.config
         FROM ai_llm l
        WHERE l.org_id = $1 AND l.is_active
     ORDER BY l.created_on ASC

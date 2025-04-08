@@ -8,6 +8,11 @@ import (
 	"github.com/nyaruka/gocommon/aws/cwatch"
 )
 
+type LLMTypeAndModel struct {
+	Type  string
+	Model string
+}
+
 type Stats struct {
 	HandlerTaskCount    map[string]int           // number of contact tasks handled by type
 	HandlerTaskDuration map[string]time.Duration // total time spent handling contact tasks
@@ -16,8 +21,8 @@ type Stats struct {
 	CronTaskCount    map[string]int           // number of cron tasks run by type
 	CronTaskDuration map[string]time.Duration // total time spent running cron tasks
 
-	LLMCallCount    map[string]int           // number of LLM calls run by type
-	LLMCallDuration map[string]time.Duration // total time spent making LLM calls
+	LLMCallCount    map[LLMTypeAndModel]int           // number of LLM calls run by type
+	LLMCallDuration map[LLMTypeAndModel]time.Duration // total time spent making LLM calls
 
 	WebhookCallCount    int           // number of webhook calls
 	WebhookCallDuration time.Duration // total time spent handling webhook calls
@@ -32,8 +37,8 @@ func newStats() *Stats {
 		CronTaskCount:    make(map[string]int),
 		CronTaskDuration: make(map[string]time.Duration),
 
-		LLMCallCount:    make(map[string]int),
-		LLMCallDuration: make(map[string]time.Duration),
+		LLMCallCount:    make(map[LLMTypeAndModel]int),
+		LLMCallDuration: make(map[LLMTypeAndModel]time.Duration),
 	}
 }
 
@@ -61,12 +66,12 @@ func (s *Stats) ToMetrics() []types.MetricDatum {
 		)
 	}
 
-	for typ, count := range s.LLMCallCount {
-		avgTime := s.LLMCallDuration[typ] / time.Duration(count)
+	for typeAndModel, count := range s.LLMCallCount {
+		avgTime := s.LLMCallDuration[typeAndModel] / time.Duration(count)
 
 		metrics = append(metrics,
-			cwatch.Datum("LLMCallCount", float64(count), types.StandardUnitCount, cwatch.Dimension("LLMType", typ)),
-			cwatch.Datum("LLMCallDuration", float64(avgTime)/float64(time.Second), types.StandardUnitSeconds, cwatch.Dimension("LLMType", typ)),
+			cwatch.Datum("LLMCallCount", float64(count), types.StandardUnitCount, cwatch.Dimension("LLMType", typeAndModel.Type), cwatch.Dimension("LLMModel", typeAndModel.Model)),
+			cwatch.Datum("LLMCallDuration", float64(avgTime)/float64(time.Second), types.StandardUnitSeconds, cwatch.Dimension("LLMType", typeAndModel.Type), cwatch.Dimension("LLMModel", typeAndModel.Model)),
 		)
 	}
 
@@ -116,10 +121,10 @@ func (c *StatsCollector) RecordWebhookCall(d time.Duration) {
 	c.mutex.Unlock()
 }
 
-func (c *StatsCollector) RecordLLMCall(typ string, d time.Duration) {
+func (c *StatsCollector) RecordLLMCall(typ, model string, d time.Duration) {
 	c.mutex.Lock()
-	c.stats.LLMCallCount[typ]++
-	c.stats.LLMCallDuration[typ] += d
+	c.stats.LLMCallCount[LLMTypeAndModel{typ, model}]++
+	c.stats.LLMCallDuration[LLMTypeAndModel{typ, model}] += d
 	c.mutex.Unlock()
 }
 

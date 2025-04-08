@@ -15,7 +15,6 @@ const (
 	TypeAnthropic = "anthropic"
 
 	configAPIKey = "api_key"
-	configModel  = "model"
 )
 
 func init() {
@@ -30,14 +29,13 @@ type service struct {
 
 func New(m *models.LLM) (flows.LLMService, error) {
 	apiKey := m.Config().GetString(configAPIKey, "")
-	model := m.Config().GetString(configModel, "")
-	if apiKey == "" || model == "" {
+	if apiKey == "" {
 		return nil, fmt.Errorf("config incomplete for LLM: %s", m.UUID())
 	}
 
 	return &service{
 		client: anthropic.NewClient(option.WithAPIKey(apiKey)),
-		model:  model,
+		model:  m.Model(),
 	}, nil
 }
 
