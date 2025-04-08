@@ -1,3 +1,8 @@
+v10.1.81 (2025-04-08)
+-------------------------
+ * Improvements to LLM tests command
+ * Add support for Google GenAI as LLM service
+
 v10.1.80 (2025-04-08)
 -------------------------
  * Read model from LLM.model instead of config and send model with metrics
