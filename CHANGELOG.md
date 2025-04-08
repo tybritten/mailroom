@@ -1,3 +1,7 @@
+v10.1.80 (2025-04-08)
+-------------------------
+ * Read model from LLM.model instead of config and send model with metrics
+
 v10.1.79 (2025-04-08)
 -------------------------
  * Record LLM calls by type in metrics
