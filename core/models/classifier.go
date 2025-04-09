@@ -9,8 +9,6 @@ import (
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/engine"
-	"github.com/nyaruka/goflow/services/classification/bothub"
-	"github.com/nyaruka/goflow/services/classification/luis"
 	"github.com/nyaruka/goflow/services/classification/wit"
 	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/runtime"
@@ -25,9 +23,7 @@ const NilClassifierID = ClassifierID(0)
 
 // classifier type constants
 const (
-	ClassifierTypeWit    = "wit"
-	ClassifierTypeLuis   = "luis"
-	ClassifierTypeBothub = "bothub"
+	ClassifierTypeWit = "wit"
 )
 
 // classifier config key constants
@@ -88,7 +84,7 @@ func (c *Classifier) Type() string { return c.Type_ }
 
 // AsService builds the corresponding ClassificationService for the passed in Classifier
 func (c *Classifier) AsService(cfg *runtime.Config, classifier *flows.Classifier) (flows.ClassificationService, error) {
-	httpClient, httpRetries, httpAccess := goflow.HTTP(cfg)
+	httpClient, httpRetries, _ := goflow.HTTP(cfg)
 
 	switch c.Type() {
 	case ClassifierTypeWit:
@@ -97,24 +93,6 @@ func (c *Classifier) AsService(cfg *runtime.Config, classifier *flows.Classifier
 			return nil, fmt.Errorf("missing %s for Wit classifier: %s", WitConfigAccessToken, c.UUID())
 		}
 		return wit.NewService(httpClient, httpRetries, classifier, accessToken), nil
-
-	case ClassifierTypeLuis:
-		appID := c.Config_[LuisConfigAppID]
-		endpoint := c.Config_[LuisConfigPredictionEndpoint]
-		key := c.Config_[LuisConfigPredictionKey]
-		slot := c.Config_[LuisConfigSlot]
-		if endpoint == "" || appID == "" || key == "" || slot == "" {
-			return nil, fmt.Errorf("missing %s, %s, %s or %s on LUIS classifier: %s",
-				LuisConfigAppID, LuisConfigPredictionEndpoint, LuisConfigPredictionKey, LuisConfigSlot, c.UUID())
-		}
-		return luis.NewService(httpClient, httpRetries, httpAccess, classifier, endpoint, appID, key, slot), nil
-
-	case ClassifierTypeBothub:
-		accessToken := c.Config_[BothubConfigAccessToken]
-		if accessToken == "" {
-			return nil, fmt.Errorf("missing %s for Bothub classifier: %s", BothubConfigAccessToken, c.UUID())
-		}
-		return bothub.NewService(httpClient, httpRetries, classifier, accessToken), nil
 
 	default:
 		return nil, fmt.Errorf("unknown classifier type '%s' for classifier: %s", c.Type(), c.UUID())
