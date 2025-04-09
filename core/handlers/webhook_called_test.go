@@ -102,16 +102,14 @@ type failingWebhookService struct {
 	delay time.Duration
 }
 
-func (s *failingWebhookService) Call(request *http.Request) (*flows.WebhookCall, error) {
-	return &flows.WebhookCall{
-		Trace: &httpx.Trace{
-			Request:       request,
-			RequestTrace:  []byte(`GET http://rapidpro.io/`),
-			Response:      nil,
-			ResponseTrace: nil,
-			StartTime:     dates.Now(),
-			EndTime:       dates.Now().Add(s.delay),
-		},
+func (s *failingWebhookService) Call(request *http.Request) (*httpx.Trace, error) {
+	return &httpx.Trace{
+		Request:       request,
+		RequestTrace:  []byte(`GET http://rapidpro.io/`),
+		Response:      nil,
+		ResponseTrace: nil,
+		StartTime:     dates.Now(),
+		EndTime:       dates.Now().Add(s.delay),
 	}, nil
 }
 

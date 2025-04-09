@@ -112,7 +112,7 @@ func TestWebhookNode(t *testing.T) {
 		for i := range evts {
 			req, _ := http.NewRequest("GET", "http://example.com", nil)
 			trace := &httpx.Trace{Request: req, StartTime: dates.Now(), EndTime: dates.Now().Add(elapsed)}
-			evts[i] = events.NewWebhookCalled(&flows.WebhookCall{Trace: trace}, flows.CallStatusSuccess, "")
+			evts[i] = events.NewWebhookCalled(trace, flows.CallStatusSuccess, "")
 		}
 		return evts
 	}
