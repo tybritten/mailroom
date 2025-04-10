@@ -8,13 +8,13 @@ require (
 	github.com/anthropics/anthropic-sdk-go v0.2.0-beta.3
 	github.com/appleboy/go-fcm v1.2.3
 	github.com/aws/aws-sdk-go-v2 v1.36.3
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.18.9
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.18.10
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.44.2
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.42.1
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.42.2
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.1
 	github.com/buger/jsonparser v1.1.1
 	github.com/elastic/go-elasticsearch/v8 v8.17.1
-	github.com/getsentry/sentry-go v0.31.1
+	github.com/getsentry/sentry-go v0.32.0
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
@@ -26,7 +26,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.61.1
-	github.com/nyaruka/goflow v0.236.1
+	github.com/nyaruka/goflow v0.236.3
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.9.0
 	github.com/nyaruka/rp-indexer/v10 v10.1.1
@@ -132,9 +132,9 @@ require (
 	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	google.golang.org/appengine/v2 v2.0.6 // indirect
-	google.golang.org/genproto v0.0.0-20250407143221-ac9807e6c755 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250407143221-ac9807e6c755 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250407143221-ac9807e6c755 // indirect
+	google.golang.org/genproto v0.0.0-20250409194420-de1ac958c67a // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250409194420-de1ac958c67a // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250409194420-de1ac958c67a // indirect
 	google.golang.org/grpc v1.71.1 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
