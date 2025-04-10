@@ -1,3 +1,9 @@
+v10.1.84 (2025-04-10)
+-------------------------
+ * Move DTOne airtime service implementation into this repo
+ * Update to latest goflow that removes all classification serivces besides wit
+ * Update to latest goflow that changes webhook services
+
 v10.1.83 (2025-04-09)
 -------------------------
  * Update deps including goflow
