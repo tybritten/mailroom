@@ -26,7 +26,56 @@
             ],
             "exits": [
                 {
-                    "uuid": "fdd370e0-ffa9-48b3-8148-b9241d74fc72"
+                    "uuid": "fdd370e0-ffa9-48b3-8148-b9241d74fc72",
+                    "destination_uuid": "4eab7a66-0b55-45f6-803f-129a6f49e723"
+                }
+            ]
+        },
+        {
+            "uuid": "4eab7a66-0b55-45f6-803f-129a6f49e723",
+            "actions": [
+                {
+                    "uuid": "c766e805-da3a-46f4-97c4-7ce54b16bf71",
+                    "headers": {},
+                    "type": "call_webhook",
+                    "url": "http://temba.io/",
+                    "method": "GET",
+                    "result_name": "Call 2"
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "operand": "@results.call_2.category",
+                "cases": [
+                    {
+                        "uuid": "ff810df6-23c2-4dff-9be1-eebffae2bb9d",
+                        "type": "has_only_text",
+                        "arguments": [
+                            "Success"
+                        ],
+                        "category_uuid": "be4ad508-3afb-4c4a-80ba-86b61518411c"
+                    }
+                ],
+                "categories": [
+                    {
+                        "uuid": "be4ad508-3afb-4c4a-80ba-86b61518411c",
+                        "name": "Success",
+                        "exit_uuid": "24493dc0-687e-4d16-98e5-6e422624729b"
+                    },
+                    {
+                        "uuid": "501fc0c1-28a8-45b2-84f1-b6f9ea17d551",
+                        "name": "Failure",
+                        "exit_uuid": "09f2e979-e6d2-4d0c-b28d-88a836a41d2e"
+                    }
+                ],
+                "default_category_uuid": "501fc0c1-28a8-45b2-84f1-b6f9ea17d551"
+            },
+            "exits": [
+                {
+                    "uuid": "24493dc0-687e-4d16-98e5-6e422624729b"
+                },
+                {
+                    "uuid": "09f2e979-e6d2-4d0c-b28d-88a836a41d2e"
                 }
             ]
         }
