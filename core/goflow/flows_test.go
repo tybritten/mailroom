@@ -25,7 +25,7 @@ func TestReadFlow(t *testing.T) {
 	// try to read empty definition
 	flow, err := goflow.ReadFlow(rt.Config, []byte(`{}`))
 	assert.Nil(t, flow)
-	assert.EqualError(t, err, "unable to read flow header: field 'uuid' is required, field 'spec_version' is required")
+	assert.EqualError(t, err, "unable to read flow header: field 'uuid' is required, field 'name' is required, field 'spec_version' is required")
 
 	// read legacy definition
 	flow, err = goflow.ReadFlow(rt.Config, []byte(`{"flow_type": "M", "base_language": "eng", "action_sets": [], "metadata": {"uuid": "502c3ee4-3249-4dee-8e71-c62070667d52", "name": "Legacy"}}`))
