@@ -1,3 +1,7 @@
+v10.1.88 (2025-04-15)
+-------------------------
+ * Update to latest goflow that adds trimming of quick replies to the 14.1 migration
+
 v10.1.87 (2025-04-14)
 -------------------------
  * Flow spec 14.1.0
