@@ -2,6 +2,7 @@ package models_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/mailroom/core/models"
@@ -19,9 +20,20 @@ func TestDailyCounts(t *testing.T) {
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
 
-	err = models.InsertDailyCounts(ctx, rt.DB, oa, map[string]int{"foo": 1, "bar": 2})
+	err = models.InsertDailyCounts(ctx, rt.DB, oa, time.Date(2025, 4, 10, 13, 14, 30, 0, time.UTC), map[string]int{"foo": 1, "bar": 2})
 	assert.NoError(t, err)
 	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM orgs_dailycount`).Returns(2)
-	assertdb.Query(t, rt.DB, `SELECT SUM(count) FROM orgs_dailycount WHERE org_id = $1 AND scope = 'foo'`, testdata.Org1.ID).Returns(1)
-	assertdb.Query(t, rt.DB, `SELECT SUM(count) FROM orgs_dailycount WHERE org_id = $1 AND scope = 'bar'`, testdata.Org1.ID).Returns(2)
+
+	err = models.InsertDailyCounts(ctx, rt.DB, oa, time.Date(2025, 4, 10, 13, 14, 30, 0, time.UTC), map[string]int{"foo": 3})
+	assert.NoError(t, err)
+
+	err = models.InsertDailyCounts(ctx, rt.DB, oa, time.Date(2025, 4, 11, 13, 14, 30, 0, time.UTC), map[string]int{"foo": 5})
+	assert.NoError(t, err)
+
+	assertdb.Query(t, rt.DB, `SELECT COUNT(*) FROM orgs_dailycount`).Returns(4)
+	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{
+		"2025-04-10/foo": 4,
+		"2025-04-10/bar": 2,
+		"2025-04-11/foo": 5,
+	})
 }
