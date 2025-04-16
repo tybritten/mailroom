@@ -39,7 +39,6 @@ const (
 	TicketDailyCountReply      = TicketDailyCountType("R")
 
 	TicketDailyTimingFirstReply = TicketDailyTimingType("R")
-	TicketDailyTimingLastClose  = TicketDailyTimingType("C")
 )
 
 type Ticket struct {
@@ -244,8 +243,10 @@ func InsertTickets(ctx context.Context, tx DBorTx, oa *OrgAssets, tickets []*Tic
 		return nil
 	}
 
-	openingCounts := map[string]int{scopeOrg(oa): len(tickets)} // all new tickets are open
-	assignmentCounts := make(map[string]int)
+	dailyCounts := map[string]int{"tickets:opened": len(tickets)} // all new tickets are open
+
+	legacyOpeningCounts := map[string]int{scopeOrg(oa): len(tickets)}
+	legacyAssignmentCounts := make(map[string]int)
 
 	ts := make([]any, len(tickets))
 	for i, t := range tickets {
@@ -254,7 +255,14 @@ func InsertTickets(ctx context.Context, tx DBorTx, oa *OrgAssets, tickets []*Tic
 		if t.AssigneeID() != NilUserID {
 			assignee := oa.UserByID(t.AssigneeID())
 			if assignee != nil {
-				assignmentCounts[scopeUser(oa, assignee)]++
+				userID := assignee.ID()
+				teamID := NilTeamID
+				if assignee.Team() != nil {
+					teamID = assignee.Team().ID
+				}
+				dailyCounts[fmt.Sprintf("tickets:assigned:%d:%d", teamID, userID)]++
+
+				legacyAssignmentCounts[scopeUser(oa, assignee)]++
 			}
 		}
 	}
@@ -263,10 +271,14 @@ func InsertTickets(ctx context.Context, tx DBorTx, oa *OrgAssets, tickets []*Tic
 		return err
 	}
 
-	if err := insertTicketDailyCounts(ctx, tx, TicketDailyCountOpening, oa.Env().Timezone(), openingCounts); err != nil {
+	if err := InsertDailyCounts(ctx, tx, oa, dates.Now(), dailyCounts); err != nil {
+		return fmt.Errorf("error inserting daily counts: %w", err)
+	}
+
+	if err := insertTicketDailyCounts(ctx, tx, TicketDailyCountOpening, oa.Env().Timezone(), legacyOpeningCounts); err != nil {
 		return err
 	}
-	if err := insertTicketDailyCounts(ctx, tx, TicketDailyCountAssignment, oa.Env().Timezone(), assignmentCounts); err != nil {
+	if err := insertTicketDailyCounts(ctx, tx, TicketDailyCountAssignment, oa.Env().Timezone(), legacyAssignmentCounts); err != nil {
 		return err
 	}
 
@@ -301,7 +313,8 @@ func TicketsAssign(ctx context.Context, db DBorTx, oa *OrgAssets, userID UserID,
 	eventsByTicket := make(map[*Ticket]*TicketEvent, len(tickets))
 	now := dates.Now()
 
-	assignmentCounts := make(map[string]int)
+	dailyCounts := make(map[string]int)
+	legacyAssignmentCounts := make(map[string]int)
 
 	for _, ticket := range tickets {
 		if ticket.AssigneeID() != assigneeID {
@@ -310,7 +323,15 @@ func TicketsAssign(ctx context.Context, db DBorTx, oa *OrgAssets, userID UserID,
 			if ticket.AssigneeID() == NilUserID && assigneeID != NilUserID {
 				assignee := oa.UserByID(assigneeID)
 				if assignee != nil {
-					assignmentCounts[scopeUser(oa, assignee)]++
+					userID := assignee.ID()
+					teamID := NilTeamID
+					if assignee.Team() != nil {
+						teamID = assignee.Team().ID
+					}
+
+					dailyCounts[fmt.Sprintf("tickets:assigned:%d:%d", teamID, userID)]++
+
+					legacyAssignmentCounts[scopeUser(oa, assignee)]++
 				}
 			}
 
@@ -332,17 +353,19 @@ func TicketsAssign(ctx context.Context, db DBorTx, oa *OrgAssets, userID UserID,
 		return nil, fmt.Errorf("error updating tickets: %w", err)
 	}
 
-	err = InsertTicketEvents(ctx, db, events)
-	if err != nil {
+	if err := InsertTicketEvents(ctx, db, events); err != nil {
 		return nil, fmt.Errorf("error inserting ticket events: %w", err)
 	}
 
-	err = NotificationsFromTicketEvents(ctx, db, oa, eventsByTicket)
-	if err != nil {
+	if err := NotificationsFromTicketEvents(ctx, db, oa, eventsByTicket); err != nil {
 		return nil, fmt.Errorf("error inserting notifications: %w", err)
 	}
 
-	err = insertTicketDailyCounts(ctx, db, TicketDailyCountAssignment, oa.Env().Timezone(), assignmentCounts)
+	if err := InsertDailyCounts(ctx, db, oa, dates.Now(), dailyCounts); err != nil {
+		return nil, fmt.Errorf("error inserting daily counts: %w", err)
+	}
+
+	err = insertTicketDailyCounts(ctx, db, TicketDailyCountAssignment, oa.Env().Timezone(), legacyAssignmentCounts)
 	if err != nil {
 		return nil, fmt.Errorf("error inserting assignment counts: %w", err)
 	}
@@ -615,34 +638,47 @@ func insertTicketDailyTiming(ctx context.Context, tx DBorTx, countType TicketDai
 	return err
 }
 
-func RecordTicketReply(ctx context.Context, db DBorTx, oa *OrgAssets, ticketID TicketID, userID UserID) error {
-	firstReplyTime, err := TicketRecordReplied(ctx, db, ticketID, dates.Now())
+func RecordTicketReply(ctx context.Context, db DBorTx, oa *OrgAssets, ticketID TicketID, userID UserID, when time.Time) error {
+	firstReplyTime, err := TicketRecordReplied(ctx, db, ticketID, when)
 	if err != nil {
 		return err
 	}
 
-	// record reply counts for org, user and team
-	replyCounts := map[string]int{scopeOrg(oa): 1}
+	legacyReplyCounts := map[string]int{scopeOrg(oa): 1}
 
+	teamID := NilTeamID
 	if userID != NilUserID {
 		user := oa.UserByID(userID)
 		if user != nil {
-			replyCounts[scopeUser(oa, user)] = 1
+			legacyReplyCounts[scopeUser(oa, user)] = 1
 			if user.Team() != nil {
-				replyCounts[scopeTeam(user.Team())] = 1
+				teamID = user.Team().ID
+
+				legacyReplyCounts[scopeTeam(user.Team())] = 1
 			}
 		}
 	}
 
-	if err := insertTicketDailyCounts(ctx, db, TicketDailyCountReply, oa.Env().Timezone(), replyCounts); err != nil {
-		return err
-	}
+	// record reply count that encodes team + user
+	dailyCounts := map[string]int{fmt.Sprintf("msgs:ticketreplies:%d:%d", teamID, userID): 1}
 
 	if firstReplyTime >= 0 {
+		dailyCounts[fmt.Sprintf("ticketresptime:%d:%d:total", teamID, userID)] = int(firstReplyTime / time.Second)
+		dailyCounts[fmt.Sprintf("ticketresptime:%d:%d:count", teamID, userID)] = 1
+
 		if err := insertTicketDailyTiming(ctx, db, TicketDailyTimingFirstReply, oa.Env().Timezone(), scopeOrg(oa), firstReplyTime); err != nil {
 			return err
 		}
 	}
+
+	if err := InsertDailyCounts(ctx, db, oa, when, dailyCounts); err != nil {
+		return fmt.Errorf("error inserting daily counts: %w", err)
+	}
+
+	if err := insertTicketDailyCounts(ctx, db, TicketDailyCountReply, oa.Env().Timezone(), legacyReplyCounts); err != nil {
+		return err
+	}
+
 	return nil
 }
 

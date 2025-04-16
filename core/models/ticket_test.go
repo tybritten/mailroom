@@ -64,10 +64,17 @@ func TestTickets(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM tickets_ticket WHERE status = 'O' AND closed_on IS NULL`).Returns(3)
 
 	// check counts were added
-	assertTicketDailyCount(t, rt, models.TicketDailyCountOpening, fmt.Sprintf("o:%d", testdata.Org1.ID), 3)
-	assertTicketDailyCount(t, rt, models.TicketDailyCountOpening, fmt.Sprintf("o:%d", testdata.Org2.ID), 0)
-	assertTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Admin.ID), 2)
-	assertTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Editor.ID), 0)
+	today := time.Now().Format("2006-01-02")
+	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{
+		today + "/tickets:opened":       3,
+		today + "/tickets:assigned:0:4": 2,
+	})
+	testsuite.AssertDailyCounts(t, rt, testdata.Org2, map[string]int{})
+
+	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountOpening, fmt.Sprintf("o:%d", testdata.Org1.ID), 3)
+	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountOpening, fmt.Sprintf("o:%d", testdata.Org2.ID), 0)
+	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Admin.ID), 2)
+	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Editor.ID), 0)
 
 	// can lookup a ticket by UUID
 	tk, err := models.LookupTicketByUUID(ctx, rt.DB, "64f81be1-00ff-48ef-9e51-97d6f924c1a4")
@@ -144,8 +151,14 @@ func TestTicketsAssign(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM notifications_notification WHERE user_id = $1 AND notification_type = 'tickets:activity'`, testdata.Agent.ID).Returns(1)
 
 	// and daily counts (we only count first assignments of a ticket)
-	assertTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Agent.ID), 2)
-	assertTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Admin.ID), 0)
+	today := time.Now().Format("2006-01-02")
+	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{
+		today + "/tickets:assigned:2:6": 2,
+	})
+	testsuite.AssertDailyCounts(t, rt, testdata.Org2, map[string]int{})
+
+	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Agent.ID), 2)
+	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Admin.ID), 0)
 }
 
 func TestTicketsAddNote(t *testing.T) {
@@ -295,7 +308,9 @@ func TestReopenTickets(t *testing.T) {
 	assert.Equal(t, "Open Tickets", cathy.Groups().All()[1].Name())
 
 	// reopening doesn't change opening daily counts
-	assertTicketDailyCount(t, rt, models.TicketDailyCountOpening, fmt.Sprintf("o:%d", testdata.Org1.ID), 0)
+	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{})
+
+	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountOpening, fmt.Sprintf("o:%d", testdata.Org1.ID), 0)
 }
 
 func TestTicketRecordReply(t *testing.T) {
@@ -303,14 +318,16 @@ func TestTicketRecordReply(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetData)
 
+	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
+	require.NoError(t, err)
+
 	openedOn := time.Date(2022, 5, 18, 14, 21, 0, 0, time.UTC)
 	repliedOn := time.Date(2022, 5, 18, 15, 0, 0, 0, time.UTC)
 
 	ticket := testdata.InsertOpenTicket(rt, testdata.Org1, testdata.Cathy, testdata.DefaultTopic, openedOn, nil)
 
-	timing, err := models.TicketRecordReplied(ctx, rt.DB, ticket.ID, repliedOn)
+	err = models.RecordTicketReply(ctx, rt.DB, oa, ticket.ID, testdata.Agent.ID, repliedOn)
 	assert.NoError(t, err)
-	assert.Equal(t, 2340*time.Second, timing)
 
 	modelTicket := ticket.Load(rt)
 	assert.Equal(t, repliedOn, *modelTicket.RepliedOn())
@@ -319,12 +336,20 @@ func TestTicketRecordReply(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT replied_on FROM tickets_ticket WHERE id = $1`, ticket.ID).Returns(repliedOn)
 	assertdb.Query(t, rt.DB, `SELECT last_activity_on FROM tickets_ticket WHERE id = $1`, ticket.ID).Returns(repliedOn)
 
+	// check counts were added
+	ymd := repliedOn.Format("2006-01-02")
+	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{
+		ymd + "/msgs:ticketreplies:2:6":   1,
+		ymd + "/ticketresptime:2:6:total": 2340,
+		ymd + "/ticketresptime:2:6:count": 1,
+	})
+	testsuite.AssertDailyCounts(t, rt, testdata.Org2, map[string]int{})
+
 	repliedAgainOn := time.Date(2022, 5, 18, 15, 5, 0, 0, time.UTC)
 
 	// if we call it again, it won't change replied_on again but it will update last_activity_on
-	timing, err = models.TicketRecordReplied(ctx, rt.DB, ticket.ID, repliedAgainOn)
+	err = models.RecordTicketReply(ctx, rt.DB, oa, ticket.ID, testdata.Agent.ID, repliedAgainOn)
 	assert.NoError(t, err)
-	assert.Equal(t, time.Duration(-1), timing)
 
 	modelTicket = ticket.Load(rt)
 	assert.Equal(t, repliedOn, *modelTicket.RepliedOn())
@@ -332,8 +357,14 @@ func TestTicketRecordReply(t *testing.T) {
 
 	assertdb.Query(t, rt.DB, `SELECT replied_on FROM tickets_ticket WHERE id = $1`, ticket.ID).Returns(repliedOn)
 	assertdb.Query(t, rt.DB, `SELECT last_activity_on FROM tickets_ticket WHERE id = $1`, ticket.ID).Returns(repliedAgainOn)
+
+	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{
+		ymd + "/msgs:ticketreplies:2:6":   2,
+		ymd + "/ticketresptime:2:6:total": 2340,
+		ymd + "/ticketresptime:2:6:count": 1,
+	})
 }
 
-func assertTicketDailyCount(t *testing.T, rt *runtime.Runtime, countType models.TicketDailyCountType, scope string, expected int) {
+func assertLegacyTicketDailyCount(t *testing.T, rt *runtime.Runtime, countType models.TicketDailyCountType, scope string, expected int) {
 	assertdb.Query(t, rt.DB, `SELECT COALESCE(SUM(count), 0) FROM tickets_ticketdailycount WHERE count_type = $1 AND scope = $2`, countType, scope).Returns(expected)
 }
