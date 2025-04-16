@@ -570,12 +570,49 @@ func TicketRecordReplied(ctx context.Context, db DBorTx, ticketID TicketID, when
 	return time.Duration(-1), nil
 }
 
+type ticketDailyCount struct {
+	Day       dates.Date `db:"day"`
+	CountType string     `db:"count_type"`
+	Scope     string     `db:"scope"`
+	Count     int        `db:"count"`
+}
+
 func insertTicketDailyCounts(ctx context.Context, tx DBorTx, countType TicketDailyCountType, tz *time.Location, scopeCounts map[string]int) error {
-	return insertDailyCounts(ctx, tx, "tickets_ticketdailycount", countType, tz, scopeCounts)
+	day := dates.ExtractDate(dates.Now().In(tz))
+
+	counts := make([]*ticketDailyCount, 0, len(scopeCounts))
+	for scope, count := range scopeCounts {
+		counts = append(counts, &ticketDailyCount{
+			Day:       day,
+			CountType: string(countType),
+			Scope:     scope,
+			Count:     count,
+		})
+	}
+
+	return BulkQuery(ctx, "inserted daily counts", tx, `INSERT INTO tickets_ticketdailycount(count_type, scope, day, count, is_squashed) VALUES(:count_type, :scope, :day, :count, FALSE)`, counts)
+}
+
+type ticketDailyTiming struct {
+	Day       dates.Date `db:"day"`
+	CountType string     `db:"count_type"`
+	Scope     string     `db:"scope"`
+	Count     int        `db:"count"`
+	Seconds   int64      `db:"seconds"`
 }
 
 func insertTicketDailyTiming(ctx context.Context, tx DBorTx, countType TicketDailyTimingType, tz *time.Location, scope string, duration time.Duration) error {
-	return insertDailyTiming(ctx, tx, "tickets_ticketdailytiming", countType, tz, scope, duration)
+	day := dates.ExtractDate(dates.Now().In(tz))
+	timing := &ticketDailyTiming{
+		Day:       day,
+		CountType: string(countType),
+		Scope:     scope,
+		Count:     1,
+		Seconds:   int64(duration / time.Second),
+	}
+
+	_, err := tx.NamedExecContext(ctx, `INSERT INTO tickets_ticketdailytiming(count_type, scope, day, count, seconds, is_squashed) VALUES(:count_type, :scope, :day, :count, :seconds, FALSE)`, timing)
+	return err
 }
 
 func RecordTicketReply(ctx context.Context, db DBorTx, oa *OrgAssets, ticketID TicketID, userID UserID) error {
@@ -607,4 +644,16 @@ func RecordTicketReply(ctx context.Context, db DBorTx, oa *OrgAssets, ticketID T
 		}
 	}
 	return nil
+}
+
+func scopeOrg(oa *OrgAssets) string {
+	return fmt.Sprintf("o:%d", oa.OrgID())
+}
+
+func scopeTeam(t *Team) string {
+	return fmt.Sprintf("t:%d", t.ID)
+}
+
+func scopeUser(oa *OrgAssets, u *User) string {
+	return fmt.Sprintf("o:%d:u:%d", oa.OrgID(), u.ID())
 }

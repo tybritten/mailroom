@@ -319,6 +319,7 @@ DELETE FROM contacts_contact WHERE id >= 30000;
 DELETE FROM contacts_contactgroupcount WHERE group_id >= 30000;
 DELETE FROM contacts_contactgroup WHERE id >= 30000;
 DELETE FROM orgs_itemcount;
+DELETE FROM orgs_dailycount;
 
 ALTER SEQUENCE flows_flow_id_seq RESTART WITH 30000;
 ALTER SEQUENCE tickets_ticket_id_seq RESTART WITH 1;
