@@ -1,3 +1,7 @@
+v10.1.89 (2025-04-16)
+-------------------------
+ * Start recording ticket daily counts in new model
+
 v10.1.88 (2025-04-15)
 -------------------------
  * Update to latest goflow that adds trimming of quick replies to the 14.1 migration
