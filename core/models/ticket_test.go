@@ -1,7 +1,6 @@
 package models_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -9,7 +8,6 @@ import (
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
-	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 	"github.com/stretchr/testify/assert"
@@ -70,11 +68,6 @@ func TestTickets(t *testing.T) {
 		today + "/tickets:assigned:0:4": 2,
 	})
 	testsuite.AssertDailyCounts(t, rt, testdata.Org2, map[string]int{})
-
-	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountOpening, fmt.Sprintf("o:%d", testdata.Org1.ID), 3)
-	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountOpening, fmt.Sprintf("o:%d", testdata.Org2.ID), 0)
-	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Admin.ID), 2)
-	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Editor.ID), 0)
 
 	// can lookup a ticket by UUID
 	tk, err := models.LookupTicketByUUID(ctx, rt.DB, "64f81be1-00ff-48ef-9e51-97d6f924c1a4")
@@ -156,9 +149,6 @@ func TestTicketsAssign(t *testing.T) {
 		today + "/tickets:assigned:2:6": 2,
 	})
 	testsuite.AssertDailyCounts(t, rt, testdata.Org2, map[string]int{})
-
-	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Agent.ID), 2)
-	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountAssignment, fmt.Sprintf("o:%d:u:%d", testdata.Org1.ID, testdata.Admin.ID), 0)
 }
 
 func TestTicketsAddNote(t *testing.T) {
@@ -309,8 +299,6 @@ func TestReopenTickets(t *testing.T) {
 
 	// reopening doesn't change opening daily counts
 	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{})
-
-	assertLegacyTicketDailyCount(t, rt, models.TicketDailyCountOpening, fmt.Sprintf("o:%d", testdata.Org1.ID), 0)
 }
 
 func TestTicketRecordReply(t *testing.T) {
@@ -363,8 +351,4 @@ func TestTicketRecordReply(t *testing.T) {
 		ymd + "/ticketresptime:2:6:total": 2340,
 		ymd + "/ticketresptime:2:6:count": 1,
 	})
-}
-
-func assertLegacyTicketDailyCount(t *testing.T, rt *runtime.Runtime, countType models.TicketDailyCountType, scope string, expected int) {
-	assertdb.Query(t, rt.DB, `SELECT COALESCE(SUM(count), 0) FROM tickets_ticketdailycount WHERE count_type = $1 AND scope = $2`, countType, scope).Returns(expected)
 }

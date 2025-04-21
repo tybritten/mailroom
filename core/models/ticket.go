@@ -245,9 +245,6 @@ func InsertTickets(ctx context.Context, tx DBorTx, oa *OrgAssets, tickets []*Tic
 
 	dailyCounts := map[string]int{"tickets:opened": len(tickets)} // all new tickets are open
 
-	legacyOpeningCounts := map[string]int{scopeOrg(oa): len(tickets)}
-	legacyAssignmentCounts := make(map[string]int)
-
 	ts := make([]any, len(tickets))
 	for i, t := range tickets {
 		ts[i] = &t.t
@@ -255,14 +252,11 @@ func InsertTickets(ctx context.Context, tx DBorTx, oa *OrgAssets, tickets []*Tic
 		if t.AssigneeID() != NilUserID {
 			assignee := oa.UserByID(t.AssigneeID())
 			if assignee != nil {
-				userID := assignee.ID()
 				teamID := NilTeamID
 				if assignee.Team() != nil {
 					teamID = assignee.Team().ID
 				}
-				dailyCounts[fmt.Sprintf("tickets:assigned:%d:%d", teamID, userID)]++
-
-				legacyAssignmentCounts[scopeUser(oa, assignee)]++
+				dailyCounts[fmt.Sprintf("tickets:assigned:%d:%d", teamID, assignee.ID())]++
 			}
 		}
 	}
@@ -273,13 +267,6 @@ func InsertTickets(ctx context.Context, tx DBorTx, oa *OrgAssets, tickets []*Tic
 
 	if err := InsertDailyCounts(ctx, tx, oa, dates.Now(), dailyCounts); err != nil {
 		return fmt.Errorf("error inserting daily counts: %w", err)
-	}
-
-	if err := insertTicketDailyCounts(ctx, tx, TicketDailyCountOpening, oa.Env().Timezone(), legacyOpeningCounts); err != nil {
-		return err
-	}
-	if err := insertTicketDailyCounts(ctx, tx, TicketDailyCountAssignment, oa.Env().Timezone(), legacyAssignmentCounts); err != nil {
-		return err
 	}
 
 	return nil
@@ -314,7 +301,6 @@ func TicketsAssign(ctx context.Context, db DBorTx, oa *OrgAssets, userID UserID,
 	now := dates.Now()
 
 	dailyCounts := make(map[string]int)
-	legacyAssignmentCounts := make(map[string]int)
 
 	for _, ticket := range tickets {
 		if ticket.AssigneeID() != assigneeID {
@@ -323,15 +309,12 @@ func TicketsAssign(ctx context.Context, db DBorTx, oa *OrgAssets, userID UserID,
 			if ticket.AssigneeID() == NilUserID && assigneeID != NilUserID {
 				assignee := oa.UserByID(assigneeID)
 				if assignee != nil {
-					userID := assignee.ID()
 					teamID := NilTeamID
 					if assignee.Team() != nil {
 						teamID = assignee.Team().ID
 					}
 
-					dailyCounts[fmt.Sprintf("tickets:assigned:%d:%d", teamID, userID)]++
-
-					legacyAssignmentCounts[scopeUser(oa, assignee)]++
+					dailyCounts[fmt.Sprintf("tickets:assigned:%d:%d", teamID, assignee.ID())]++
 				}
 			}
 
@@ -363,11 +346,6 @@ func TicketsAssign(ctx context.Context, db DBorTx, oa *OrgAssets, userID UserID,
 
 	if err := InsertDailyCounts(ctx, db, oa, dates.Now(), dailyCounts); err != nil {
 		return nil, fmt.Errorf("error inserting daily counts: %w", err)
-	}
-
-	err = insertTicketDailyCounts(ctx, db, TicketDailyCountAssignment, oa.Env().Timezone(), legacyAssignmentCounts)
-	if err != nil {
-		return nil, fmt.Errorf("error inserting assignment counts: %w", err)
 	}
 
 	return eventsByTicket, nil
@@ -593,68 +571,18 @@ func TicketRecordReplied(ctx context.Context, db DBorTx, ticketID TicketID, when
 	return time.Duration(-1), nil
 }
 
-type ticketDailyCount struct {
-	Day       dates.Date `db:"day"`
-	CountType string     `db:"count_type"`
-	Scope     string     `db:"scope"`
-	Count     int        `db:"count"`
-}
-
-func insertTicketDailyCounts(ctx context.Context, tx DBorTx, countType TicketDailyCountType, tz *time.Location, scopeCounts map[string]int) error {
-	day := dates.ExtractDate(dates.Now().In(tz))
-
-	counts := make([]*ticketDailyCount, 0, len(scopeCounts))
-	for scope, count := range scopeCounts {
-		counts = append(counts, &ticketDailyCount{
-			Day:       day,
-			CountType: string(countType),
-			Scope:     scope,
-			Count:     count,
-		})
-	}
-
-	return BulkQuery(ctx, "inserted daily counts", tx, `INSERT INTO tickets_ticketdailycount(count_type, scope, day, count, is_squashed) VALUES(:count_type, :scope, :day, :count, FALSE)`, counts)
-}
-
-type ticketDailyTiming struct {
-	Day       dates.Date `db:"day"`
-	CountType string     `db:"count_type"`
-	Scope     string     `db:"scope"`
-	Count     int        `db:"count"`
-	Seconds   int64      `db:"seconds"`
-}
-
-func insertTicketDailyTiming(ctx context.Context, tx DBorTx, countType TicketDailyTimingType, tz *time.Location, scope string, duration time.Duration) error {
-	day := dates.ExtractDate(dates.Now().In(tz))
-	timing := &ticketDailyTiming{
-		Day:       day,
-		CountType: string(countType),
-		Scope:     scope,
-		Count:     1,
-		Seconds:   int64(duration / time.Second),
-	}
-
-	_, err := tx.NamedExecContext(ctx, `INSERT INTO tickets_ticketdailytiming(count_type, scope, day, count, seconds, is_squashed) VALUES(:count_type, :scope, :day, :count, :seconds, FALSE)`, timing)
-	return err
-}
-
 func RecordTicketReply(ctx context.Context, db DBorTx, oa *OrgAssets, ticketID TicketID, userID UserID, when time.Time) error {
 	firstReplyTime, err := TicketRecordReplied(ctx, db, ticketID, when)
 	if err != nil {
 		return err
 	}
 
-	legacyReplyCounts := map[string]int{scopeOrg(oa): 1}
-
 	teamID := NilTeamID
 	if userID != NilUserID {
 		user := oa.UserByID(userID)
 		if user != nil {
-			legacyReplyCounts[scopeUser(oa, user)] = 1
 			if user.Team() != nil {
 				teamID = user.Team().ID
-
-				legacyReplyCounts[scopeTeam(user.Team())] = 1
 			}
 		}
 	}
@@ -665,18 +593,10 @@ func RecordTicketReply(ctx context.Context, db DBorTx, oa *OrgAssets, ticketID T
 	if firstReplyTime >= 0 {
 		dailyCounts[fmt.Sprintf("ticketresptime:%d:%d:total", teamID, userID)] = int(firstReplyTime / time.Second)
 		dailyCounts[fmt.Sprintf("ticketresptime:%d:%d:count", teamID, userID)] = 1
-
-		if err := insertTicketDailyTiming(ctx, db, TicketDailyTimingFirstReply, oa.Env().Timezone(), scopeOrg(oa), firstReplyTime); err != nil {
-			return err
-		}
 	}
 
 	if err := InsertDailyCounts(ctx, db, oa, when, dailyCounts); err != nil {
 		return fmt.Errorf("error inserting daily counts: %w", err)
-	}
-
-	if err := insertTicketDailyCounts(ctx, db, TicketDailyCountReply, oa.Env().Timezone(), legacyReplyCounts); err != nil {
-		return err
 	}
 
 	return nil
