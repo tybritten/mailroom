@@ -1,3 +1,7 @@
+v10.1.93 (2025-04-21)
+-------------------------
+ * Stop writing old ticket daily counts and timings
+
 v10.1.92 (2025-04-21)
 -------------------------
  * Fix flakey test
