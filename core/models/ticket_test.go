@@ -64,7 +64,7 @@ func TestTickets(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM tickets_ticket WHERE status = 'O' AND closed_on IS NULL`).Returns(3)
 
 	// check counts were added
-	today := time.Now().Format("2006-01-02")
+	today := time.Now().In(oa.Env().Timezone()).Format("2006-01-02")
 	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{
 		today + "/tickets:opened":       3,
 		today + "/tickets:assigned:0:4": 2,
