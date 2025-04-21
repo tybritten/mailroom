@@ -151,7 +151,7 @@ func TestTicketsAssign(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT count(*) FROM notifications_notification WHERE user_id = $1 AND notification_type = 'tickets:activity'`, testdata.Agent.ID).Returns(1)
 
 	// and daily counts (we only count first assignments of a ticket)
-	today := time.Now().Format("2006-01-02")
+	today := time.Now().In(oa.Env().Timezone()).Format("2006-01-02")
 	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{
 		today + "/tickets:assigned:2:6": 2,
 	})
@@ -337,7 +337,7 @@ func TestTicketRecordReply(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT last_activity_on FROM tickets_ticket WHERE id = $1`, ticket.ID).Returns(repliedOn)
 
 	// check counts were added
-	ymd := repliedOn.Format("2006-01-02")
+	ymd := repliedOn.In(oa.Env().Timezone()).Format("2006-01-02")
 	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{
 		ymd + "/msgs:ticketreplies:2:6":   1,
 		ymd + "/ticketresptime:2:6:total": 2340,
