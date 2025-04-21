@@ -1,3 +1,7 @@
+v10.1.90 (2025-04-21)
+-------------------------
+ * Fix Whatsapp template variables with expressions when used from a broadcast
+
 v10.1.89 (2025-04-16)
 -------------------------
  * Start recording ticket daily counts in new model
