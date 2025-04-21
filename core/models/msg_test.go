@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/assets"
+	"github.com/nyaruka/goflow/excellent/types"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/test"
 	"github.com/nyaruka/goflow/utils"
@@ -536,22 +537,32 @@ func TestCreateMsgOut(t *testing.T) {
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
 
-	// give Cathy a new facebook URN
+	// give Cathy and George new facebook URNs
 	testdata.InsertContactURN(rt, testdata.Org1, testdata.Cathy, "facebook:123456789", 1001, nil)
+	testdata.InsertContactURN(rt, testdata.Org1, testdata.George, "facebook:234567890", 1001, nil)
 
 	_, bob, _ := testdata.Bob.Load(rt, oa)
 	_, cathy, _ := testdata.Cathy.Load(rt, oa)
+	_, george, _ := testdata.George.Load(rt, oa)
+	evalContext := func(c *flows.Contact) *types.XObject {
+		return types.NewXObject(map[string]types.XValue{
+			"contact": types.NewXObject(map[string]types.XValue{"name": types.NewXText(c.Name())}),
+		})
+	}
 
-	out, ch := models.CreateMsgOut(rt, oa, bob, &flows.MsgContent{Text: "hello"}, models.NilTemplateID, nil, `eng`, nil)
-	assert.Equal(t, "hello", out.Text())
+	out, ch := models.CreateMsgOut(rt, oa, bob, &flows.MsgContent{Text: "hello @contact.name"}, models.NilTemplateID, nil, `eng`, evalContext(bob))
+	assert.Equal(t, "hello Bob", out.Text())
 	assert.Equal(t, urns.URN("tel:+16055742222?id=10001"), out.URN())
 	assert.Equal(t, assets.NewChannelReference("74729f45-7f29-4868-9dc4-90e491e3c7d8", "Twilio"), out.Channel())
 	assert.Equal(t, i18n.Locale(`eng`), out.Locale())
 	assert.Nil(t, out.Templating())
 	assert.Equal(t, "Twilio", ch.Name())
 
-	out, ch = models.CreateMsgOut(rt, oa, cathy, &flows.MsgContent{Text: "hello"}, testdata.ReviveTemplate.ID, []string{"Bob", "mice"}, `eng`, nil)
-	assert.Equal(t, "Hi Bob, are you still experiencing problems with mice?", out.Text())
+	msgContent := &flows.MsgContent{Text: "hello"}
+	templateVariables := []string{"@contact.name", "mice"}
+
+	out, ch = models.CreateMsgOut(rt, oa, cathy, msgContent, testdata.ReviveTemplate.ID, templateVariables, `eng`, evalContext(cathy))
+	assert.Equal(t, "Hi Cathy, are you still experiencing problems with mice?", out.Text())
 	assert.Equal(t, urns.URN("facebook:123456789?id=30000"), out.URN())
 	assert.Equal(t, assets.NewChannelReference("0f661e8b-ea9d-4bd3-9953-d368340acf91", "Facebook"), out.Channel())
 	assert.Equal(t, i18n.Locale(`eng-US`), out.Locale())
@@ -560,9 +571,19 @@ func TestCreateMsgOut(t *testing.T) {
 		Components: []*flows.TemplatingComponent{
 			{Name: "body", Type: "body/text", Variables: map[string]int{"1": 0, "2": 1}},
 		},
-		Variables: []*flows.TemplatingVariable{{Type: "text", Value: "Bob"}, {Type: "text", Value: "mice"}},
+		Variables: []*flows.TemplatingVariable{{Type: "text", Value: "Cathy"}, {Type: "text", Value: "mice"}},
 	}, out.Templating())
 	assert.Equal(t, "Facebook", ch.Name())
+
+	out, _ = models.CreateMsgOut(rt, oa, george, msgContent, testdata.ReviveTemplate.ID, templateVariables, `eng`, evalContext(george))
+	assert.Equal(t, "Hi George, are you still experiencing problems with mice?", out.Text())
+	assert.Equal(t, &flows.MsgTemplating{
+		Template: assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue"),
+		Components: []*flows.TemplatingComponent{
+			{Name: "body", Type: "body/text", Variables: map[string]int{"1": 0, "2": 1}},
+		},
+		Variables: []*flows.TemplatingVariable{{Type: "text", Value: "George"}, {Type: "text", Value: "mice"}},
+	}, out.Templating())
 
 	bob.SetStatus(flows.ContactStatusBlocked)
 

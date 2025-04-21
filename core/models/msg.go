@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -809,6 +810,7 @@ func CreateMsgOut(rt *runtime.Runtime, oa *OrgAssets, c *flows.Contact, content 
 		ev := goflow.Engine(rt).Evaluator()
 
 		content.Text, _, _ = ev.Template(oa.Env(), expressionsContext, content.Text, nil)
+		templateVariables = slices.Clone(templateVariables)
 
 		for i := range content.Attachments {
 			evaluated, _, _ := ev.Template(oa.Env(), expressionsContext, string(content.Attachments[i]), nil)
