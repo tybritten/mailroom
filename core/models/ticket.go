@@ -601,15 +601,3 @@ func RecordTicketReply(ctx context.Context, db DBorTx, oa *OrgAssets, ticketID T
 
 	return nil
 }
-
-func scopeOrg(oa *OrgAssets) string {
-	return fmt.Sprintf("o:%d", oa.OrgID())
-}
-
-func scopeTeam(t *Team) string {
-	return fmt.Sprintf("t:%d", t.ID)
-}
-
-func scopeUser(oa *OrgAssets, u *User) string {
-	return fmt.Sprintf("o:%d:u:%d", oa.OrgID(), u.ID())
-}
