@@ -1,3 +1,7 @@
+v10.1.96 (2025-04-22)
+-------------------------
+ * Read from Flow.ivr_retry instead of Flow.metadata
+
 v10.1.95 (2025-04-22)
 -------------------------
  * Only record ticket response time at workspace level and against day ticket was opened
