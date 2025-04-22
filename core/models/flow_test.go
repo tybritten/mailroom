@@ -19,7 +19,7 @@ func TestLoadFlows(t *testing.T) {
 
 	defer testsuite.Reset(testsuite.ResetAll)
 
-	rt.DB.MustExec(`UPDATE flows_flow SET metadata = '{"ivr_retry": 30}'::json WHERE id = $1`, testdata.IVRFlow.ID)
+	rt.DB.MustExec(`UPDATE flows_flow SET ivr_retry = 30 WHERE id = $1`, testdata.IVRFlow.ID)
 	rt.DB.MustExec(`UPDATE flows_flow SET expires_after_minutes = 720 WHERE id = $1`, testdata.Favorites.ID)
 	rt.DB.MustExec(`UPDATE flows_flow SET expires_after_minutes = 1 WHERE id = $1`, testdata.PickANumber.ID)          // too small for messaging
 	rt.DB.MustExec(`UPDATE flows_flow SET expires_after_minutes = 12345678 WHERE id = $1`, testdata.SingleMessage.ID) // too large for messaging
