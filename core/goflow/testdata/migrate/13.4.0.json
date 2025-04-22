@@ -41,6 +41,11 @@
                             }
                         ]
                     }
+                },
+                {
+                    "uuid": "dad37f80-4661-45bc-bfe0-a60bfc24b257",
+                    "type": "open_ticket",
+                    "body": "Sounds important"
                 }
             ],
             "exits": [
