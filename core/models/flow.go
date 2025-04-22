@@ -38,10 +38,6 @@ func (t FlowType) Interrupts() bool {
 	return t != FlowTypeBackground
 }
 
-const (
-	flowConfigIVRRetryMinutes = "ivr_retry"
-)
-
 var flowTypeMapping = map[flows.FlowType]FlowType{
 	flows.FlowTypeMessaging:           FlowTypeMessaging,
 	flows.FlowTypeMessagingBackground: FlowTypeBackground,
@@ -55,11 +51,11 @@ type Flow struct {
 		OrgID          OrgID           `json:"org_id"`
 		UUID           assets.FlowUUID `json:"uuid"`
 		Name           string          `json:"name"`
-		Config         null.Map[any]   `json:"config"`
 		Version        string          `json:"version"`
 		FlowType       FlowType        `json:"flow_type"`
 		Definition     json.RawMessage `json:"definition"`
 		IgnoreTriggers bool            `json:"ignore_triggers"`
+		IVRRetry       int             `json:"ivr_retry"`
 	}
 }
 
@@ -86,19 +82,14 @@ func (f *Flow) Version() string { return f.f.Version }
 
 // IVRRetryWait returns the wait before retrying a failed IVR call (nil means no retry)
 func (f *Flow) IVRRetryWait() *time.Duration {
-	wait := CallRetryWait
-
-	value := f.f.Config[flowConfigIVRRetryMinutes]
-	fv, isFloat := value.(float64)
-	if isFloat {
-		minutes := int(fv)
-		if minutes >= 0 {
-			wait = time.Minute * time.Duration(minutes)
-		} else {
-			return nil // ivr_retry -1 means no retry
-		}
+	if f.f.IVRRetry == -1 { // never retry
+		return nil
+	} else if f.f.IVRRetry == 0 { // use default
+		wait := CallRetryWait
+		return &wait
 	}
 
+	wait := time.Minute * time.Duration(f.f.IVRRetry)
 	return &wait
 }
 
@@ -177,8 +168,8 @@ SELECT ROW_TO_JSON(r) FROM (
 		f.name,
 		f.ignore_triggers,
 		f.flow_type,
-		fr.spec_version as version,
-		coalesce(f.metadata, '{}')::jsonb as config,
+		fr.spec_version AS version,
+		COALESCE(f.ivr_retry, 0) AS ivr_retry,
 		definition::jsonb || 
 			jsonb_build_object(
 				'name', f.name,
@@ -197,7 +188,7 @@ SELECT ROW_TO_JSON(r) FROM (
 					'revision', revision, 
 					'expires', f.expires_after_minutes
 				)
-		) as definition
+		) AS definition
 	FROM
 		flows_flow f
 	INNER JOIN LATERAL (
