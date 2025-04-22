@@ -541,38 +541,33 @@ const sqlUpdateTicketRepliedOn = `
       SET last_activity_on = $2, replied_on = LEAST(t1.replied_on, $2)
 	 FROM tickets_ticket t2
     WHERE t1.id = t2.id AND t1.id = $1
-RETURNING CASE WHEN t2.replied_on IS NULL THEN EXTRACT(EPOCH FROM (t1.replied_on - t1.opened_on)) ELSE NULL END`
+RETURNING CASE WHEN t2.replied_on IS NULL THEN t1.opened_on ELSE NULL END`
 
 // TicketRecordReplied records a ticket as being replied to, updating last_activity_on. If this is the first reply
-// to this ticket then replied_on is updated and the function returns the number of seconds between that and when
-// the ticket was opened.
-func TicketRecordReplied(ctx context.Context, db DBorTx, ticketID TicketID, when time.Time) (time.Duration, error) {
+// to this ticket then replied_on is updated and the function returns the time the ticket was opened.
+func TicketRecordReplied(ctx context.Context, db DBorTx, ticketID TicketID, when time.Time) (*time.Time, error) {
 	rows, err := db.QueryxContext(ctx, sqlUpdateTicketRepliedOn, ticketID, when)
 	if err != nil && err != sql.ErrNoRows {
-		return -1, err
+		return nil, err
 	}
 
 	defer rows.Close()
 
 	// if we didn't get anything back then we didn't change the ticket because it was already replied to
 	if err == sql.ErrNoRows || !rows.Next() {
-		return -1, nil
+		return nil, nil
 	}
 
-	var seconds *float64
-	if err := rows.Scan(&seconds); err != nil {
-		return -1, err
+	var openedOn *time.Time
+	if err := rows.Scan(&openedOn); err != nil {
+		return nil, err
 	}
 
-	if seconds != nil {
-		return time.Duration(*seconds * float64(time.Second)), nil
-	}
-
-	return time.Duration(-1), nil
+	return openedOn, nil
 }
 
 func RecordTicketReply(ctx context.Context, db DBorTx, oa *OrgAssets, ticketID TicketID, userID UserID, when time.Time) error {
-	firstReplyTime, err := TicketRecordReplied(ctx, db, ticketID, when)
+	openedOn, err := TicketRecordReplied(ctx, db, ticketID, when)
 	if err != nil {
 		return err
 	}
@@ -590,13 +585,18 @@ func RecordTicketReply(ctx context.Context, db DBorTx, oa *OrgAssets, ticketID T
 	// record reply count that encodes team + user
 	dailyCounts := map[string]int{fmt.Sprintf("msgs:ticketreplies:%d:%d", teamID, userID): 1}
 
-	if firstReplyTime >= 0 {
-		dailyCounts[fmt.Sprintf("ticketresptime:%d:%d:total", teamID, userID)] = int(firstReplyTime / time.Second)
-		dailyCounts[fmt.Sprintf("ticketresptime:%d:%d:count", teamID, userID)] = 1
-	}
-
 	if err := InsertDailyCounts(ctx, db, oa, when, dailyCounts); err != nil {
 		return fmt.Errorf("error inserting daily counts: %w", err)
+	}
+
+	// if this is the first reply to the ticket then record the ticket response time
+	if openedOn != nil {
+		respSeconds := int(when.Sub(*openedOn) / time.Second)
+		timingCounts := map[string]int{"ticketresptime:total": respSeconds, "ticketresptime:count": 1}
+
+		if err := InsertDailyCounts(ctx, db, oa, *openedOn, timingCounts); err != nil {
+			return fmt.Errorf("error inserting daily counts: %w", err)
+		}
 	}
 
 	return nil

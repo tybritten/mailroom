@@ -309,7 +309,7 @@ func TestTicketRecordReply(t *testing.T) {
 	oa, err := models.GetOrgAssets(ctx, rt, testdata.Org1.ID)
 	require.NoError(t, err)
 
-	openedOn := time.Date(2022, 5, 18, 14, 21, 0, 0, time.UTC)
+	openedOn := time.Date(2022, 5, 17, 14, 21, 0, 0, time.UTC)
 	repliedOn := time.Date(2022, 5, 18, 15, 0, 0, 0, time.UTC)
 
 	ticket := testdata.InsertOpenTicket(rt, testdata.Org1, testdata.Cathy, testdata.DefaultTopic, openedOn, nil)
@@ -325,11 +325,12 @@ func TestTicketRecordReply(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT last_activity_on FROM tickets_ticket WHERE id = $1`, ticket.ID).Returns(repliedOn)
 
 	// check counts were added
-	ymd := repliedOn.In(oa.Env().Timezone()).Format("2006-01-02")
+	openYmd := openedOn.In(oa.Env().Timezone()).Format("2006-01-02")
+	replyYmd := repliedOn.In(oa.Env().Timezone()).Format("2006-01-02")
 	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{
-		ymd + "/msgs:ticketreplies:2:6":   1,
-		ymd + "/ticketresptime:2:6:total": 2340,
-		ymd + "/ticketresptime:2:6:count": 1,
+		replyYmd + "/msgs:ticketreplies:2:6": 1,
+		openYmd + "/ticketresptime:total":    88740,
+		openYmd + "/ticketresptime:count":    1,
 	})
 	testsuite.AssertDailyCounts(t, rt, testdata.Org2, map[string]int{})
 
@@ -347,8 +348,8 @@ func TestTicketRecordReply(t *testing.T) {
 	assertdb.Query(t, rt.DB, `SELECT last_activity_on FROM tickets_ticket WHERE id = $1`, ticket.ID).Returns(repliedAgainOn)
 
 	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{
-		ymd + "/msgs:ticketreplies:2:6":   2,
-		ymd + "/ticketresptime:2:6:total": 2340,
-		ymd + "/ticketresptime:2:6:count": 1,
+		replyYmd + "/msgs:ticketreplies:2:6": 2,
+		openYmd + "/ticketresptime:total":    88740,
+		openYmd + "/ticketresptime:count":    1,
 	})
 }
