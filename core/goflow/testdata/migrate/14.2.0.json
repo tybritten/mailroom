@@ -1,10 +1,10 @@
 {
     "uuid": "502c3ee4-3249-4dee-8e71-c62070667d52",
     "name": "New",
-    "spec_version": "13.3.0",
+    "spec_version": "14.2.0",
     "type": "messaging",
     "language": "und",
-    "expire_after_minutes": 43200,
+    "expire_after_minutes": 20160,
     "nodes": [
         {
             "uuid": "d26486b1-193d-4512-85f0-c6db696f1e1c",
@@ -12,7 +12,7 @@
                 {
                     "uuid": "82a1de5f-af1a-45ef-8511-4d60c160e486",
                     "type": "send_msg",
-                    "text": "Hello @webhook.json from @results.this_is_a_reference_to_a_result_whose_name_will_have_been_truncated",
+                    "text": "Hello @webhook.json from @results.this_is_a_reference_to_a_result_whose_name_will_have_been_trunca",
                     "quick_replies": [
                         "A",
                         "B",
@@ -23,24 +23,20 @@
                         "G",
                         "H",
                         "I",
-                        "J",
-                        "K"
+                        "J"
                     ],
-                    "templating": {
-                        "uuid": "1ae96956-4b34-433e-8d1a-f05fe6923d6d",
-                        "template": {
-                            "uuid": "641b8b05-082a-497e-bf63-38aa48b1f0c4",
-                            "name": "welcome"
-                        },
-                        "variables": [
-                            "@contact.name"
-                        ]
-                    }
+                    "template": {
+                        "uuid": "641b8b05-082a-497e-bf63-38aa48b1f0c4",
+                        "name": "welcome"
+                    },
+                    "template_variables": [
+                        "@contact.name"
+                    ]
                 },
                 {
                     "uuid": "dad37f80-4661-45bc-bfe0-a60bfc24b257",
                     "type": "open_ticket",
-                    "body": "Sounds important"
+                    "note": "Sounds important"
                 }
             ],
             "exits": [
@@ -64,13 +60,14 @@
             ],
             "router": {
                 "type": "switch",
-                "operand": "@results.call_2.category",
+                "operand": "@webhook.status",
                 "cases": [
                     {
                         "uuid": "ff810df6-23c2-4dff-9be1-eebffae2bb9d",
-                        "type": "has_only_text",
+                        "type": "has_number_between",
                         "arguments": [
-                            "Success"
+                            "200",
+                            "299"
                         ],
                         "category_uuid": "be4ad508-3afb-4c4a-80ba-86b61518411c"
                     }

@@ -130,30 +130,19 @@
         "response": {
             "dependencies": [
                 {
-                    "key": "birthdate",
-                    "name": "",
-                    "type": "field",
-                    "missing": true
-                },
-                {
                     "uuid": "1465eb20-066d-4933-a8b4-62fe7b19fd39",
                     "name": "I Don't Exist",
                     "type": "group",
                     "missing": true
+                },
+                {
+                    "key": "birthdate",
+                    "name": "",
+                    "type": "field",
+                    "missing": true
                 }
             ],
             "issues": [
-                {
-                    "type": "missing_dependency",
-                    "node_uuid": "6fde1a09-3997-47dd-aff0-92e8aff3a642",
-                    "action_uuid": "05a5cb7c-bb8a-4ad9-af90-ef9887cc370e",
-                    "description": "missing field dependency 'birthdate'",
-                    "dependency": {
-                        "key": "birthdate",
-                        "name": "",
-                        "type": "field"
-                    }
-                },
                 {
                     "type": "missing_dependency",
                     "node_uuid": "6fde1a09-3997-47dd-aff0-92e8aff3a642",
@@ -163,6 +152,17 @@
                         "uuid": "1465eb20-066d-4933-a8b4-62fe7b19fd39",
                         "name": "I Don't Exist",
                         "type": "group"
+                    }
+                },
+                {
+                    "type": "missing_dependency",
+                    "node_uuid": "6fde1a09-3997-47dd-aff0-92e8aff3a642",
+                    "action_uuid": "05a5cb7c-bb8a-4ad9-af90-ef9887cc370e",
+                    "description": "missing field dependency 'birthdate'",
+                    "dependency": {
+                        "key": "birthdate",
+                        "name": "",
+                        "type": "field"
                     }
                 }
             ],
