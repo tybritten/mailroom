@@ -1,3 +1,7 @@
+v10.1.95 (2025-04-22)
+-------------------------
+ * Only record ticket response time at workspace level and against day ticket was opened
+
 v10.1.94 (2025-04-22)
 -------------------------
  * Update to latest goflow that add counts to inspection
