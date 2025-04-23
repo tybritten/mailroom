@@ -1,3 +1,7 @@
+v10.1.98 (2025-04-23)
+-------------------------
+ * Track tickets opened by topic
+
 v10.1.97 (2025-04-23)
 -------------------------
  * Update goflow which augmentas 14.2 migration to fix invalid languages
