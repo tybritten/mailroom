@@ -64,7 +64,9 @@ func TestTickets(t *testing.T) {
 	// check counts were added
 	today := time.Now().In(oa.Env().Timezone()).Format("2006-01-02")
 	testsuite.AssertDailyCounts(t, rt, testdata.Org1, map[string]int{
-		today + "/tickets:opened":       3,
+		today + "/tickets:opened:1":     1,
+		today + "/tickets:opened:2":     1,
+		today + "/tickets:opened:3":     1,
 		today + "/tickets:assigned:0:4": 2,
 	})
 	testsuite.AssertDailyCounts(t, rt, testdata.Org2, map[string]int{})
