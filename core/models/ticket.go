@@ -27,18 +27,10 @@ func (i TicketID) MarshalJSON() ([]byte, error)  { return null.MarshalInt(i) }
 
 type TicketerID int
 type TicketStatus string
-type TicketDailyCountType string
-type TicketDailyTimingType string
 
 const (
 	TicketStatusOpen   = TicketStatus("O")
 	TicketStatusClosed = TicketStatus("C")
-
-	TicketDailyCountOpening    = TicketDailyCountType("O")
-	TicketDailyCountAssignment = TicketDailyCountType("A")
-	TicketDailyCountReply      = TicketDailyCountType("R")
-
-	TicketDailyTimingFirstReply = TicketDailyTimingType("R")
 )
 
 type Ticket struct {
@@ -243,10 +235,12 @@ func InsertTickets(ctx context.Context, tx DBorTx, oa *OrgAssets, tickets []*Tic
 		return nil
 	}
 
-	dailyCounts := map[string]int{"tickets:opened": len(tickets)} // all new tickets are open
+	dailyCounts := make(map[string]int, len(tickets))
 
 	ts := make([]any, len(tickets))
 	for i, t := range tickets {
+		dailyCounts[fmt.Sprintf("tickets:opened:%d", t.TopicID())]++
+
 		ts[i] = &t.t
 
 		if t.AssigneeID() != NilUserID {
