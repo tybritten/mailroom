@@ -5,6 +5,22 @@
     "type": "messaging",
     "language": "base",
     "expire_after_minutes": 43200,
+    "localization": {
+        "spa": {
+            "82a1de5f-af1a-45ef-8511-4d60c160e486": {
+                "text": [
+                    "Hola @webhook"
+                ]
+            }
+        },
+        "base": {
+            "82a1de5f-af1a-45ef-8511-4d60c160e486": {
+                "text": [
+                    "Salut"
+                ]
+            }
+        }
+    },
     "nodes": [
         {
             "uuid": "d26486b1-193d-4512-85f0-c6db696f1e1c",
