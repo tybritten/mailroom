@@ -26,11 +26,11 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.61.1
-	github.com/nyaruka/goflow v0.240.3
+	github.com/nyaruka/goflow v0.240.4
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.9.0
 	github.com/nyaruka/rp-indexer/v10 v10.1.1
-	github.com/openai/openai-go v0.1.0-beta.9
+	github.com/openai/openai-go v0.1.0-beta.10
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.63.0
@@ -88,7 +88,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -104,7 +104,7 @@ require (
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1 // indirect
 	github.com/nyaruka/null/v2 v2.0.3 // indirect
-	github.com/nyaruka/phonenumbers v1.6.0 // indirect
+	github.com/nyaruka/phonenumbers v1.6.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/samber/lo v1.49.1 // indirect
