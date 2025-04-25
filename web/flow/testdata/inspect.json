@@ -73,9 +73,10 @@
                     "type": "group"
                 }
             ],
-            "issues": [],
+            "locals": [],
             "results": [],
-            "parent_refs": []
+            "parent_refs": [],
+            "issues": []
         }
     },
     {
@@ -150,6 +151,9 @@
                     "missing": true
                 }
             ],
+            "locals": [],
+            "results": [],
+            "parent_refs": [],
             "issues": [
                 {
                     "type": "missing_dependency",
@@ -173,9 +177,7 @@
                         "type": "field"
                     }
                 }
-            ],
-            "results": [],
-            "parent_refs": []
+            ]
         }
     },
     {
@@ -240,7 +242,7 @@
                     "type": "group"
                 }
             ],
-            "issues": [],
+            "locals": [],
             "results": [
                 {
                     "key": "answer",
@@ -251,7 +253,8 @@
                     ]
                 }
             ],
-            "parent_refs": []
+            "parent_refs": [],
+            "issues": []
         }
     },
     {
@@ -347,9 +350,10 @@
                 "nodes": 1
             },
             "dependencies": [],
-            "issues": [],
+            "locals": [],
             "results": [],
-            "parent_refs": []
+            "parent_refs": [],
+            "issues": []
         }
     },
     {
