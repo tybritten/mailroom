@@ -62,6 +62,25 @@ func TestLoadOrg(t *testing.T) {
 	assert.EqualError(t, err, "no org with id: 99")
 }
 
+func TestGetOrgIDFromUUID(t *testing.T) {
+	ctx, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetAll)
+
+	// mark org 2 deleted
+	rt.DB.MustExec(`UPDATE orgs_org SET is_active = FALSE WHERE id = $1`, testdata.Org2.ID)
+	models.FlushCache()
+
+	orgID, err := models.GetOrgIDFromUUID(ctx, rt.DB.DB, models.OrgUUID(testdata.Org1.UUID))
+	require.NoError(t, err)
+	assert.Equal(t, testdata.Org1.ID, orgID)
+
+	orgID2, err := models.GetOrgIDFromUUID(ctx, rt.DB.DB, models.OrgUUID(testdata.Org2.UUID))
+	require.NoError(t, err)
+	assert.Equal(t, orgID2, models.NilOrgID)
+
+}
+
 func TestEmailService(t *testing.T) {
 	ctx, rt := testsuite.Runtime()
 

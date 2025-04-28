@@ -273,7 +273,7 @@ func LoadOrg(ctx context.Context, db *sql.DB, orgID OrgID) (*Org, error) {
 // GetOrgIDFromUUID gets an org ID from a UUID (returns NilOrgID if not found)
 func GetOrgIDFromUUID(ctx context.Context, db *sql.DB, orgUUID OrgUUID) (OrgID, error) {
 	var orgID OrgID
-	err := db.QueryRowContext(ctx, `SELECT id FROM orgs_org WHERE uuid = $1`, orgUUID).Scan(&orgID)
+	err := db.QueryRowContext(ctx, `SELECT id FROM orgs_org WHERE is_active = TRUE AND uuid = $1`, orgUUID).Scan(&orgID)
 	if err != nil && err != sql.ErrNoRows {
 		return NilOrgID, fmt.Errorf("error getting org id by uuid: %w", err)
 	}
