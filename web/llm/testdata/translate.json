@@ -14,7 +14,7 @@
         "path": "/mr/llm/translate",
         "body": {
             "org_id": 1234,
-            "llm_id": 3,
+            "llm_id": 10002,
             "from_language": "eng",
             "to_language": "spa",
             "text": "Hello world"
@@ -46,7 +46,7 @@
         "path": "/mr/llm/translate",
         "body": {
             "org_id": 1,
-            "llm_id": 3,
+            "llm_id": 10002,
             "from_language": "eng",
             "to_language": "spa",
             "text": "Hello world"
@@ -63,7 +63,7 @@
         "path": "/mr/llm/translate",
         "body": {
             "org_id": 1,
-            "llm_id": 3,
+            "llm_id": 10002,
             "from_language": "und",
             "to_language": "spa",
             "text": "Hello world"
@@ -80,7 +80,7 @@
         "path": "/mr/llm/translate",
         "body": {
             "org_id": 1,
-            "llm_id": 3,
+            "llm_id": 10002,
             "from_language": "und",
             "to_language": "spa",
             "text": "\\return <CANT>"
