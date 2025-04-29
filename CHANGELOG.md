@@ -1,3 +1,10 @@
+v10.1.101 (2025-04-29)
+-------------------------
+ * Update to latest goflow that adds flow spec 14.3
+ * Use go-genai instead of generative-ai-go
+ * Only allow getting org id for active orgs
+ * Update to latest goflow (adds locals inspection) and gocommon (updated locale data)
+
 v10.1.100 (2025-04-25)
 -------------------------
  * Update to latest goflow
