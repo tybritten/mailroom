@@ -71,7 +71,7 @@ func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateReque
 
 	resp, err := llmSvc.Response(ctx, instructions, r.Text, 2500)
 	if err != nil {
-		var aierr *ai.ReasoningError
+		var aierr *ai.LLMAPIError
 		if errors.As(err, &aierr) {
 			llm.RecordCall(rt, time.Since(start), resp.TokensUsed)
 			return nil, 0, aierr

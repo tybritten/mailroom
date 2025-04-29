@@ -58,7 +58,7 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		var apierr *genai.APIError
 		if errors.As(err, &apierr) {
 			if 400 <= apierr.Code && apierr.Code < 500 {
-				return nil, ai.NewReasoningError(apierr.Message, instructions, input, "")
+				return nil, ai.NewLLMAPIError(apierr.Message, apierr.Code)
 			}
 			return nil, fmt.Errorf("error calling Google API: %w", err)
 		}

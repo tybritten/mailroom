@@ -81,7 +81,7 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		var apierr *responses.Error
 		if errors.As(err, &apierr) {
 			if 400 <= apierr.StatusCode && apierr.StatusCode < 500 {
-				return nil, ai.NewReasoningError(apierr.Message, instructions, input, "")
+				return nil, ai.NewLLMAPIError(apierr.Message, apierr.StatusCode)
 			}
 			return nil, fmt.Errorf("error calling OpenAI+Azure API: %w", err)
 		}

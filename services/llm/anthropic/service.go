@@ -70,7 +70,7 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		var apierr *anthropic.Error
 		if errors.As(err, &apierr) {
 			if 400 <= apierr.StatusCode && apierr.StatusCode < 500 {
-				return nil, ai.NewReasoningError("Anthropic API error returned", instructions, input, "")
+				return nil, ai.NewLLMAPIError("Anthropic API error returned", apierr.StatusCode)
 			}
 			return nil, fmt.Errorf("error calling Anthropic API: %w", err)
 		}
