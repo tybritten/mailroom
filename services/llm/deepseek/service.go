@@ -3,6 +3,7 @@ package openai
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/nyaruka/goflow/flows"
@@ -28,14 +29,14 @@ type service struct {
 	model  string
 }
 
-func New(m *models.LLM) (flows.LLMService, error) {
+func New(m *models.LLM, c *http.Client) (flows.LLMService, error) {
 	apiKey := m.Config().GetString(configAPIKey, "")
 	if apiKey == "" {
 		return nil, fmt.Errorf("config incomplete for LLM: %s", m.UUID())
 	}
 
 	return &service{
-		client: openai.NewClient(option.WithBaseURL("https://api.deepseek.com"), option.WithAPIKey(apiKey)),
+		client: openai.NewClient(option.WithBaseURL("https://api.deepseek.com"), option.WithAPIKey(apiKey), option.WithHTTPClient(c)),
 		model:  m.Model(),
 	}, nil
 }

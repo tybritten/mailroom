@@ -55,7 +55,7 @@ func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateReque
 		return nil, 0, fmt.Errorf("no such LLM with ID %d", r.LLMID)
 	}
 
-	llmSvc, err := llm.AsService()
+	llmSvc, err := llm.AsService(http.DefaultClient)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error creating LLM service: %w", err)
 	}

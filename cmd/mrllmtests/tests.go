@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"net/http"
 	"slices"
 	"time"
 
@@ -42,7 +43,7 @@ func runPromptTests(ctx context.Context, rt *runtime.Runtime, orgID models.OrgID
 
 	svcs := make(map[string]flows.LLMService, len(llms))
 	for _, llm := range llms {
-		svc, err := llm.(*models.LLM).AsService()
+		svc, err := llm.(*models.LLM).AsService(http.DefaultClient)
 		if err != nil {
 			return fmt.Errorf("error creating LLM service for LLM '%s': %w", llm.Name(), err)
 		}

@@ -34,7 +34,7 @@ type service struct {
 	model  string
 }
 
-func New(m *models.LLM) (flows.LLMService, error) {
+func New(m *models.LLM, c *http.Client) (flows.LLMService, error) {
 	apiKey := m.Config().GetString(configAPIKey, "")
 	endpoint := m.Config().GetString(configEndpoint, "")
 	parsedEndpoint, err := url.Parse(endpoint)
@@ -54,8 +54,13 @@ func New(m *models.LLM) (flows.LLMService, error) {
 	}
 
 	return &service{
-		client: openai.NewClient(azure.WithEndpoint(bareEndpoint, apiVersion), azure.WithAPIKey(apiKey), option.WithMiddleware(mw)),
-		model:  m.Model(),
+		client: openai.NewClient(
+			azure.WithEndpoint(bareEndpoint, apiVersion),
+			azure.WithAPIKey(apiKey),
+			option.WithMiddleware(mw),
+			option.WithHTTPClient(c),
+		),
+		model: m.Model(),
 	}, nil
 }
 
