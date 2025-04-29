@@ -46,7 +46,6 @@ func TestTicketOpened(t *testing.T) {
 						assets.NewTopicReference(testdata.SupportTopic.UUID, "Support"),
 						"Where are my cookies?",
 						assets.NewUserReference(testdata.Admin.Email, "Admin"),
-						"Email Ticket",
 					),
 				},
 				testdata.Bob: []flows.Action{
@@ -55,7 +54,6 @@ func TestTicketOpened(t *testing.T) {
 						nil,
 						"I've found some cookies",
 						nil,
-						"Zen Ticket",
 					),
 				},
 			},
