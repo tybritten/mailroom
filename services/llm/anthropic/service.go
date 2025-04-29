@@ -67,15 +67,7 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		MaxTokens:   2500,
 	})
 	if err != nil {
-		var apierr *anthropic.Error
-		if errors.As(err, &apierr) {
-			if 400 <= apierr.StatusCode && apierr.StatusCode < 500 {
-				return nil, ai.NewLLMAPIError("Anthropic API error returned", apierr.StatusCode)
-			}
-			return nil, fmt.Errorf("error calling Anthropic API: %w", err)
-		}
-
-		return nil, fmt.Errorf("error calling Anthropic API: %w", err)
+		return nil, s.error(err, instructions, input)
 	}
 
 	var output strings.Builder
@@ -86,6 +78,19 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 	}
 
 	return &flows.LLMResponse{Output: output.String(), TokensUsed: resp.Usage.InputTokens + resp.Usage.OutputTokens}, nil
+}
+
+func (s *service) error(err error, instructions, input string) error {
+	code := ai.ErrorUnknown
+	var aerr *anthropic.Error
+	if errors.As(err, &aerr) {
+		if aerr.StatusCode == http.StatusUnauthorized {
+			code = ai.ErrorCredentials
+		} else if aerr.StatusCode == http.StatusTooManyRequests {
+			code = ai.ErrorRateLimit
+		}
+	}
+	return &ai.ServiceError{Message: err.Error(), Code: code, Instructions: instructions, Input: input}
 }
 
 func (s *service) cleanOutput(output string) string {

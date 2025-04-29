@@ -55,14 +55,7 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 
 	resp, err := s.client.Models.GenerateContent(ctx, s.model, genai.Text(input), config)
 	if err != nil {
-		var apierr *genai.APIError
-		if errors.As(err, &apierr) {
-			if 400 <= apierr.Code && apierr.Code < 500 {
-				return nil, ai.NewLLMAPIError(apierr.Message, apierr.Code)
-			}
-			return nil, fmt.Errorf("error calling Google API: %w", err)
-		}
-		return nil, fmt.Errorf("error calling Google API: %w", err)
+		return nil, s.error(err, instructions, input)
 	}
 
 	var output strings.Builder
@@ -76,4 +69,17 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		Output:     strings.TrimSpace(output.String()),
 		TokensUsed: int64(resp.UsageMetadata.TotalTokenCount),
 	}, nil
+}
+
+func (s *service) error(err error, instructions, input string) error {
+	code := ai.ErrorUnknown
+	var aerr *genai.APIError
+	if errors.As(err, &aerr) {
+		if aerr.Code == http.StatusUnauthorized {
+			code = ai.ErrorCredentials
+		} else if aerr.Code == http.StatusTooManyRequests {
+			code = ai.ErrorRateLimit
+		}
+	}
+	return &ai.ServiceError{Message: err.Error(), Code: code, Instructions: instructions, Input: input}
 }

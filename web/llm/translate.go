@@ -71,10 +71,10 @@ func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateReque
 
 	resp, err := llmSvc.Response(ctx, instructions, r.Text, 2500)
 	if err != nil {
-		var aierr *ai.LLMAPIError
+		var aierr *ai.ServiceError
 		if errors.As(err, &aierr) {
 			llm.RecordCall(rt, time.Since(start), resp.TokensUsed)
-			return nil, 0, aierr
+			return nil, http.StatusUnprocessableEntity, aierr
 		}
 		return nil, 0, fmt.Errorf("error calling LLM service: %w", err)
 	}
@@ -82,7 +82,7 @@ func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateReque
 	llm.RecordCall(rt, time.Since(start), resp.TokensUsed)
 
 	if resp.Output == "<CANT>" {
-		return nil, 0, &ai.ServiceError{Message: "unable to perform translation", Code: ai.ErrorReasoning, Instructions: instructions, Input: r.Text}
+		return nil, http.StatusUnprocessableEntity, &ai.ServiceError{Message: "unable to perform translation", Code: ai.ErrorReasoning, Instructions: instructions, Input: r.Text}
 	}
 
 	return translateResponse{Text: resp.Output, TokensUsed: resp.TokensUsed}, http.StatusOK, nil

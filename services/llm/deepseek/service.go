@@ -55,18 +55,24 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		MaxTokens:   openai.Int(int64(maxTokens)),
 	})
 	if err != nil {
-		var apierr *responses.Error
-		if errors.As(err, &apierr) {
-			if 400 <= apierr.StatusCode && apierr.StatusCode < 500 {
-				return nil, ai.NewLLMAPIError(apierr.Message, apierr.StatusCode)
-			}
-			return nil, fmt.Errorf("error calling DeepSeek API: %w", err)
-		}
-		return nil, fmt.Errorf("error calling DeepSeek API: %w", err)
+		return nil, s.error(err, instructions, input)
 	}
 
 	return &flows.LLMResponse{
 		Output:     strings.TrimSpace(resp.Choices[0].Message.Content),
 		TokensUsed: resp.Usage.TotalTokens,
 	}, nil
+}
+
+func (s *service) error(err error, instructions, input string) error {
+	code := ai.ErrorUnknown
+	var aerr *responses.Error
+	if errors.As(err, &aerr) {
+		if aerr.StatusCode == http.StatusUnauthorized {
+			code = ai.ErrorCredentials
+		} else if aerr.StatusCode == http.StatusTooManyRequests {
+			code = ai.ErrorRateLimit
+		}
+	}
+	return &ai.ServiceError{Message: err.Error(), Code: code, Instructions: instructions, Input: input}
 }
