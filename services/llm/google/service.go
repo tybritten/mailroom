@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/generative-ai-go/genai"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
-	"google.golang.org/api/option"
+	"google.golang.org/genai"
 )
 
 const (
@@ -37,20 +36,20 @@ func New(m *models.LLM) (flows.LLMService, error) {
 }
 
 func (s *service) Response(ctx context.Context, instructions, input string, maxTokens int) (*flows.LLMResponse, error) {
-	client, err := genai.NewClient(ctx, option.WithAPIKey(s.apiKey))
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  s.apiKey,
+		Backend: genai.BackendGeminiAPI,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error creating Google genai client: %w", err)
 	}
-	defer client.Close()
 
-	model := client.GenerativeModel(s.model)
-	model.SetTemperature(0.000001)
-	model.SetMaxOutputTokens(int32(maxTokens))
-	model.SystemInstruction = &genai.Content{
-		Parts: []genai.Part{genai.Text(instructions)},
-	}
+	config := &genai.GenerateContentConfig{
+		Temperature:       genai.Ptr(float32(0.000001)),
+		MaxOutputTokens:   int32(maxTokens),
+		SystemInstruction: &genai.Content{Parts: []*genai.Part{{Text: instructions}}}}
 
-	resp, err := model.GenerateContent(ctx, genai.Text(input))
+	resp, err := client.Models.GenerateContent(ctx, s.model, genai.Text(input), config)
 	if err != nil {
 		return nil, fmt.Errorf("error calling Google API: %w", err)
 	}
