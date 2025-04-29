@@ -1,4 +1,4 @@
-package openai
+package deepseek
 
 import (
 	"context"
