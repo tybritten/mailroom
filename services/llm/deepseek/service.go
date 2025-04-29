@@ -2,14 +2,17 @@ package deepseek
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/nyaruka/goflow/flows"
+	"github.com/nyaruka/mailroom/core/ai"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/responses"
 	"github.com/openai/openai-go/shared"
 )
 
@@ -52,6 +55,13 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		MaxTokens:   openai.Int(int64(maxTokens)),
 	})
 	if err != nil {
+		var apierr *responses.Error
+		if errors.As(err, &apierr) {
+			if 400 <= apierr.StatusCode && apierr.StatusCode < 500 {
+				return nil, ai.NewReasoningError(apierr.Message, instructions, input, "")
+			}
+			return nil, fmt.Errorf("error calling DeepSeek API: %w", err)
+		}
 		return nil, fmt.Errorf("error calling DeepSeek API: %w", err)
 	}
 

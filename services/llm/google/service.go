@@ -2,11 +2,13 @@ package google
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/nyaruka/goflow/flows"
+	"github.com/nyaruka/mailroom/core/ai"
 	"github.com/nyaruka/mailroom/core/models"
 	"google.golang.org/genai"
 )
@@ -53,6 +55,13 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 
 	resp, err := s.client.Models.GenerateContent(ctx, s.model, genai.Text(input), config)
 	if err != nil {
+		var apierr *genai.APIError
+		if errors.As(err, &apierr) {
+			if 400 <= apierr.Code && apierr.Code < 500 {
+				return nil, ai.NewReasoningError(apierr.Message, instructions, input, "")
+			}
+			return nil, fmt.Errorf("error calling Google API: %w", err)
+		}
 		return nil, fmt.Errorf("error calling Google API: %w", err)
 	}
 

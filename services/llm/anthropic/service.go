@@ -2,6 +2,7 @@ package anthropic
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/nyaruka/goflow/flows"
+	"github.com/nyaruka/mailroom/core/ai"
 	"github.com/nyaruka/mailroom/core/models"
 )
 
@@ -65,6 +67,14 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		MaxTokens:   2500,
 	})
 	if err != nil {
+		var apierr *anthropic.Error
+		if errors.As(err, &apierr) {
+			if 400 <= apierr.StatusCode && apierr.StatusCode < 500 {
+				return nil, ai.NewReasoningError("Anthropic API error returned", instructions, input, "")
+			}
+			return nil, fmt.Errorf("error calling Anthropic API: %w", err)
+		}
+
 		return nil, fmt.Errorf("error calling Anthropic API: %w", err)
 	}
 
