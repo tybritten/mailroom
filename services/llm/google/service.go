@@ -1,8 +1,9 @@
-package openai
+package google
 
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/nyaruka/goflow/flows"
@@ -22,34 +23,35 @@ func init() {
 
 // an LLM service implementation for Google GenAI
 type service struct {
-	apiKey string
+	client *genai.Client
 	model  string
 }
 
-func New(m *models.LLM) (flows.LLMService, error) {
+func New(m *models.LLM, c *http.Client) (flows.LLMService, error) {
 	apiKey := m.Config().GetString(configAPIKey, "")
 	if apiKey == "" {
 		return nil, fmt.Errorf("config incomplete for LLM: %s", m.UUID())
 	}
 
-	return &service{apiKey: apiKey, model: m.Model()}, nil
+	client, err := genai.NewClient(context.Background(), &genai.ClientConfig{
+		APIKey:     apiKey,
+		Backend:    genai.BackendGeminiAPI,
+		HTTPClient: c,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error creating LLM client: %w", err)
+	}
+
+	return &service{client: client, model: m.Model()}, nil
 }
 
 func (s *service) Response(ctx context.Context, instructions, input string, maxTokens int) (*flows.LLMResponse, error) {
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		APIKey:  s.apiKey,
-		Backend: genai.BackendGeminiAPI,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error creating Google genai client: %w", err)
-	}
-
 	config := &genai.GenerateContentConfig{
 		Temperature:       genai.Ptr(float32(0.000001)),
 		MaxOutputTokens:   int32(maxTokens),
 		SystemInstruction: &genai.Content{Parts: []*genai.Part{{Text: instructions}}}}
 
-	resp, err := client.Models.GenerateContent(ctx, s.model, genai.Text(input), config)
+	resp, err := s.client.Models.GenerateContent(ctx, s.model, genai.Text(input), config)
 	if err != nil {
 		return nil, fmt.Errorf("error calling Google API: %w", err)
 	}

@@ -294,6 +294,7 @@ DELETE FROM flows_flowstart;
 DELETE FROM flows_flowsession;
 DELETE FROM flows_flowrevision WHERE flow_id >= 30000;
 DELETE FROM flows_flow WHERE id >= 30000;
+DELETE FROM ai_llm WHERE id >= 30000;
 DELETE FROM ivr_call;
 DELETE FROM msgs_msg_labels;
 DELETE FROM msgs_msg;
@@ -318,6 +319,7 @@ DELETE FROM contacts_contactgroup WHERE id >= 30000;
 DELETE FROM orgs_itemcount;
 DELETE FROM orgs_dailycount;
 
+ALTER SEQUENCE ai_llm_id_seq RESTART WITH 30000;
 ALTER SEQUENCE flows_flow_id_seq RESTART WITH 30000;
 ALTER SEQUENCE tickets_ticket_id_seq RESTART WITH 1;
 ALTER SEQUENCE channels_channelevent_id_seq RESTART WITH 1;

@@ -1,0 +1,35 @@
+package deepseek_test
+
+import (
+	"net/http"
+	"testing"
+
+	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/services/llm/deepseek"
+	"github.com/nyaruka/mailroom/testsuite"
+	"github.com/nyaruka/mailroom/testsuite/testdata"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestService(t *testing.T) {
+	_, rt := testsuite.Runtime()
+
+	defer testsuite.Reset(testsuite.ResetData)
+
+	bad := testdata.InsertLLM(rt, testdata.Org1, "c69723d8-fb37-4cf6-9ec4-bc40cb36f2cc", "deepseek", "chat", "Bad Config", map[string]any{})
+	good := testdata.InsertLLM(rt, testdata.Org1, "b86966fd-206e-4bdd-a962-06faa3af1182", "deepseek", "chat", "Good", map[string]any{"api_key": "sesame"})
+	models.FlushCache()
+
+	oa := testdata.Org1.Load(rt)
+	badLLM := oa.LLMByID(bad.ID)
+	goodLLM := oa.LLMByID(good.ID)
+
+	// can't create service with bad config
+	svc, err := deepseek.New(badLLM, http.DefaultClient)
+	assert.EqualError(t, err, "config incomplete for LLM: c69723d8-fb37-4cf6-9ec4-bc40cb36f2cc")
+	assert.Nil(t, svc)
+
+	svc, err = deepseek.New(goodLLM, http.DefaultClient)
+	assert.NoError(t, err)
+	assert.NotNil(t, svc)
+}
