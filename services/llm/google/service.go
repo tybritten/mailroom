@@ -56,15 +56,8 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		return nil, fmt.Errorf("error calling Google API: %w", err)
 	}
 
-	var output strings.Builder
-	for _, candidate := range resp.Candidates {
-		if candidate.Content != nil {
-			output.WriteString(fmt.Sprint(candidate.Content.Parts[0]))
-		}
-	}
-
 	return &flows.LLMResponse{
-		Output:     strings.TrimSpace(output.String()),
+		Output:     strings.TrimSpace(resp.Text()),
 		TokensUsed: int64(resp.UsageMetadata.TotalTokenCount),
 	}, nil
 }
