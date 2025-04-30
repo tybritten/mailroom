@@ -67,7 +67,7 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		MaxTokens:   2500,
 	})
 	if err != nil {
-		return nil, s.error(err, instructions, input)
+		return nil, s.error(fmt.Errorf("error calling Anthropic API: %w", err), instructions, input)
 	}
 
 	var output strings.Builder

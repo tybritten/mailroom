@@ -55,7 +55,7 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 
 	resp, err := s.client.Models.GenerateContent(ctx, s.model, genai.Text(input), config)
 	if err != nil {
-		return nil, s.error(err, instructions, input)
+		return nil, s.error(fmt.Errorf("error calling Google API: %w", err), instructions, input)
 	}
 
 	var output strings.Builder
