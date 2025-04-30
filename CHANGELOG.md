@@ -1,3 +1,8 @@
+v10.1.102 (2025-04-30)
+-------------------------
+ * Update to latest goflow
+ * Rework all LLM services to take http.Client as a parameter
+
 v10.1.101 (2025-04-29)
 -------------------------
  * Update to latest goflow that adds flow spec 14.3
