@@ -1,5 +1,17 @@
 [
     {
+        "description": "Translate single word from English to Spanish",
+        "template": "translate",
+        "data": {
+            "FromLanguage": "eng",
+            "ToLanguage": "spa"
+        },
+        "input": "Hello",
+        "expected_output": [
+            "Hola"
+        ]
+    },
+    {
         "description": "Translate from English to Spanish with simple variable expression",
         "template": "translate",
         "data": {
