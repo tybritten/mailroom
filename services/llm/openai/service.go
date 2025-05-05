@@ -55,7 +55,7 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		MaxOutputTokens: openai.Int(int64(maxTokens)),
 	})
 	if err != nil {
-		return nil, s.error(fmt.Errorf("error calling OpenAI API: %w", err), instructions, input)
+		return nil, s.error(err, instructions, input)
 	}
 
 	return &flows.LLMResponse{

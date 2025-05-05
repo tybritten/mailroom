@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nyaruka/gocommon/httpx"
+	"github.com/nyaruka/mailroom/core/ai"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/services/llm/openai"
 	"github.com/nyaruka/mailroom/testsuite"
@@ -96,11 +97,18 @@ func TestService(t *testing.T) {
 	assert.NotNil(t, svc)
 
 	resp, err := svc.Response(ctx, "translate to Spanish", "Hello world", 1000)
-	assert.EqualError(t, err, "error calling OpenAI API: POST \"https://api.openai.com/v1/responses\": 401 Unauthorized ")
+	assert.EqualError(t, err, "POST \"https://api.openai.com/v1/responses\": 401 Unauthorized ")
+	var serr *ai.ServiceError
+	if assert.ErrorAs(t, err, &serr) {
+		assert.Equal(t, ai.ErrorCredentials, serr.Code)
+	}
 	assert.Nil(t, resp)
 
 	resp, err = svc.Response(ctx, "translate to Spanish", "Hello world", 1000)
-	assert.EqualError(t, err, "error calling OpenAI API: POST \"https://api.openai.com/v1/responses\": 429 Too Many Requests ")
+	assert.EqualError(t, err, "POST \"https://api.openai.com/v1/responses\": 429 Too Many Requests ")
+	if assert.ErrorAs(t, err, &serr) {
+		assert.Equal(t, ai.ErrorRateLimit, serr.Code)
+	}
 	assert.Nil(t, resp)
 
 	resp, err = svc.Response(ctx, "translate to Spanish", "Hello world", 1000)
