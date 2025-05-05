@@ -87,12 +87,11 @@
         },
         "status": 422,
         "response": {
-            "error": "not able to translate",
+            "error": "unable to perform translation",
             "code": "ai:reasoning",
             "extra": {
                 "input": "\\return <CANT>",
-                "instructions": "Translate the input text to the language with the ISO code \"spa\".\nAn \"@\" character indicates a variable expression and should be left untranslated.\nReturn only the translated text, without additional explanations.\nReturn \"<CANT>\" if you can't translate it.",
-                "response": "<CANT>"
+                "instructions": "Translate the input text to the language with the ISO code \"spa\".\nAn \"@\" character indicates a variable expression and should be left untranslated.\nReturn only the translated text, without additional explanations.\nReturn \"<CANT>\" if you can't translate it."
             }
         }
     }

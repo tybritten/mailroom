@@ -2,6 +2,7 @@ package anthropic
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/nyaruka/goflow/flows"
+	"github.com/nyaruka/mailroom/core/ai"
 	"github.com/nyaruka/mailroom/core/models"
 )
 
@@ -65,7 +67,7 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		MaxTokens:   2500,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error calling Anthropic API: %w", err)
+		return nil, s.error(fmt.Errorf("error calling Anthropic API: %w", err), instructions, input)
 	}
 
 	var output strings.Builder
@@ -76,6 +78,19 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 	}
 
 	return &flows.LLMResponse{Output: output.String(), TokensUsed: resp.Usage.InputTokens + resp.Usage.OutputTokens}, nil
+}
+
+func (s *service) error(err error, instructions, input string) error {
+	code := ai.ErrorUnknown
+	var aerr *anthropic.Error
+	if errors.As(err, &aerr) {
+		if aerr.StatusCode == http.StatusUnauthorized {
+			code = ai.ErrorCredentials
+		} else if aerr.StatusCode == http.StatusTooManyRequests {
+			code = ai.ErrorRateLimit
+		}
+	}
+	return &ai.ServiceError{Message: err.Error(), Code: code, Instructions: instructions, Input: input}
 }
 
 func (s *service) cleanOutput(output string) string {

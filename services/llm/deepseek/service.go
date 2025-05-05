@@ -2,14 +2,17 @@ package deepseek
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/nyaruka/goflow/flows"
+	"github.com/nyaruka/mailroom/core/ai"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/responses"
 	"github.com/openai/openai-go/shared"
 )
 
@@ -52,11 +55,24 @@ func (s *service) Response(ctx context.Context, instructions, input string, maxT
 		MaxTokens:   openai.Int(int64(maxTokens)),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error calling DeepSeek API: %w", err)
+		return nil, s.error(fmt.Errorf("error calling DeepSeek API: %w", err), instructions, input)
 	}
 
 	return &flows.LLMResponse{
 		Output:     strings.TrimSpace(resp.Choices[0].Message.Content),
 		TokensUsed: resp.Usage.TotalTokens,
 	}, nil
+}
+
+func (s *service) error(err error, instructions, input string) error {
+	code := ai.ErrorUnknown
+	var aerr *responses.Error
+	if errors.As(err, &aerr) {
+		if aerr.StatusCode == http.StatusUnauthorized {
+			code = ai.ErrorCredentials
+		} else if aerr.StatusCode == http.StatusTooManyRequests {
+			code = ai.ErrorRateLimit
+		}
+	}
+	return &ai.ServiceError{Message: err.Error(), Code: code, Instructions: instructions, Input: input}
 }
