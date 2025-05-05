@@ -72,7 +72,7 @@ func (f *Flow) UUID() assets.FlowUUID { return f.f.UUID }
 func (f *Flow) Name() string { return f.f.Name }
 
 // Definition returns the definition for this flow
-func (f *Flow) Definition() json.RawMessage { return f.f.Definition }
+func (f *Flow) Definition() []byte { return f.f.Definition }
 
 // FlowType return the type of flow this is
 func (f *Flow) FlowType() FlowType { return f.f.FlowType }
