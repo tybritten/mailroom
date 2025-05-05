@@ -1,3 +1,8 @@
+v10.1.104 (2025-05-05)
+-------------------------
+ * Update to latest goflow that relaxes version requirements on UUID fields
+ * Improve reporting of errors from LLM services
+
 v10.1.103 (2025-04-30)
 -------------------------
  * Fix gemini LLM service
