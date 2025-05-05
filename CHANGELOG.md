@@ -1,3 +1,7 @@
+v10.1.105 (2025-05-05)
+-------------------------
+ * Fix Flow.Definition
+
 v10.1.104 (2025-05-05)
 -------------------------
  * Update to latest goflow that relaxes version requirements on UUID fields
