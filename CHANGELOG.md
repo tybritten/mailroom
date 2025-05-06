@@ -1,3 +1,7 @@
+v10.1.108 (2025-05-06)
+-------------------------
+ * Some refactoring of scene event handling code
+
 v10.1.107 (2025-05-06)
 -------------------------
  * Use v7 UUIDs for more things: channel events, sessions, tickets, airtime transfers etc
