@@ -1,3 +1,7 @@
+v10.1.107 (2025-05-06)
+-------------------------
+ * Use v7 UUIDs for more things: channel events, sessions, tickets, airtime transfers etc
+
 v10.1.106 (2025-05-05)
 -------------------------
  * Update to latest goflow that switches to v7 UUIDs for runs and messages
