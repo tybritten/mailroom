@@ -140,8 +140,8 @@ func ApplyScenePreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx
 	return nil
 }
 
-// ApplyScenePostCommitHooks applies through all the post commit hooks for the given scenes
-func ApplyScenePostCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *OrgAssets, scenes []*Scene) error {
+// applies through all the post commit hooks for the given scenes in the given transaction
+func applyScenePostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *OrgAssets, scenes []*Scene) error {
 	// gather all our hook events together across our sessions
 	postHooks := make(map[SceneCommitHook]map[*Scene][]any)
 	for _, s := range scenes {
@@ -160,6 +160,55 @@ func ApplyScenePostCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sql
 		err := hook.Apply(ctx, rt, tx, oa, args)
 		if err != nil {
 			return fmt.Errorf("error applying post commit hook: %v: %w", hook, err)
+		}
+	}
+
+	return nil
+}
+
+// ApplyScenePostCommitHooks applies the post commit hooks for the given scenes
+func ApplyScenePostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, scenes []*Scene) error {
+	txCTX, cancel := context.WithTimeout(ctx, postCommitTimeout*time.Duration(len(scenes)))
+	defer cancel()
+
+	tx, err := rt.DB.BeginTxx(txCTX, nil)
+	if err != nil {
+		return fmt.Errorf("error beginning transaction: %w", err)
+	}
+
+	err = applyScenePostCommitHooksTx(txCTX, rt, tx, oa, scenes)
+	if err == nil {
+		err = tx.Commit()
+	}
+
+	if err != nil {
+		tx.Rollback()
+
+		// we failed with our post commit hooks, try one at a time, logging those errors
+		for _, scene := range scenes {
+			log := slog.With("contact", scene.ContactUUID(), "session", scene.SessionUUID())
+
+			txCTX, cancel := context.WithTimeout(ctx, postCommitTimeout)
+			defer cancel()
+
+			tx, err := rt.DB.BeginTxx(txCTX, nil)
+			if err != nil {
+				tx.Rollback()
+				log.Error("error beginning transaction for retry", "error", err)
+				continue
+			}
+
+			if err := applyScenePostCommitHooksTx(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
+				tx.Rollback()
+				log.Error("error applying post commit hook", "error", err)
+				continue
+			}
+
+			if err := tx.Commit(); err != nil {
+				tx.Rollback()
+				log.Error("error committing post commit hook", "error", err)
+				continue
+			}
 		}
 	}
 
@@ -203,56 +252,8 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 	}
 
 	// now take care of any post-commit hooks
-	if err := ProcessPostCommitHooks(ctx, rt, oa, scenes); err != nil {
+	if err := ApplyScenePostCommitHooks(ctx, rt, oa, scenes); err != nil {
 		return fmt.Errorf("error processing post commit hooks: %w", err)
-	}
-
-	return nil
-}
-
-func ProcessPostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, scenes []*Scene) error {
-	txCTX, cancel := context.WithTimeout(ctx, postCommitTimeout*time.Duration(len(scenes)))
-	defer cancel()
-
-	tx, err := rt.DB.BeginTxx(txCTX, nil)
-	if err != nil {
-		return fmt.Errorf("error beginning transaction: %w", err)
-	}
-
-	err = ApplyScenePostCommitHooks(txCTX, rt, tx, oa, scenes)
-	if err == nil {
-		err = tx.Commit()
-	}
-
-	if err != nil {
-		tx.Rollback()
-
-		// we failed with our post commit hooks, try one at a time, logging those errors
-		for _, scene := range scenes {
-			log := slog.With("contact", scene.ContactUUID(), "session", scene.SessionUUID())
-
-			txCTX, cancel := context.WithTimeout(ctx, postCommitTimeout)
-			defer cancel()
-
-			tx, err := rt.DB.BeginTxx(txCTX, nil)
-			if err != nil {
-				tx.Rollback()
-				log.Error("error beginning transaction for retry", "error", err)
-				continue
-			}
-
-			if err := ApplyScenePostCommitHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
-				tx.Rollback()
-				log.Error("error applying post commit hook", "error", err)
-				continue
-			}
-
-			if err := tx.Commit(); err != nil {
-				tx.Rollback()
-				log.Error("error committing post commit hook", "error", err)
-				continue
-			}
-		}
 	}
 
 	return nil

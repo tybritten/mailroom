@@ -311,7 +311,7 @@ func StartFlowForContacts(
 		scenes = append(scenes, s.Scene())
 	}
 
-	if err := models.ProcessPostCommitHooks(ctx, rt, oa, scenes); err != nil {
+	if err := models.ApplyScenePostCommitHooks(ctx, rt, oa, scenes); err != nil {
 		return nil, fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 

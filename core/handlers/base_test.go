@@ -249,13 +249,7 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 		err = tx.Commit()
 		assert.NoError(t, err)
 
-		tx, err = rt.DB.BeginTxx(ctx, nil)
-		assert.NoError(t, err)
-
-		err = models.ApplyScenePostCommitHooks(ctx, rt, tx, oa, scenes)
-		assert.NoError(t, err)
-
-		err = tx.Commit()
+		err = models.ApplyScenePostCommitHooks(ctx, rt, oa, scenes)
 		assert.NoError(t, err)
 
 		// now check our assertions

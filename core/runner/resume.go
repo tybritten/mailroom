@@ -63,7 +63,7 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 	}
 
 	// now take care of any post-commit hooks
-	if err := models.ProcessPostCommitHooks(ctx, rt, oa, []*models.Scene{session.Scene()}); err != nil {
+	if err := models.ApplyScenePostCommitHooks(ctx, rt, oa, []*models.Scene{session.Scene()}); err != nil {
 		return nil, fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 
