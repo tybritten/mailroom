@@ -9,7 +9,6 @@ import (
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/stringsx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/flows"
 
 	"github.com/shopspring/decimal"
@@ -30,7 +29,7 @@ func NewService(httpClient *http.Client, httpRetries *httpx.RetryConfig, key, se
 
 func (s *service) Transfer(ctx context.Context, sender urns.URN, recipient urns.URN, amounts map[string]decimal.Decimal, logHTTP flows.HTTPLogCallback) (*flows.AirtimeTransfer, error) {
 	transfer := &flows.AirtimeTransfer{
-		UUID:      flows.AirtimeTransferUUID(uuids.NewV4()),
+		UUID:      flows.NewTransferUUID(),
 		Sender:    sender,
 		Recipient: recipient,
 		Currency:  "",

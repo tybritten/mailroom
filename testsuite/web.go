@@ -20,7 +20,6 @@ import (
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/test"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
@@ -32,10 +31,7 @@ import (
 func RunWebTests(t *testing.T, ctx context.Context, rt *runtime.Runtime, truthFile string, substitutions map[string]string) {
 	wg := &sync.WaitGroup{}
 
-	defer uuids.SetGenerator(uuids.DefaultGenerator)
-	uuids.SetGenerator(uuids.NewSeededGenerator(123456, time.Now))
-
-	defer dates.SetNowFunc(time.Now)
+	test.MockUniverse()
 
 	server := web.NewServer(ctx, rt, wg)
 	server.Start()

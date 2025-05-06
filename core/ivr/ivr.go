@@ -16,7 +16,6 @@ import (
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/excellent/types"
 	"github.com/nyaruka/goflow/flows"
@@ -523,7 +522,7 @@ func buildMsgResume(
 	svc Service, channel *models.Channel, contact *flows.Contact, urn urns.URN,
 	call *models.Call, oa *models.OrgAssets, resume InputResume) (flows.Resume, error, error) {
 	// our msg UUID
-	msgUUID := flows.MsgUUID(uuids.NewV4())
+	msgUUID := flows.NewMsgUUID()
 
 	// we have an attachment, download it locally
 	if resume.Attachment != NilAttachment {

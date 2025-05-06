@@ -3,7 +3,6 @@ package handlers_test
 import (
 	"testing"
 
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/actions"
@@ -39,7 +38,7 @@ func TestCampaigns(t *testing.T) {
 	tcs := []handlers.TestCase{
 		{
 			Msgs: handlers.ContactMsgMap{
-				testdata.Cathy: flows.NewMsgIn(flows.MsgUUID(uuids.NewV4()), testdata.Cathy.URN, nil, "Hi there", nil),
+				testdata.Cathy: flows.NewMsgIn(flows.NewMsgUUID(), testdata.Cathy.URN, nil, "Hi there", nil),
 			},
 			Actions: handlers.ContactActionMap{
 				testdata.Cathy: []flows.Action{
