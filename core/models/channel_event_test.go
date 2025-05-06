@@ -53,7 +53,7 @@ func TestChannelEvents(t *testing.T) {
 	err = e2.Insert(ctx, rt.DB)
 	assert.NoError(t, err)
 	assert.NotZero(t, e2.ID)
-	assert.NotNil(t, e2.UUID)
+	assert.Greater(t, e2.UUID, e1.UUID)
 	assert.Equal(t, null.Map[any]{"duration": 123}, e2.Extra)
 
 	assertdb.Query(t, rt.DB, `SELECT event_type, status FROM channels_channelevent WHERE id = $1`, e2.ID).Columns(map[string]any{"event_type": "mo_miss", "status": "P"})
