@@ -168,6 +168,10 @@ func applyScenePostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *s
 
 // ApplyScenePostCommitHooks applies the post commit hooks for the given scenes
 func ApplyScenePostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, scenes []*Scene) error {
+	if len(scenes) == 0 {
+		return nil
+	}
+
 	txCTX, cancel := context.WithTimeout(ctx, postCommitTimeout*time.Duration(len(scenes)))
 	defer cancel()
 
@@ -217,10 +221,6 @@ func ApplyScenePostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *Org
 
 // HandleAndCommitEvents takes a set of contacts and events, handles the events and applies any hooks, and commits everything
 func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, userID UserID, contactEvents map[*flows.Contact][]flows.Event) error {
-	if len(contactEvents) == 0 {
-		return nil
-	}
-
 	// create scenes for each contact
 	scenes := make([]*Scene, 0, len(contactEvents))
 	for contact := range contactEvents {
