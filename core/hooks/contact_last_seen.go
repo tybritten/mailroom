@@ -12,7 +12,7 @@ import (
 )
 
 // ContactLastSeenHook is our hook for contact changes that require an update to last_seen_on
-var ContactLastSeenHook models.EventCommitHook = &contactLastSeenHook{}
+var ContactLastSeenHook models.SceneCommitHook = &contactLastSeenHook{}
 
 type contactLastSeenHook struct{}
 

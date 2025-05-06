@@ -11,7 +11,7 @@ import (
 )
 
 // CommitAddedLabelsHook is our hook for input labels being added
-var CommitAddedLabelsHook models.EventCommitHook = &commitAddedLabelsHook{}
+var CommitAddedLabelsHook models.SceneCommitHook = &commitAddedLabelsHook{}
 
 type commitAddedLabelsHook struct{}
 

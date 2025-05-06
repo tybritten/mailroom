@@ -11,7 +11,7 @@ import (
 )
 
 // ContactModifiedHook is our hook for contact changes that require an update to modified_on
-var ContactModifiedHook models.EventCommitHook = &contactModifiedHook{}
+var ContactModifiedHook models.SceneCommitHook = &contactModifiedHook{}
 
 type contactModifiedHook struct{}
 

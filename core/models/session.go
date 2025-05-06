@@ -417,12 +417,12 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contact, true))
 
 	// apply all our events to generate hooks
-	if err := HandleEvents(ctx, rt, tx, oa, s.scene, eventsToHandle); err != nil {
+	if err := HandleSceneEvents(ctx, rt, tx, oa, s.scene, eventsToHandle); err != nil {
 		return fmt.Errorf("error handling events for session %s: %w", s.UUID(), err)
 	}
 
 	// gather all our pre commit events, group them by hook and apply them
-	if err := ApplyEventPreCommitHooks(ctx, rt, tx, oa, []*Scene{s.scene}); err != nil {
+	if err := ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*Scene{s.scene}); err != nil {
 		return fmt.Errorf("error applying pre commit hook: %T: %w", hook, err)
 	}
 
@@ -645,7 +645,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 
 		eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contacts[i], false))
 
-		if err := HandleEvents(ctx, rt, tx, oa, s.Scene(), eventsToHandle); err != nil {
+		if err := HandleSceneEvents(ctx, rt, tx, oa, s.Scene(), eventsToHandle); err != nil {
 			return nil, fmt.Errorf("error applying events for session %s: %w", s.UUID(), err)
 		}
 
@@ -653,7 +653,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 	}
 
 	// gather all our pre commit events, group them by hook
-	err = ApplyEventPreCommitHooks(ctx, rt, tx, oa, scenes)
+	err = ApplyScenePreCommitHooks(ctx, rt, tx, oa, scenes)
 	if err != nil {
 		return nil, fmt.Errorf("error applying session pre commit hooks: %w", err)
 	}

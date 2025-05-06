@@ -57,7 +57,7 @@ func handleAirtimeTransferred(ctx context.Context, rt *runtime.Runtime, tx *sqlx
 		))
 	}
 
-	scene.AppendToEventPreCommitHook(hooks.InsertAirtimeTransfersHook, transfer)
+	scene.AddToPreCommitHook(hooks.InsertAirtimeTransfersHook, transfer)
 
 	return nil
 }

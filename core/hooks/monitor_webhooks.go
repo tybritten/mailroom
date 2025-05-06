@@ -16,7 +16,7 @@ type WebhookCall struct {
 	Event    *events.WebhookCalledEvent
 }
 
-var MonitorWebhooks models.EventCommitHook = &monitorWebhooks{}
+var MonitorWebhooks models.SceneCommitHook = &monitorWebhooks{}
 
 type monitorWebhooks struct{}
 

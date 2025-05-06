@@ -54,8 +54,8 @@ func handleOptInRequested(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx,
 	msg := models.NewOutgoingOptInMsg(rt, oa.OrgID(), scene.Session(), flow, optIn, channel, urn, event.CreatedOn())
 
 	// register to have this message committed and sent
-	scene.AppendToEventPreCommitHook(hooks.CommitMessagesHook, msg)
-	scene.AppendToEventPostCommitHook(hooks.SendMessagesHook, msg)
+	scene.AddToPreCommitHook(hooks.CommitMessagesHook, msg)
+	scene.AddToPostCommitHook(hooks.SendMessagesHook, msg)
 
 	return nil
 }

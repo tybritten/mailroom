@@ -12,7 +12,7 @@ import (
 )
 
 // CommitNameChangesHook is our hook for name changes
-var CommitNameChangesHook models.EventCommitHook = &commitNameChangesHook{}
+var CommitNameChangesHook models.SceneCommitHook = &commitNameChangesHook{}
 
 type commitNameChangesHook struct{}
 

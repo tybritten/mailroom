@@ -15,7 +15,7 @@ import (
 )
 
 // CommitFieldChangesHook is our hook for contact field changes
-var CommitFieldChangesHook models.EventCommitHook = &commitFieldChangesHook{}
+var CommitFieldChangesHook models.SceneCommitHook = &commitFieldChangesHook{}
 
 type commitFieldChangesHook struct{}
 

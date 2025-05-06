@@ -11,7 +11,7 @@ import (
 )
 
 // CommitMessagesHook is our hook for comitting scene messages
-var CommitMessagesHook models.EventCommitHook = &commitMessagesHook{}
+var CommitMessagesHook models.SceneCommitHook = &commitMessagesHook{}
 
 type commitMessagesHook struct{}
 

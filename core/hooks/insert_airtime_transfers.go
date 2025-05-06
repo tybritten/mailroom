@@ -11,7 +11,7 @@ import (
 )
 
 // InsertAirtimeTransfersHook is our hook for inserting airtime transfers
-var InsertAirtimeTransfersHook models.EventCommitHook = &insertAirtimeTransfersHook{}
+var InsertAirtimeTransfersHook models.SceneCommitHook = &insertAirtimeTransfersHook{}
 
 type insertAirtimeTransfersHook struct{}
 

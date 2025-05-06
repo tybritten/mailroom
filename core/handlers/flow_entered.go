@@ -23,7 +23,7 @@ func handleFlowEntered(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa
 
 	// we've potentially changed contact flow history.. only way to be sure would be loading contacts with their
 	// flow history, but not sure that is worth it given how likely we are to be updating modified_on anyway
-	scene.AppendToEventPreCommitHook(hooks.ContactModifiedHook, event)
+	scene.AddToPreCommitHook(hooks.ContactModifiedHook, event)
 
 	return nil
 }

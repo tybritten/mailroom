@@ -11,7 +11,7 @@ import (
 )
 
 // InsertWebhookEventHook is our hook for when a resthook needs to be inserted
-var InsertWebhookEventHook models.EventCommitHook = &insertWebhookEventHook{}
+var InsertWebhookEventHook models.SceneCommitHook = &insertWebhookEventHook{}
 
 type insertWebhookEventHook struct{}
 

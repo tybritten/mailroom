@@ -11,7 +11,7 @@ import (
 )
 
 // UnsubscribeResthookHook is our hook for when a webhook is called
-var UnsubscribeResthookHook models.EventCommitHook = &unsubscribeResthookHook{}
+var UnsubscribeResthookHook models.SceneCommitHook = &unsubscribeResthookHook{}
 
 type unsubscribeResthookHook struct{}
 

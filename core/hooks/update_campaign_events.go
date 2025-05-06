@@ -13,7 +13,7 @@ import (
 )
 
 // UpdateCampaignEventsHook is our hook to update any campaign events
-var UpdateCampaignEventsHook models.EventCommitHook = &updateCampaignEventsHook{}
+var UpdateCampaignEventsHook models.SceneCommitHook = &updateCampaignEventsHook{}
 
 type updateCampaignEventsHook struct{}
 

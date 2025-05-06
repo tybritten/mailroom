@@ -13,7 +13,7 @@ import (
 )
 
 // CreateBroadcastsHook is our hook for creating broadcasts
-var CreateBroadcastsHook models.EventCommitHook = &createBroadcastsHook{}
+var CreateBroadcastsHook models.SceneCommitHook = &createBroadcastsHook{}
 
 type createBroadcastsHook struct{}
 

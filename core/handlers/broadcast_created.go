@@ -21,7 +21,7 @@ func handleBroadcastCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.T
 
 	slog.Debug("broadcast created", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "translations", event.Translations[event.BaseLanguage])
 
-	scene.AppendToEventPostCommitHook(hooks.CreateBroadcastsHook, event)
+	scene.AddToPostCommitHook(hooks.CreateBroadcastsHook, event)
 
 	return nil
 }

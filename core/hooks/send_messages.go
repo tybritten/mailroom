@@ -10,7 +10,7 @@ import (
 )
 
 // SendMessagesHook is our hook for sending scene messages
-var SendMessagesHook models.EventCommitHook = &sendMessagesHook{}
+var SendMessagesHook models.SceneCommitHook = &sendMessagesHook{}
 
 type sendMessagesHook struct{}
 

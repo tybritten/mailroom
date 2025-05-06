@@ -239,11 +239,11 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 		assert.NoError(t, err)
 
 		for _, scene := range scenes {
-			err := models.HandleEvents(ctx, rt, tx, oa, scene, results[scene.ContactID()].Events)
+			err := models.HandleSceneEvents(ctx, rt, tx, oa, scene, results[scene.ContactID()].Events)
 			assert.NoError(t, err)
 		}
 
-		err = models.ApplyEventPreCommitHooks(ctx, rt, tx, oa, scenes)
+		err = models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, scenes)
 		assert.NoError(t, err)
 
 		err = tx.Commit()
@@ -252,7 +252,7 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 		tx, err = rt.DB.BeginTxx(ctx, nil)
 		assert.NoError(t, err)
 
-		err = models.ApplyEventPostCommitHooks(ctx, rt, tx, oa, scenes)
+		err = models.ApplyScenePostCommitHooks(ctx, rt, tx, oa, scenes)
 		assert.NoError(t, err)
 
 		err = tx.Commit()
@@ -289,10 +289,10 @@ func RunFlowAndApplyEvents(t *testing.T, ctx context.Context, rt *runtime.Runtim
 	tx, err = rt.DB.BeginTxx(ctx, nil)
 	require.NoError(t, err)
 
-	err = models.HandleEvents(ctx, rt, tx, oa, scene, sprint.Events())
+	err = models.HandleSceneEvents(ctx, rt, tx, oa, scene, sprint.Events())
 	require.NoError(t, err)
 
-	err = models.ApplyEventPreCommitHooks(ctx, rt, tx, oa, []*models.Scene{scene})
+	err = models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*models.Scene{scene})
 	require.NoError(t, err)
 
 	err = tx.Commit()

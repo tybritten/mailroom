@@ -16,7 +16,7 @@ type TicketAndNote struct {
 }
 
 // InsertTicketsHook is our hook for inserting tickets
-var InsertTicketsHook models.EventCommitHook = &insertTicketsHook{}
+var InsertTicketsHook models.SceneCommitHook = &insertTicketsHook{}
 
 type insertTicketsHook struct{}
 

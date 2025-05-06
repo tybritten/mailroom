@@ -12,7 +12,7 @@ import (
 )
 
 // CommitStatusChangesHook is our hook for status changes
-var CommitStatusChangesHook models.EventCommitHook = &commitStatusChangesHook{}
+var CommitStatusChangesHook models.SceneCommitHook = &commitStatusChangesHook{}
 
 type commitStatusChangesHook struct{}
 

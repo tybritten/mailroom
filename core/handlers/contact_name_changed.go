@@ -22,8 +22,8 @@ func handleContactNameChanged(ctx context.Context, rt *runtime.Runtime, tx *sqlx
 
 	slog.Debug("contact name changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "name", event.Name)
 
-	scene.AppendToEventPreCommitHook(hooks.CommitNameChangesHook, event)
-	scene.AppendToEventPostCommitHook(hooks.ContactModifiedHook, event)
+	scene.AddToPreCommitHook(hooks.CommitNameChangesHook, event)
+	scene.AddToPostCommitHook(hooks.ContactModifiedHook, event)
 
 	return nil
 }

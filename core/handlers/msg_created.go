@@ -60,10 +60,10 @@ func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa 
 	}
 
 	// commit this message in the transaction
-	scene.AppendToEventPreCommitHook(hooks.CommitMessagesHook, msg)
+	scene.AddToPreCommitHook(hooks.CommitMessagesHook, msg)
 
 	// and queue it to be sent after the transaction is complete
-	scene.AppendToEventPostCommitHook(hooks.SendMessagesHook, msg)
+	scene.AddToPostCommitHook(hooks.SendMessagesHook, msg)
 
 	return nil
 }

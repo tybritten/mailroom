@@ -14,7 +14,7 @@ import (
 )
 
 // CreateStartsHook is our hook to fire our scene starts
-var CreateStartsHook models.EventCommitHook = &createStartsHook{}
+var CreateStartsHook models.SceneCommitHook = &createStartsHook{}
 
 type createStartsHook struct{}
 

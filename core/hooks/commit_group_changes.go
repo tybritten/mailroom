@@ -11,7 +11,7 @@ import (
 )
 
 // CommitGroupChangesHook is our hook for all group changes
-var CommitGroupChangesHook models.EventCommitHook = &commitGroupChangesHook{}
+var CommitGroupChangesHook models.SceneCommitHook = &commitGroupChangesHook{}
 
 type commitGroupChangesHook struct{}
 

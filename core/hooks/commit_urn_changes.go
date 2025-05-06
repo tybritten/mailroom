@@ -13,7 +13,7 @@ import (
 )
 
 // CommitURNChangesHook is our hook for when a URN is added to a contact
-var CommitURNChangesHook models.EventCommitHook = &commitURNChangesHook{}
+var CommitURNChangesHook models.SceneCommitHook = &commitURNChangesHook{}
 
 type commitURNChangesHook struct{}
 

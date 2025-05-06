@@ -11,7 +11,7 @@ import (
 )
 
 // CommitIVRHook is our hook for comitting scene messages / say commands
-var CommitIVRHook models.EventCommitHook = &commitIVRHook{}
+var CommitIVRHook models.SceneCommitHook = &commitIVRHook{}
 
 type commitIVRHook struct{}
 

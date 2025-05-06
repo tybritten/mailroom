@@ -10,7 +10,7 @@ import (
 )
 
 // CommitSessionChangesHook is our hook for name changes
-var CommitSessionChangesHook models.EventCommitHook = &commitSessionChangesHook{}
+var CommitSessionChangesHook models.SceneCommitHook = &commitSessionChangesHook{}
 
 type commitSessionChangesHook struct{}
 

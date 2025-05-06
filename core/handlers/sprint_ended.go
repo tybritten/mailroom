@@ -33,7 +33,7 @@ func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa
 		currentFlowChanged = event.Contact.CurrentFlowID() != scene.Session().CurrentFlowID()
 
 		if event.Contact.CurrentSessionUUID() != waitingSessionUUID || currentFlowChanged {
-			scene.AppendToEventPreCommitHook(hooks.CommitSessionChangesHook, hooks.CurrentSessionUpdate{
+			scene.AddToPreCommitHook(hooks.CommitSessionChangesHook, hooks.CurrentSessionUpdate{
 				ID:                 scene.ContactID(),
 				CurrentSessionUUID: null.String(waitingSessionUUID),
 				CurrentFlowID:      scene.Session().CurrentFlowID(),
@@ -44,7 +44,7 @@ func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa
 	// if current flow has changed then we need to update modified_on, but also if this is a new session
 	// then flow history may have changed too in a way that won't be captured by a flow_entered event
 	if currentFlowChanged || !event.Resumed {
-		scene.AppendToEventPostCommitHook(hooks.ContactModifiedHook, event)
+		scene.AddToPostCommitHook(hooks.ContactModifiedHook, event)
 	}
 
 	return nil

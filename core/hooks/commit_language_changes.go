@@ -11,7 +11,7 @@ import (
 )
 
 // CommitLanguageChangesHook is our hook for language changes
-var CommitLanguageChangesHook models.EventCommitHook = &commitLanguageChangesHook{}
+var CommitLanguageChangesHook models.SceneCommitHook = &commitLanguageChangesHook{}
 
 type commitLanguageChangesHook struct{}
 

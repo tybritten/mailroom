@@ -11,7 +11,7 @@ import (
 )
 
 // InsertHTTPLogsHook is our hook for inserting classifier logs
-var InsertHTTPLogsHook models.EventCommitHook = &insertHTTPLogsHook{}
+var InsertHTTPLogsHook models.SceneCommitHook = &insertHTTPLogsHook{}
 
 type insertHTTPLogsHook struct{}
 
