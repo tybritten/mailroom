@@ -63,21 +63,8 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 	}
 
 	// now take care of any post-commit hooks
-	txCTX, cancel = context.WithTimeout(ctx, postCommitTimeout)
-	defer cancel()
-
-	tx, err = rt.DB.BeginTxx(txCTX, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error starting transaction for post commit hooks: %w", err)
-	}
-
-	if err = models.ApplyEventPostCommitHooks(txCTX, rt, tx, oa, []*models.Scene{session.Scene()}); err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("error applying post commit hooks on resume: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("error committing post commit hook changes on resume: %w", err)
+	if err := models.ProcessPostCommitHooks(ctx, rt, oa, []*models.Scene{session.Scene()}); err != nil {
+		return nil, fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 
 	slog.Debug("resumed session", "contact", resume.Contact().UUID(), "session", session.UUID(), "resume_type", resume.Type(), "elapsed", time.Since(start))

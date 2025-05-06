@@ -3,6 +3,8 @@ package models
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
@@ -10,6 +12,10 @@ import (
 	"github.com/nyaruka/goflow/flows/modifiers"
 	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/runtime"
+)
+
+const (
+	postCommitTimeout = time.Minute
 )
 
 // Scene represents the context that events are occurring in
@@ -164,6 +170,10 @@ func ApplyEventPostCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sql
 
 // HandleAndCommitEvents takes a set of contacts and events, handles the events and applies any hooks, and commits everything
 func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, userID UserID, contactEvents map[*flows.Contact][]flows.Event) error {
+	if len(contactEvents) == 0 {
+		return nil
+	}
+
 	// create scenes for each contact
 	scenes := make([]*Scene, 0, len(contactEvents))
 	for contact := range contactEvents {
@@ -179,15 +189,13 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 
 	// handle the events to create the hooks on each scene
 	for _, scene := range scenes {
-		err := HandleEvents(ctx, rt, tx, oa, scene, contactEvents[scene.Contact()])
-		if err != nil {
+		if err := HandleEvents(ctx, rt, tx, oa, scene, contactEvents[scene.Contact()]); err != nil {
 			return fmt.Errorf("error applying events: %w", err)
 		}
 	}
 
 	// gather all our pre commit events, group them by hook and apply them
-	err = ApplyEventPreCommitHooks(ctx, rt, tx, oa, scenes)
-	if err != nil {
+	if err := ApplyEventPreCommitHooks(ctx, rt, tx, oa, scenes); err != nil {
 		return fmt.Errorf("error applying pre commit hooks: %w", err)
 	}
 
@@ -196,22 +204,58 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 		return fmt.Errorf("error committing pre commit hooks: %w", err)
 	}
 
-	// begin the transaction for post-commit hooks
-	tx, err = rt.DB.BeginTxx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("error beginning transaction for post commit: %w", err)
+	if err := ProcessPostCommitHooks(ctx, rt, oa, scenes); err != nil {
+		return fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 
-	// apply the post commit hooks
-	err = ApplyEventPostCommitHooks(ctx, rt, tx, oa, scenes)
+	return nil
+}
+
+func ProcessPostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, scenes []*Scene) error {
+	txCTX, cancel := context.WithTimeout(ctx, postCommitTimeout*time.Duration(len(scenes)))
+	defer cancel()
+
+	tx, err := rt.DB.BeginTxx(txCTX, nil)
 	if err != nil {
-		return fmt.Errorf("error applying post commit hooks: %w", err)
+		return fmt.Errorf("error beginning transaction: %w", err)
 	}
 
-	// commit the transaction
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("error committing post commit hooks: %w", err)
+	err = ApplyEventPostCommitHooks(txCTX, rt, tx, oa, scenes)
+	if err == nil {
+		err = tx.Commit()
 	}
+
+	if err != nil {
+		tx.Rollback()
+
+		// we failed with our post commit hooks, try one at a time, logging those errors
+		for _, scene := range scenes {
+			log := slog.With("contact", scene.ContactUUID(), "session", scene.SessionUUID())
+
+			txCTX, cancel := context.WithTimeout(ctx, postCommitTimeout)
+			defer cancel()
+
+			tx, err := rt.DB.BeginTxx(txCTX, nil)
+			if err != nil {
+				tx.Rollback()
+				log.Error("error beginning transaction for retry", "error", err)
+				continue
+			}
+
+			if err := ApplyEventPostCommitHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
+				tx.Rollback()
+				log.Error("error applying post commit hook", "error", err)
+				continue
+			}
+
+			if err := tx.Commit(); err != nil {
+				tx.Rollback()
+				log.Error("error committing post commit hook", "error", err)
+				continue
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -235,8 +279,7 @@ func ApplyModifiers(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, use
 		eventsByContact[contact] = events
 	}
 
-	err := HandleAndCommitEvents(ctx, rt, oa, userID, eventsByContact)
-	if err != nil {
+	if err := HandleAndCommitEvents(ctx, rt, oa, userID, eventsByContact); err != nil {
 		return nil, fmt.Errorf("error commiting events: %w", err)
 	}
 
