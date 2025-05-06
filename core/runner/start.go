@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	commitTimeout     = time.Minute
-	postCommitTimeout = time.Minute
+	commitTimeout = time.Minute
 )
 
 var startTypeToOrigin = map[models.StartType]string{
@@ -307,57 +306,13 @@ func StartFlowForContacts(
 		}
 	}
 
-	// now take care of any post-commit hooks
-	txCTX, cancel = context.WithTimeout(ctx, postCommitTimeout*time.Duration(len(sessions)))
-	defer cancel()
-
-	tx, err = rt.DB.BeginTxx(txCTX, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error starting transaction for post commit hooks: %w", err)
-	}
-
 	scenes := make([]*models.Scene, 0, len(triggers))
 	for _, s := range dbSessions {
 		scenes = append(scenes, s.Scene())
 	}
 
-	err = models.ApplyEventPostCommitHooks(txCTX, rt, tx, oa, scenes)
-	if err == nil {
-		err = tx.Commit()
-	}
-
-	if err != nil {
-		tx.Rollback()
-
-		// we failed with our post commit hooks, try one at a time, logging those errors
-		for _, session := range dbSessions {
-			log = log.With("contact_uuid", session.ContactUUID())
-
-			txCTX, cancel = context.WithTimeout(ctx, postCommitTimeout)
-			defer cancel()
-
-			tx, err := rt.DB.BeginTxx(txCTX, nil)
-			if err != nil {
-				tx.Rollback()
-				log.Error("error starting transaction to retry post commits", "error", err)
-				continue
-			}
-
-			err = models.ApplyEventPostCommitHooks(ctx, rt, tx, oa, []*models.Scene{session.Scene()})
-			if err != nil {
-				tx.Rollback()
-				log.Error("error applying post commit hook", "error", err)
-				continue
-			}
-
-			err = tx.Commit()
-
-			if err != nil {
-				tx.Rollback()
-				log.Error("error comitting post commit hook", "error", err)
-				continue
-			}
-		}
+	if err := models.ProcessPostCommitHooks(ctx, rt, oa, scenes); err != nil {
+		return nil, fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 
 	log.Debug("started sessions", "count", len(dbSessions), "elapsed", time.Since(start))
