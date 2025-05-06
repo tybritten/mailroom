@@ -24,7 +24,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/nyaruka/ezconf v0.3.0
 	github.com/nyaruka/gocommon v1.62.1
-	github.com/nyaruka/goflow v0.243.1
+	github.com/nyaruka/goflow v0.243.3
 	github.com/nyaruka/null/v3 v3.0.0
 	github.com/nyaruka/redisx v0.9.0
 	github.com/nyaruka/rp-indexer/v10 v10.1.1
@@ -128,7 +128,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
-	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
+	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect

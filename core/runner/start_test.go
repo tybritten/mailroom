@@ -9,7 +9,6 @@ import (
 	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/i18n"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/triggers"
 	_ "github.com/nyaruka/mailroom/core/handlers"
@@ -92,7 +91,7 @@ func TestStartFlowConcurrency(t *testing.T) {
 	// create a lot of contacts...
 	contacts := make([]*testdata.Contact, 100)
 	for i := range contacts {
-		contacts[i] = testdata.InsertContact(rt, testdata.Org1, flows.ContactUUID(uuids.NewV4()), "Jim", i18n.NilLanguage, models.ContactStatusActive)
+		contacts[i] = testdata.InsertContact(rt, testdata.Org1, flows.NewContactUUID(), "Jim", i18n.NilLanguage, models.ContactStatusActive)
 	}
 
 	options := &runner.StartOptions{

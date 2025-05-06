@@ -3,12 +3,11 @@ package handlers_test
 import (
 	"encoding/json"
 	"testing"
-	"time"
 
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/actions"
+	"github.com/nyaruka/goflow/test"
 	"github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/tasks"
@@ -27,8 +26,7 @@ func TestSessionTriggered(t *testing.T) {
 		UUID: testdata.TestersGroup.UUID,
 	}
 
-	uuids.SetGenerator(uuids.NewSeededGenerator(1234567, time.Now))
-	defer uuids.SetGenerator(uuids.DefaultGenerator)
+	test.MockUniverse()
 
 	tcs := []handlers.TestCase{
 		{
@@ -63,7 +61,7 @@ func TestSessionTriggered(t *testing.T) {
 					assert.Equal(t, []models.ContactID{testdata.George.ID}, start.ContactIDs)
 					assert.Equal(t, []models.GroupID{testdata.TestersGroup.ID}, start.GroupIDs)
 					assert.Equal(t, testdata.SingleMessage.ID, start.FlowID)
-					assert.JSONEq(t, `{"parent_uuid":"36284611-ea19-4f1f-8611-9bc48e206654", "ancestors":1, "ancestors_since_input":1}`, string(start.SessionHistory))
+					assert.JSONEq(t, `{"parent_uuid":"01969b47-096b-76f8-bebe-b4a1f677cf4c", "ancestors":1, "ancestors_since_input":1}`, string(start.SessionHistory))
 					return nil
 				},
 			},

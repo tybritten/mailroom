@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/dates"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/models"
@@ -44,7 +43,7 @@ func InsertClosedTicket(rt *runtime.Runtime, org *Org, contact *Contact, topic *
 }
 
 func insertTicket(rt *runtime.Runtime, org *Org, contact *Contact, status models.TicketStatus, topic *Topic, openedOn time.Time, assignee *User) *Ticket {
-	uuid := flows.TicketUUID(uuids.NewV4())
+	uuid := flows.NewTicketUUID()
 
 	lastActivityOn := openedOn
 	var closedOn *time.Time

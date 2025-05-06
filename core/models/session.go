@@ -19,7 +19,6 @@ import (
 	"github.com/nyaruka/gocommon/aws/s3x"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/random"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/goflow/envs"
 	"github.com/nyaruka/goflow/flows"
@@ -465,15 +464,10 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 		return nil, fmt.Errorf("unknown flow type: %s", fs.Type())
 	}
 
-	uuid := fs.UUID()
-	if uuid == "" {
-		uuid = flows.SessionUUID(uuids.NewV4())
-	}
-
 	// create our session object
 	session := &Session{}
 	s := &session.s
-	s.UUID = uuid
+	s.UUID = fs.UUID()
 	s.Status = sessionStatus
 	s.LastSprintUUID = null.String(sprint.UUID())
 	s.SessionType = sessionType
@@ -488,7 +482,6 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 
 	session.contact = fs.Contact()
 	session.scene = NewSceneForSession(session)
-
 	session.sprint = sprint
 	session.findStep = fs.FindStep
 

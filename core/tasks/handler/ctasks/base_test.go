@@ -99,7 +99,7 @@ func TestTimedEvents(t *testing.T) {
 			ctask = &ctasks.MsgReceivedTask{
 				ChannelID: testdata.FacebookChannel.ID,
 				MsgID:     models.MsgID(1),
-				MsgUUID:   flows.MsgUUID(uuids.NewV4()),
+				MsgUUID:   flows.NewMsgUUID(),
 				URN:       contact.URN,
 				URNID:     contact.URNID,
 				Text:      tc.messageIn,

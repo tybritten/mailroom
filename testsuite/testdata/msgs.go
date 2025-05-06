@@ -51,7 +51,7 @@ type Template struct {
 
 // InsertIncomingMsg inserts an incoming text message
 func InsertIncomingMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *Contact, text string, status models.MsgStatus) *MsgIn {
-	msgUUID := flows.MsgUUID(uuids.NewV4())
+	msgUUID := flows.NewMsgUUID()
 	var id models.MsgID
 	must(rt.DB.Get(&id,
 		`INSERT INTO msgs_msg(uuid, text, created_on, modified_on, direction, msg_type, status, visibility, msg_count, error_count, next_attempt, contact_id, contact_urn_id, org_id, channel_id, is_android)

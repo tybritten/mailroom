@@ -95,7 +95,7 @@ func InsertFlowStart(rt *runtime.Runtime, org *Org, user *User, flow *Flow, cont
 // InsertFlowSession inserts a flow session
 func InsertFlowSession(rt *runtime.Runtime, contact *Contact, sessionType models.FlowType, status models.SessionStatus, currentFlow *Flow, callID models.CallID) flows.SessionUUID {
 	now := time.Now()
-	uuid := flows.SessionUUID(uuids.NewV4())
+	uuid := flows.NewSessionUUID()
 
 	var endedOn *time.Time
 	if status != models.SessionStatusWaiting {
@@ -111,7 +111,7 @@ func InsertFlowSession(rt *runtime.Runtime, contact *Contact, sessionType models
 
 // InsertWaitingSession inserts a waiting flow session with a corresponding waiting run, and updates the contact
 func InsertWaitingSession(rt *runtime.Runtime, org *Org, contact *Contact, sessionType models.FlowType, currentFlow *Flow, callID models.CallID) flows.SessionUUID {
-	uuid := flows.SessionUUID(uuids.NewV4())
+	uuid := flows.NewSessionUUID()
 
 	rt.DB.MustExec(
 		`INSERT INTO flows_flowsession(uuid, contact_id, status, last_sprint_uuid, output, created_on, session_type, current_flow_id, call_id) 

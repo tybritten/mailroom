@@ -4,14 +4,12 @@ import (
 	"context"
 	"net/http"
 	"testing"
-	"time"
 
-	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/gocommon/urns"
-	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/flows"
+	"github.com/nyaruka/goflow/test"
 	"github.com/nyaruka/mailroom/services/airtime/dtone"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
@@ -24,9 +22,7 @@ func errorResp(code int, message string) []byte {
 func TestServiceWithSuccessfulTranfer(t *testing.T) {
 	ctx := context.Background()
 
-	defer uuids.SetGenerator(uuids.DefaultGenerator)
-	defer dates.SetNowFunc(time.Now)
-	defer httpx.SetRequestor(httpx.DefaultRequestor)
+	test.MockUniverse()
 
 	mocks := httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
 		"https://dvs-api.dtone.com/v1/lookup/mobile-number": {
@@ -40,10 +36,8 @@ func TestServiceWithSuccessfulTranfer(t *testing.T) {
 		},
 	})
 
-	uuids.SetGenerator(uuids.NewSeededGenerator(12345, time.Now))
-	dates.SetNowFunc(dates.NewSequentialNow(time.Date(2019, 10, 7, 15, 21, 30, 123456789, time.UTC), time.Second))
+	defer httpx.SetRequestor(httpx.DefaultRequestor)
 	httpx.SetRequestor(mocks)
-	dates.SetNowFunc(dates.NewSequentialNow(time.Date(2019, 10, 9, 15, 25, 30, 123456789, time.UTC), time.Second))
 
 	svc := dtone.NewService(http.DefaultClient, nil, "key123", "sesame")
 
@@ -61,7 +55,7 @@ func TestServiceWithSuccessfulTranfer(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, &flows.AirtimeTransfer{
-		UUID:       "1ae96956-4b34-433e-8d1a-f05fe6923d6d",
+		UUID:       "01969b47-0583-76f8-ae7f-f8b243c49ff5",
 		ExternalID: "2237512891",
 		Sender:     urns.URN("tel:+593979000000"),
 		Recipient:  urns.URN("tel:+593979123456"),
@@ -77,9 +71,7 @@ func TestServiceWithSuccessfulTranfer(t *testing.T) {
 func TestServiceFailedTransfers(t *testing.T) {
 	ctx := context.Background()
 
-	defer uuids.SetGenerator(uuids.DefaultGenerator)
-	defer dates.SetNowFunc(time.Now)
-	defer httpx.SetRequestor(httpx.DefaultRequestor)
+	test.MockUniverse()
 
 	mocks := httpx.NewMockRequestor(map[string][]*httpx.MockResponse{
 		"https://dvs-api.dtone.com/v1/lookup/mobile-number": {
@@ -105,10 +97,8 @@ func TestServiceFailedTransfers(t *testing.T) {
 		},
 	})
 
-	uuids.SetGenerator(uuids.NewSeededGenerator(12345, time.Now))
-	dates.SetNowFunc(dates.NewSequentialNow(time.Date(2019, 10, 7, 15, 21, 30, 123456789, time.UTC), time.Second))
+	defer httpx.SetRequestor(httpx.DefaultRequestor)
 	httpx.SetRequestor(mocks)
-	dates.SetNowFunc(dates.NewSequentialNow(time.Date(2019, 10, 9, 15, 25, 30, 123456789, time.UTC), time.Second))
 
 	svc := dtone.NewService(http.DefaultClient, nil, "key123", "sesame")
 
