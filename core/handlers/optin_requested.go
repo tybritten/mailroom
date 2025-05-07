@@ -6,7 +6,6 @@ import (
 	"log/slog"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -23,19 +22,6 @@ func handleOptInRequested(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx,
 
 	slog.Debug("optin requested", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), slog.Group("optin", "uuid", event.OptIn.UUID, "name", event.OptIn.Name))
 
-	urn := event.URN
-	var err error
-
-	// if the message URN was added during the sprint, it won't have an id
-	if scene.Session().SessionType() == models.FlowTypeMessaging && event.URN != urns.NilURN {
-		if models.GetURNInt(urn, "id") == 0 {
-			urn, err = models.GetOrCreateURN(ctx, tx, oa, scene.ContactID(), event.URN)
-			if err != nil {
-				return fmt.Errorf("unable to get or create URN: %s: %w", event.URN, err)
-			}
-		}
-	}
-
 	// get our opt in
 	optIn := oa.OptInByUUID(event.OptIn.UUID)
 	if optIn == nil {
@@ -51,10 +37,10 @@ func handleOptInRequested(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx,
 	// and the flow
 	flow, _ := scene.Session().LocateEvent(e)
 
-	msg := models.NewOutgoingOptInMsg(rt, oa.OrgID(), scene.Session(), flow, optIn, channel, urn, event.CreatedOn())
+	msg := models.NewOutgoingOptInMsg(rt, oa.OrgID(), scene.Session(), flow, optIn, channel, event.URN, event.CreatedOn())
 
 	// register to have this message committed and sent
-	scene.AddToPreCommitHook(hooks.CommitMessagesHook, msg)
+	scene.AddToPreCommitHook(hooks.CommitMessagesHook, hooks.MsgAndURN{Msg: msg, URN: event.URN})
 	scene.AddToPostCommitHook(hooks.SendMessagesHook, msg)
 
 	return nil

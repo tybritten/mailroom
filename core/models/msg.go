@@ -210,21 +210,15 @@ func (m *Msg) SetChannel(channel *Channel) {
 	}
 }
 
-func (m *Msg) SetURN(urn urns.URN) error {
-	// noop for nil urn
-	if urn == urns.NilURN {
-		return nil
+func (m *Msg) SetURN(urn urns.URN) {
+	m.m.ContactURNID = NilURNID
+
+	// try to extract id as param
+	if urn != urns.NilURN {
+		if id := GetURNInt(urn, "id"); id != 0 {
+			m.m.ContactURNID = URNID(id)
+		}
 	}
-
-	// set our ID if we have one
-	urnInt := GetURNInt(urn, "id")
-	if urnInt == 0 {
-		return fmt.Errorf("missing urn id on urn: %s", urn)
-	}
-
-	m.m.ContactURNID = URNID(urnInt)
-
-	return nil
 }
 
 func (m *Msg) Attachments() []utils.Attachment {
@@ -269,8 +263,6 @@ func NewIncomingAndroid(orgID OrgID, channelID ChannelID, contactID ContactID, u
 func NewIncomingIVR(cfg *runtime.Config, orgID OrgID, call *Call, in *flows.MsgIn, createdOn time.Time) *Msg {
 	msg := &Msg{}
 	m := &msg.m
-
-	msg.SetURN(in.URN())
 	m.UUID = in.UUID()
 	m.Text = in.Text()
 	m.Direction = DirectionIn

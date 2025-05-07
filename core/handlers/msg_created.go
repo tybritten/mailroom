@@ -6,7 +6,6 @@ import (
 	"log/slog"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -29,19 +28,6 @@ func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa 
 
 	slog.Debug("msg created", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "text", event.Msg.Text(), "urn", event.Msg.URN())
 
-	// if the message URN was added during the sprint, it won't have an id
-	if scene.Session().SessionType() == models.FlowTypeMessaging && event.Msg.URN() != urns.NilURN {
-		urn := event.Msg.URN()
-		if models.GetURNInt(urn, "id") == 0 {
-			urn, err := models.GetOrCreateURN(ctx, tx, oa, scene.ContactID(), event.Msg.URN())
-			if err != nil {
-				return fmt.Errorf("unable to get or create URN: %s: %w", event.Msg.URN(), err)
-			}
-			// update our Msg with our full URN
-			event.Msg.SetURN(urn)
-		}
-	}
-
 	// get our channel
 	var channel *models.Channel
 	if event.Msg.Channel() != nil {
@@ -60,7 +46,7 @@ func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa 
 	}
 
 	// commit this message in the transaction
-	scene.AddToPreCommitHook(hooks.CommitMessagesHook, msg)
+	scene.AddToPreCommitHook(hooks.CommitMessagesHook, hooks.MsgAndURN{Msg: msg, URN: event.Msg.URN()})
 
 	// and queue it to be sent after the transaction is complete
 	scene.AddToPostCommitHook(hooks.SendMessagesHook, msg)
