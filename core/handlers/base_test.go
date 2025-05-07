@@ -236,7 +236,7 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 		}
 
 		for _, scene := range scenes {
-			err := models.HandleSceneEvents(ctx, rt, oa, scene, results[scene.ContactID()].Events)
+			err := scene.AddEvents(ctx, rt, oa, results[scene.ContactID()].Events)
 			assert.NoError(t, err)
 		}
 
@@ -280,7 +280,7 @@ func RunFlowAndApplyEvents(t *testing.T, ctx context.Context, rt *runtime.Runtim
 
 	scene := models.NewSceneForSession(session)
 
-	err = models.HandleSceneEvents(ctx, rt, oa, scene, sprint.Events())
+	err = scene.AddEvents(ctx, rt, oa, sprint.Events())
 	require.NoError(t, err)
 
 	tx, err = rt.DB.BeginTxx(ctx, nil)
