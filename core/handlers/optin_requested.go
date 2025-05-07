@@ -29,6 +29,8 @@ func handleOptInRequested(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx,
 	// messages in messaging flows must have urn id set on them, if not, go look it up
 	if scene.Session().SessionType() == models.FlowTypeMessaging && event.URN != urns.NilURN {
 		if models.GetURNInt(urn, "id") == 0 {
+			slog.Error("trying to create outgoing message for URN without id param", "urn", event.URN, "contact", scene.ContactUUID(), "session", scene.SessionUUID())
+
 			urn, err = models.GetOrCreateURN(ctx, tx, oa, scene.ContactID(), event.URN)
 			if err != nil {
 				return fmt.Errorf("unable to get or create URN: %s: %w", event.URN, err)

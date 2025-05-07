@@ -33,6 +33,8 @@ func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa 
 	if scene.Session().SessionType() == models.FlowTypeMessaging && event.Msg.URN() != urns.NilURN {
 		urn := event.Msg.URN()
 		if models.GetURNInt(urn, "id") == 0 {
+			slog.Error("trying to create outgoing message for URN without id param", "urn", event.Msg.URN(), "contact", scene.ContactUUID(), "session", scene.SessionUUID())
+
 			urn, err := models.GetOrCreateURN(ctx, tx, oa, scene.ContactID(), event.Msg.URN())
 			if err != nil {
 				return fmt.Errorf("unable to get or create URN: %s: %w", event.Msg.URN(), err)
