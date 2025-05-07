@@ -64,8 +64,8 @@ func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, msgs
 	for _, m := range msgs {
 		orgID := m.OrgID()
 		var urn *models.ContactURN
-		if m.ContactURNID() != nil {
-			urn = urnsByID[*m.ContactURNID()]
+		if m.ContactURNID() != models.NilURNID {
+			urn = urnsByID[m.ContactURNID()]
 		}
 		sendsByOrg[orgID] = append(sendsByOrg[orgID], Send{Msg: m, URN: urn})
 	}
@@ -151,8 +151,8 @@ func getMessageURNIDs(msgs []*models.Msg) []models.URNID {
 	ids := make(map[models.URNID]bool, len(msgs))
 	for _, m := range msgs {
 		uid := m.ContactURNID()
-		if uid != nil {
-			ids[*uid] = true
+		if uid != models.NilURNID {
+			ids[uid] = true
 		}
 	}
 	return slices.Collect(maps.Keys(ids))
