@@ -1,3 +1,7 @@
+v10.1.109 (2025-05-07)
+-------------------------
+ * Fix returning LLM errors from translate endpoint
+
 v10.1.108 (2025-05-06)
 -------------------------
  * Some refactoring of scene event handling code
