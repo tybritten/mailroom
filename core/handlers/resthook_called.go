@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -17,7 +16,7 @@ func init() {
 }
 
 // handleResthookCalled is called for each resthook call in a scene
-func handleResthookCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleResthookCalled(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ResthookCalledEvent)
 
 	slog.Debug("resthook called", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "resthook", event.Resthook)

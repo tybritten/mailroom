@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -17,7 +16,7 @@ func init() {
 }
 
 // handleContactURNsChanged is called for each contact urn changed event that is encountered
-func handleContactURNsChanged(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleContactURNsChanged(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ContactURNsChangedEvent)
 
 	slog.Debug("contact urns changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "urns", event.URNs)

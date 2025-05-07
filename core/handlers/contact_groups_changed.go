@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -17,7 +16,7 @@ func init() {
 }
 
 // handleContactGroupsChanged is called when a group is added or removed from our contact
-func handleContactGroupsChanged(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleContactGroupsChanged(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ContactGroupsChangedEvent)
 
 	slog.Debug("contact groups changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "groups_removed", len(event.GroupsRemoved), "groups_added", len(event.GroupsAdded))

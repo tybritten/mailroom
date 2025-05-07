@@ -417,7 +417,7 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contact, true))
 
 	// apply all our events to generate hooks
-	if err := HandleSceneEvents(ctx, rt, tx, oa, s.scene, eventsToHandle); err != nil {
+	if err := HandleSceneEvents(ctx, rt, oa, s.scene, eventsToHandle); err != nil {
 		return fmt.Errorf("error handling events for session %s: %w", s.UUID(), err)
 	}
 
@@ -645,7 +645,7 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 
 		eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contacts[i], false))
 
-		if err := HandleSceneEvents(ctx, rt, tx, oa, s.Scene(), eventsToHandle); err != nil {
+		if err := HandleSceneEvents(ctx, rt, oa, s.Scene(), eventsToHandle); err != nil {
 			return nil, fmt.Errorf("error applying events for session %s: %w", s.UUID(), err)
 		}
 

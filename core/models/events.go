@@ -79,7 +79,7 @@ func (s *Scene) AddToPostCommitHook(hook SceneCommitHook, item any) {
 }
 
 // EventHandler defines a call for handling events that occur in a flow
-type EventHandler func(context.Context, *runtime.Runtime, *sqlx.Tx, *OrgAssets, *Scene, flows.Event) error
+type EventHandler func(context.Context, *runtime.Runtime, *OrgAssets, *Scene, flows.Event) error
 
 // our registry of event type to internal handlers
 var eventHandlers = make(map[string]EventHandler)
@@ -95,14 +95,14 @@ func RegisterEventHandler(eventType string, handler EventHandler) {
 }
 
 // HandleSceneEvents handles the passed in event, IE, creates the db objects required etc..
-func HandleSceneEvents(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *OrgAssets, scene *Scene, events []flows.Event) error {
+func HandleSceneEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, scene *Scene, events []flows.Event) error {
 	for _, e := range events {
 		handler, found := eventHandlers[e.Type()]
 		if !found {
 			return fmt.Errorf("unable to find handler for event type: %s", e.Type())
 		}
 
-		if err := handler(ctx, rt, tx, oa, scene, e); err != nil {
+		if err := handler(ctx, rt, oa, scene, e); err != nil {
 			return err
 		}
 	}
@@ -236,7 +236,7 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 
 	// handle the events to create the hooks on each scene
 	for _, scene := range scenes {
-		if err := HandleSceneEvents(ctx, rt, tx, oa, scene, contactEvents[scene.Contact()]); err != nil {
+		if err := HandleSceneEvents(ctx, rt, oa, scene, contactEvents[scene.Contact()]); err != nil {
 			return fmt.Errorf("error applying events: %w", err)
 		}
 	}

@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -19,7 +18,7 @@ func init() {
 }
 
 // handleAirtimeTransferred is called for each airtime transferred event
-func handleAirtimeTransferred(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleAirtimeTransferred(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.AirtimeTransferredEvent)
 
 	slog.Debug("airtime transferred", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "sender", event.Sender, "recipient", event.Recipient, "currency", event.Currency, "amount", event.Amount.String())

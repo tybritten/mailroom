@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -17,7 +16,7 @@ func init() {
 	models.RegisterEventHandler(events.TypeOptInRequested, handleOptInRequested)
 }
 
-func handleOptInRequested(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleOptInRequested(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.OptInRequestedEvent)
 
 	slog.Debug("optin requested", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), slog.Group("optin", "uuid", event.OptIn.UUID, "name", event.OptIn.Name))
