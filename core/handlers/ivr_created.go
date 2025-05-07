@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -18,7 +17,7 @@ func init() {
 }
 
 // handleIVRCreated creates the db msg for the passed in event
-func handleIVRCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleIVRCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.IVRCreatedEvent)
 
 	slog.Debug("ivr created", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "text", event.Msg.Text())
@@ -37,7 +36,7 @@ func handleIVRCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa 
 	msg := models.NewOutgoingIVR(rt.Config, oa.OrgID(), call, event.Msg, event.CreatedOn())
 
 	// register to have this message committed
-	scene.AddToPreCommitHook(hooks.CommitIVRHook, msg)
+	scene.AttachPreCommitHook(hooks.CommitIVRHook, msg)
 
 	return nil
 }

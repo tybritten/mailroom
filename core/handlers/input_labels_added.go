@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -19,7 +18,7 @@ func init() {
 }
 
 // handleInputLabelsAdded is called for each input labels added event in a scene
-func handleInputLabelsAdded(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleInputLabelsAdded(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	if scene.Session() == nil {
 		return errors.New("cannot add label, not in a session")
 	}
@@ -41,7 +40,7 @@ func handleInputLabelsAdded(ctx context.Context, rt *runtime.Runtime, tx *sqlx.T
 			return fmt.Errorf("unable to find label with UUID: %s", l.UUID)
 		}
 
-		scene.AddToPreCommitHook(hooks.CommitAddedLabelsHook, &models.MsgLabelAdd{MsgID: inputMsgID, LabelID: label.ID()})
+		scene.AttachPreCommitHook(hooks.CommitAddedLabelsHook, &models.MsgLabelAdd{MsgID: inputMsgID, LabelID: label.ID()})
 	}
 
 	return nil

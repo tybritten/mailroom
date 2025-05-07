@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -17,14 +16,14 @@ func init() {
 }
 
 // handleContactFieldChanged is called when a contact field changes
-func handleContactFieldChanged(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleContactFieldChanged(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ContactFieldChangedEvent)
 
 	slog.Debug("contact field changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "field", event.Field.Key, "value", event.Value)
 
-	scene.AddToPreCommitHook(hooks.CommitFieldChangesHook, event)
-	scene.AddToPreCommitHook(hooks.UpdateCampaignEventsHook, event)
-	scene.AddToPostCommitHook(hooks.ContactModifiedHook, event)
+	scene.AttachPreCommitHook(hooks.CommitFieldChangesHook, event)
+	scene.AttachPreCommitHook(hooks.UpdateCampaignEventsHook, event)
+	scene.AttachPostCommitHook(hooks.ContactModifiedHook, event)
 
 	return nil
 }

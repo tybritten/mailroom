@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/models"
@@ -23,7 +22,7 @@ func init() {
 	models.RegisterEventHandler(events.TypeWarning, handleWarning)
 }
 
-func handleWarning(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleWarning(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.WarningEvent)
 
 	flow, _ := scene.Session().LocateEvent(e)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -17,13 +16,13 @@ func init() {
 }
 
 // handleContactLanguageChanged is called when we process a contact language change
-func handleContactLanguageChanged(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleContactLanguageChanged(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.ContactLanguageChangedEvent)
 
 	slog.Debug("contact language changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "language", event.Language)
 
-	scene.AddToPreCommitHook(hooks.CommitLanguageChangesHook, event)
-	scene.AddToPostCommitHook(hooks.ContactModifiedHook, event)
+	scene.AttachPreCommitHook(hooks.CommitLanguageChangesHook, event)
+	scene.AttachPostCommitHook(hooks.ContactModifiedHook, event)
 
 	return nil
 }

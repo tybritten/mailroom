@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -18,7 +17,7 @@ func init() {
 }
 
 // handleWebhookCalled is called for each webhook call in a scene
-func handleWebhookCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleWebhookCalled(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.WebhookCalledEvent)
 
 	slog.Debug("webhook called", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "url", event.URL, "status", event.Status, "elapsed_ms", event.ElapsedMS)
@@ -31,7 +30,7 @@ func handleWebhookCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 			URL:   event.URL,
 		}
 
-		scene.AddToPreCommitHook(hooks.UnsubscribeResthookHook, unsub)
+		scene.AttachPreCommitHook(hooks.UnsubscribeResthookHook, unsub)
 	}
 
 	flow, nodeUUID := scene.Session().LocateEvent(e)
@@ -47,13 +46,13 @@ func handleWebhookCalled(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 			event.Retries,
 			event.CreatedOn(),
 		)
-		scene.AddToPreCommitHook(hooks.InsertHTTPLogsHook, httpLog)
+		scene.AttachPreCommitHook(hooks.InsertHTTPLogsHook, httpLog)
 	}
 
 	rt.Stats.RecordWebhookCall(time.Duration(event.ElapsedMS) * time.Millisecond)
 
 	// pass node and response time to the hook that monitors webhook health
-	scene.AddToPreCommitHook(hooks.MonitorWebhooks, &hooks.WebhookCall{NodeUUID: nodeUUID, Event: event})
+	scene.AttachPreCommitHook(hooks.MonitorWebhooks, &hooks.WebhookCall{NodeUUID: nodeUUID, Event: event})
 
 	return nil
 }

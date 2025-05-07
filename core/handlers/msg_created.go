@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -18,7 +17,7 @@ func init() {
 }
 
 // handleMsgCreated creates the db msg for the passed in event
-func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.MsgCreatedEvent)
 
 	// must be in a session
@@ -46,10 +45,10 @@ func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa 
 	}
 
 	// commit this message in the transaction
-	scene.AddToPreCommitHook(hooks.CommitMessagesHook, hooks.MsgAndURN{Msg: msg, URN: event.Msg.URN()})
+	scene.AttachPreCommitHook(hooks.CommitMessagesHook, hooks.MsgAndURN{Msg: msg, URN: event.Msg.URN()})
 
 	// and queue it to be sent after the transaction is complete
-	scene.AddToPostCommitHook(hooks.SendMessagesHook, msg)
+	scene.AttachPostCommitHook(hooks.SendMessagesHook, msg)
 
 	return nil
 }

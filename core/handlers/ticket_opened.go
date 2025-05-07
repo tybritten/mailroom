@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -18,7 +17,7 @@ func init() {
 }
 
 // handleTicketOpened is called for each ticket opened event
-func handleTicketOpened(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleTicketOpened(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.TicketOpenedEvent)
 
 	slog.Debug("ticket opened", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "ticket", event.Ticket.UUID)
@@ -57,7 +56,7 @@ func handleTicketOpened(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, o
 		assigneeID,
 	)
 
-	scene.AddToPreCommitHook(hooks.InsertTicketsHook, hooks.TicketAndNote{Ticket: ticket, Note: event.Note})
+	scene.AttachPreCommitHook(hooks.InsertTicketsHook, hooks.TicketAndNote{Ticket: ticket, Note: event.Note})
 
 	return nil
 }

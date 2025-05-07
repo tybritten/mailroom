@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/hooks"
 	"github.com/nyaruka/mailroom/core/models"
@@ -16,7 +15,7 @@ func init() {
 	models.RegisterEventHandler(models.TypeSprintEnded, handleSprintEnded)
 }
 
-func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*models.SprintEndedEvent)
 
 	slog.Debug("sprint ended", "contact", scene.ContactUUID(), "session", scene.SessionUUID())
@@ -33,7 +32,7 @@ func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa
 		currentFlowChanged = event.Contact.CurrentFlowID() != scene.Session().CurrentFlowID()
 
 		if event.Contact.CurrentSessionUUID() != waitingSessionUUID || currentFlowChanged {
-			scene.AddToPreCommitHook(hooks.CommitSessionChangesHook, hooks.CurrentSessionUpdate{
+			scene.AttachPreCommitHook(hooks.CommitSessionChangesHook, hooks.CurrentSessionUpdate{
 				ID:                 scene.ContactID(),
 				CurrentSessionUUID: null.String(waitingSessionUUID),
 				CurrentFlowID:      scene.Session().CurrentFlowID(),
@@ -44,7 +43,7 @@ func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa
 	// if current flow has changed then we need to update modified_on, but also if this is a new session
 	// then flow history may have changed too in a way that won't be captured by a flow_entered event
 	if currentFlowChanged || !event.Resumed {
-		scene.AddToPostCommitHook(hooks.ContactModifiedHook, event)
+		scene.AttachPostCommitHook(hooks.ContactModifiedHook, event)
 	}
 
 	return nil

@@ -61,25 +61,38 @@ func (s *Scene) SessionUUID() flows.SessionUUID {
 func (s *Scene) Contact() *flows.Contact        { return s.contact }
 func (s *Scene) ContactID() ContactID           { return ContactID(s.contact.ID()) }
 func (s *Scene) ContactUUID() flows.ContactUUID { return s.contact.UUID() }
+func (s *Scene) UserID() UserID                 { return s.userID }
 
 // Session returns the session for this scene if any
 func (s *Scene) Session() *Session { return s.session }
 
-// User returns the user ID for this scene if any
-func (s *Scene) UserID() UserID { return s.userID }
-
-// AddToPreCommitHook adds an item to be handled by the given pre commit hook
-func (s *Scene) AddToPreCommitHook(hook SceneCommitHook, item any) {
+// AttachPreCommitHook adds an item to be handled by the given pre commit hook
+func (s *Scene) AttachPreCommitHook(hook SceneCommitHook, item any) {
 	s.preCommits[hook] = append(s.preCommits[hook], item)
 }
 
-// AddToPostCommitHook adds an item to be handled by the given post commit hook
-func (s *Scene) AddToPostCommitHook(hook SceneCommitHook, item any) {
+// AttachPostCommitHook adds an item to be handled by the given post commit hook
+func (s *Scene) AttachPostCommitHook(hook SceneCommitHook, item any) {
 	s.postCommits[hook] = append(s.postCommits[hook], item)
 }
 
+// AddEvents runs the given events through the appropriate handlers which in turn attach hooks to the scene
+func (s *Scene) AddEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, events []flows.Event) error {
+	for _, e := range events {
+		handler, found := eventHandlers[e.Type()]
+		if !found {
+			return fmt.Errorf("unable to find handler for event type: %s", e.Type())
+		}
+
+		if err := handler(ctx, rt, oa, s, e); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // EventHandler defines a call for handling events that occur in a flow
-type EventHandler func(context.Context, *runtime.Runtime, *sqlx.Tx, *OrgAssets, *Scene, flows.Event) error
+type EventHandler func(context.Context, *runtime.Runtime, *OrgAssets, *Scene, flows.Event) error
 
 // our registry of event type to internal handlers
 var eventHandlers = make(map[string]EventHandler)
@@ -92,21 +105,6 @@ func RegisterEventHandler(eventType string, handler EventHandler) {
 		panic(fmt.Errorf("duplicate handler being registered for type: %s", eventType))
 	}
 	eventHandlers[eventType] = handler
-}
-
-// HandleSceneEvents handles the passed in event, IE, creates the db objects required etc..
-func HandleSceneEvents(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *OrgAssets, scene *Scene, events []flows.Event) error {
-	for _, e := range events {
-		handler, found := eventHandlers[e.Type()]
-		if !found {
-			return fmt.Errorf("unable to find handler for event type: %s", e.Type())
-		}
-
-		if err := handler(ctx, rt, tx, oa, scene, e); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // SceneCommitHook defines a callback that will accept a certain type of events across session, either before or after committing
@@ -236,7 +234,7 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 
 	// handle the events to create the hooks on each scene
 	for _, scene := range scenes {
-		if err := HandleSceneEvents(ctx, rt, tx, oa, scene, contactEvents[scene.Contact()]); err != nil {
+		if err := scene.AddEvents(ctx, rt, oa, contactEvents[scene.Contact()]); err != nil {
 			return fmt.Errorf("error applying events: %w", err)
 		}
 	}

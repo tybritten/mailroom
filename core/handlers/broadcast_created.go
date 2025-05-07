@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
@@ -16,12 +15,12 @@ func init() {
 	models.RegisterEventHandler(events.TypeBroadcastCreated, handleBroadcastCreated)
 }
 
-func handleBroadcastCreated(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleBroadcastCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.BroadcastCreatedEvent)
 
 	slog.Debug("broadcast created", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "translations", event.Translations[event.BaseLanguage])
 
-	scene.AddToPostCommitHook(hooks.CreateBroadcastsHook, event)
+	scene.AttachPostCommitHook(hooks.CreateBroadcastsHook, event)
 
 	return nil
 }

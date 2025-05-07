@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/models"
@@ -26,7 +25,7 @@ func init() {
 }
 
 // our hook for events we ignore in a run
-func noopHandler(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene *models.Scene, event flows.Event) error {
+func noopHandler(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, event flows.Event) error {
 	slog.Debug("noop event", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "type", event.Type())
 
 	return nil
