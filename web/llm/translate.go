@@ -2,7 +2,6 @@ package llm
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -71,11 +70,6 @@ func handleTranslate(ctx context.Context, rt *runtime.Runtime, r *translateReque
 
 	resp, err := llmSvc.Response(ctx, instructions, r.Text, 2500)
 	if err != nil {
-		var aierr *ai.ServiceError
-		if errors.As(err, &aierr) {
-			llm.RecordCall(rt, time.Since(start), resp.TokensUsed)
-			return nil, 0, aierr
-		}
 		return nil, 0, fmt.Errorf("error calling LLM service: %w", err)
 	}
 
