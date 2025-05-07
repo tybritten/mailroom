@@ -16,6 +16,8 @@ var CommitNameChangesHook models.SceneCommitHook = &commitNameChangesHook{}
 
 type commitNameChangesHook struct{}
 
+func (h *commitNameChangesHook) Order() int { return 1 }
+
 // Apply commits our contact name changes as a bulk update for the passed in map of scene
 func (h *commitNameChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// build up our list of pairs of contact id and contact name

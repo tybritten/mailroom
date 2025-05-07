@@ -20,6 +20,8 @@ var InsertTicketsHook models.SceneCommitHook = &insertTicketsHook{}
 
 type insertTicketsHook struct{}
 
+func (h *insertTicketsHook) Order() int { return 1 }
+
 // Apply inserts all the airtime transfers that were created
 func (h *insertTicketsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// gather all our tickets and notes

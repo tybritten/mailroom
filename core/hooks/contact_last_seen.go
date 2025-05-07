@@ -16,6 +16,8 @@ var ContactLastSeenHook models.SceneCommitHook = &contactLastSeenHook{}
 
 type contactLastSeenHook struct{}
 
+func (h *contactLastSeenHook) Order() int { return 1 }
+
 // Apply squashes and updates modified_on on all the contacts passed in
 func (h *contactLastSeenHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 

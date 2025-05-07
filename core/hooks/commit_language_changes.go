@@ -15,6 +15,8 @@ var CommitLanguageChangesHook models.SceneCommitHook = &commitLanguageChangesHoo
 
 type commitLanguageChangesHook struct{}
 
+func (h *commitLanguageChangesHook) Order() int { return 1 }
+
 // Apply applies our contact language change before our commit
 func (h *commitLanguageChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// build up our list of pairs of contact id and language name

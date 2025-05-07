@@ -15,6 +15,8 @@ var InsertWebhookEventHook models.SceneCommitHook = &insertWebhookEventHook{}
 
 type insertWebhookEventHook struct{}
 
+func (h *insertWebhookEventHook) Order() int { return 1 }
+
 // Apply inserts all the webook events that were created
 func (h *insertWebhookEventHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	events := make([]*models.WebhookEvent, 0, len(scenes))

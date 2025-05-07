@@ -15,6 +15,8 @@ var CommitMessagesHook models.SceneCommitHook = &commitMessagesHook{}
 
 type commitMessagesHook struct{}
 
+func (h *commitMessagesHook) Order() int { return 1 }
+
 type MsgAndURN struct {
 	Msg *models.Msg
 	URN urns.URN

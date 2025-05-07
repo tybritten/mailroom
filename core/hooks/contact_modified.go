@@ -4,16 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-
-	"github.com/jmoiron/sqlx"
 )
 
 // ContactModifiedHook is our hook for contact changes that require an update to modified_on
 var ContactModifiedHook models.SceneCommitHook = &contactModifiedHook{}
 
 type contactModifiedHook struct{}
+
+func (h *contactModifiedHook) Order() int { return 1000 } // run after all other hooks
 
 // Apply squashes and updates modified_on on all the contacts passed in
 func (h *contactModifiedHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
