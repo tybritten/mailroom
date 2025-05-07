@@ -1,3 +1,10 @@
+v10.1.110 (2025-05-07)
+-------------------------
+ * Convert HandleSceneEvents function into Scene.AddEvents method
+ * Remove unused tx param from event handlers
+ * For messages to URNs added during flow sprint, defer URN creation to hook
+ * Don't use pointer for Msg.ContactURNID
+
 v10.1.109 (2025-05-07)
 -------------------------
  * Fix returning LLM errors from translate endpoint
