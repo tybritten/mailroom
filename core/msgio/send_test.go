@@ -33,7 +33,6 @@ func (m *msgSpec) createMsg(t *testing.T, rt *runtime.Runtime, oa *models.OrgAss
 	require.NoError(t, err)
 
 	msg := msgs[0]
-	msg.SetURN(m.Contact.URN)
 
 	// use the channel instances in org assets so they're shared between msg instances
 	if msg.ChannelID() != models.NilChannelID {
