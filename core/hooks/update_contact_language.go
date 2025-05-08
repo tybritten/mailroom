@@ -10,15 +10,14 @@ import (
 	"github.com/nyaruka/null/v3"
 )
 
-// CommitLanguageChangesHook is our hook for language changes
-var CommitLanguageChangesHook models.SceneCommitHook = &commitLanguageChangesHook{}
+// UpdateContactLanguage is our hook for contact language changes
+var UpdateContactLanguage models.SceneCommitHook = &updateContactLanguage{}
 
-type commitLanguageChangesHook struct{}
+type updateContactLanguage struct{}
 
-func (h *commitLanguageChangesHook) Order() int { return 1 }
+func (h *updateContactLanguage) Order() int { return 1 }
 
-// Apply applies our contact language change before our commit
-func (h *commitLanguageChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *updateContactLanguage) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// build up our list of pairs of contact id and language name
 	updates := make([]*languageUpdate, 0, len(scenes))
 	for s, e := range scenes {

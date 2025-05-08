@@ -4,20 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-
-	"github.com/jmoiron/sqlx"
 )
 
-// InsertWebhookEventHook is our hook for when a resthook needs to be inserted
-var InsertWebhookEventHook models.SceneCommitHook = &insertWebhookEventHook{}
+// InsertWebhookEvent is our hook for when a resthook needs to be inserted
+var InsertWebhookEvent models.SceneCommitHook = &insertWebhookEventHook{}
 
 type insertWebhookEventHook struct{}
 
 func (h *insertWebhookEventHook) Order() int { return 1 }
 
-// Apply inserts all the webook events that were created
 func (h *insertWebhookEventHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	events := make([]*models.WebhookEvent, 0, len(scenes))
 	for _, rs := range scenes {
@@ -26,8 +24,7 @@ func (h *insertWebhookEventHook) Apply(ctx context.Context, rt *runtime.Runtime,
 		}
 	}
 
-	err := models.InsertWebhookEvents(ctx, tx, events)
-	if err != nil {
+	if err := models.InsertWebhookEvents(ctx, tx, events); err != nil {
 		return fmt.Errorf("error inserting webhook events: %w", err)
 	}
 

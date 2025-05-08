@@ -56,7 +56,7 @@ func handleTicketOpened(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 		assigneeID,
 	)
 
-	scene.AttachPreCommitHook(hooks.InsertTicketsHook, hooks.TicketAndNote{Ticket: ticket, Note: event.Note})
+	scene.AttachPreCommitHook(hooks.InsertTickets, hooks.TicketAndNote{Ticket: ticket, Note: event.Note})
 
 	return nil
 }

@@ -9,15 +9,14 @@ import (
 	"github.com/nyaruka/null/v3"
 )
 
-// CommitSessionChangesHook is our hook for name changes
-var CommitSessionChangesHook models.SceneCommitHook = &commitSessionChangesHook{}
+// UpdateContactSession is our hook for current session changes
+var UpdateContactSession models.SceneCommitHook = &updateContactSession{}
 
-type commitSessionChangesHook struct{}
+type updateContactSession struct{}
 
-func (h *commitSessionChangesHook) Order() int { return 1 }
+func (h *updateContactSession) Order() int { return 1 }
 
-// Apply commits our contact current_flow changes as a bulk update for the passed in map of scene
-func (h *commitSessionChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *updateContactSession) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	updates := make([]CurrentSessionUpdate, 0, len(scenes))
 	for _, evts := range scenes {
 		// there is only ever one of these events per scene

@@ -20,7 +20,7 @@ func handleBroadcastCreated(ctx context.Context, rt *runtime.Runtime, oa *models
 
 	slog.Debug("broadcast created", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "translations", event.Translations[event.BaseLanguage])
 
-	scene.AttachPostCommitHook(hooks.CreateBroadcastsHook, event)
+	scene.AttachPostCommitHook(hooks.CreateBroadcasts, event)
 
 	return nil
 }

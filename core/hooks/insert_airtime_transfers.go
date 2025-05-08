@@ -4,24 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-
-	"github.com/jmoiron/sqlx"
 )
 
-// InsertAirtimeTransfersHook is our hook for inserting airtime transfers
-var InsertAirtimeTransfersHook models.SceneCommitHook = &insertAirtimeTransfersHook{}
+// InsertAirtimeTransfers is our hook for inserting airtime transfers
+var InsertAirtimeTransfers models.SceneCommitHook = &insertAirtimeTransfers{}
 
-type insertAirtimeTransfersHook struct{}
+type insertAirtimeTransfers struct{}
 
-func (h *insertAirtimeTransfersHook) Order() int { return 1 }
+func (h *insertAirtimeTransfers) Order() int { return 1 }
 
-// Apply inserts all the airtime transfers that were created
-func (h *insertAirtimeTransfersHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *insertAirtimeTransfers) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// gather all our transfers
 	transfers := make([]*models.AirtimeTransfer, 0, len(scenes))
-
 	for _, ts := range scenes {
 		for _, t := range ts {
 			transfer := t.(*models.AirtimeTransfer)
@@ -29,15 +26,12 @@ func (h *insertAirtimeTransfersHook) Apply(ctx context.Context, rt *runtime.Runt
 		}
 	}
 
-	// insert the transfers
-	err := models.InsertAirtimeTransfers(ctx, tx, transfers)
-	if err != nil {
+	if err := models.InsertAirtimeTransfers(ctx, tx, transfers); err != nil {
 		return fmt.Errorf("error inserting airtime transfers: %w", err)
 	}
 
 	// gather all our logs and set the newly inserted transfer IDs on them
 	logs := make([]*models.HTTPLog, 0, len(scenes))
-
 	for _, t := range transfers {
 		for _, l := range t.Logs {
 			l.SetAirtimeTransferID(t.ID())
@@ -45,9 +39,7 @@ func (h *insertAirtimeTransfersHook) Apply(ctx context.Context, rt *runtime.Runt
 		}
 	}
 
-	// insert the logs
-	err = models.InsertHTTPLogs(ctx, tx, logs)
-	if err != nil {
+	if err := models.InsertHTTPLogs(ctx, tx, logs); err != nil {
 		return fmt.Errorf("error inserting airtime transfer logs: %w", err)
 	}
 

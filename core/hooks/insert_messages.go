@@ -10,20 +10,14 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-// CommitMessagesHook is our hook for comitting scene messages
-var CommitMessagesHook models.SceneCommitHook = &commitMessagesHook{}
+// InsertMessages is our hook for comitting scene messages
+var InsertMessages models.SceneCommitHook = &insertMessages{}
 
-type commitMessagesHook struct{}
+type insertMessages struct{}
 
-func (h *commitMessagesHook) Order() int { return 1 }
+func (h *insertMessages) Order() int { return 1 }
 
-type MsgAndURN struct {
-	Msg *models.Msg
-	URN urns.URN
-}
-
-// Apply takes care of inserting all the messages in the passed in scene.
-func (h *commitMessagesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *insertMessages) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	msgs := make([]*models.Msg, 0, len(scenes))
 	for scene, s := range scenes {
 		for _, m := range s {
@@ -42,10 +36,14 @@ func (h *commitMessagesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx 
 		}
 	}
 
-	// insert all our messages
 	if err := models.InsertMessages(ctx, tx, msgs); err != nil {
 		return fmt.Errorf("error writing messages: %w", err)
 	}
 
 	return nil
+}
+
+type MsgAndURN struct {
+	Msg *models.Msg
+	URN urns.URN
 }

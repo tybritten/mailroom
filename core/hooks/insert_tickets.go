@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-
-	"github.com/jmoiron/sqlx"
 )
 
 type TicketAndNote struct {
@@ -15,15 +14,14 @@ type TicketAndNote struct {
 	Note   string
 }
 
-// InsertTicketsHook is our hook for inserting tickets
-var InsertTicketsHook models.SceneCommitHook = &insertTicketsHook{}
+// InsertTickets is our hook for inserting tickets
+var InsertTickets models.SceneCommitHook = &insertTickets{}
 
-type insertTicketsHook struct{}
+type insertTickets struct{}
 
-func (h *insertTicketsHook) Order() int { return 1 }
+func (h *insertTickets) Order() int { return 1 }
 
-// Apply inserts all the airtime transfers that were created
-func (h *insertTicketsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *insertTickets) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// gather all our tickets and notes
 	tickets := make([]*models.Ticket, 0, len(scenes))
 	notes := make(map[*models.Ticket]string, len(scenes))
@@ -37,8 +35,7 @@ func (h *insertTicketsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *
 	}
 
 	// insert the tickets
-	err := models.InsertTickets(ctx, tx, oa, tickets)
-	if err != nil {
+	if err := models.InsertTickets(ctx, tx, oa, tickets); err != nil {
 		return fmt.Errorf("error inserting tickets: %w", err)
 	}
 
@@ -52,14 +49,12 @@ func (h *insertTicketsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *
 	}
 
 	// and insert those too
-	err = models.InsertTicketEvents(ctx, tx, openEvents)
-	if err != nil {
+	if err := models.InsertTicketEvents(ctx, tx, openEvents); err != nil {
 		return fmt.Errorf("error inserting ticket opened events: %w", err)
 	}
 
 	// and insert logs/notifications for those
-	err = models.NotificationsFromTicketEvents(ctx, tx, oa, eventsByTicket)
-	if err != nil {
+	if err := models.NotificationsFromTicketEvents(ctx, tx, oa, eventsByTicket); err != nil {
 		return fmt.Errorf("error inserting notifications: %w", err)
 	}
 

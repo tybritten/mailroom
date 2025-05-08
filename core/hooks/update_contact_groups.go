@@ -10,15 +10,14 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// CommitGroupChangesHook is our hook for all group changes
-var CommitGroupChangesHook models.SceneCommitHook = &commitGroupChangesHook{}
+// UpdateContactGroups is our hook for all group changes
+var UpdateContactGroups models.SceneCommitHook = &updateContactGroups{}
 
-type commitGroupChangesHook struct{}
+type updateContactGroups struct{}
 
-func (h *commitGroupChangesHook) Order() int { return 1 }
+func (h *updateContactGroups) Order() int { return 1 }
 
-// Apply squashes and adds or removes all our contact groups
-func (h *commitGroupChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *updateContactGroups) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// build up our list of all adds and removes
 	adds := make([]*models.GroupAdd, 0, len(scenes))
 	removes := make([]*models.GroupRemove, 0, len(scenes))
@@ -52,14 +51,11 @@ func (h *commitGroupChangesHook) Apply(ctx context.Context, rt *runtime.Runtime,
 		}
 	}
 
-	// do our updates
-	err := models.AddContactsToGroups(ctx, tx, adds)
-	if err != nil {
+	if err := models.AddContactsToGroups(ctx, tx, adds); err != nil {
 		return fmt.Errorf("error adding contacts to groups: %w", err)
 	}
 
-	err = models.RemoveContactsFromGroups(ctx, tx, removes)
-	if err != nil {
+	if err := models.RemoveContactsFromGroups(ctx, tx, removes); err != nil {
 		return fmt.Errorf("error removing contacts from groups: %w", err)
 	}
 

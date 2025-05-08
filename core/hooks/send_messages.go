@@ -9,15 +9,14 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-// SendMessagesHook is our hook for sending scene messages
-var SendMessagesHook models.SceneCommitHook = &sendMessagesHook{}
+// SendMessages is our hook for sending scene messages
+var SendMessages models.SceneCommitHook = &sendMessages{}
 
-type sendMessagesHook struct{}
+type sendMessages struct{}
 
-func (h *sendMessagesHook) Order() int { return 1 }
+func (h *sendMessages) Order() int { return 1 }
 
-// Apply sends all non-android messages to courier
-func (h *sendMessagesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *sendMessages) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	msgs := make([]*models.Msg, 0, 1)
 
 	// for each scene gather all our messages

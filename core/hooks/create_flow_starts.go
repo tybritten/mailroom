@@ -13,15 +13,14 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-// CreateStartsHook is our hook to fire our scene starts
-var CreateStartsHook models.SceneCommitHook = &createStartsHook{}
+// CreateFlowStarts is our hook to fire our scene starts
+var CreateFlowStarts models.SceneCommitHook = &createFlowStarts{}
 
-type createStartsHook struct{}
+type createFlowStarts struct{}
 
-func (h *createStartsHook) Order() int { return 1 }
+func (h *createFlowStarts) Order() int { return 1 }
 
-// Apply queues up our flow starts
-func (h *createStartsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *createFlowStarts) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	rc := rt.RP.Get()
 	defer rc.Close()
 

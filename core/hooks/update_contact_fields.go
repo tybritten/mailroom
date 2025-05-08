@@ -14,15 +14,14 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-// CommitFieldChangesHook is our hook for contact field changes
-var CommitFieldChangesHook models.SceneCommitHook = &commitFieldChangesHook{}
+// UpdateContactFields is our hook for contact field changes
+var UpdateContactFields models.SceneCommitHook = &updateContactFields{}
 
-type commitFieldChangesHook struct{}
+type updateContactFields struct{}
 
-func (h *commitFieldChangesHook) Order() int { return 1 }
+func (h *updateContactFields) Order() int { return 1 }
 
-// Apply squashes and writes all the field updates for the contacts
-func (h *commitFieldChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *updateContactFields) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// our list of updates
 	fieldUpdates := make([]any, 0, len(scenes))
 	fieldDeletes := make(map[assets.FieldUUID][]any)
