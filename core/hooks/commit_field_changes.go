@@ -19,6 +19,8 @@ var CommitFieldChangesHook models.SceneCommitHook = &commitFieldChangesHook{}
 
 type commitFieldChangesHook struct{}
 
+func (h *commitFieldChangesHook) Order() int { return 1 }
+
 // Apply squashes and writes all the field updates for the contacts
 func (h *commitFieldChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// our list of updates

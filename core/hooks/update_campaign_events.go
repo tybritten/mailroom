@@ -17,6 +17,8 @@ var UpdateCampaignEventsHook models.SceneCommitHook = &updateCampaignEventsHook{
 
 type updateCampaignEventsHook struct{}
 
+func (h *updateCampaignEventsHook) Order() int { return 500 }
+
 // Apply will update all the campaigns for the passed in scene, minimizing the number of queries to do so
 func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// the contact fires to be deleted and inserted

@@ -14,6 +14,8 @@ var SendMessagesHook models.SceneCommitHook = &sendMessagesHook{}
 
 type sendMessagesHook struct{}
 
+func (h *sendMessagesHook) Order() int { return 1 }
+
 // Apply sends all non-android messages to courier
 func (h *sendMessagesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	msgs := make([]*models.Msg, 0, 1)

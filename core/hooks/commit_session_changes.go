@@ -14,6 +14,8 @@ var CommitSessionChangesHook models.SceneCommitHook = &commitSessionChangesHook{
 
 type commitSessionChangesHook struct{}
 
+func (h *commitSessionChangesHook) Order() int { return 1 }
+
 // Apply commits our contact current_flow changes as a bulk update for the passed in map of scene
 func (h *commitSessionChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	updates := make([]CurrentSessionUpdate, 0, len(scenes))

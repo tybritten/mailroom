@@ -15,6 +15,8 @@ var UnsubscribeResthookHook models.SceneCommitHook = &unsubscribeResthookHook{}
 
 type unsubscribeResthookHook struct{}
 
+func (h *unsubscribeResthookHook) Order() int { return 1 }
+
 // Apply squashes and applies all our resthook unsubscriptions
 func (h *unsubscribeResthookHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene map[*models.Scene][]any) error {
 	// gather all our unsubscribes

@@ -22,7 +22,7 @@ func handleContactLanguageChanged(ctx context.Context, rt *runtime.Runtime, oa *
 	slog.Debug("contact language changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "language", event.Language)
 
 	scene.AttachPreCommitHook(hooks.CommitLanguageChangesHook, event)
-	scene.AttachPostCommitHook(hooks.ContactModifiedHook, event)
+	scene.AttachPreCommitHook(hooks.ContactModifiedHook, event)
 
 	return nil
 }

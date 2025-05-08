@@ -15,6 +15,8 @@ var InsertHTTPLogsHook models.SceneCommitHook = &insertHTTPLogsHook{}
 
 type insertHTTPLogsHook struct{}
 
+func (h *insertHTTPLogsHook) Order() int { return 1 }
+
 // Apply inserts all the classifier logs that were created
 func (h *insertHTTPLogsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// gather all our logs

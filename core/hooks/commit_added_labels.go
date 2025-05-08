@@ -15,6 +15,8 @@ var CommitAddedLabelsHook models.SceneCommitHook = &commitAddedLabelsHook{}
 
 type commitAddedLabelsHook struct{}
 
+func (h *commitAddedLabelsHook) Order() int { return 1 }
+
 // Apply applies our input labels added, committing them in a single batch
 func (h *commitAddedLabelsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// build our list of msg label adds, we dedupe these so we never double add in the same transaction

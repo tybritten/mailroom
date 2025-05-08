@@ -16,6 +16,8 @@ var CommitStatusChangesHook models.SceneCommitHook = &commitStatusChangesHook{}
 
 type commitStatusChangesHook struct{}
 
+func (h *commitStatusChangesHook) Order() int { return 1 }
+
 // Apply commits our contact status change
 func (h *commitStatusChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 

@@ -1,9 +1,12 @@
 package models
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -109,29 +112,32 @@ func RegisterEventHandler(eventType string, handler EventHandler) {
 
 // SceneCommitHook defines a callback that will accept a certain type of events across session, either before or after committing
 type SceneCommitHook interface {
+	Order() int
 	Apply(context.Context, *runtime.Runtime, *sqlx.Tx, *OrgAssets, map[*Scene][]any) error
 }
 
 // ApplyScenePreCommitHooks applies through all the pre commit hooks for the given scenes
 func ApplyScenePreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *OrgAssets, scenes []*Scene) error {
 	// gather all our hook events together across our sessions
-	preHooks := make(map[SceneCommitHook]map[*Scene][]any)
+	byHook := make(map[SceneCommitHook]map[*Scene][]any)
 	for _, s := range scenes {
 		for hook, args := range s.preCommits {
-			sessionMap, found := preHooks[hook]
+			byScene, found := byHook[hook]
 			if !found {
-				sessionMap = make(map[*Scene][]any, len(scenes))
-				preHooks[hook] = sessionMap
+				byScene = make(map[*Scene][]any, len(scenes))
+				byHook[hook] = byScene
 			}
-			sessionMap[s] = args
+			byScene[s] = args
 		}
 	}
 
-	// now fire each of our hooks
-	for hook, args := range preHooks {
-		err := hook.Apply(ctx, rt, tx, oa, args)
-		if err != nil {
-			return fmt.Errorf("error applying events pre commit hook: %T: %w", hook, err)
+	// get hooks by their declared order
+	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 SceneCommitHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
+
+	// and apply them in that order
+	for _, hook := range hookTypes {
+		if err := hook.Apply(ctx, rt, tx, oa, byHook[hook]); err != nil {
+			return fmt.Errorf("error applying scene pre commit hook: %T: %w", hook, err)
 		}
 	}
 
@@ -141,23 +147,25 @@ func ApplyScenePreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx
 // applies through all the post commit hooks for the given scenes in the given transaction
 func applyScenePostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *OrgAssets, scenes []*Scene) error {
 	// gather all our hook events together across our sessions
-	postHooks := make(map[SceneCommitHook]map[*Scene][]any)
+	byHook := make(map[SceneCommitHook]map[*Scene][]any)
 	for _, s := range scenes {
 		for hook, args := range s.postCommits {
-			sprintMap, found := postHooks[hook]
+			byScene, found := byHook[hook]
 			if !found {
-				sprintMap = make(map[*Scene][]any, len(scenes))
-				postHooks[hook] = sprintMap
+				byScene = make(map[*Scene][]any, len(scenes))
+				byHook[hook] = byScene
 			}
-			sprintMap[s] = args
+			byScene[s] = args
 		}
 	}
 
-	// now fire each of our hooks
-	for hook, args := range postHooks {
-		err := hook.Apply(ctx, rt, tx, oa, args)
-		if err != nil {
-			return fmt.Errorf("error applying post commit hook: %v: %w", hook, err)
+	// get hooks by their declared order
+	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 SceneCommitHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
+
+	// and apply them in that order
+	for _, hook := range hookTypes {
+		if err := hook.Apply(ctx, rt, tx, oa, byHook[hook]); err != nil {
+			return fmt.Errorf("error applying scene post commit hook: %T: %w", hook, err)
 		}
 	}
 

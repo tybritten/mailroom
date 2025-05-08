@@ -17,6 +17,8 @@ var CreateBroadcastsHook models.SceneCommitHook = &createBroadcastsHook{}
 
 type createBroadcastsHook struct{}
 
+func (h *createBroadcastsHook) Order() int { return 1 }
+
 // Apply queues up our broadcasts for sending
 func (h *createBroadcastsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	rc := rt.RP.Get()

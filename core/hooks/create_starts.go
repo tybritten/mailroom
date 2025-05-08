@@ -18,6 +18,8 @@ var CreateStartsHook models.SceneCommitHook = &createStartsHook{}
 
 type createStartsHook struct{}
 
+func (h *createStartsHook) Order() int { return 1 }
+
 // Apply queues up our flow starts
 func (h *createStartsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	rc := rt.RP.Get()

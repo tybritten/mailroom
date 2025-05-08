@@ -23,7 +23,7 @@ func handleContactFieldChanged(ctx context.Context, rt *runtime.Runtime, oa *mod
 
 	scene.AttachPreCommitHook(hooks.CommitFieldChangesHook, event)
 	scene.AttachPreCommitHook(hooks.UpdateCampaignEventsHook, event)
-	scene.AttachPostCommitHook(hooks.ContactModifiedHook, event)
+	scene.AttachPreCommitHook(hooks.ContactModifiedHook, event)
 
 	return nil
 }

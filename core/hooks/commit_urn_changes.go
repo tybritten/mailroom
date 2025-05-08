@@ -17,6 +17,8 @@ var CommitURNChangesHook models.SceneCommitHook = &commitURNChangesHook{}
 
 type commitURNChangesHook struct{}
 
+func (h *commitURNChangesHook) Order() int { return 1 }
+
 // Apply adds all our URNS in a batch
 func (h *commitURNChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	var flowUUID assets.FlowUUID
