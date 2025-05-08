@@ -38,8 +38,8 @@ func TestInputLabelsAdded(t *testing.T) {
 				},
 			},
 			Msgs: handlers.ContactMsgMap{
-				testdata.Cathy: msg1.FlowMsg,
-				testdata.Bob:   msg2.FlowMsg,
+				testdata.Cathy: msg1,
+				testdata.Bob:   msg2,
 			},
 			SQLAssertions: []handlers.SQLAssertion{
 				{

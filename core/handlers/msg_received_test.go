@@ -30,7 +30,7 @@ func TestMsgReceived(t *testing.T) {
 				},
 			},
 			Msgs: handlers.ContactMsgMap{
-				testdata.Cathy: testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "start", models.MsgStatusHandled).FlowMsg,
+				testdata.Cathy: testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "start", models.MsgStatusPending),
 			},
 			SQLAssertions: []handlers.SQLAssertion{
 				{

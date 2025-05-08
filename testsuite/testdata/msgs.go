@@ -59,7 +59,6 @@ func InsertIncomingMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact 
 	))
 
 	fm := flows.NewMsgIn(msgUUID, contact.URN, assets.NewChannelReference(channel.UUID, ""), text, nil)
-	fm.SetID(flows.MsgID(id))
 	return &MsgIn{Msg: Msg{ID: id}, FlowMsg: fm}
 }
 
@@ -96,7 +95,6 @@ func insertOutgoingMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact 
 		fm.UUID(), text, pq.Array(attachments), locale, typ, status, contact.ID, contact.URNID, org.ID, channelID, sentOn, errorCount, nextAttempt, highPriority,
 	))
 
-	fm.SetID(flows.MsgID(id))
 	return &MsgOut{Msg: Msg{ID: id}, FlowMsg: fm}
 }
 

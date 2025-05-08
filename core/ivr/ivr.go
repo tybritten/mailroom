@@ -26,7 +26,6 @@ import (
 	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/clogs"
-	"github.com/nyaruka/null/v3"
 )
 
 type CallID string
@@ -464,13 +463,14 @@ func ResumeIVRFlow(
 		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("error finding input for request: %w", err))
 	}
 
+	var msg *models.Msg
 	var resume flows.Resume
 	var svcErr error
 	switch res := ivrResume.(type) {
 	case InputResume:
-		resume, svcErr, err = buildMsgResume(ctx, rt, svc, channel, fc, urn, call, oa, res)
-		if resume != nil {
-			session.SetIncomingMsg(models.MsgID(resume.(*resumes.MsgResume).Msg().ID()), null.NullString)
+		msg, resume, svcErr, err = buildMsgResume(ctx, rt, svc, channel, fc, urn, call, oa, res)
+		if msg != nil {
+			session.SetIncomingMsg(msg.ID(), "")
 		}
 
 	case DialResume:
@@ -520,7 +520,7 @@ func buildDialResume(oa *models.OrgAssets, contact *flows.Contact, resume DialRe
 func buildMsgResume(
 	ctx context.Context, rt *runtime.Runtime,
 	svc Service, channel *models.Channel, contact *flows.Contact, urn urns.URN,
-	call *models.Call, oa *models.OrgAssets, resume InputResume) (flows.Resume, error, error) {
+	call *models.Call, oa *models.OrgAssets, resume InputResume) (*models.Msg, flows.Resume, error, error) {
 	// our msg UUID
 	msgUUID := flows.NewMsgUUID()
 
@@ -543,11 +543,11 @@ func buildMsgResume(
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("error downloading attachment, ending call: %w", err), nil
+			return nil, nil, fmt.Errorf("error downloading attachment, ending call: %w", err), nil
 		}
 
 		if resp == nil {
-			return nil, fmt.Errorf("unable to download attachment, ending call"), nil
+			return nil, nil, fmt.Errorf("unable to download attachment, ending call"), nil
 		}
 
 		// filename is based on our org id and msg UUID
@@ -555,7 +555,7 @@ func buildMsgResume(
 
 		resume.Attachment, err = oa.Org().StoreAttachment(ctx, rt, filename, resume.Attachment.ContentType(), resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("unable to download and store attachment, ending call: %w", err), nil
+			return nil, nil, fmt.Errorf("unable to download and store attachment, ending call: %w", err), nil
 		}
 	}
 
@@ -564,18 +564,16 @@ func buildMsgResume(
 		attachments = []utils.Attachment{resume.Attachment}
 	}
 
+	// create and insert an incoming message
 	msgIn := flows.NewMsgIn(msgUUID, urn, channel.Reference(), resume.Input, attachments)
-
-	// create an incoming message
 	msg := models.NewIncomingIVR(rt.Config, oa.OrgID(), call, msgIn, dates.Now())
 
-	// commit it
 	if err := models.InsertMessages(ctx, rt.DB, []*models.Msg{msg}); err != nil {
-		return nil, nil, fmt.Errorf("error committing new message: %w", err)
+		return nil, nil, nil, fmt.Errorf("error committing new message: %w", err)
 	}
 
 	// create our msg resume event
-	return resumes.NewMsg(oa.Env(), contact, msgIn), nil, nil
+	return msg, resumes.NewMsg(oa.Env(), contact, msgIn), nil, nil
 }
 
 // HandleIVRStatus is called on status callbacks for an IVR call. We let the service decide whether the call has

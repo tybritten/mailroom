@@ -35,7 +35,7 @@ func TestMsgCreated(t *testing.T) {
 	rt.DB.MustExec(`UPDATE contacts_contacturn SET identity = 'facebook:12345', path='12345', scheme='facebook' WHERE contact_id = $1`, testdata.Alexandria.ID)
 	rt.DB.MustExec(`UPDATE contacts_contact SET language='eng' WHERE id = $1`, testdata.Alexandria.ID)
 
-	msg1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "start", models.MsgStatusHandled)
+	msg1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "start", models.MsgStatusPending)
 
 	templateAction := actions.NewSendMsg(handlers.NewActionUUID(), "Template time", nil, nil, false)
 	templateAction.Template = assets.NewTemplateReference("9c22b594-fcab-4b29-9bcb-ce4404894a80", "revive_issue")
@@ -58,7 +58,7 @@ func TestMsgCreated(t *testing.T) {
 				},
 			},
 			Msgs: handlers.ContactMsgMap{
-				testdata.Cathy: msg1.FlowMsg,
+				testdata.Cathy: msg1,
 			},
 			SQLAssertions: []handlers.SQLAssertion{
 				{

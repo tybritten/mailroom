@@ -18,7 +18,6 @@ import (
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/utils/clogs"
-	"github.com/nyaruka/null/v3"
 )
 
 const TypeMsgReceived = "msg_received"
@@ -30,7 +29,7 @@ func init() {
 type MsgReceivedTask struct {
 	MsgID         models.MsgID     `json:"msg_id"`
 	MsgUUID       flows.MsgUUID    `json:"msg_uuid"`
-	MsgExternalID null.String      `json:"msg_external_id"`
+	MsgExternalID string           `json:"msg_external_id"`
 	ChannelID     models.ChannelID `json:"channel_id"`
 	URN           urns.URN         `json:"urn"`
 	URNID         models.URNID     `json:"urn_id"`
@@ -91,7 +90,6 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 
 	msgIn := flows.NewMsgIn(t.MsgUUID, t.URN, channel.Reference(), t.Text, availableAttachments)
 	msgIn.SetExternalID(string(t.MsgExternalID))
-	msgIn.SetID(flows.MsgID(t.MsgID))
 
 	// if we have URNs make sure the message URN is our highest priority (this is usually a noop)
 	if len(mc.URNs()) > 0 {
@@ -171,7 +169,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		}
 		sessions[0].SetIncomingMsg(t.MsgID, t.MsgExternalID)
 
-		return markMsgHandled(ctx, tx, msgIn, flow, attachments, ticket, logUUIDs)
+		return t.markMsgHandled(ctx, tx, flow, attachments, ticket, logUUIDs)
 	}
 
 	// we found a trigger and their session is nil or doesn't ignore keywords
@@ -188,7 +186,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 			// if this is an IVR flow, we need to trigger that start (which happens in a different queue)
 			if flow.FlowType() == models.FlowTypeVoice {
 				ivrMsgHook := func(ctx context.Context, tx *sqlx.Tx) error {
-					return markMsgHandled(ctx, tx, msgIn, flow, attachments, ticket, logUUIDs)
+					return t.markMsgHandled(ctx, tx, flow, attachments, ticket, logUUIDs)
 				}
 				err = handler.TriggerIVRFlow(ctx, rt, oa.OrgID(), flow.ID(), []models.ContactID{mc.ID()}, ivrMsgHook)
 				if err != nil {
@@ -223,14 +221,14 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	}
 
 	// this message didn't trigger and new sessions or resume any existing ones, so handle as inbox
-	if err = handleAsInbox(ctx, rt, oa, fc, msgIn, attachments, logUUIDs, ticket); err != nil {
+	if err = t.handleAsInbox(ctx, rt, oa, fc, msgIn, attachments, logUUIDs, ticket); err != nil {
 		return fmt.Errorf("error handling inbox message: %w", err)
 	}
 	return nil
 }
 
 // handles a message as an inbox message, i.e. no flow
-func handleAsInbox(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *flows.Contact, msg *flows.MsgIn, attachments []utils.Attachment, logUUIDs []clogs.UUID, ticket *models.Ticket) error {
+func (t *MsgReceivedTask) handleAsInbox(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, contact *flows.Contact, msg *flows.MsgIn, attachments []utils.Attachment, logUUIDs []clogs.UUID, ticket *models.Ticket) error {
 	// usually last_seen_on is updated by handling the msg_received event in the engine sprint, but since this is an inbox
 	// message we manually create that event and handle it
 	msgEvent := events.NewMsgReceived(msg)
@@ -242,11 +240,11 @@ func handleAsInbox(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsset
 		return fmt.Errorf("error handling inbox message events: %w", err)
 	}
 
-	return markMsgHandled(ctx, rt.DB, msg, nil, attachments, ticket, logUUIDs)
+	return t.markMsgHandled(ctx, rt.DB, nil, attachments, ticket, logUUIDs)
 }
 
 // utility to mark as message as handled and update any open contact tickets
-func markMsgHandled(ctx context.Context, db models.DBorTx, msg *flows.MsgIn, flow *models.Flow, attachments []utils.Attachment, ticket *models.Ticket, logUUIDs []clogs.UUID) error {
+func (t *MsgReceivedTask) markMsgHandled(ctx context.Context, db models.DBorTx, flow *models.Flow, attachments []utils.Attachment, ticket *models.Ticket, logUUIDs []clogs.UUID) error {
 	flowID := models.NilFlowID
 	if flow != nil {
 		flowID = flow.ID()
@@ -256,7 +254,7 @@ func markMsgHandled(ctx context.Context, db models.DBorTx, msg *flows.MsgIn, flo
 		ticketID = ticket.ID()
 	}
 
-	err := models.MarkMessageHandled(ctx, db, models.MsgID(msg.ID()), models.MsgStatusHandled, models.VisibilityVisible, flowID, ticketID, attachments, logUUIDs)
+	err := models.MarkMessageHandled(ctx, db, t.MsgID, models.MsgStatusHandled, models.VisibilityVisible, flowID, ticketID, attachments, logUUIDs)
 	if err != nil {
 		return fmt.Errorf("error marking message as handled: %w", err)
 	}

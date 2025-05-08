@@ -190,7 +190,7 @@ func (m *Msg) Type() MsgType                 { return m.m.MsgType }
 func (m *Msg) ErrorCount() int               { return m.m.ErrorCount }
 func (m *Msg) NextAttempt() *time.Time       { return m.m.NextAttempt }
 func (m *Msg) FailedReason() MsgFailedReason { return m.m.FailedReason }
-func (m *Msg) ExternalID() null.String       { return m.m.ExternalID }
+func (m *Msg) ExternalID() string            { return string(m.m.ExternalID) }
 func (m *Msg) Metadata() map[string]any      { return m.m.Metadata }
 func (m *Msg) MsgCount() int                 { return m.m.MsgCount }
 func (m *Msg) ChannelID() ChannelID          { return m.m.ChannelID }
