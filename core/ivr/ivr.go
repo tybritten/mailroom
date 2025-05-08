@@ -565,7 +565,7 @@ func buildMsgResume(
 	}
 
 	// create and insert an incoming message
-	msgIn := flows.NewMsgIn(msgUUID, urn, channel.Reference(), resume.Input, attachments)
+	msgIn := flows.NewMsgIn(msgUUID, urn, channel.Reference(), resume.Input, attachments, "")
 	msg := models.NewIncomingIVR(rt.Config, oa.OrgID(), call, msgIn, dates.Now())
 
 	if err := models.InsertMessages(ctx, rt.DB, []*models.Msg{msg}); err != nil {
