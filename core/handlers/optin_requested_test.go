@@ -49,7 +49,7 @@ func TestOptinRequested(t *testing.T) {
 				},
 			},
 			Msgs: handlers.ContactMsgMap{
-				testdata.Cathy: msg1.FlowMsg,
+				testdata.Cathy: msg1,
 			},
 			SQLAssertions: []handlers.SQLAssertion{
 				{

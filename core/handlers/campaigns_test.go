@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/actions"
 	"github.com/nyaruka/mailroom/core/handlers"
+	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
 )
@@ -25,6 +26,8 @@ func TestCampaigns(t *testing.T) {
 	// insert an event on our campaign that is based on last_seen_on
 	testdata.InsertCampaignFlowEvent(rt, testdata.RemindersCampaign, testdata.Favorites, testdata.LastSeenOnField, 2, "D")
 
+	msg1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "Hi there", models.MsgStatusPending)
+
 	// init their values
 	rt.DB.MustExec(
 		`update contacts_contact set fields = fields - '8c1c1256-78d6-4a5b-9f1c-1761d5728251'
@@ -38,7 +41,7 @@ func TestCampaigns(t *testing.T) {
 	tcs := []handlers.TestCase{
 		{
 			Msgs: handlers.ContactMsgMap{
-				testdata.Cathy: flows.NewMsgIn(flows.NewMsgUUID(), testdata.Cathy.URN, nil, "Hi there", nil),
+				testdata.Cathy: msg1,
 			},
 			Actions: handlers.ContactActionMap{
 				testdata.Cathy: []flows.Action{

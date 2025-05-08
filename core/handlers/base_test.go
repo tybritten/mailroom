@@ -27,7 +27,7 @@ import (
 )
 
 type ContactActionMap map[*testdata.Contact][]flows.Action
-type ContactMsgMap map[*testdata.Contact]*flows.MsgIn
+type ContactMsgMap map[*testdata.Contact]*testdata.MsgIn
 type ContactModifierMap map[*testdata.Contact][]flows.Modifier
 
 type modifyResult struct {
@@ -166,7 +166,7 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 	flowUUID := testdata.Favorites.UUID
 
 	for i, tc := range tcs {
-		msgsByContactID := make(map[models.ContactID]*flows.MsgIn)
+		msgsByContactID := make(map[models.ContactID]*testdata.MsgIn)
 		for contact, msg := range tc.Msgs {
 			msgsByContactID[contact.ID] = msg
 		}
@@ -189,13 +189,13 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 				if msg == nil {
 					return triggers.NewBuilder(oa.Env(), testFlow.Reference(false), contact).Manual().Build()
 				}
-				return triggers.NewBuilder(oa.Env(), testFlow.Reference(false), contact).Msg(msg).Build()
+				return triggers.NewBuilder(oa.Env(), testFlow.Reference(false), contact).Msg(msg.FlowMsg).Build()
 			},
 			CommitHook: func(ctx context.Context, tx *sqlx.Tx, rp *redis.Pool, oa *models.OrgAssets, session []*models.Session) error {
 				for _, s := range session {
 					msg := msgsByContactID[s.ContactID()]
 					if msg != nil {
-						s.SetIncomingMsg(models.MsgID(msg.ID()), "")
+						s.SetIncomingMsg(msg.Msg.ID, "")
 					}
 				}
 				return nil

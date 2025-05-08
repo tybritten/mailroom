@@ -62,7 +62,6 @@ func TestResume(t *testing.T) {
 	for i, tc := range tcs {
 		// answer our first question
 		msg := flows.NewMsgIn(flows.NewMsgUUID(), testdata.Cathy.URN, nil, tc.Message, nil)
-		msg.SetID(10)
 		resume := resumes.NewMsg(oa.Env(), flowContact, msg)
 
 		session, err = runner.ResumeFlow(ctx, rt, oa, session, modelContact, resume, nil)

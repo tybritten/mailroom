@@ -20,7 +20,6 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"
-	"github.com/nyaruka/null/v3"
 	"github.com/nyaruka/redisx/assertredis"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -172,7 +171,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 
 		session := insertTestSession(t, ctx, rt, tc.Contact)
 		if tc.ResponseTo != models.NilMsgID {
-			session.SetIncomingMsg(tc.ResponseTo, null.NullString)
+			session.SetIncomingMsg(tc.ResponseTo, "")
 		}
 
 		flowMsg := flows.NewMsgOut(tc.URN, chRef, tc.Content, tc.Templating, tc.Topic, tc.Locale, tc.Unsendable)
