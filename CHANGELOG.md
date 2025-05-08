@@ -1,3 +1,8 @@
+v10.1.111 (2025-05-08)
+-------------------------
+ * Always attach contact modified on hook as pre-commit hook
+ * Add ordering to scene hooks
+
 v10.1.110 (2025-05-07)
 -------------------------
  * Convert HandleSceneEvents function into Scene.AddEvents method
