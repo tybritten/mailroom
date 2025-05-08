@@ -58,7 +58,7 @@ func InsertIncomingMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact 
 	  	 VALUES($1, $2, NOW(), NOW(), 'I', $3, $4, 'V', 1, 0, NOW(), $5, $6, $7, $8, FALSE) RETURNING id`, msgUUID, text, models.MsgTypeText, status, contact.ID, contact.URNID, org.ID, channel.ID,
 	))
 
-	fm := flows.NewMsgIn(msgUUID, contact.URN, assets.NewChannelReference(channel.UUID, ""), text, nil)
+	fm := flows.NewMsgIn(msgUUID, contact.URN, assets.NewChannelReference(channel.UUID, ""), text, nil, "")
 	return &MsgIn{Msg: Msg{ID: id}, FlowMsg: fm}
 }
 
