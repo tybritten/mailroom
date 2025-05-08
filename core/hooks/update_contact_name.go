@@ -11,15 +11,14 @@ import (
 	"github.com/nyaruka/null/v3"
 )
 
-// CommitNameChangesHook is our hook for name changes
-var CommitNameChangesHook models.SceneCommitHook = &commitNameChangesHook{}
+// UpdateContactName is our hook for contact name changes
+var UpdateContactName models.SceneCommitHook = &updateContactName{}
 
-type commitNameChangesHook struct{}
+type updateContactName struct{}
 
-func (h *commitNameChangesHook) Order() int { return 1 }
+func (h *updateContactName) Order() int { return 1 }
 
-// Apply commits our contact name changes as a bulk update for the passed in map of scene
-func (h *commitNameChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *updateContactName) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// build up our list of pairs of contact id and contact name
 	updates := make([]*nameUpdate, 0, len(scenes))
 	for s, e := range scenes {
@@ -28,7 +27,6 @@ func (h *commitNameChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, 
 		updates = append(updates, &nameUpdate{s.ContactID(), null.String(fmt.Sprintf("%.128s", event.Name))})
 	}
 
-	// do our update
 	return models.BulkQuery(ctx, "updating contact name", tx, sqlUpdateContactName, updates)
 }
 

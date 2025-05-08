@@ -12,15 +12,14 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-// UpdateCampaignEventsHook is our hook to update any campaign events
-var UpdateCampaignEventsHook models.SceneCommitHook = &updateCampaignEventsHook{}
+// UpdateCampaignEvents is our hook to update any campaign events
+var UpdateCampaignEvents models.SceneCommitHook = &updateCampaignEvents{}
 
-type updateCampaignEventsHook struct{}
+type updateCampaignEvents struct{}
 
-func (h *updateCampaignEventsHook) Order() int { return 500 }
+func (h *updateCampaignEvents) Order() int { return 500 }
 
-// Apply will update all the campaigns for the passed in scene, minimizing the number of queries to do so
-func (h *updateCampaignEventsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *updateCampaignEvents) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	// the contact fires to be deleted and inserted
 	deletes := make([]*models.FireDelete, 0, 5)
 	inserts := make([]*models.ContactFire, 0, 5)

@@ -12,15 +12,14 @@ import (
 	"github.com/nyaruka/mailroom/runtime"
 )
 
-// CreateBroadcastsHook is our hook for creating broadcasts
-var CreateBroadcastsHook models.SceneCommitHook = &createBroadcastsHook{}
+// CreateBroadcasts is our hook for creating broadcasts
+var CreateBroadcasts models.SceneCommitHook = &createBroadcasts{}
 
-type createBroadcastsHook struct{}
+type createBroadcasts struct{}
 
-func (h *createBroadcastsHook) Order() int { return 1 }
+func (h *createBroadcasts) Order() int { return 1 }
 
-// Apply queues up our broadcasts for sending
-func (h *createBroadcastsHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *createBroadcasts) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	rc := rt.RP.Get()
 	defer rc.Close()
 

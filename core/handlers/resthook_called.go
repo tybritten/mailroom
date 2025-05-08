@@ -35,7 +35,7 @@ func handleResthookCalled(ctx context.Context, rt *runtime.Runtime, oa *models.O
 		string(event.Payload),
 		event.CreatedOn(),
 	)
-	scene.AttachPreCommitHook(hooks.InsertWebhookEventHook, re)
+	scene.AttachPreCommitHook(hooks.InsertWebhookEvent, re)
 
 	return nil
 }

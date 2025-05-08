@@ -5,22 +5,20 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/assets"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-
-	"github.com/jmoiron/sqlx"
 )
 
-// CommitURNChangesHook is our hook for when a URN is added to a contact
-var CommitURNChangesHook models.SceneCommitHook = &commitURNChangesHook{}
+// UpdateContactURNs is our hook for when a URN is added to a contact
+var UpdateContactURNs models.SceneCommitHook = &updateContactURNs{}
 
-type commitURNChangesHook struct{}
+type updateContactURNs struct{}
 
-func (h *commitURNChangesHook) Order() int { return 1 }
+func (h *updateContactURNs) Order() int { return 1 }
 
-// Apply adds all our URNS in a batch
-func (h *commitURNChangesHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *updateContactURNs) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
 	var flowUUID assets.FlowUUID
 
 	// gather all our urn changes, we only care about the last change for each scene

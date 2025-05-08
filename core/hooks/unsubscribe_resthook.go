@@ -4,21 +4,19 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-
-	"github.com/jmoiron/sqlx"
 )
 
-// UnsubscribeResthookHook is our hook for when a webhook is called
-var UnsubscribeResthookHook models.SceneCommitHook = &unsubscribeResthookHook{}
+// UnsubscribeResthook is our hook for when a webhook is called
+var UnsubscribeResthook models.SceneCommitHook = &unsubscribeResthook{}
 
-type unsubscribeResthookHook struct{}
+type unsubscribeResthook struct{}
 
-func (h *unsubscribeResthookHook) Order() int { return 1 }
+func (h *unsubscribeResthook) Order() int { return 1 }
 
-// Apply squashes and applies all our resthook unsubscriptions
-func (h *unsubscribeResthookHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene map[*models.Scene][]any) error {
+func (h *unsubscribeResthook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene map[*models.Scene][]any) error {
 	// gather all our unsubscribes
 	unsubs := make([]*models.ResthookUnsubscribe, 0, len(scene))
 	for _, us := range scene {
@@ -27,8 +25,7 @@ func (h *unsubscribeResthookHook) Apply(ctx context.Context, rt *runtime.Runtime
 		}
 	}
 
-	err := models.UnsubscribeResthooks(ctx, tx, unsubs)
-	if err != nil {
+	if err := models.UnsubscribeResthooks(ctx, tx, unsubs); err != nil {
 		return fmt.Errorf("error unsubscribing from resthooks: %w", err)
 	}
 

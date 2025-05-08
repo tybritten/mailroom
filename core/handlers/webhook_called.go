@@ -30,7 +30,7 @@ func handleWebhookCalled(ctx context.Context, rt *runtime.Runtime, oa *models.Or
 			URL:   event.URL,
 		}
 
-		scene.AttachPreCommitHook(hooks.UnsubscribeResthookHook, unsub)
+		scene.AttachPreCommitHook(hooks.UnsubscribeResthook, unsub)
 	}
 
 	flow, nodeUUID := scene.Session().LocateEvent(e)
@@ -46,7 +46,7 @@ func handleWebhookCalled(ctx context.Context, rt *runtime.Runtime, oa *models.Or
 			event.Retries,
 			event.CreatedOn(),
 		)
-		scene.AttachPreCommitHook(hooks.InsertHTTPLogsHook, httpLog)
+		scene.AttachPreCommitHook(hooks.InsertHTTPLogs, httpLog)
 	}
 
 	rt.Stats.RecordWebhookCall(time.Duration(event.ElapsedMS) * time.Millisecond)
