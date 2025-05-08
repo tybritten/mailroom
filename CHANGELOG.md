@@ -1,3 +1,8 @@
+v10.1.112 (2025-05-08)
+-------------------------
+ * Cleanup scene event hooks
+ * Update to latest goflow which removes id from MsgIn
+
 v10.1.111 (2025-05-08)
 -------------------------
  * Always attach contact modified on hook as pre-commit hook
