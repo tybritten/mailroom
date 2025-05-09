@@ -56,6 +56,22 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 		return nil, fmt.Errorf("error updating session for resume: %w", err)
 	}
 
+	var eventsToHandle []flows.Event
+
+	// if session didn't fail, we also need to include changes from sprint events
+	if session.Status() != models.SessionStatusFailed {
+		eventsToHandle = append(eventsToHandle, sprint.Events()...)
+	}
+
+	eventsToHandle = append(eventsToHandle, models.NewSprintEndedEvent(contact, true))
+
+	if err := session.Scene().AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
+		return nil, fmt.Errorf("error handling events for session %s: %w", session.UUID(), err)
+	}
+	if err := models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*models.Scene{session.Scene()}); err != nil {
+		return nil, fmt.Errorf("error applying pre commit hook: %T: %w", hook, err)
+	}
+
 	// commit at once
 	if err := tx.Commit(); err != nil {
 		tx.Rollback()
