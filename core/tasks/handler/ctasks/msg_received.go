@@ -166,7 +166,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		if len(sessions) != 1 {
 			return fmt.Errorf("handle hook called with more than one session")
 		}
-		sessions[0].SetIncomingMsg(t.MsgID, t.MsgExternalID)
+		sessions[0].SetIncomingMsg(t.MsgExternalID)
 
 		return t.markMsgHandled(ctx, tx, flow, attachments, ticket, logUUIDs)
 	}
@@ -201,7 +201,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 
 			// otherwise build the trigger and start the flow directly
 			trigger := tb.Build()
-			_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{trigger}, flowMsgHook, flow.FlowType().Interrupts(), models.NilStartID, nil)
+			_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{trigger}, flowMsgHook, flow.FlowType().Interrupts(), models.NilStartID, nil, t.MsgID)
 			if err != nil {
 				return fmt.Errorf("error starting flow for contact: %w", err)
 			}
@@ -212,7 +212,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	// if there is a session, resume it
 	if session != nil && flow != nil {
 		resume := resumes.NewMsg(oa.Env(), fc, msgIn)
-		_, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, nil, flowMsgHook)
+		_, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, nil, t.MsgID, flowMsgHook)
 		if err != nil {
 			return fmt.Errorf("error resuming flow for contact: %w", err)
 		}

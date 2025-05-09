@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -19,28 +18,20 @@ func init() {
 
 // handleInputLabelsAdded is called for each input labels added event in a scene
 func handleInputLabelsAdded(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
-	if scene.Session() == nil {
-		return errors.New("cannot add label, not in a session")
-	}
-
 	event := e.(*events.InputLabelsAddedEvent)
 
 	slog.Debug("input labels added", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "labels", event.Labels)
 
-	// if the sprint had input, then it was started by a msg event and we should have the message ID saved on the session
-	inputMsgID := scene.Session().IncomingMsgID()
-	if inputMsgID == models.NilMsgID {
-		return errors.New("handling input labels added event in session without msg")
-	}
+	inputMsgID := scene.IncomingMsgID()
+	if inputMsgID != models.NilMsgID {
+		for _, l := range event.Labels {
+			label := oa.LabelByUUID(l.UUID)
+			if label == nil {
+				return fmt.Errorf("unable to find label with UUID: %s", l.UUID)
+			}
 
-	// for each label add an insertion
-	for _, l := range event.Labels {
-		label := oa.LabelByUUID(l.UUID)
-		if label == nil {
-			return fmt.Errorf("unable to find label with UUID: %s", l.UUID)
+			scene.AttachPreCommitHook(hooks.AddMessageLabels, &models.MsgLabelAdd{MsgID: inputMsgID, LabelID: label.ID()})
 		}
-
-		scene.AttachPreCommitHook(hooks.AddMessageLabels, &models.MsgLabelAdd{MsgID: inputMsgID, LabelID: label.ID()})
 	}
 
 	return nil

@@ -359,7 +359,7 @@ func StartIVRFlow(
 			Build()
 	}
 
-	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{c}, []flows.Trigger{trigger}, nil, true, models.NilStartID, call)
+	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{c}, []flows.Trigger{trigger}, nil, true, models.NilStartID, call, models.NilMsgID)
 	if err != nil {
 		return fmt.Errorf("error starting flow: %w", err)
 	}
@@ -450,9 +450,6 @@ func ResumeIVRFlow(
 	switch res := ivrResume.(type) {
 	case InputResume:
 		msg, resume, svcErr, err = buildMsgResume(ctx, rt, svc, channel, fc, urn, call, oa, res)
-		if msg != nil {
-			session.SetIncomingMsg(msg.ID(), "")
-		}
 
 	case DialResume:
 		resume, svcErr, err = buildDialResume(oa, fc, res)
@@ -471,7 +468,12 @@ func ResumeIVRFlow(
 		return svc.WriteErrorResponse(w, fmt.Errorf("no resume found, ending call"))
 	}
 
-	session, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, call, nil)
+	var msgID models.MsgID
+	if msg != nil {
+		msgID = msg.ID()
+	}
+
+	session, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, call, msgID, nil)
 	if err != nil {
 		return fmt.Errorf("error resuming ivr flow: %w", err)
 	}

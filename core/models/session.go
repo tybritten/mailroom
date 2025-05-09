@@ -67,7 +67,6 @@ type Session struct {
 		CallID         CallID            `db:"call_id"`
 	}
 
-	incomingMsgID      MsgID
 	incomingExternalID null.String
 
 	// time after our last message is sent that we should timeout
@@ -93,7 +92,6 @@ func (s *Session) CreatedOn() time.Time               { return s.s.CreatedOn }
 func (s *Session) EndedOn() *time.Time                { return s.s.EndedOn }
 func (s *Session) CurrentFlowID() FlowID              { return s.s.CurrentFlowID }
 func (s *Session) CallID() CallID                     { return s.s.CallID }
-func (s *Session) IncomingMsgID() MsgID               { return s.incomingMsgID }
 func (s *Session) IncomingMsgExternalID() null.String { return s.incomingExternalID }
 
 // StoragePath returns the path for the session
@@ -142,8 +140,7 @@ func (s *Session) OutputMD5() string {
 }
 
 // SetIncomingMsg set the incoming message that this session should be associated with in this sprint
-func (s *Session) SetIncomingMsg(id MsgID, externalID string) {
-	s.incomingMsgID = id
+func (s *Session) SetIncomingMsg(externalID string) {
 	s.incomingExternalID = null.String(externalID)
 }
 

@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gomodule/redigo/redis"
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/uuids"
 	"github.com/nyaruka/goflow/assets"
@@ -191,19 +189,16 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 				}
 				return triggers.NewBuilder(oa.Env(), testFlow.Reference(false), contact).Msg(msg.FlowMsg).Build()
 			},
-			CommitHook: func(ctx context.Context, tx *sqlx.Tx, rp *redis.Pool, oa *models.OrgAssets, session []*models.Session) error {
-				for _, s := range session {
-					msg := msgsByContactID[s.ContactID()]
-					if msg != nil {
-						s.SetIncomingMsg(msg.Msg.ID, "")
-					}
-				}
-				return nil
-			},
 		}
 
 		for _, c := range []*testdata.Contact{testdata.Cathy, testdata.Bob, testdata.George, testdata.Alexandria} {
-			_, err := runner.StartFlow(ctx, rt, oa, flow.(*models.Flow), []models.ContactID{c.ID}, options, models.NilStartID)
+			var msgID models.MsgID
+			msg := msgsByContactID[c.ID]
+			if msg != nil {
+				msgID = msg.ID
+			}
+
+			_, err := runner.StartFlow(ctx, rt, oa, flow.(*models.Flow), []models.ContactID{c.ID}, options, models.NilStartID, msgID)
 			require.NoError(t, err)
 		}
 
@@ -278,7 +273,7 @@ func RunFlowAndApplyEvents(t *testing.T, ctx context.Context, rt *runtime.Runtim
 	err = tx.Commit()
 	require.NoError(t, err)
 
-	scene := models.NewSceneForSession(session, fs, nil)
+	scene := models.NewSceneForSession(session, fs, nil, models.NilMsgID)
 
 	err = scene.AddEvents(ctx, rt, oa, sprint.Events())
 	require.NoError(t, err)

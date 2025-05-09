@@ -39,7 +39,7 @@ func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAs
 	// and the flow
 	flow, _ := scene.LocateEvent(e)
 
-	msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, scene.Session(), flow, event.Msg, event.CreatedOn())
+	msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, scene.Session(), flow, event.Msg, scene.IncomingMsgID(), event.CreatedOn())
 	if err != nil {
 		return fmt.Errorf("error creating outgoing message to %s: %w", event.Msg.URN(), err)
 	}
