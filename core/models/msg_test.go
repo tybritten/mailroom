@@ -170,12 +170,9 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		flow, _ := oa.FlowByID(tc.Flow.ID)
 
 		session := insertTestSession(t, ctx, rt, tc.Contact)
-		if tc.ResponseTo != models.NilMsgID {
-			session.SetIncomingMsg(tc.ResponseTo, "")
-		}
 
 		flowMsg := flows.NewMsgOut(tc.URN, chRef, tc.Content, tc.Templating, tc.Topic, tc.Locale, tc.Unsendable)
-		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), ch, session, flow, flowMsg, dates.Now())
+		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), ch, session, flow, flowMsg, tc.ResponseTo, dates.Now())
 
 		assert.NoError(t, err)
 
@@ -238,7 +235,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 	newOutgoing := func(text string) *models.Msg {
 		content := &flows.MsgContent{Text: text}
 		flowMsg := flows.NewMsgOut(urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)), assets.NewChannelReference(testdata.TwilioChannel.UUID, "Twilio"), content, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg, dates.Now())
+		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg, models.NilMsgID, dates.Now())
 		require.NoError(t, err)
 		return msg
 	}
@@ -617,12 +614,12 @@ func TestMsgTemplating(t *testing.T) {
 
 	// create a message with templating
 	out1 := flows.NewMsgOut(testdata.Cathy.URN, chRef, &flows.MsgContent{Text: "Hello"}, templating1, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out1, dates.Now())
+	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out1, models.NilMsgID, dates.Now())
 	require.NoError(t, err)
 
 	// create a message without templating
 	out2 := flows.NewMsgOut(testdata.Cathy.URN, chRef, &flows.MsgContent{Text: "Hello"}, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out2, dates.Now())
+	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out2, models.NilMsgID, dates.Now())
 	require.NoError(t, err)
 
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg1, msg2})

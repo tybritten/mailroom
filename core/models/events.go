@@ -23,23 +23,25 @@ const (
 
 // Scene represents the context that events are occurring in
 type Scene struct {
-	contact *flows.Contact
-	session *Session
-	fs      flows.Session
-	call    *Call
-	userID  UserID
+	contact       *flows.Contact
+	session       *Session
+	fs            flows.Session
+	call          *Call
+	userID        UserID
+	incomingMsgID MsgID
 
 	preCommits  map[SceneCommitHook][]any
 	postCommits map[SceneCommitHook][]any
 }
 
 // NewSceneForSession creates a new scene for the passed in session
-func NewSceneForSession(session *Session, fs flows.Session, call *Call) *Scene {
+func NewSceneForSession(session *Session, fs flows.Session, call *Call, incomingMsgID MsgID) *Scene {
 	return &Scene{
-		contact: session.Contact(),
-		session: session,
-		fs:      fs,
-		call:    call,
+		contact:       session.Contact(),
+		session:       session,
+		fs:            fs,
+		call:          call,
+		incomingMsgID: incomingMsgID,
 
 		preCommits:  make(map[SceneCommitHook][]any),
 		postCommits: make(map[SceneCommitHook][]any),
@@ -71,6 +73,7 @@ func (s *Scene) ContactUUID() flows.ContactUUID { return s.contact.UUID() }
 func (s *Scene) Session() *Session              { return s.session }
 func (s *Scene) Call() *Call                    { return s.call }
 func (s *Scene) UserID() UserID                 { return s.userID }
+func (s *Scene) IncomingMsgID() MsgID           { return s.incomingMsgID }
 
 // LocateEvent finds the flow and node UUID for an event belonging to this session
 func (s *Scene) LocateEvent(e flows.Event) (*Flow, flows.NodeUUID) {
