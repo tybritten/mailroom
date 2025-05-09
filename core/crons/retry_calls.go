@@ -47,7 +47,7 @@ func (c *RetryCallsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[stri
 
 		// if the channel for this call is throttled, move on
 		if throttledChannels[call.ChannelID()] {
-			call.MarkThrottled(ctx, rt.DB, time.Now())
+			call.SetThrottled(ctx, rt.DB)
 			log.Info("skipping call, throttled", "channel_id", call.ChannelID())
 			continue
 		}
@@ -62,9 +62,7 @@ func (c *RetryCallsCron) Run(ctx context.Context, rt *runtime.Runtime) (map[stri
 		// and the associated channel
 		channel := oa.ChannelByID(call.ChannelID())
 		if channel == nil {
-			// fail this call, channel is no longer active
-			err = models.BulkUpdateCallStatuses(ctx, rt.DB, []models.CallID{call.ID()}, models.CallStatusFailed)
-			if err != nil {
+			if err := call.SetFailed(ctx, rt.DB); err != nil {
 				log.Error("error marking call as failed due to missing channel", "error", err, "channel_id", call.ChannelID())
 			}
 			continue

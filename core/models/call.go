@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
+	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/null/v3"
 )
@@ -341,32 +341,31 @@ func (c *Call) SetErrored(ctx context.Context, db DBorTx, now time.Time, retryWa
 	return nil
 }
 
-// MarkFailed updates the status for this call to failed
-func (c *Call) MarkFailed(ctx context.Context, db DBorTx, now time.Time) error {
+// SetFailed sets this call to be failed, updating status and ended time
+func (c *Call) SetFailed(ctx context.Context, db DBorTx) error {
+	now := dates.Now()
+
 	c.c.Status = CallStatusFailed
 	c.c.EndedOn = &now
 
-	_, err := db.ExecContext(ctx,
-		`UPDATE ivr_call SET status = $2, ended_on = $3, modified_on = NOW() WHERE id = $1`,
-		c.c.ID, c.c.Status, c.c.EndedOn,
-	)
-
+	_, err := db.ExecContext(ctx, `UPDATE ivr_call SET status = $2, ended_on = $3, modified_on = NOW() WHERE id = $1`, c.c.ID, c.c.Status, c.c.EndedOn)
 	if err != nil {
-		return fmt.Errorf("error marking call as failed: %w", err)
+		return fmt.Errorf("error setting call #%d failed: %w", c.c.ID, err)
 	}
 
 	return nil
 }
 
-// MarkThrottled updates the status for this call to be queued, to be retried in a minute
-func (c *Call) MarkThrottled(ctx context.Context, db DBorTx, now time.Time) error {
+// SetThrottled updates the status for this call to be queued, to be retried in a minute
+func (c *Call) SetThrottled(ctx context.Context, db DBorTx) error {
+	next := dates.Now().Add(CallThrottleWait)
+
 	c.c.Status = CallStatusQueued
-	next := now.Add(CallThrottleWait)
 	c.c.NextAttempt = &next
 
 	_, err := db.ExecContext(ctx, `UPDATE ivr_call SET status = $2, next_attempt = $3, modified_on = NOW() WHERE id = $1`, c.c.ID, c.c.Status, c.c.NextAttempt)
 	if err != nil {
-		return fmt.Errorf("error marking call as throttled: %w", err)
+		return fmt.Errorf("error setting call #%d throttled: %w", c.c.ID, err)
 	}
 
 	return nil
@@ -388,23 +387,6 @@ func (c *Call) UpdateStatus(ctx context.Context, db DBorTx, status CallStatus, d
 
 	if err != nil {
 		return fmt.Errorf("error updating status for call: %d: %w", c.c.ID, err)
-	}
-
-	return nil
-}
-
-// BulkUpdateCallStatuses updates the status for all the passed in call ids
-func BulkUpdateCallStatuses(ctx context.Context, db DBorTx, callIDs []CallID, status CallStatus) error {
-	if len(callIDs) == 0 {
-		return nil
-	}
-	_, err := db.ExecContext(ctx,
-		`UPDATE ivr_call SET status = $2, modified_on = NOW() WHERE id = ANY($1)`,
-		pq.Array(callIDs), status,
-	)
-
-	if err != nil {
-		return fmt.Errorf("error updating call statuses: %w", err)
 	}
 
 	return nil

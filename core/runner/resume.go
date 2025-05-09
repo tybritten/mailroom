@@ -73,7 +73,6 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 		return nil, fmt.Errorf("error applying pre commit hook: %T: %w", hook, err)
 	}
 
-	// commit at once
 	if err := tx.Commit(); err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("error committing resumption of flow: %w", err)
