@@ -1,3 +1,7 @@
+v10.1.113 (2025-05-09)
+-------------------------
+ * Refactoring of session vs scene with less transient fields on session
+
 v10.1.112 (2025-05-08)
 -------------------------
  * Cleanup scene event hooks
