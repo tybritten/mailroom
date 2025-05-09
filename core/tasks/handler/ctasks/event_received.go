@@ -7,8 +7,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/excellent/types"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/triggers"
@@ -187,19 +185,7 @@ func (t *EventReceivedTask) handle(ctx context.Context, rt *runtime.Runtime, oa 
 		trig = tb.Channel(channel.Reference(), triggers.ChannelEventType(t.EventType)).WithParams(params).Build()
 	}
 
-	// if we have a channel connection we set the connection on the session before our event hooks fire
-	// so that IVR messages can be created with the right connection reference
-	var hook models.SessionCommitHook
-	if flow.FlowType() == models.FlowTypeVoice && call != nil {
-		hook = func(ctx context.Context, tx *sqlx.Tx, rp *redis.Pool, oa *models.OrgAssets, sessions []*models.Session) error {
-			for _, session := range sessions {
-				session.SetCall(call)
-			}
-			return nil
-		}
-	}
-
-	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{trig}, hook, flow.FlowType().Interrupts(), models.NilStartID)
+	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{trig}, nil, flow.FlowType().Interrupts(), models.NilStartID, call)
 	if err != nil {
 		return nil, fmt.Errorf("error starting flow for contact: %w", err)
 	}
