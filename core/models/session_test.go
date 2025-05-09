@@ -79,11 +79,6 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 		fmt.Sprintf("S:%s", modelSessions[0].UUID()): time.Date(2025, 3, 28, 9, 55, 36, 0, time.UTC),  // 30 days + rand(1 - 24 hours) in future
 	})
 
-	// reload contact and check current session/flow are set
-	modelContact, _, _ = testdata.Bob.Load(rt, oa)
-	assert.Equal(t, session.UUID(), modelContact.CurrentSessionUUID())
-	assert.Equal(t, flow.ID, modelContact.CurrentFlowID())
-
 	flowSession, err = session.FlowSession(ctx, rt, oa.SessionAssets(), oa.Env())
 	require.NoError(t, err)
 
@@ -104,14 +99,9 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 
 	// check we have a new contact fire for wait expiration but not timeout (wait doesn't have a timeout)
 	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{
-		fmt.Sprintf("E:%s", modelSessions[0].UUID()): time.Date(2025, 2, 25, 16, 55, 27, 0, time.UTC), // updated
+		fmt.Sprintf("E:%s", modelSessions[0].UUID()): time.Date(2025, 2, 25, 16, 55, 26, 0, time.UTC), // updated
 		fmt.Sprintf("S:%s", modelSessions[0].UUID()): time.Date(2025, 3, 28, 9, 55, 36, 0, time.UTC),  // unchanged
 	})
-
-	// reload contact and check current session/flow are set
-	modelContact, _, _ = testdata.Bob.Load(rt, oa)
-	assert.Equal(t, session.UUID(), modelContact.CurrentSessionUUID())
-	assert.Equal(t, flow.ID, modelContact.CurrentFlowID())
 
 	flowSession, err = session.FlowSession(ctx, rt, oa.SessionAssets(), oa.Env())
 	require.NoError(t, err)
@@ -139,11 +129,6 @@ func TestSessionCreationAndUpdating(t *testing.T) {
 
 	// check we have no contact fires
 	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{})
-
-	// reload contact and check current session/flow are cleared
-	modelContact, _, _ = testdata.Bob.Load(rt, oa)
-	assert.Equal(t, flows.SessionUUID(""), modelContact.CurrentSessionUUID())
-	assert.Equal(t, models.NilFlowID, modelContact.CurrentFlowID())
 }
 
 func TestSingleSprintSession(t *testing.T) {
@@ -192,11 +177,6 @@ func TestSingleSprintSession(t *testing.T) {
 
 	// check we have no contact fires
 	testsuite.AssertContactFires(t, rt, testdata.Bob.ID, map[string]time.Time{})
-
-	// reload contact and check current session/flow aren't set
-	modelContact, _, _ = testdata.Bob.Load(rt, oa)
-	assert.Equal(t, flows.SessionUUID(""), modelContact.CurrentSessionUUID())
-	assert.Equal(t, models.NilFlowID, modelContact.CurrentFlowID())
 }
 
 func TestSessionWithSubflows(t *testing.T) {
@@ -262,11 +242,6 @@ func TestSessionWithSubflows(t *testing.T) {
 		fmt.Sprintf("S:%s", modelSessions[0].UUID()): time.Date(2025, 3, 28, 9, 55, 36, 0, time.UTC),  // 30 days + rand(1 - 24 hours) in future
 	})
 
-	// reload contact and check current session/flow are set
-	modelContact, _, _ = testdata.Cathy.Load(rt, oa)
-	assert.Equal(t, session.UUID(), modelContact.CurrentSessionUUID())
-	assert.Equal(t, child.ID, modelContact.CurrentFlowID())
-
 	flowSession, err = session.FlowSession(ctx, rt, oa.SessionAssets(), oa.Env())
 	require.NoError(t, err)
 
@@ -287,11 +262,6 @@ func TestSessionWithSubflows(t *testing.T) {
 
 	// check we have no contact fires for wait expiration or timeout
 	testsuite.AssertContactFires(t, rt, testdata.Cathy.ID, map[string]time.Time{})
-
-	// reload contact and check current session/flow aren't set
-	modelContact, _, _ = testdata.Cathy.Load(rt, oa)
-	assert.Equal(t, flows.SessionUUID(""), modelContact.CurrentSessionUUID())
-	assert.Equal(t, models.NilFlowID, modelContact.CurrentFlowID())
 }
 
 func TestSessionFailedStart(t *testing.T) {
@@ -350,11 +320,6 @@ func TestSessionFailedStart(t *testing.T) {
 
 	// check we have no contact fires
 	testsuite.AssertContactFires(t, rt, testdata.Cathy.ID, map[string]time.Time{})
-
-	// reload contact and check current session/flow aren't set
-	modelContact, _, _ = testdata.Cathy.Load(rt, oa)
-	assert.Equal(t, flows.SessionUUID(""), modelContact.CurrentSessionUUID())
-	assert.Equal(t, models.NilFlowID, modelContact.CurrentFlowID())
 }
 
 func TestGetWaitingSessionForContact(t *testing.T) {

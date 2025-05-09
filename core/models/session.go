@@ -175,7 +175,7 @@ func (s *Session) Call() *Call {
 
 // FlowSession creates a flow session for the passed in session object. It also populates the runs we know about
 func (s *Session) FlowSession(ctx context.Context, rt *runtime.Runtime, sa flows.SessionAssets, env envs.Environment) (flows.Session, error) {
-	session, err := goflow.Engine(rt).ReadSession(sa, json.RawMessage(s.s.Output), assets.IgnoreMissing)
+	session, err := goflow.Engine(rt).ReadSession(sa, []byte(s.s.Output), assets.IgnoreMissing)
 	if err != nil {
 		return nil, fmt.Errorf("unable to unmarshal session: %w", err)
 	}
@@ -407,25 +407,6 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 		return fmt.Errorf("error saving flow statistics: %w", err)
 	}
 
-	var eventsToHandle []flows.Event
-
-	// if session didn't fail, we need to handle this sprint's events
-	if s.Status() != SessionStatusFailed {
-		eventsToHandle = append(eventsToHandle, sprint.Events()...)
-	}
-
-	eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contact, true))
-
-	// apply all our events to generate hooks
-	if err := s.scene.AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
-		return fmt.Errorf("error handling events for session %s: %w", s.UUID(), err)
-	}
-
-	// gather all our pre commit events, group them by hook and apply them
-	if err := ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*Scene{s.scene}); err != nil {
-		return fmt.Errorf("error applying pre commit hook: %T: %w", hook, err)
-	}
-
 	return nil
 }
 
@@ -631,31 +612,6 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 
 	if err := RecordFlowStatistics(ctx, rt, tx, ss, sprints); err != nil {
 		return nil, fmt.Errorf("error saving flow statistics: %w", err)
-	}
-
-	// apply our all events for the session
-	scenes := make([]*Scene, 0, len(ss))
-	for i, s := range sessions {
-		var eventsToHandle []flows.Event
-
-		// if session didn't fail, we need to handle this sprint's events
-		if s.Status() != SessionStatusFailed {
-			eventsToHandle = append(eventsToHandle, sprints[i].Events()...)
-		}
-
-		eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contacts[i], false))
-
-		if err := s.Scene().AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
-			return nil, fmt.Errorf("error applying events for session %s: %w", s.UUID(), err)
-		}
-
-		scenes = append(scenes, s.Scene())
-	}
-
-	// gather all our pre commit events, group them by hook
-	err = ApplyScenePreCommitHooks(ctx, rt, tx, oa, scenes)
-	if err != nil {
-		return nil, fmt.Errorf("error applying session pre commit hooks: %w", err)
 	}
 
 	// return our session
