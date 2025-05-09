@@ -23,7 +23,7 @@ func handleContactURNsChanged(ctx context.Context, rt *runtime.Runtime, oa *mode
 
 	var flow *models.Flow
 	if scene.Session() != nil {
-		flow, _ = scene.Session().LocateEvent(e)
+		flow, _ = scene.LocateEvent(e)
 	}
 
 	// create our URN changed event

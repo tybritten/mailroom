@@ -80,8 +80,6 @@ type Session struct {
 
 	// we keep around a reference to the sprint associated with this session
 	sprint flows.Sprint
-
-	findStep func(flows.StepUUID) (flows.Run, flows.Step)
 }
 
 func (s *Session) UUID() flows.SessionUUID            { return s.s.UUID }
@@ -131,13 +129,6 @@ func (s *Session) Runs() []*FlowRun {
 // Sprint returns the sprint associated with this session
 func (s *Session) Sprint() flows.Sprint {
 	return s.sprint
-}
-
-// LocateEvent finds the flow and node UUID for an event belonging to this session
-func (s *Session) LocateEvent(e flows.Event) (*Flow, flows.NodeUUID) {
-	run, step := s.findStep(e.StepUUID())
-	flow := run.Flow().Asset().(*Flow)
-	return flow, step.NodeUUID()
 }
 
 // Timeout returns the amount of time after our last message sends that we should timeout
@@ -294,9 +285,8 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 		s.runs = append(s.runs, run)
 	}
 
-	// set our sprint, wait and step finder
+	// set our sprint
 	s.sprint = sprint
-	s.findStep = fs.FindStep
 	s.s.CurrentFlowID = NilFlowID
 
 	// run through our runs to figure out our current flow
@@ -436,7 +426,6 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 
 	session.contact = fs.Contact()
 	session.sprint = sprint
-	session.findStep = fs.FindStep
 
 	// now build up our runs
 	for i, r := range fs.Runs() {

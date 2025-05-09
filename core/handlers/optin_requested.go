@@ -34,7 +34,7 @@ func handleOptInRequested(ctx context.Context, rt *runtime.Runtime, oa *models.O
 	}
 
 	// and the flow
-	flow, _ := scene.Session().LocateEvent(e)
+	flow, _ := scene.LocateEvent(e)
 
 	msg := models.NewOutgoingOptInMsg(rt, oa.OrgID(), scene.Session(), flow, optIn, channel, event.URN, event.CreatedOn())
 
