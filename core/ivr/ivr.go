@@ -11,7 +11,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/dates"
 	"github.com/nyaruka/gocommon/httpx"
@@ -360,20 +359,10 @@ func StartIVRFlow(
 			Build()
 	}
 
-	// we set the call on the session before our event hooks fire so that IVR messages can be created with the right call reference
-	hook := func(ctx context.Context, tx *sqlx.Tx, rp *redis.Pool, oa *models.OrgAssets, sessions []*models.Session) error {
-		for _, session := range sessions {
-			session.SetCall(call)
-		}
-		return nil
-	}
-
-	// start our flow
-	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{c}, []flows.Trigger{trigger}, hook, true, models.NilStartID)
+	sessions, err := runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{c}, []flows.Trigger{trigger}, nil, true, models.NilStartID, call)
 	if err != nil {
 		return fmt.Errorf("error starting flow: %w", err)
 	}
-
 	if len(sessions) == 0 {
 		return fmt.Errorf("no ivr session created")
 	}
@@ -440,14 +429,6 @@ func ResumeIVRFlow(
 		return err
 	}
 
-	// hook to set our call on our session before our event hooks run
-	hook := func(ctx context.Context, tx *sqlx.Tx, rp *redis.Pool, oa *models.OrgAssets, sessions []*models.Session) error {
-		for _, session := range sessions {
-			session.SetCall(call)
-		}
-		return nil
-	}
-
 	// make sure our call is still happening
 	status, _, _ := svc.StatusForRequest(r)
 	if status != models.CallStatusInProgress {
@@ -490,7 +471,7 @@ func ResumeIVRFlow(
 		return svc.WriteErrorResponse(w, fmt.Errorf("no resume found, ending call"))
 	}
 
-	session, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, hook)
+	session, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, call, nil)
 	if err != nil {
 		return fmt.Errorf("error resuming ivr flow: %w", err)
 	}

@@ -179,7 +179,7 @@ func tryToStartWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 		triggers = append(triggers, trigger)
 	}
 
-	ss, err := StartFlowForContacts(ctx, rt, oa, flow, contacts, triggers, options.CommitHook, options.Interrupt, startID)
+	ss, err := StartFlowForContacts(ctx, rt, oa, flow, contacts, triggers, options.CommitHook, options.Interrupt, startID, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error starting flow for contacts: %w", err)
 	}
@@ -190,16 +190,16 @@ func tryToStartWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 // StartFlowForContacts runs the passed in flow for the passed in contact
 func StartFlowForContacts(
 	ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
-	flow *models.Flow, contacts []*models.Contact, triggers []flows.Trigger, hook models.SessionCommitHook, interrupt bool, startID models.StartID) ([]*models.Session, error) {
-	sa := oa.SessionAssets()
+	flow *models.Flow, contacts []*models.Contact, triggers []flows.Trigger, hook models.SessionCommitHook, interrupt bool,
+	startID models.StartID, call *models.Call) ([]*models.Session, error) {
 
-	// no triggers? nothing to do
 	if len(triggers) == 0 {
 		return nil, nil
 	}
 
 	start := time.Now()
 	log := slog.With(slog.Group("flow", "uuid", flow.UUID, "name", flow.Name))
+	sa := oa.SessionAssets()
 
 	// for each trigger start the flow
 	sessions := make([]flows.Session, 0, len(triggers))
@@ -253,9 +253,11 @@ func StartFlowForContacts(
 		return nil, fmt.Errorf("error interrupting contacts: %w", err)
 	}
 
-	// apply our all events for the session
-	scenes := make([]*models.Scene, 0, len(dbSessions))
+	// make scenes and add events to them
+	scenes := make([]*models.Scene, len(dbSessions))
 	for i, s := range dbSessions {
+		scenes[i] = models.NewSceneForSession(s, call)
+
 		var eventsToHandle []flows.Event
 
 		// if session didn't fail, we need to handle this sprint's events
@@ -265,12 +267,10 @@ func StartFlowForContacts(
 
 		eventsToHandle = append(eventsToHandle, models.NewSprintEndedEvent(contacts[i], false))
 
-		if err := s.Scene().AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
+		if err := scenes[i].AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("error applying events for session %s: %w", s.UUID(), err)
 		}
-
-		scenes = append(scenes, s.Scene())
 	}
 
 	// gather all our pre commit events, group them by hook
@@ -325,17 +325,18 @@ func StartFlowForContacts(
 
 			eventsToHandle = append(eventsToHandle, models.NewSprintEndedEvent(contact, false))
 
-			if err := dbSession[0].Scene().AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
+			scene := models.NewSceneForSession(dbSession[0], call)
+
+			if err := scene.AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
 				return nil, fmt.Errorf("error applying events for session %s: %w", session.UUID(), err)
 			}
 
 			// gather all our pre commit events, group them by hook
-			if err := models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*models.Scene{dbSession[0].Scene()}); err != nil {
+			if err := models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*models.Scene{scene}); err != nil {
 				return nil, fmt.Errorf("error applying session pre commit hooks: %w", err)
 			}
 
-			err = tx.Commit()
-			if err != nil {
+			if err := tx.Commit(); err != nil {
 				tx.Rollback()
 				log.Error("error committing session to db", "error", err, "contact", session.Contact().UUID())
 				continue

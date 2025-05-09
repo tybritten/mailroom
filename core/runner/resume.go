@@ -12,7 +12,7 @@ import (
 )
 
 // ResumeFlow resumes the passed in session using the passed in session
-func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, session *models.Session, contact *models.Contact, resume flows.Resume, hook models.SessionCommitHook) (*models.Session, error) {
+func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, session *models.Session, contact *models.Contact, resume flows.Resume, call *models.Call, hook models.SessionCommitHook) (*models.Session, error) {
 	start := time.Now()
 	sa := oa.SessionAssets()
 
@@ -64,11 +64,12 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 	}
 
 	eventsToHandle = append(eventsToHandle, models.NewSprintEndedEvent(contact, true))
+	scene := models.NewSceneForSession(session, call)
 
-	if err := session.Scene().AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
+	if err := scene.AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
 		return nil, fmt.Errorf("error handling events for session %s: %w", session.UUID(), err)
 	}
-	if err := models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*models.Scene{session.Scene()}); err != nil {
+	if err := models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*models.Scene{scene}); err != nil {
 		return nil, fmt.Errorf("error applying pre commit hook: %T: %w", hook, err)
 	}
 
@@ -79,7 +80,7 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 	}
 
 	// now take care of any post-commit hooks
-	if err := models.ApplyScenePostCommitHooks(ctx, rt, oa, []*models.Scene{session.Scene()}); err != nil {
+	if err := models.ApplyScenePostCommitHooks(ctx, rt, oa, []*models.Scene{scene}); err != nil {
 		return nil, fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 

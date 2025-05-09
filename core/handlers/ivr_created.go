@@ -23,7 +23,7 @@ func handleIVRCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAs
 	slog.Debug("ivr created", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "text", event.Msg.Text())
 
 	// get our call
-	call := scene.Session().Call()
+	call := scene.Call()
 	if call == nil {
 		return fmt.Errorf("ivr session must have a call set")
 	}

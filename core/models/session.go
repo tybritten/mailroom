@@ -84,9 +84,6 @@ type Session struct {
 	// we keep around a reference to the sprint associated with this session
 	sprint flows.Sprint
 
-	// the scene for our event hooks
-	scene *Scene
-
 	findStep func(flows.StepUUID) (flows.Run, flows.Step)
 }
 
@@ -103,7 +100,6 @@ func (s *Session) CurrentFlowID() FlowID              { return s.s.CurrentFlowID
 func (s *Session) CallID() CallID                     { return s.s.CallID }
 func (s *Session) IncomingMsgID() MsgID               { return s.incomingMsgID }
 func (s *Session) IncomingMsgExternalID() null.String { return s.incomingExternalID }
-func (s *Session) Scene() *Scene                      { return s.scene }
 
 // StoragePath returns the path for the session
 func (s *Session) StoragePath(orgID OrgID) string {
@@ -161,16 +157,6 @@ func (s *Session) OutputMD5() string {
 func (s *Session) SetIncomingMsg(id MsgID, externalID string) {
 	s.incomingMsgID = id
 	s.incomingExternalID = null.String(externalID)
-}
-
-// SetCall sets the channel connection associated with this sprint
-func (s *Session) SetCall(c *Call) {
-	s.s.CallID = c.ID()
-	s.call = c
-}
-
-func (s *Session) Call() *Call {
-	return s.call
 }
 
 // FlowSession creates a flow session for the passed in session object. It also populates the runs we know about
@@ -462,7 +448,6 @@ func NewSession(ctx context.Context, tx *sqlx.Tx, oa *OrgAssets, fs flows.Sessio
 	}
 
 	session.contact = fs.Contact()
-	session.scene = NewSceneForSession(session)
 	session.sprint = sprint
 	session.findStep = fs.FindStep
 
@@ -638,7 +623,6 @@ func GetWaitingSessionForContact(ctx context.Context, rt *runtime.Runtime, oa *O
 
 	// scan in our session
 	session := &Session{contact: fc}
-	session.scene = NewSceneForSession(session)
 
 	if err := rows.StructScan(&session.s); err != nil {
 		return nil, fmt.Errorf("error scanning session: %w", err)

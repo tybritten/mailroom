@@ -25,6 +25,7 @@ const (
 type Scene struct {
 	contact *flows.Contact
 	session *Session
+	call    *Call
 	userID  UserID
 
 	preCommits  map[SceneCommitHook][]any
@@ -32,10 +33,11 @@ type Scene struct {
 }
 
 // NewSceneForSession creates a new scene for the passed in session
-func NewSceneForSession(session *Session) *Scene {
+func NewSceneForSession(session *Session, call *Call) *Scene {
 	return &Scene{
 		contact: session.Contact(),
 		session: session,
+		call:    call,
 
 		preCommits:  make(map[SceneCommitHook][]any),
 		postCommits: make(map[SceneCommitHook][]any),
@@ -64,10 +66,9 @@ func (s *Scene) SessionUUID() flows.SessionUUID {
 func (s *Scene) Contact() *flows.Contact        { return s.contact }
 func (s *Scene) ContactID() ContactID           { return ContactID(s.contact.ID()) }
 func (s *Scene) ContactUUID() flows.ContactUUID { return s.contact.UUID() }
+func (s *Scene) Session() *Session              { return s.session }
+func (s *Scene) Call() *Call                    { return s.call }
 func (s *Scene) UserID() UserID                 { return s.userID }
-
-// Session returns the session for this scene if any
-func (s *Scene) Session() *Session { return s.session }
 
 // AttachPreCommitHook adds an item to be handled by the given pre commit hook
 func (s *Scene) AttachPreCommitHook(hook SceneCommitHook, item any) {
