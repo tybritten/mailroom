@@ -33,7 +33,7 @@ func handleWebhookCalled(ctx context.Context, rt *runtime.Runtime, oa *models.Or
 		scene.AttachPreCommitHook(hooks.UnsubscribeResthook, unsub)
 	}
 
-	flow, nodeUUID := scene.Session().LocateEvent(e)
+	flow, nodeUUID := scene.LocateEvent(e)
 
 	// create an HTTP log
 	if flow != nil {

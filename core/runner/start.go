@@ -255,7 +255,7 @@ func StartFlowForContacts(
 	// make scenes and add events to them
 	scenes := make([]*models.Scene, len(dbSessions))
 	for i, s := range dbSessions {
-		scenes[i] = models.NewSceneForSession(s, call)
+		scenes[i] = models.NewSceneForSession(s, sessions[i], call)
 
 		var eventsToHandle []flows.Event
 
@@ -324,7 +324,7 @@ func StartFlowForContacts(
 
 			eventsToHandle = append(eventsToHandle, models.NewSprintEndedEvent(contact, false))
 
-			scene := models.NewSceneForSession(dbSession[0], call)
+			scene := models.NewSceneForSession(dbSession[0], session, call)
 
 			if err := scene.AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
 				return nil, fmt.Errorf("error applying events for session %s: %w", session.UUID(), err)

@@ -25,7 +25,7 @@ func init() {
 func handleWarning(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
 	event := e.(*events.WarningEvent)
 
-	flow, _ := scene.Session().LocateEvent(e)
+	flow, _ := scene.LocateEvent(e)
 	logMsg := warningsLogs[event.Text]
 	if logMsg != "" {
 		slog.Error(logMsg, "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "text", event.Text, slog.Group("flow", "uuid", flow.UUID, "name", flow.Name))

@@ -25,6 +25,7 @@ const (
 type Scene struct {
 	contact *flows.Contact
 	session *Session
+	fs      flows.Session
 	call    *Call
 	userID  UserID
 
@@ -33,10 +34,11 @@ type Scene struct {
 }
 
 // NewSceneForSession creates a new scene for the passed in session
-func NewSceneForSession(session *Session, call *Call) *Scene {
+func NewSceneForSession(session *Session, fs flows.Session, call *Call) *Scene {
 	return &Scene{
 		contact: session.Contact(),
 		session: session,
+		fs:      fs,
 		call:    call,
 
 		preCommits:  make(map[SceneCommitHook][]any),
@@ -57,10 +59,10 @@ func NewSceneForContact(contact *flows.Contact, userID UserID) *Scene {
 
 // SessionUUID returns the session UUID for this scene if any
 func (s *Scene) SessionUUID() flows.SessionUUID {
-	if s.session == nil {
+	if s.fs == nil {
 		return ""
 	}
-	return s.session.UUID()
+	return s.fs.UUID()
 }
 
 func (s *Scene) Contact() *flows.Contact        { return s.contact }
@@ -69,6 +71,13 @@ func (s *Scene) ContactUUID() flows.ContactUUID { return s.contact.UUID() }
 func (s *Scene) Session() *Session              { return s.session }
 func (s *Scene) Call() *Call                    { return s.call }
 func (s *Scene) UserID() UserID                 { return s.userID }
+
+// LocateEvent finds the flow and node UUID for an event belonging to this session
+func (s *Scene) LocateEvent(e flows.Event) (*Flow, flows.NodeUUID) {
+	run, step := s.fs.FindStep(e.StepUUID())
+	flow := run.Flow().Asset().(*Flow)
+	return flow, step.NodeUUID()
+}
 
 // AttachPreCommitHook adds an item to be handled by the given pre commit hook
 func (s *Scene) AttachPreCommitHook(hook SceneCommitHook, item any) {
