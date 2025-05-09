@@ -46,5 +46,10 @@ func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, oa *models.OrgA
 		scene.AttachPreCommitHook(hooks.UpdateContactModifiedOn, event)
 	}
 
+	// if we have a call and the session is no longer waiting, call should be completed
+	if scene.Call() != nil && scene.Session().Status() != models.SessionStatusWaiting {
+		scene.AttachPreCommitHook(hooks.UpdateCallStatus, models.CallStatusCompleted)
+	}
+
 	return nil
 }

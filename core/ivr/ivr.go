@@ -96,7 +96,7 @@ type Service interface {
 // HangupCall hangs up the passed in call also taking care of updating the status of our call in the process
 func HangupCall(ctx context.Context, rt *runtime.Runtime, call *models.Call) (*models.ChannelLog, error) {
 	// no matter what mark our call as failed
-	defer call.MarkFailed(ctx, rt.DB, time.Now())
+	defer call.SetFailed(ctx, rt.DB)
 
 	// load our org assets
 	oa, err := models.GetOrgAssets(ctx, rt, call.OrgID())
@@ -220,7 +220,7 @@ func RequestStartForCall(ctx context.Context, rt *runtime.Runtime, channel *mode
 		// we are at max calls, do not move on
 		if count >= maxCalls {
 			slog.Info("call being queued, max concurrent reached", "channel_id", channel.ID())
-			err := call.MarkThrottled(ctx, rt.DB, time.Now())
+			err := call.SetThrottled(ctx, rt.DB)
 			if err != nil {
 				return nil, fmt.Errorf("error marking call as throttled: %w", err)
 			}
@@ -277,7 +277,7 @@ func RequestStartForCall(ctx context.Context, rt *runtime.Runtime, channel *mode
 
 // HandleAsFailure marks the passed in call as errored and writes the appropriate error response to our writer
 func HandleAsFailure(ctx context.Context, db *sqlx.DB, svc Service, call *models.Call, w http.ResponseWriter, rootErr error) error {
-	err := call.MarkFailed(ctx, db, time.Now())
+	err := call.SetFailed(ctx, db)
 	if err != nil {
 		slog.Error("error marking call as failed", "error", err)
 	}
@@ -572,7 +572,7 @@ func HandleIVRStatus(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAss
 
 		// if this is an incoming call it won't have an associated start and we don't retry it so just fail permanently
 		if call.StartID() == models.NilStartID {
-			call.MarkFailed(ctx, rt.DB, time.Now())
+			call.SetFailed(ctx, rt.DB)
 			return svc.WriteEmptyResponse(w, "no flow start found, status updated: F")
 		}
 
@@ -594,7 +594,7 @@ func HandleIVRStatus(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAss
 		}
 
 	} else if status == models.CallStatusFailed {
-		call.MarkFailed(ctx, rt.DB, time.Now())
+		call.SetFailed(ctx, rt.DB)
 	} else {
 		if status != call.Status() || duration > 0 {
 			err := call.UpdateStatus(ctx, rt.DB, status, duration, time.Now())

@@ -70,9 +70,6 @@ type Session struct {
 	incomingMsgID      MsgID
 	incomingExternalID null.String
 
-	// any call associated with this flow session
-	call *Call
-
 	// time after our last message is sent that we should timeout
 	timeout *time.Duration
 
@@ -344,16 +341,6 @@ func (s *Session) Update(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 		return fmt.Errorf("error inserting session contact fires: %w", err)
 	}
 
-	// if this session is complete, so is any associated connection
-	if s.call != nil {
-		if s.Status() == SessionStatusCompleted || s.Status() == SessionStatusFailed {
-			err := s.call.UpdateStatus(ctx, tx, CallStatusCompleted, 0, time.Now())
-			if err != nil {
-				return fmt.Errorf("error update channel connection: %w", err)
-			}
-		}
-	}
-
 	// figure out which runs are new and which are updated
 	updatedRuns := make([]*FlowRun, 0, 1)
 	newRuns := make([]*FlowRun, 0)
@@ -511,7 +498,6 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 	runs := make([]*FlowRun, 0, len(sessions))
 	waitingSessionsI := make([]any, 0, len(ss))
 	endedSessionsI := make([]any, 0, len(ss))
-	completedCallIDs := make([]CallID, 0, 1)
 	fires := make([]*ContactFire, 0, len(ss))
 	waitingContactIDs := make([]ContactID, 0, len(ss))
 
@@ -529,9 +515,6 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 			waitingContactIDs = append(waitingContactIDs, session.s.ContactID)
 		} else {
 			endedSessionsI = append(endedSessionsI, &session.s)
-			if session.call != nil {
-				completedCallIDs = append(completedCallIDs, session.call.ID())
-			}
 		}
 	}
 
@@ -562,12 +545,6 @@ func InsertSessions(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *O
 	err := BulkQuery(ctx, "insert ended sessions", tx, insertEndedSQL, endedSessionsI)
 	if err != nil {
 		return nil, fmt.Errorf("error inserting ended sessions: %w", err)
-	}
-
-	// mark any connections that are done as complete as well
-	err = BulkUpdateCallStatuses(ctx, tx, completedCallIDs, CallStatusCompleted)
-	if err != nil {
-		return nil, fmt.Errorf("error updating channel connections to complete: %w", err)
 	}
 
 	// insert waiting sessions

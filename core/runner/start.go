@@ -232,14 +232,13 @@ func StartFlowForContacts(
 		return nil, fmt.Errorf("error starting transaction: %w", err)
 	}
 
-	// build our list of contact ids
-	contactIDs := make([]models.ContactID, len(triggers))
-	for i := range triggers {
-		contactIDs[i] = models.ContactID(triggers[i].Contact().ID())
-	}
-
 	// interrupt all our contacts if desired
 	if interrupt {
+		contactIDs := make([]models.ContactID, len(triggers))
+		for i := range triggers {
+			contactIDs[i] = models.ContactID(triggers[i].Contact().ID())
+		}
+
 		if err := models.InterruptSessionsForContactsTx(txCTX, tx, contactIDs); err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("error interrupting contacts: %w", err)
