@@ -198,7 +198,7 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 				msgID = msg.ID
 			}
 
-			_, err := runner.StartFlow(ctx, rt, oa, flow.(*models.Flow), []models.ContactID{c.ID}, options, models.NilStartID, msgID)
+			_, err := runner.StartFlowWithLock(ctx, rt, oa, flow.(*models.Flow), []models.ContactID{c.ID}, options, models.NilStartID, msgID)
 			require.NoError(t, err)
 		}
 
@@ -238,7 +238,7 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 		tx, err := rt.DB.BeginTxx(ctx, nil)
 		assert.NoError(t, err)
 
-		err = runner.ApplyScenePreCommitHooks(ctx, rt, tx, oa, scenes)
+		err = runner.ApplySceneHooks(ctx, rt, tx, oa, scenes)
 		assert.NoError(t, err)
 
 		err = tx.Commit()
@@ -281,7 +281,7 @@ func RunFlowAndApplyEvents(t *testing.T, ctx context.Context, rt *runtime.Runtim
 	tx, err = rt.DB.BeginTxx(ctx, nil)
 	require.NoError(t, err)
 
-	err = runner.ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*runner.Scene{scene})
+	err = runner.ApplySceneHooks(ctx, rt, tx, oa, []*runner.Scene{scene})
 	require.NoError(t, err)
 
 	err = tx.Commit()

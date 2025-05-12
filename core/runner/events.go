@@ -100,8 +100,8 @@ func (s *Scene) LocateEvent(e flows.Event) (*models.Flow, flows.NodeUUID) {
 	return flow, step.NodeUUID()
 }
 
-// AttachPreCommitHook adds an item to be handled by the given pre commit hook
-func (s *Scene) AttachPreCommitHook(hook SceneCommitHook, item any) {
+// AttachHook adds an item to be handled by the given pre commit hook
+func (s *Scene) AttachHook(hook SceneCommitHook, item any) {
 	s.preCommits[hook] = append(s.preCommits[hook], item)
 }
 
@@ -147,8 +147,8 @@ type SceneCommitHook interface {
 	Apply(context.Context, *runtime.Runtime, *sqlx.Tx, *models.OrgAssets, map[*Scene][]any) error
 }
 
-// ApplyScenePreCommitHooks applies through all the pre commit hooks for the given scenes
-func ApplyScenePreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes []*Scene) error {
+// ApplySceneHooks applies through all the pre commit hooks for the given scenes
+func ApplySceneHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes []*Scene) error {
 	// gather all our hook events together across our sessions
 	byHook := make(map[SceneCommitHook]map[*Scene][]any)
 	for _, s := range scenes {
@@ -279,7 +279,7 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *models.
 	}
 
 	// gather all our pre commit events, group them by hook and apply them
-	if err := ApplyScenePreCommitHooks(ctx, rt, tx, oa, scenes); err != nil {
+	if err := ApplySceneHooks(ctx, rt, tx, oa, scenes); err != nil {
 		return fmt.Errorf("error applying pre commit hooks: %w", err)
 	}
 

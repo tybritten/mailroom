@@ -87,7 +87,7 @@ func (t *TicketClosedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa 
 		Ticket(ticket, triggers.TicketEventTypeClosed).
 		Build()
 
-	_, err = runner.StartFlowForContacts(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{flowTrigger}, nil, flow.FlowType().Interrupts(), models.NilStartID, nil, models.NilMsgID)
+	_, err = runner.StartFlow(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{flowTrigger}, nil, flow.FlowType().Interrupts(), models.NilStartID, nil, models.NilMsgID)
 	if err != nil {
 		return fmt.Errorf("error starting flow for contact: %w", err)
 	}

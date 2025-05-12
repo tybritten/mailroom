@@ -105,7 +105,7 @@ func TestStartFlowConcurrency(t *testing.T) {
 
 	// start each contact in the flow at the same time...
 	test.RunConcurrently(len(contacts), func(i int) {
-		sessions, err := runner.StartFlow(ctx, rt, oa, dbFlow, []models.ContactID{contacts[i].ID}, options, models.NilStartID, models.NilMsgID)
+		sessions, err := runner.StartFlowWithLock(ctx, rt, oa, dbFlow, []models.ContactID{contacts[i].ID}, options, models.NilStartID, models.NilMsgID)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(sessions))
 	})

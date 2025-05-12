@@ -107,7 +107,7 @@ func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 		TriggerBuilder: triggerBuilder,
 	}
 
-	sessions, err := StartFlow(ctx, rt, oa, flow, batch.ContactIDs, options, batch.StartID, models.NilMsgID)
+	sessions, err := StartFlowWithLock(ctx, rt, oa, flow, batch.ContactIDs, options, batch.StartID, models.NilMsgID)
 	if err != nil {
 		return nil, fmt.Errorf("error starting flow batch: %w", err)
 	}
@@ -115,8 +115,8 @@ func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 	return sessions, nil
 }
 
-// StartFlow runs the passed in flow for the passed in contacts
-func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, flow *models.Flow, contactIDs []models.ContactID, options *StartOptions, startID models.StartID, incomingMsgID models.MsgID) ([]*models.Session, error) {
+// StartFlowWithLock starts the given contacts in the given flow after obtaining locks for them.
+func StartFlowWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, flow *models.Flow, contactIDs []models.ContactID, options *StartOptions, startID models.StartID, incomingMsgID models.MsgID) ([]*models.Session, error) {
 	if len(contactIDs) == 0 {
 		return nil, nil
 	}
@@ -179,7 +179,7 @@ func tryToStartWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 		triggers = append(triggers, trigger)
 	}
 
-	ss, err := StartFlowForContacts(ctx, rt, oa, flow, contacts, triggers, options.CommitHook, options.Interrupt, startID, nil, incomingMsgID)
+	ss, err := StartFlow(ctx, rt, oa, flow, contacts, triggers, options.CommitHook, options.Interrupt, startID, nil, incomingMsgID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error starting flow for contacts: %w", err)
 	}
@@ -187,9 +187,8 @@ func tryToStartWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 	return ss, skipped, nil
 }
 
-// StartFlowForContacts runs the passed in flow for the passed in contact
-func StartFlowForContacts(
-	ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
+// StartFlow starts the given contacts in the given flow. It's assumed that the contacts are already locked.
+func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 	flow *models.Flow, contacts []*models.Contact, triggers []flows.Trigger, hook models.SessionCommitHook, interrupt bool,
 	startID models.StartID, call *models.Call, incomingMsgID models.MsgID) ([]*models.Session, error) {
 
@@ -273,7 +272,7 @@ func StartFlowForContacts(
 	}
 
 	// gather all our pre commit events, group them by hook
-	if err := ApplyScenePreCommitHooks(ctx, rt, tx, oa, scenes); err != nil {
+	if err := ApplySceneHooks(ctx, rt, tx, oa, scenes); err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("error applying session pre commit hooks: %w", err)
 	}
@@ -331,7 +330,7 @@ func StartFlowForContacts(
 			}
 
 			// gather all our pre commit events, group them by hook
-			if err := ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
+			if err := ApplySceneHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
 				return nil, fmt.Errorf("error applying session pre commit hooks: %w", err)
 			}
 

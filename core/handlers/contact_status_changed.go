@@ -22,8 +22,8 @@ func handleContactStatusChanged(ctx context.Context, rt *runtime.Runtime, oa *mo
 
 	slog.Debug("contact status changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "status", event.Status)
 
-	scene.AttachPreCommitHook(hooks.UpdateContactStatus, event)
-	scene.AttachPreCommitHook(hooks.UpdateContactModifiedOn, event)
+	scene.AttachHook(hooks.UpdateContactStatus, event)
+	scene.AttachHook(hooks.UpdateContactModifiedOn, event)
 
 	return nil
 }
