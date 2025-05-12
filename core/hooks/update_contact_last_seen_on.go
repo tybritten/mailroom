@@ -12,7 +12,7 @@ import (
 )
 
 // UpdateContactLastSeenOn is our hook for contact changes that require an update to last_seen_on
-var UpdateContactLastSeenOn runner.SceneCommitHook = &updateContactLastSeenOn{}
+var UpdateContactLastSeenOn runner.SceneHook = &updateContactLastSeenOn{}
 
 type updateContactLastSeenOn struct{}
 

@@ -14,7 +14,7 @@ import (
 )
 
 // CreateBroadcasts is our hook for creating broadcasts
-var CreateBroadcasts runner.SceneCommitHook = &createBroadcasts{}
+var CreateBroadcasts runner.SceneHook = &createBroadcasts{}
 
 type createBroadcasts struct{}
 

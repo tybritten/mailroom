@@ -33,7 +33,7 @@ func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, oa *models.OrgA
 		currentFlowChanged = event.Contact.CurrentFlowID() != scene.Session().CurrentFlowID()
 
 		if event.Contact.CurrentSessionUUID() != waitingSessionUUID || currentFlowChanged {
-			scene.AttachHook(hooks.UpdateContactSession, hooks.CurrentSessionUpdate{
+			scene.AttachPreCommitHook(hooks.UpdateContactSession, hooks.CurrentSessionUpdate{
 				ID:                 scene.ContactID(),
 				CurrentSessionUUID: null.String(waitingSessionUUID),
 				CurrentFlowID:      scene.Session().CurrentFlowID(),
@@ -44,12 +44,12 @@ func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, oa *models.OrgA
 	// if current flow has changed then we need to update modified_on, but also if this is a new session
 	// then flow history may have changed too in a way that won't be captured by a flow_entered event
 	if currentFlowChanged || !event.Resumed {
-		scene.AttachHook(hooks.UpdateContactModifiedOn, event)
+		scene.AttachPreCommitHook(hooks.UpdateContactModifiedOn, event)
 	}
 
 	// if we have a call and the session is no longer waiting, call should be completed
 	if scene.Call() != nil && scene.Session().Status() != models.SessionStatusWaiting {
-		scene.AttachHook(hooks.UpdateCallStatus, models.CallStatusCompleted)
+		scene.AttachPreCommitHook(hooks.UpdateCallStatus, models.CallStatusCompleted)
 	}
 
 	return nil

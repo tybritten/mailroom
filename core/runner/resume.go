@@ -69,7 +69,7 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 	if err := scene.AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
 		return nil, fmt.Errorf("error handling events for session %s: %w", session.UUID(), err)
 	}
-	if err := ApplySceneHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
+	if err := ApplyPreCommitHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
 		return nil, fmt.Errorf("error applying pre commit hook: %T: %w", hook, err)
 	}
 
@@ -79,7 +79,7 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 	}
 
 	// now take care of any post-commit hooks
-	if err := ApplyScenePostCommitHooks(ctx, rt, oa, []*Scene{scene}); err != nil {
+	if err := ApplyPostCommitHooks(ctx, rt, oa, []*Scene{scene}); err != nil {
 		return nil, fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 

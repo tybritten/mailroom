@@ -22,9 +22,9 @@ func handleContactFieldChanged(ctx context.Context, rt *runtime.Runtime, oa *mod
 
 	slog.Debug("contact field changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "field", event.Field.Key, "value", event.Value)
 
-	scene.AttachHook(hooks.UpdateContactFields, event)
-	scene.AttachHook(hooks.UpdateCampaignEvents, event)
-	scene.AttachHook(hooks.UpdateContactModifiedOn, event)
+	scene.AttachPreCommitHook(hooks.UpdateContactFields, event)
+	scene.AttachPreCommitHook(hooks.UpdateCampaignEvents, event)
+	scene.AttachPreCommitHook(hooks.UpdateContactModifiedOn, event)
 
 	return nil
 }

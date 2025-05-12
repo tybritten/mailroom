@@ -272,7 +272,7 @@ func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 	}
 
 	// gather all our pre commit events, group them by hook
-	if err := ApplySceneHooks(ctx, rt, tx, oa, scenes); err != nil {
+	if err := ApplyPreCommitHooks(ctx, rt, tx, oa, scenes); err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("error applying session pre commit hooks: %w", err)
 	}
@@ -330,7 +330,7 @@ func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 			}
 
 			// gather all our pre commit events, group them by hook
-			if err := ApplySceneHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
+			if err := ApplyPreCommitHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
 				return nil, fmt.Errorf("error applying session pre commit hooks: %w", err)
 			}
 
@@ -346,7 +346,7 @@ func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 		slog.Debug("sessions committed", "count", len(sessions))
 	}
 
-	if err := ApplyScenePostCommitHooks(ctx, rt, oa, scenes); err != nil {
+	if err := ApplyPostCommitHooks(ctx, rt, oa, scenes); err != nil {
 		return nil, fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 

@@ -13,7 +13,7 @@ import (
 )
 
 // UpdateContactName is our hook for contact name changes
-var UpdateContactName runner.SceneCommitHook = &updateContactName{}
+var UpdateContactName runner.SceneHook = &updateContactName{}
 
 type updateContactName struct{}
 

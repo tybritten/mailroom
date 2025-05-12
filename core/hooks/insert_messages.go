@@ -12,7 +12,7 @@ import (
 )
 
 // InsertMessages is our hook for comitting scene messages
-var InsertMessages runner.SceneCommitHook = &insertMessages{}
+var InsertMessages runner.SceneHook = &insertMessages{}
 
 type insertMessages struct{}
 

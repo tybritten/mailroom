@@ -11,7 +11,7 @@ import (
 )
 
 // SendMessages is our hook for sending scene messages
-var SendMessages runner.SceneCommitHook = &sendMessages{}
+var SendMessages runner.SceneHook = &sendMessages{}
 
 type sendMessages struct{}
 

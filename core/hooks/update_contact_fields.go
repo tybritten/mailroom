@@ -16,7 +16,7 @@ import (
 )
 
 // UpdateContactFields is our hook for contact field changes
-var UpdateContactFields runner.SceneCommitHook = &updateContactFields{}
+var UpdateContactFields runner.SceneHook = &updateContactFields{}
 
 type updateContactFields struct{}
 

@@ -15,7 +15,7 @@ import (
 )
 
 // CreateFlowStarts is our hook to fire our scene starts
-var CreateFlowStarts runner.SceneCommitHook = &createFlowStarts{}
+var CreateFlowStarts runner.SceneHook = &createFlowStarts{}
 
 type createFlowStarts struct{}
 

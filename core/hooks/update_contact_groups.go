@@ -11,7 +11,7 @@ import (
 )
 
 // UpdateContactGroups is our hook for all group changes
-var UpdateContactGroups runner.SceneCommitHook = &updateContactGroups{}
+var UpdateContactGroups runner.SceneHook = &updateContactGroups{}
 
 type updateContactGroups struct{}
 

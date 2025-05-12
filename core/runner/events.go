@@ -48,8 +48,8 @@ type Scene struct {
 	userID        models.UserID
 	incomingMsgID models.MsgID
 
-	preCommits  map[SceneCommitHook][]any
-	postCommits map[SceneCommitHook][]any
+	preCommits  map[SceneHook][]any
+	postCommits map[SceneHook][]any
 }
 
 // NewSceneForSession creates a new scene for the passed in session
@@ -61,8 +61,8 @@ func NewSceneForSession(session *models.Session, fs flows.Session, call *models.
 		call:          call,
 		incomingMsgID: incomingMsgID,
 
-		preCommits:  make(map[SceneCommitHook][]any),
-		postCommits: make(map[SceneCommitHook][]any),
+		preCommits:  make(map[SceneHook][]any),
+		postCommits: make(map[SceneHook][]any),
 	}
 }
 
@@ -72,8 +72,8 @@ func NewSceneForContact(contact *flows.Contact, userID models.UserID) *Scene {
 		contact: contact,
 		userID:  userID,
 
-		preCommits:  make(map[SceneCommitHook][]any),
-		postCommits: make(map[SceneCommitHook][]any),
+		preCommits:  make(map[SceneHook][]any),
+		postCommits: make(map[SceneHook][]any),
 	}
 }
 
@@ -100,13 +100,13 @@ func (s *Scene) LocateEvent(e flows.Event) (*models.Flow, flows.NodeUUID) {
 	return flow, step.NodeUUID()
 }
 
-// AttachHook adds an item to be handled by the given pre commit hook
-func (s *Scene) AttachHook(hook SceneCommitHook, item any) {
+// AttachPreCommitHook adds an item to be handled by the given pre commit hook
+func (s *Scene) AttachPreCommitHook(hook SceneHook, item any) {
 	s.preCommits[hook] = append(s.preCommits[hook], item)
 }
 
 // AttachPostCommitHook adds an item to be handled by the given post commit hook
-func (s *Scene) AttachPostCommitHook(hook SceneCommitHook, item any) {
+func (s *Scene) AttachPostCommitHook(hook SceneHook, item any) {
 	s.postCommits[hook] = append(s.postCommits[hook], item)
 }
 
@@ -141,16 +141,16 @@ func RegisterEventHandler(eventType string, handler EventHandler) {
 	eventHandlers[eventType] = handler
 }
 
-// SceneCommitHook defines a callback that will accept a certain type of events across session, either before or after committing
-type SceneCommitHook interface {
+// SceneHook defines a callback that will accept a certain type of events across session, either before or after committing
+type SceneHook interface {
 	Order() int
 	Apply(context.Context, *runtime.Runtime, *sqlx.Tx, *models.OrgAssets, map[*Scene][]any) error
 }
 
-// ApplySceneHooks applies through all the pre commit hooks for the given scenes
-func ApplySceneHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes []*Scene) error {
+// ApplyPreCommitHooks applies through all the pre commit hooks for the given scenes
+func ApplyPreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes []*Scene) error {
 	// gather all our hook events together across our sessions
-	byHook := make(map[SceneCommitHook]map[*Scene][]any)
+	byHook := make(map[SceneHook]map[*Scene][]any)
 	for _, s := range scenes {
 		for hook, args := range s.preCommits {
 			byScene, found := byHook[hook]
@@ -163,7 +163,7 @@ func ApplySceneHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *
 	}
 
 	// get hooks by their declared order
-	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 SceneCommitHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
+	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 SceneHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
 
 	// and apply them in that order
 	for _, hook := range hookTypes {
@@ -176,9 +176,9 @@ func ApplySceneHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *
 }
 
 // applies through all the post commit hooks for the given scenes in the given transaction
-func applyScenePostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes []*Scene) error {
+func applyPostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes []*Scene) error {
 	// gather all our hook events together across our sessions
-	byHook := make(map[SceneCommitHook]map[*Scene][]any)
+	byHook := make(map[SceneHook]map[*Scene][]any)
 	for _, s := range scenes {
 		for hook, args := range s.postCommits {
 			byScene, found := byHook[hook]
@@ -191,7 +191,7 @@ func applyScenePostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *s
 	}
 
 	// get hooks by their declared order
-	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 SceneCommitHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
+	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 SceneHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
 
 	// and apply them in that order
 	for _, hook := range hookTypes {
@@ -203,8 +203,8 @@ func applyScenePostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *s
 	return nil
 }
 
-// ApplyScenePostCommitHooks applies the post commit hooks for the given scenes
-func ApplyScenePostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes []*Scene) error {
+// ApplyPostCommitHooks applies the post commit hooks for the given scenes
+func ApplyPostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes []*Scene) error {
 	if len(scenes) == 0 {
 		return nil
 	}
@@ -217,7 +217,7 @@ func ApplyScenePostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *mod
 		return fmt.Errorf("error beginning transaction: %w", err)
 	}
 
-	err = applyScenePostCommitHooksTx(txCTX, rt, tx, oa, scenes)
+	err = applyPostCommitHooksTx(txCTX, rt, tx, oa, scenes)
 	if err == nil {
 		err = tx.Commit()
 	}
@@ -239,7 +239,7 @@ func ApplyScenePostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *mod
 				continue
 			}
 
-			if err := applyScenePostCommitHooksTx(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
+			if err := applyPostCommitHooksTx(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
 				tx.Rollback()
 				log.Error("error applying post commit hook", "error", err)
 				continue
@@ -279,7 +279,7 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *models.
 	}
 
 	// gather all our pre commit events, group them by hook and apply them
-	if err := ApplySceneHooks(ctx, rt, tx, oa, scenes); err != nil {
+	if err := ApplyPreCommitHooks(ctx, rt, tx, oa, scenes); err != nil {
 		return fmt.Errorf("error applying pre commit hooks: %w", err)
 	}
 
@@ -289,7 +289,7 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *models.
 	}
 
 	// now take care of any post-commit hooks
-	if err := ApplyScenePostCommitHooks(ctx, rt, oa, scenes); err != nil {
+	if err := ApplyPostCommitHooks(ctx, rt, oa, scenes); err != nil {
 		return fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 

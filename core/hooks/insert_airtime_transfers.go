@@ -11,7 +11,7 @@ import (
 )
 
 // InsertAirtimeTransfers is our hook for inserting airtime transfers
-var InsertAirtimeTransfers runner.SceneCommitHook = &insertAirtimeTransfers{}
+var InsertAirtimeTransfers runner.SceneHook = &insertAirtimeTransfers{}
 
 type insertAirtimeTransfers struct{}
 

@@ -12,7 +12,7 @@ import (
 )
 
 // UpdateContactStatus is our hook for contact status changes
-var UpdateContactStatus runner.SceneCommitHook = &updateContactStatus{}
+var UpdateContactStatus runner.SceneHook = &updateContactStatus{}
 
 type updateContactStatus struct{}
 

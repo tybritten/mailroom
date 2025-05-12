@@ -11,7 +11,7 @@ import (
 )
 
 // UpdateContactSession is our hook for current session changes
-var UpdateContactSession runner.SceneCommitHook = &updateContactSession{}
+var UpdateContactSession runner.SceneHook = &updateContactSession{}
 
 type updateContactSession struct{}
 

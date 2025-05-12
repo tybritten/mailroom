@@ -11,7 +11,7 @@ import (
 )
 
 // UnsubscribeResthook is our hook for when a webhook is called
-var UnsubscribeResthook runner.SceneCommitHook = &unsubscribeResthook{}
+var UnsubscribeResthook runner.SceneHook = &unsubscribeResthook{}
 
 type unsubscribeResthook struct{}
 

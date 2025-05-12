@@ -12,7 +12,7 @@ import (
 )
 
 // UpdateCallStatus is our hook for updating IVR call status
-var UpdateCallStatus runner.SceneCommitHook = &updateCallStatus{}
+var UpdateCallStatus runner.SceneHook = &updateCallStatus{}
 
 type updateCallStatus struct{}
 

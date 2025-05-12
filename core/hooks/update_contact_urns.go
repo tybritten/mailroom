@@ -13,7 +13,7 @@ import (
 )
 
 // UpdateContactURNs is our hook for when a URN is added to a contact
-var UpdateContactURNs runner.SceneCommitHook = &updateContactURNs{}
+var UpdateContactURNs runner.SceneHook = &updateContactURNs{}
 
 type updateContactURNs struct{}
 
