@@ -8,19 +8,20 @@ import (
 	"github.com/nyaruka/gocommon/jsonx"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 // CreateFlowStarts is our hook to fire our scene starts
-var CreateFlowStarts models.SceneCommitHook = &createFlowStarts{}
+var CreateFlowStarts runner.SceneCommitHook = &createFlowStarts{}
 
 type createFlowStarts struct{}
 
 func (h *createFlowStarts) Order() int { return 1 }
 
-func (h *createFlowStarts) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *createFlowStarts) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	rc := rt.RP.Get()
 	defer rc.Close()
 

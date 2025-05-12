@@ -6,17 +6,18 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 // InsertAirtimeTransfers is our hook for inserting airtime transfers
-var InsertAirtimeTransfers models.SceneCommitHook = &insertAirtimeTransfers{}
+var InsertAirtimeTransfers runner.SceneCommitHook = &insertAirtimeTransfers{}
 
 type insertAirtimeTransfers struct{}
 
 func (h *insertAirtimeTransfers) Order() int { return 1 }
 
-func (h *insertAirtimeTransfers) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *insertAirtimeTransfers) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// gather all our transfers
 	transfers := make([]*models.AirtimeTransfer, 0, len(scenes))
 	for _, ts := range scenes {

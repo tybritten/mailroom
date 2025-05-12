@@ -9,16 +9,17 @@ import (
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/shopspring/decimal"
 )
 
 func init() {
-	models.RegisterEventHandler(events.TypeAirtimeTransferred, handleAirtimeTransferred)
+	runner.RegisterEventHandler(events.TypeAirtimeTransferred, handleAirtimeTransferred)
 }
 
 // handleAirtimeTransferred is called for each airtime transferred event
-func handleAirtimeTransferred(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleAirtimeTransferred(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *runner.Scene, e flows.Event) error {
 	event := e.(*events.AirtimeTransferredEvent)
 
 	slog.Debug("airtime transferred", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "sender", event.Sender, "recipient", event.Recipient, "currency", event.Currency, "amount", event.Amount.String())

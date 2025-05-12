@@ -8,15 +8,16 @@ import (
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	models.RegisterEventHandler(events.TypeContactLanguageChanged, handleContactLanguageChanged)
+	runner.RegisterEventHandler(events.TypeContactLanguageChanged, handleContactLanguageChanged)
 }
 
 // handleContactLanguageChanged is called when we process a contact language change
-func handleContactLanguageChanged(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleContactLanguageChanged(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *runner.Scene, e flows.Event) error {
 	event := e.(*events.ContactLanguageChangedEvent)
 
 	slog.Debug("contact language changed", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "language", event.Language)

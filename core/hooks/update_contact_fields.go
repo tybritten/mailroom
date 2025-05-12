@@ -11,17 +11,18 @@ import (
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 // UpdateContactFields is our hook for contact field changes
-var UpdateContactFields models.SceneCommitHook = &updateContactFields{}
+var UpdateContactFields runner.SceneCommitHook = &updateContactFields{}
 
 type updateContactFields struct{}
 
 func (h *updateContactFields) Order() int { return 1 }
 
-func (h *updateContactFields) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *updateContactFields) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// our list of updates
 	fieldUpdates := make([]any, 0, len(scenes))
 	fieldDeletes := make(map[assets.FieldUUID][]any)

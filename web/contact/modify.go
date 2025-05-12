@@ -12,6 +12,7 @@ import (
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/goflow"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/mailroom/web"
 )
@@ -133,7 +134,7 @@ func tryToLockAndModify(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 		modifiersByContact[flowContact] = mods
 	}
 
-	eventsByContact, err := models.ApplyModifiers(ctx, rt, oa, userID, modifiersByContact)
+	eventsByContact, err := runner.ApplyModifiers(ctx, rt, oa, userID, modifiersByContact)
 	if err != nil {
 		return nil, nil, err
 	}

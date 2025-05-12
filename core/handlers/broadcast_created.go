@@ -8,14 +8,15 @@ import (
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	models.RegisterEventHandler(events.TypeBroadcastCreated, handleBroadcastCreated)
+	runner.RegisterEventHandler(events.TypeBroadcastCreated, handleBroadcastCreated)
 }
 
-func handleBroadcastCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleBroadcastCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *runner.Scene, e flows.Event) error {
 	event := e.(*events.BroadcastCreatedEvent)
 
 	slog.Debug("broadcast created", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "translations", event.Translations[event.BaseLanguage])

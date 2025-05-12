@@ -8,15 +8,16 @@ import (
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	models.RegisterEventHandler(events.TypeResthookCalled, handleResthookCalled)
+	runner.RegisterEventHandler(events.TypeResthookCalled, handleResthookCalled)
 }
 
 // handleResthookCalled is called for each resthook call in a scene
-func handleResthookCalled(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleResthookCalled(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *runner.Scene, e flows.Event) error {
 	event := e.(*events.ResthookCalledEvent)
 
 	slog.Debug("resthook called", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "resthook", event.Resthook)

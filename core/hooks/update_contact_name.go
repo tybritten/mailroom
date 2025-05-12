@@ -7,18 +7,19 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
 )
 
 // UpdateContactName is our hook for contact name changes
-var UpdateContactName models.SceneCommitHook = &updateContactName{}
+var UpdateContactName runner.SceneCommitHook = &updateContactName{}
 
 type updateContactName struct{}
 
 func (h *updateContactName) Order() int { return 1 }
 
-func (h *updateContactName) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *updateContactName) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// build up our list of pairs of contact id and contact name
 	updates := make([]*nameUpdate, 0, len(scenes))
 	for s, e := range scenes {

@@ -4,20 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nyaruka/mailroom/core/models"
-	"github.com/nyaruka/mailroom/runtime"
-
 	"github.com/jmoiron/sqlx"
+	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
+	"github.com/nyaruka/mailroom/runtime"
 )
 
 // InsertIVRMessages is our hook for comitting scene messages / say commands
-var InsertIVRMessages models.SceneCommitHook = &insertIVRMessages{}
+var InsertIVRMessages runner.SceneCommitHook = &insertIVRMessages{}
 
 type insertIVRMessages struct{}
 
 func (h *insertIVRMessages) Order() int { return 1 }
 
-func (h *insertIVRMessages) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *insertIVRMessages) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	msgs := make([]*models.Msg, 0, len(scenes))
 	for _, s := range scenes {
 		for _, m := range s {
