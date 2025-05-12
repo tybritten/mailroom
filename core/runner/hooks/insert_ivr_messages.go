@@ -11,7 +11,7 @@ import (
 )
 
 // InsertIVRMessages is our hook for comitting scene messages / say commands
-var InsertIVRMessages runner.SceneHook = &insertIVRMessages{}
+var InsertIVRMessages runner.PreCommitHook = &insertIVRMessages{}
 
 type insertIVRMessages struct{}
 

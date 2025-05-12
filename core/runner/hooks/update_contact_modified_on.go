@@ -11,7 +11,7 @@ import (
 )
 
 // UpdateContactModifiedOn is our hook for contact changes that require an update to modified_on
-var UpdateContactModifiedOn runner.SceneHook = &updateContactModifiedOn{}
+var UpdateContactModifiedOn runner.PreCommitHook = &updateContactModifiedOn{}
 
 type updateContactModifiedOn struct{}
 

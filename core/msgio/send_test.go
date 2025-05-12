@@ -156,7 +156,7 @@ func TestQueueMessages(t *testing.T) {
 		rc.Do("FLUSHDB")
 		mockFCM.Messages = nil
 
-		msgio.QueueMessages(ctx, rt, rt.DB, msgs)
+		msgio.QueueMessages(ctx, rt, msgs)
 
 		testsuite.AssertCourierQueues(t, tc.QueueSizes, "courier queue sizes mismatch in '%s'", tc.Description)
 

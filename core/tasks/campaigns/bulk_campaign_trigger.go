@@ -153,7 +153,7 @@ func (t *BulkCampaignTriggerTask) triggerBroadcast(ctx context.Context, rt *runt
 		return fmt.Errorf("error creating campaign event messages: %w", err)
 	}
 
-	msgio.QueueMessages(ctx, rt, rt.DB, msgs)
+	msgio.QueueMessages(ctx, rt, msgs)
 
 	return nil
 }

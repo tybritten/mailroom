@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/runner"
@@ -14,13 +13,13 @@ import (
 )
 
 // CreateBroadcasts is our hook for creating broadcasts
-var CreateBroadcasts runner.SceneHook = &createBroadcasts{}
+var CreateBroadcasts runner.PostCommitHook = &createBroadcasts{}
 
 type createBroadcasts struct{}
 
 func (h *createBroadcasts) Order() int { return 1 }
 
-func (h *createBroadcasts) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *createBroadcasts) Apply(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	rc := rt.RP.Get()
 	defer rc.Close()
 
@@ -30,7 +29,7 @@ func (h *createBroadcasts) Apply(ctx context.Context, rt *runtime.Runtime, tx *s
 			event := e.(*events.BroadcastCreatedEvent)
 
 			// create a non-persistent broadcast
-			bcast, err := models.NewBroadcastFromEvent(ctx, tx, oa, event)
+			bcast, err := models.NewBroadcastFromEvent(ctx, rt.DB, oa, event)
 			if err != nil {
 				return fmt.Errorf("error creating broadcast: %w", err)
 			}

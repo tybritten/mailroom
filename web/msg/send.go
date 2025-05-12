@@ -82,7 +82,7 @@ func handleSend(ctx context.Context, rt *runtime.Runtime, r *sendRequest) (any, 
 		}
 	}
 
-	msgio.QueueMessages(ctx, rt, rt.DB, []*models.Msg{msg})
+	msgio.QueueMessages(ctx, rt, []*models.Msg{msg})
 
 	return map[string]any{
 		"id":            msg.ID(),

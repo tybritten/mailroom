@@ -17,7 +17,7 @@ type WebhookCall struct {
 	Event    *events.WebhookCalledEvent
 }
 
-var MonitorWebhooks runner.SceneHook = &monitorWebhooks{}
+var MonitorWebhooks runner.PreCommitHook = &monitorWebhooks{}
 
 type monitorWebhooks struct{}
 

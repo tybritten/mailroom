@@ -11,7 +11,7 @@ import (
 )
 
 // InsertWebhookEvent is our hook for when a resthook needs to be inserted
-var InsertWebhookEvent runner.SceneHook = &insertWebhookEventHook{}
+var InsertWebhookEvent runner.PreCommitHook = &insertWebhookEventHook{}
 
 type insertWebhookEventHook struct{}
 
