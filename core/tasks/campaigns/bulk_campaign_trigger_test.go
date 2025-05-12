@@ -5,8 +5,8 @@ import (
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
 	"github.com/nyaruka/gocommon/random"
-	_ "github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
+	_ "github.com/nyaruka/mailroom/core/runner/handlers"
 	"github.com/nyaruka/mailroom/core/tasks/campaigns"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"

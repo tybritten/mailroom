@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
-	_ "github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
+	_ "github.com/nyaruka/mailroom/core/runner/handlers"
 	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
 	"github.com/nyaruka/mailroom/testsuite"
 	"github.com/nyaruka/mailroom/testsuite/testdata"

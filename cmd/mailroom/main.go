@@ -17,8 +17,8 @@ import (
 	slogmulti "github.com/samber/slog-multi"
 	slogsentry "github.com/samber/slog-sentry/v2"
 
-	_ "github.com/nyaruka/mailroom/core/handlers"
-	_ "github.com/nyaruka/mailroom/core/hooks"
+	_ "github.com/nyaruka/mailroom/core/runner/handlers"
+	_ "github.com/nyaruka/mailroom/core/runner/hooks"
 	_ "github.com/nyaruka/mailroom/core/tasks/campaigns"
 	_ "github.com/nyaruka/mailroom/core/tasks/contacts"
 	_ "github.com/nyaruka/mailroom/core/tasks/handler"

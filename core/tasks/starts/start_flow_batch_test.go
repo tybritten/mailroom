@@ -5,8 +5,8 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
-	_ "github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
+	_ "github.com/nyaruka/mailroom/core/runner/handlers"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/starts"
 	"github.com/nyaruka/mailroom/testsuite"

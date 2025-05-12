@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/nyaruka/gocommon/dbutil/assertdb"
-	_ "github.com/nyaruka/mailroom/core/handlers"
 	"github.com/nyaruka/mailroom/core/models"
+	_ "github.com/nyaruka/mailroom/core/runner/handlers"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/handler"
 	"github.com/nyaruka/mailroom/core/tasks/handler/ctasks"
