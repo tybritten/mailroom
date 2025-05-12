@@ -253,9 +253,9 @@ func StartFlowForContacts(
 	}
 
 	// make scenes and add events to them
-	scenes := make([]*models.Scene, len(dbSessions))
+	scenes := make([]*Scene, len(dbSessions))
 	for i, s := range dbSessions {
-		scenes[i] = models.NewSceneForSession(s, sessions[i], call, incomingMsgID)
+		scenes[i] = NewSceneForSession(s, sessions[i], call, incomingMsgID)
 
 		var eventsToHandle []flows.Event
 
@@ -264,7 +264,7 @@ func StartFlowForContacts(
 			eventsToHandle = append(eventsToHandle, sprints[i].Events()...)
 		}
 
-		eventsToHandle = append(eventsToHandle, models.NewSprintEndedEvent(contacts[i], false))
+		eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contacts[i], false))
 
 		if err := scenes[i].AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
 			tx.Rollback()
@@ -273,7 +273,7 @@ func StartFlowForContacts(
 	}
 
 	// gather all our pre commit events, group them by hook
-	if err := models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, scenes); err != nil {
+	if err := ApplyScenePreCommitHooks(ctx, rt, tx, oa, scenes); err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("error applying session pre commit hooks: %w", err)
 	}
@@ -322,16 +322,16 @@ func StartFlowForContacts(
 				eventsToHandle = append(eventsToHandle, sprint.Events()...)
 			}
 
-			eventsToHandle = append(eventsToHandle, models.NewSprintEndedEvent(contact, false))
+			eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contact, false))
 
-			scene := models.NewSceneForSession(dbSession[0], session, call, incomingMsgID)
+			scene := NewSceneForSession(dbSession[0], session, call, incomingMsgID)
 
 			if err := scene.AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
 				return nil, fmt.Errorf("error applying events for session %s: %w", session.UUID(), err)
 			}
 
 			// gather all our pre commit events, group them by hook
-			if err := models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*models.Scene{scene}); err != nil {
+			if err := ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
 				return nil, fmt.Errorf("error applying session pre commit hooks: %w", err)
 			}
 
@@ -347,7 +347,7 @@ func StartFlowForContacts(
 		slog.Debug("sessions committed", "count", len(sessions))
 	}
 
-	if err := models.ApplyScenePostCommitHooks(ctx, rt, oa, scenes); err != nil {
+	if err := ApplyScenePostCommitHooks(ctx, rt, oa, scenes); err != nil {
 		return nil, fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 

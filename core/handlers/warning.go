@@ -7,6 +7,7 @@ import (
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
@@ -19,10 +20,10 @@ var warningsLogs = map[string]string{
 }
 
 func init() {
-	models.RegisterEventHandler(events.TypeWarning, handleWarning)
+	runner.RegisterEventHandler(events.TypeWarning, handleWarning)
 }
 
-func handleWarning(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleWarning(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *runner.Scene, e flows.Event) error {
 	event := e.(*events.WarningEvent)
 
 	flow, _ := scene.LocateEvent(e)

@@ -7,19 +7,20 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/core/tasks"
 	"github.com/nyaruka/mailroom/core/tasks/msgs"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 // CreateBroadcasts is our hook for creating broadcasts
-var CreateBroadcasts models.SceneCommitHook = &createBroadcasts{}
+var CreateBroadcasts runner.SceneCommitHook = &createBroadcasts{}
 
 type createBroadcasts struct{}
 
 func (h *createBroadcasts) Order() int { return 1 }
 
-func (h *createBroadcasts) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *createBroadcasts) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	rc := rt.RP.Get()
 	defer rc.Close()
 

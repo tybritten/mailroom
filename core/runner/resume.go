@@ -63,13 +63,13 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 		eventsToHandle = append(eventsToHandle, sprint.Events()...)
 	}
 
-	eventsToHandle = append(eventsToHandle, models.NewSprintEndedEvent(contact, true))
-	scene := models.NewSceneForSession(session, fs, call, incomingMsgID)
+	eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contact, true))
+	scene := NewSceneForSession(session, fs, call, incomingMsgID)
 
 	if err := scene.AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
 		return nil, fmt.Errorf("error handling events for session %s: %w", session.UUID(), err)
 	}
-	if err := models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*models.Scene{scene}); err != nil {
+	if err := ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
 		return nil, fmt.Errorf("error applying pre commit hook: %T: %w", hook, err)
 	}
 
@@ -79,7 +79,7 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 	}
 
 	// now take care of any post-commit hooks
-	if err := models.ApplyScenePostCommitHooks(ctx, rt, oa, []*models.Scene{scene}); err != nil {
+	if err := ApplyScenePostCommitHooks(ctx, rt, oa, []*Scene{scene}); err != nil {
 		return nil, fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 

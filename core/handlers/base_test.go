@@ -205,7 +205,7 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 		results := make(map[models.ContactID]modifyResult)
 
 		// create scenes for our contacts
-		scenes := make([]*models.Scene, 0, len(tc.Modifiers))
+		scenes := make([]*runner.Scene, 0, len(tc.Modifiers))
 		for contact, mods := range tc.Modifiers {
 			contact, err := models.LoadContact(ctx, rt.DB, oa, contact.ID)
 			assert.NoError(t, err)
@@ -218,7 +218,7 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 				Events:  make([]flows.Event, 0, len(mods)),
 			}
 
-			scene := models.NewSceneForContact(flowContact, tc.ModifierUser.SafeID())
+			scene := runner.NewSceneForContact(flowContact, tc.ModifierUser.SafeID())
 
 			// apply our modifiers
 			for _, mod := range mods {
@@ -238,13 +238,13 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 		tx, err := rt.DB.BeginTxx(ctx, nil)
 		assert.NoError(t, err)
 
-		err = models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, scenes)
+		err = runner.ApplyScenePreCommitHooks(ctx, rt, tx, oa, scenes)
 		assert.NoError(t, err)
 
 		err = tx.Commit()
 		assert.NoError(t, err)
 
-		err = models.ApplyScenePostCommitHooks(ctx, rt, oa, scenes)
+		err = runner.ApplyScenePostCommitHooks(ctx, rt, oa, scenes)
 		assert.NoError(t, err)
 
 		// now check our assertions
@@ -273,7 +273,7 @@ func RunFlowAndApplyEvents(t *testing.T, ctx context.Context, rt *runtime.Runtim
 	err = tx.Commit()
 	require.NoError(t, err)
 
-	scene := models.NewSceneForSession(session, fs, nil, models.NilMsgID)
+	scene := runner.NewSceneForSession(session, fs, nil, models.NilMsgID)
 
 	err = scene.AddEvents(ctx, rt, oa, sprint.Events())
 	require.NoError(t, err)
@@ -281,7 +281,7 @@ func RunFlowAndApplyEvents(t *testing.T, ctx context.Context, rt *runtime.Runtim
 	tx, err = rt.DB.BeginTxx(ctx, nil)
 	require.NoError(t, err)
 
-	err = models.ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*models.Scene{scene})
+	err = runner.ApplyScenePreCommitHooks(ctx, rt, tx, oa, []*runner.Scene{scene})
 	require.NoError(t, err)
 
 	err = tx.Commit()

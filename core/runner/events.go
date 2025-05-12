@@ -1,4 +1,4 @@
-package models
+package runner
 
 import (
 	"cmp"
@@ -12,8 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
-	"github.com/nyaruka/goflow/flows/modifiers"
-	"github.com/nyaruka/mailroom/core/goflow"
+	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
@@ -21,21 +20,40 @@ const (
 	postCommitTimeout = time.Minute
 )
 
+// TypeSprintEnded is a pseudo event that lets add hooks for changes to a contacts current flow or flow history
+const TypeSprintEnded string = "sprint_ended"
+
+type SprintEndedEvent struct {
+	events.BaseEvent
+
+	Contact *models.Contact // model contact so we can access current flow
+	Resumed bool            // whether this was a resume
+}
+
+// NewSprintEndedEvent creates a new sprint ended event
+func NewSprintEndedEvent(c *models.Contact, resumed bool) *SprintEndedEvent {
+	return &SprintEndedEvent{
+		BaseEvent: events.NewBaseEvent(TypeSprintEnded),
+		Contact:   c,
+		Resumed:   resumed,
+	}
+}
+
 // Scene represents the context that events are occurring in
 type Scene struct {
 	contact       *flows.Contact
-	session       *Session
+	session       *models.Session
 	fs            flows.Session
-	call          *Call
-	userID        UserID
-	incomingMsgID MsgID
+	call          *models.Call
+	userID        models.UserID
+	incomingMsgID models.MsgID
 
 	preCommits  map[SceneCommitHook][]any
 	postCommits map[SceneCommitHook][]any
 }
 
 // NewSceneForSession creates a new scene for the passed in session
-func NewSceneForSession(session *Session, fs flows.Session, call *Call, incomingMsgID MsgID) *Scene {
+func NewSceneForSession(session *models.Session, fs flows.Session, call *models.Call, incomingMsgID models.MsgID) *Scene {
 	return &Scene{
 		contact:       session.Contact(),
 		session:       session,
@@ -49,7 +67,7 @@ func NewSceneForSession(session *Session, fs flows.Session, call *Call, incoming
 }
 
 // NewSceneForContact creates a new scene for the passed in contact, session will be nil
-func NewSceneForContact(contact *flows.Contact, userID UserID) *Scene {
+func NewSceneForContact(contact *flows.Contact, userID models.UserID) *Scene {
 	return &Scene{
 		contact: contact,
 		userID:  userID,
@@ -68,17 +86,17 @@ func (s *Scene) SessionUUID() flows.SessionUUID {
 }
 
 func (s *Scene) Contact() *flows.Contact        { return s.contact }
-func (s *Scene) ContactID() ContactID           { return ContactID(s.contact.ID()) }
+func (s *Scene) ContactID() models.ContactID    { return models.ContactID(s.contact.ID()) }
 func (s *Scene) ContactUUID() flows.ContactUUID { return s.contact.UUID() }
-func (s *Scene) Session() *Session              { return s.session }
-func (s *Scene) Call() *Call                    { return s.call }
-func (s *Scene) UserID() UserID                 { return s.userID }
-func (s *Scene) IncomingMsgID() MsgID           { return s.incomingMsgID }
+func (s *Scene) Session() *models.Session       { return s.session }
+func (s *Scene) Call() *models.Call             { return s.call }
+func (s *Scene) UserID() models.UserID          { return s.userID }
+func (s *Scene) IncomingMsgID() models.MsgID    { return s.incomingMsgID }
 
 // LocateEvent finds the flow and node UUID for an event belonging to this session
-func (s *Scene) LocateEvent(e flows.Event) (*Flow, flows.NodeUUID) {
+func (s *Scene) LocateEvent(e flows.Event) (*models.Flow, flows.NodeUUID) {
 	run, step := s.fs.FindStep(e.StepUUID())
-	flow := run.Flow().Asset().(*Flow)
+	flow := run.Flow().Asset().(*models.Flow)
 	return flow, step.NodeUUID()
 }
 
@@ -93,7 +111,7 @@ func (s *Scene) AttachPostCommitHook(hook SceneCommitHook, item any) {
 }
 
 // AddEvents runs the given events through the appropriate handlers which in turn attach hooks to the scene
-func (s *Scene) AddEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, events []flows.Event) error {
+func (s *Scene) AddEvents(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, events []flows.Event) error {
 	for _, e := range events {
 		handler, found := eventHandlers[e.Type()]
 		if !found {
@@ -108,7 +126,7 @@ func (s *Scene) AddEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAsset
 }
 
 // EventHandler defines a call for handling events that occur in a flow
-type EventHandler func(context.Context, *runtime.Runtime, *OrgAssets, *Scene, flows.Event) error
+type EventHandler func(context.Context, *runtime.Runtime, *models.OrgAssets, *Scene, flows.Event) error
 
 // our registry of event type to internal handlers
 var eventHandlers = make(map[string]EventHandler)
@@ -126,11 +144,11 @@ func RegisterEventHandler(eventType string, handler EventHandler) {
 // SceneCommitHook defines a callback that will accept a certain type of events across session, either before or after committing
 type SceneCommitHook interface {
 	Order() int
-	Apply(context.Context, *runtime.Runtime, *sqlx.Tx, *OrgAssets, map[*Scene][]any) error
+	Apply(context.Context, *runtime.Runtime, *sqlx.Tx, *models.OrgAssets, map[*Scene][]any) error
 }
 
 // ApplyScenePreCommitHooks applies through all the pre commit hooks for the given scenes
-func ApplyScenePreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *OrgAssets, scenes []*Scene) error {
+func ApplyScenePreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes []*Scene) error {
 	// gather all our hook events together across our sessions
 	byHook := make(map[SceneCommitHook]map[*Scene][]any)
 	for _, s := range scenes {
@@ -158,7 +176,7 @@ func ApplyScenePreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx
 }
 
 // applies through all the post commit hooks for the given scenes in the given transaction
-func applyScenePostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *OrgAssets, scenes []*Scene) error {
+func applyScenePostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes []*Scene) error {
 	// gather all our hook events together across our sessions
 	byHook := make(map[SceneCommitHook]map[*Scene][]any)
 	for _, s := range scenes {
@@ -186,7 +204,7 @@ func applyScenePostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *s
 }
 
 // ApplyScenePostCommitHooks applies the post commit hooks for the given scenes
-func ApplyScenePostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, scenes []*Scene) error {
+func ApplyScenePostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes []*Scene) error {
 	if len(scenes) == 0 {
 		return nil
 	}
@@ -239,7 +257,7 @@ func ApplyScenePostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *Org
 }
 
 // HandleAndCommitEvents takes a set of contacts and events, handles the events and applies any hooks, and commits everything
-func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, userID UserID, contactEvents map[*flows.Contact][]flows.Event) error {
+func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, userID models.UserID, contactEvents map[*flows.Contact][]flows.Event) error {
 	// create scenes for each contact
 	scenes := make([]*Scene, 0, len(contactEvents))
 	for contact := range contactEvents {
@@ -276,50 +294,4 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *OrgAsse
 	}
 
 	return nil
-}
-
-// ApplyModifiers modifies contacts by applying modifiers and handling the resultant events
-// Note that we don't load the user object from org assets because it's possible that the user isn't part
-// of the org, e.g. customer support.
-func ApplyModifiers(ctx context.Context, rt *runtime.Runtime, oa *OrgAssets, userID UserID, modifiersByContact map[*flows.Contact][]flows.Modifier) (map[*flows.Contact][]flows.Event, error) {
-	// create an environment instance with location support
-	env := flows.NewAssetsEnvironment(oa.Env(), oa.SessionAssets())
-
-	eng := goflow.Engine(rt)
-
-	eventsByContact := make(map[*flows.Contact][]flows.Event, len(modifiersByContact))
-
-	// apply the modifiers to get the events for each contact
-	for contact, mods := range modifiersByContact {
-		events := make([]flows.Event, 0)
-		for _, mod := range mods {
-			modifiers.Apply(eng, env, oa.SessionAssets(), contact, mod, func(e flows.Event) { events = append(events, e) })
-		}
-		eventsByContact[contact] = events
-	}
-
-	if err := HandleAndCommitEvents(ctx, rt, oa, userID, eventsByContact); err != nil {
-		return nil, fmt.Errorf("error commiting events: %w", err)
-	}
-
-	return eventsByContact, nil
-}
-
-// TypeSprintEnded is a pseudo event that lets add hooks for changes to a contacts current flow or flow history
-const TypeSprintEnded string = "sprint_ended"
-
-type SprintEndedEvent struct {
-	events.BaseEvent
-
-	Contact *Contact // model contact so we can access current flow
-	Resumed bool     // whether this was a resume
-}
-
-// NewSprintEndedEvent creates a new sprint ended event
-func NewSprintEndedEvent(c *Contact, resumed bool) *SprintEndedEvent {
-	return &SprintEndedEvent{
-		BaseEvent: events.NewBaseEvent(TypeSprintEnded),
-		Contact:   c,
-		Resumed:   resumed,
-	}
 }

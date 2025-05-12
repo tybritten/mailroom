@@ -9,15 +9,16 @@ import (
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	models.RegisterEventHandler(events.TypeMsgCreated, handleMsgCreated)
+	runner.RegisterEventHandler(events.TypeMsgCreated, handleMsgCreated)
 }
 
 // handleMsgCreated creates the db msg for the passed in event
-func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleMsgCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *runner.Scene, e flows.Event) error {
 	event := e.(*events.MsgCreatedEvent)
 
 	// must be in a session

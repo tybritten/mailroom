@@ -9,15 +9,16 @@ import (
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	models.RegisterEventHandler(events.TypeWebhookCalled, handleWebhookCalled)
+	runner.RegisterEventHandler(events.TypeWebhookCalled, handleWebhookCalled)
 }
 
 // handleWebhookCalled is called for each webhook call in a scene
-func handleWebhookCalled(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleWebhookCalled(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *runner.Scene, e flows.Event) error {
 	event := e.(*events.WebhookCalledEvent)
 
 	slog.Debug("webhook called", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "url", event.URL, "status", event.Status, "elapsed_ms", event.ElapsedMS)

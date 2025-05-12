@@ -6,18 +6,19 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
 )
 
 // UpdateContactLanguage is our hook for contact language changes
-var UpdateContactLanguage models.SceneCommitHook = &updateContactLanguage{}
+var UpdateContactLanguage runner.SceneCommitHook = &updateContactLanguage{}
 
 type updateContactLanguage struct{}
 
 func (h *updateContactLanguage) Order() int { return 1 }
 
-func (h *updateContactLanguage) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *updateContactLanguage) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// build up our list of pairs of contact id and language name
 	updates := make([]*languageUpdate, 0, len(scenes))
 	for s, e := range scenes {

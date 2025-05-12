@@ -9,15 +9,16 @@ import (
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	models.RegisterEventHandler(events.TypeIVRCreated, handleIVRCreated)
+	runner.RegisterEventHandler(events.TypeIVRCreated, handleIVRCreated)
 }
 
 // handleIVRCreated creates the db msg for the passed in event
-func handleIVRCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleIVRCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *runner.Scene, e flows.Event) error {
 	event := e.(*events.IVRCreatedEvent)
 
 	slog.Debug("ivr created", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "text", event.Msg.Text())

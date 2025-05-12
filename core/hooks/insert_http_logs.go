@@ -6,17 +6,18 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 // InsertHTTPLogs is our hook for inserting classifier logs
-var InsertHTTPLogs models.SceneCommitHook = &insertHTTPLogs{}
+var InsertHTTPLogs runner.SceneCommitHook = &insertHTTPLogs{}
 
 type insertHTTPLogs struct{}
 
 func (h *insertHTTPLogs) Order() int { return 1 }
 
-func (h *insertHTTPLogs) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *insertHTTPLogs) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// gather all our logs
 	logs := make([]*models.HTTPLog, 0, len(scenes))
 	for _, ls := range scenes {

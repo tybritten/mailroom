@@ -7,16 +7,17 @@ import (
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/mailroom/core/hooks"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 	"github.com/nyaruka/null/v3"
 )
 
 func init() {
-	models.RegisterEventHandler(models.TypeSprintEnded, handleSprintEnded)
+	runner.RegisterEventHandler(runner.TypeSprintEnded, handleSprintEnded)
 }
 
-func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
-	event := e.(*models.SprintEndedEvent)
+func handleSprintEnded(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *runner.Scene, e flows.Event) error {
+	event := e.(*runner.SprintEndedEvent)
 
 	slog.Debug("sprint ended", "contact", scene.ContactUUID(), "session", scene.SessionUUID())
 

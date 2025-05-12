@@ -8,15 +8,16 @@ import (
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/hooks"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 func init() {
-	models.RegisterEventHandler(events.TypeMsgReceived, handleMsgReceived)
+	runner.RegisterEventHandler(events.TypeMsgReceived, handleMsgReceived)
 }
 
 // handleMsgReceived takes care of update last seen on and any campaigns based on that
-func handleMsgReceived(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *models.Scene, e flows.Event) error {
+func handleMsgReceived(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scene *runner.Scene, e flows.Event) error {
 	event := e.(*events.MsgReceivedEvent)
 
 	slog.Debug("msg received", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "text", event.Msg.Text(), "urn", event.Msg.URN())

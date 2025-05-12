@@ -11,6 +11,7 @@ import (
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/modifiers"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
@@ -56,7 +57,7 @@ func ImportBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 	}
 
 	// and apply in bulk
-	_, err := models.ApplyModifiers(ctx, rt, oa, userID, modifiersByContact)
+	_, err := runner.ApplyModifiers(ctx, rt, oa, userID, modifiersByContact)
 	if err != nil {
 		return fmt.Errorf("error applying modifiers: %w", err)
 	}

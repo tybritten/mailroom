@@ -7,17 +7,18 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/gocommon/urns"
 	"github.com/nyaruka/mailroom/core/models"
+	"github.com/nyaruka/mailroom/core/runner"
 	"github.com/nyaruka/mailroom/runtime"
 )
 
 // InsertMessages is our hook for comitting scene messages
-var InsertMessages models.SceneCommitHook = &insertMessages{}
+var InsertMessages runner.SceneCommitHook = &insertMessages{}
 
 type insertMessages struct{}
 
 func (h *insertMessages) Order() int { return 1 }
 
-func (h *insertMessages) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*models.Scene][]any) error {
+func (h *insertMessages) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	msgs := make([]*models.Msg, 0, len(scenes))
 	for scene, s := range scenes {
 		for _, m := range s {

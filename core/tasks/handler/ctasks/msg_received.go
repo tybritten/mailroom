@@ -234,7 +234,7 @@ func (t *MsgReceivedTask) handleAsInbox(ctx context.Context, rt *runtime.Runtime
 	contact.SetLastSeenOn(msgEvent.CreatedOn())
 	contactEvents := map[*flows.Contact][]flows.Event{contact: {msgEvent}}
 
-	err := models.HandleAndCommitEvents(ctx, rt, oa, models.NilUserID, contactEvents)
+	err := runner.HandleAndCommitEvents(ctx, rt, oa, models.NilUserID, contactEvents)
 	if err != nil {
 		return fmt.Errorf("error handling inbox message events: %w", err)
 	}
