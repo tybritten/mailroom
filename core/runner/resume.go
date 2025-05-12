@@ -12,7 +12,7 @@ import (
 )
 
 // ResumeFlow resumes the passed in session using the passed in session
-func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, session *models.Session, contact *models.Contact, resume flows.Resume, call *models.Call, incomingMsg *models.MsgInRef, hook models.SessionCommitHook) (*models.Session, error) {
+func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, session *models.Session, contact *models.Contact, resume flows.Resume, sceneInit func(*Scene), hook models.SessionCommitHook) (*models.Session, error) {
 	start := time.Now()
 	sa := oa.SessionAssets()
 
@@ -64,7 +64,7 @@ func ResumeFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, 
 	}
 
 	eventsToHandle = append(eventsToHandle, newSprintEndedEvent(contact, true))
-	scene := NewSceneForSession(session, fs, call, incomingMsg)
+	scene := NewSceneForSession(session, fs, sceneInit)
 
 	if err := scene.AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
 		return nil, fmt.Errorf("error handling events for session %s: %w", session.UUID(), err)

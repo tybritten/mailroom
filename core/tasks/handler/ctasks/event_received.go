@@ -185,7 +185,9 @@ func (t *EventReceivedTask) handle(ctx context.Context, rt *runtime.Runtime, oa 
 		trig = tb.Channel(channel.Reference(), triggers.ChannelEventType(t.EventType)).WithParams(params).Build()
 	}
 
-	sessions, err := runner.StartFlow(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{trig}, nil, flow.FlowType().Interrupts(), models.NilStartID, call, nil)
+	sceneInit := func(s *runner.Scene) { s.Call = call }
+
+	sessions, err := runner.StartFlow(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{trig}, flow.FlowType().Interrupts(), models.NilStartID, sceneInit, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error starting flow for contact: %w", err)
 	}

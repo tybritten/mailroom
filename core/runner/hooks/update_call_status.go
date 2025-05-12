@@ -22,7 +22,7 @@ func (h *updateCallStatus) Execute(ctx context.Context, rt *runtime.Runtime, tx 
 	for scene, es := range scenes {
 		status := es[len(es)-1].(models.CallStatus)
 
-		if err := scene.Call().UpdateStatus(ctx, tx, status, 0, time.Now()); err != nil {
+		if err := scene.Call.UpdateStatus(ctx, tx, status, 0, time.Now()); err != nil {
 			return fmt.Errorf("error updating call status: %w", err)
 		}
 	}
