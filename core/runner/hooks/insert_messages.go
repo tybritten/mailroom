@@ -18,7 +18,7 @@ type insertMessages struct{}
 
 func (h *insertMessages) Order() int { return 1 }
 
-func (h *insertMessages) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *insertMessages) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	msgs := make([]*models.Msg, 0, len(scenes))
 	for scene, s := range scenes {
 		for _, m := range s {

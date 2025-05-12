@@ -20,7 +20,7 @@ type updateCampaignEvents struct{}
 
 func (h *updateCampaignEvents) Order() int { return 500 }
 
-func (h *updateCampaignEvents) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *updateCampaignEvents) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// the contact fires to be deleted and inserted
 	deletes := make([]*models.FireDelete, 0, 5)
 	inserts := make([]*models.ContactFire, 0, 5)

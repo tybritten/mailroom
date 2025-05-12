@@ -263,7 +263,7 @@ func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 			eventsToHandle = append(eventsToHandle, sprints[i].Events()...)
 		}
 
-		eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contacts[i], false))
+		eventsToHandle = append(eventsToHandle, newSprintEndedEvent(contacts[i], false))
 
 		if err := scenes[i].AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
 			tx.Rollback()
@@ -272,7 +272,7 @@ func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 	}
 
 	// gather all our pre commit events, group them by hook
-	if err := ApplyPreCommitHooks(ctx, rt, tx, oa, scenes); err != nil {
+	if err := ExecutePreCommitHooks(ctx, rt, tx, oa, scenes); err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("error applying session pre commit hooks: %w", err)
 	}
@@ -321,7 +321,7 @@ func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 				eventsToHandle = append(eventsToHandle, sprint.Events()...)
 			}
 
-			eventsToHandle = append(eventsToHandle, NewSprintEndedEvent(contact, false))
+			eventsToHandle = append(eventsToHandle, newSprintEndedEvent(contact, false))
 
 			scene := NewSceneForSession(dbSession[0], session, call, incomingMsgID)
 
@@ -330,7 +330,7 @@ func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 			}
 
 			// gather all our pre commit events, group them by hook
-			if err := ApplyPreCommitHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
+			if err := ExecutePreCommitHooks(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
 				return nil, fmt.Errorf("error applying session pre commit hooks: %w", err)
 			}
 
@@ -346,7 +346,7 @@ func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 		slog.Debug("sessions committed", "count", len(sessions))
 	}
 
-	if err := ApplyPostCommitHooks(ctx, rt, oa, scenes); err != nil {
+	if err := ExecutePostCommitHooks(ctx, rt, oa, scenes); err != nil {
 		return nil, fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 

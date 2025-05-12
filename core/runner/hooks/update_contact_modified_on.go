@@ -17,7 +17,7 @@ type updateContactModifiedOn struct{}
 
 func (h *updateContactModifiedOn) Order() int { return 1000 } // run after all other hooks
 
-func (h *updateContactModifiedOn) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *updateContactModifiedOn) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// our lists of contact ids
 	contactIDs := make([]models.ContactID, 0, len(scenes))
 

@@ -17,7 +17,7 @@ type insertHTTPLogs struct{}
 
 func (h *insertHTTPLogs) Order() int { return 1 }
 
-func (h *insertHTTPLogs) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *insertHTTPLogs) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// gather all our logs
 	logs := make([]*models.HTTPLog, 0, len(scenes))
 	for _, ls := range scenes {

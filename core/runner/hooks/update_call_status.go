@@ -18,7 +18,7 @@ type updateCallStatus struct{}
 
 func (h *updateCallStatus) Order() int { return 1 }
 
-func (h *updateCallStatus) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *updateCallStatus) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	for scene, es := range scenes {
 		status := es[len(es)-1].(models.CallStatus)
 

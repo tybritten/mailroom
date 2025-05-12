@@ -19,7 +19,7 @@ type updateContactURNs struct{}
 
 func (h *updateContactURNs) Order() int { return 1 }
 
-func (h *updateContactURNs) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *updateContactURNs) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	var flowUUID assets.FlowUUID
 
 	// gather all our urn changes, we only care about the last change for each scene

@@ -17,7 +17,7 @@ type updateContactSession struct{}
 
 func (h *updateContactSession) Order() int { return 1 }
 
-func (h *updateContactSession) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *updateContactSession) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	updates := make([]CurrentSessionUpdate, 0, len(scenes))
 	for _, evts := range scenes {
 		// there is only ever one of these events per scene

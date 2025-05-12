@@ -21,7 +21,7 @@ type createFlowStarts struct{}
 
 func (h *createFlowStarts) Order() int { return 1 }
 
-func (h *createFlowStarts) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *createFlowStarts) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	rc := rt.RP.Get()
 	defer rc.Close()
 

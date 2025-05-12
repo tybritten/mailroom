@@ -17,7 +17,7 @@ type unsubscribeResthook struct{}
 
 func (h *unsubscribeResthook) Order() int { return 1 }
 
-func (h *unsubscribeResthook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene map[*runner.Scene][]any) error {
+func (h *unsubscribeResthook) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scene map[*runner.Scene][]any) error {
 	// gather all our unsubscribes
 	unsubs := make([]*models.ResthookUnsubscribe, 0, len(scene))
 	for _, us := range scene {

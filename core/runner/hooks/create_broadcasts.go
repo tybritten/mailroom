@@ -19,7 +19,7 @@ type createBroadcasts struct{}
 
 func (h *createBroadcasts) Order() int { return 1 }
 
-func (h *createBroadcasts) Apply(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *createBroadcasts) Execute(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	rc := rt.RP.Get()
 	defer rc.Close()
 

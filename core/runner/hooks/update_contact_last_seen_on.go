@@ -18,7 +18,7 @@ type updateContactLastSeenOn struct{}
 
 func (h *updateContactLastSeenOn) Order() int { return 1 }
 
-func (h *updateContactLastSeenOn) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *updateContactLastSeenOn) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	for scene, evts := range scenes {
 		lastEvent := evts[len(evts)-1].(flows.Event)
 		lastSeenOn := lastEvent.CreatedOn()

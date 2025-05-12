@@ -1,18 +1,30 @@
 package runner
 
 import (
-	"cmp"
 	"context"
 	"fmt"
-	"maps"
-	"slices"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
 )
+
+// EventHandler defines a call for handling events that occur in a flow
+type EventHandler func(context.Context, *runtime.Runtime, *models.OrgAssets, *Scene, flows.Event) error
+
+// our registry of event type to internal handlers
+var eventHandlers = make(map[string]EventHandler)
+
+// RegisterEventHandler registers the passed in handler as being interested in the passed in type
+func RegisterEventHandler(eventType string, handler EventHandler) {
+	// it's a bug if we try to register more than one handler for a type
+	_, found := eventHandlers[eventType]
+	if found {
+		panic(fmt.Errorf("duplicate handler being registered for type: %s", eventType))
+	}
+	eventHandlers[eventType] = handler
+}
 
 // TypeSprintEnded is a pseudo event that lets add hooks for changes to a contacts current flow or flow history
 const TypeSprintEnded string = "sprint_ended"
@@ -24,8 +36,8 @@ type SprintEndedEvent struct {
 	Resumed bool            // whether this was a resume
 }
 
-// NewSprintEndedEvent creates a new sprint ended event
-func NewSprintEndedEvent(c *models.Contact, resumed bool) *SprintEndedEvent {
+// creates a new sprint ended event
+func newSprintEndedEvent(c *models.Contact, resumed bool) *SprintEndedEvent {
 	return &SprintEndedEvent{
 		BaseEvent: events.NewBaseEvent(TypeSprintEnded),
 		Contact:   c,
@@ -119,96 +131,8 @@ func (s *Scene) AddEvents(ctx context.Context, rt *runtime.Runtime, oa *models.O
 	return nil
 }
 
-// EventHandler defines a call for handling events that occur in a flow
-type EventHandler func(context.Context, *runtime.Runtime, *models.OrgAssets, *Scene, flows.Event) error
-
-// our registry of event type to internal handlers
-var eventHandlers = make(map[string]EventHandler)
-
-// RegisterEventHandler registers the passed in handler as being interested in the passed in type
-func RegisterEventHandler(eventType string, handler EventHandler) {
-	// it's a bug if we try to register more than one handler for a type
-	_, found := eventHandlers[eventType]
-	if found {
-		panic(fmt.Errorf("duplicate handler being registered for type: %s", eventType))
-	}
-	eventHandlers[eventType] = handler
-}
-
-// PreCommitHook is a hook that turns the output from event handlers into database changes applied in a transaction.
-type PreCommitHook interface {
-	Order() int
-	Apply(context.Context, *runtime.Runtime, *sqlx.Tx, *models.OrgAssets, map[*Scene][]any) error
-}
-
-// PostCommitHook is a hook that runs after the transaction has been committed.
-type PostCommitHook interface {
-	Order() int
-	Apply(context.Context, *runtime.Runtime, *models.OrgAssets, map[*Scene][]any) error
-}
-
-// ApplyPreCommitHooks applies through all the pre commit hooks for the given scenes
-func ApplyPreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes []*Scene) error {
-	// gather all our hook events together across our sessions
-	byHook := make(map[PreCommitHook]map[*Scene][]any)
-	for _, s := range scenes {
-		for hook, args := range s.preCommits {
-			byScene, found := byHook[hook]
-			if !found {
-				byScene = make(map[*Scene][]any, len(scenes))
-				byHook[hook] = byScene
-			}
-			byScene[s] = args
-		}
-	}
-
-	// get hooks by their declared order
-	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 PreCommitHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
-
-	// and apply them in that order
-	for _, hook := range hookTypes {
-		if err := hook.Apply(ctx, rt, tx, oa, byHook[hook]); err != nil {
-			return fmt.Errorf("error applying scene pre commit hook: %T: %w", hook, err)
-		}
-	}
-
-	return nil
-}
-
-// ApplyPostCommitHooks applies through all the post commit hooks for the given scenes
-func ApplyPostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes []*Scene) error {
-	if len(scenes) == 0 {
-		return nil
-	}
-
-	// gather all our hook events together across our sessions
-	byHook := make(map[PostCommitHook]map[*Scene][]any)
-	for _, s := range scenes {
-		for hook, args := range s.postCommits {
-			byScene, found := byHook[hook]
-			if !found {
-				byScene = make(map[*Scene][]any, len(scenes))
-				byHook[hook] = byScene
-			}
-			byScene[s] = args
-		}
-	}
-
-	// get hooks by their declared order
-	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 PostCommitHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
-
-	// and apply them in that order
-	for _, hook := range hookTypes {
-		if err := hook.Apply(ctx, rt, oa, byHook[hook]); err != nil {
-			return fmt.Errorf("error applying scene post commit hook: %T: %w", hook, err)
-		}
-	}
-
-	return nil
-}
-
-// HandleAndCommitEvents takes a set of contacts and events, handles the events and applies any hooks, and commits everything
-func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, userID models.UserID, contactEvents map[*flows.Contact][]flows.Event) error {
+// ApplyEvents takes a set of contacts and events, handles the events and applies any hooks, and commits everything
+func ApplyEvents(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, userID models.UserID, contactEvents map[*flows.Contact][]flows.Event) error {
 	// create scenes for each contact
 	scenes := make([]*Scene, 0, len(contactEvents))
 	for contact := range contactEvents {
@@ -230,7 +154,7 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *models.
 	}
 
 	// gather all our pre commit events, group them by hook and apply them
-	if err := ApplyPreCommitHooks(ctx, rt, tx, oa, scenes); err != nil {
+	if err := ExecutePreCommitHooks(ctx, rt, tx, oa, scenes); err != nil {
 		return fmt.Errorf("error applying pre commit hooks: %w", err)
 	}
 
@@ -240,7 +164,7 @@ func HandleAndCommitEvents(ctx context.Context, rt *runtime.Runtime, oa *models.
 	}
 
 	// now take care of any post-commit hooks
-	if err := ApplyPostCommitHooks(ctx, rt, oa, scenes); err != nil {
+	if err := ExecutePostCommitHooks(ctx, rt, oa, scenes); err != nil {
 		return fmt.Errorf("error processing post commit hooks: %w", err)
 	}
 

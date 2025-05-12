@@ -23,7 +23,7 @@ type monitorWebhooks struct{}
 
 func (h *monitorWebhooks) Order() int { return 1 }
 
-func (h *monitorWebhooks) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *monitorWebhooks) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// organize events by nodes
 	eventsByNode := make(map[flows.NodeUUID][]*events.WebhookCalledEvent)
 	for _, es := range scenes {

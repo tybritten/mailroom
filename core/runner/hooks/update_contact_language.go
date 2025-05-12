@@ -18,7 +18,7 @@ type updateContactLanguage struct{}
 
 func (h *updateContactLanguage) Order() int { return 1 }
 
-func (h *updateContactLanguage) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *updateContactLanguage) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// build up our list of pairs of contact id and language name
 	updates := make([]*languageUpdate, 0, len(scenes))
 	for s, e := range scenes {

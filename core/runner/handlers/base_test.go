@@ -238,13 +238,13 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 		tx, err := rt.DB.BeginTxx(ctx, nil)
 		assert.NoError(t, err)
 
-		err = runner.ApplyPreCommitHooks(ctx, rt, tx, oa, scenes)
+		err = runner.ExecutePreCommitHooks(ctx, rt, tx, oa, scenes)
 		assert.NoError(t, err)
 
 		err = tx.Commit()
 		assert.NoError(t, err)
 
-		err = runner.ApplyPostCommitHooks(ctx, rt, oa, scenes)
+		err = runner.ExecutePostCommitHooks(ctx, rt, oa, scenes)
 		assert.NoError(t, err)
 
 		// now check our assertions
@@ -281,7 +281,7 @@ func RunFlowAndApplyEvents(t *testing.T, ctx context.Context, rt *runtime.Runtim
 	tx, err = rt.DB.BeginTxx(ctx, nil)
 	require.NoError(t, err)
 
-	err = runner.ApplyPreCommitHooks(ctx, rt, tx, oa, []*runner.Scene{scene})
+	err = runner.ExecutePreCommitHooks(ctx, rt, tx, oa, []*runner.Scene{scene})
 	require.NoError(t, err)
 
 	err = tx.Commit()

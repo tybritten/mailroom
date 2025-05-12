@@ -16,7 +16,7 @@ type sendMessages struct{}
 
 func (h *sendMessages) Order() int { return 1 }
 
-func (h *sendMessages) Apply(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *sendMessages) Execute(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	msgs := make([]*models.Msg, 0, 1)
 
 	// for each scene gather all our messages

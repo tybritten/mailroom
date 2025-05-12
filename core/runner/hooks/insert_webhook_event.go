@@ -17,7 +17,7 @@ type insertWebhookEventHook struct{}
 
 func (h *insertWebhookEventHook) Order() int { return 1 }
 
-func (h *insertWebhookEventHook) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *insertWebhookEventHook) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	events := make([]*models.WebhookEvent, 0, len(scenes))
 	for _, rs := range scenes {
 		for _, r := range rs {

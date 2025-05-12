@@ -18,7 +18,7 @@ type updateContactStatus struct{}
 
 func (h *updateContactStatus) Order() int { return 1 }
 
-func (h *updateContactStatus) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *updateContactStatus) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	statusChanges := make([]*models.ContactStatusChange, 0, len(scenes))
 	for scene, es := range scenes {
 		event := es[len(es)-1].(*events.ContactStatusChangedEvent)

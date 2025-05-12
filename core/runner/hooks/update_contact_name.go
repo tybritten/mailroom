@@ -19,7 +19,7 @@ type updateContactName struct{}
 
 func (h *updateContactName) Order() int { return 1 }
 
-func (h *updateContactName) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *updateContactName) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// build up our list of pairs of contact id and contact name
 	updates := make([]*nameUpdate, 0, len(scenes))
 	for s, e := range scenes {

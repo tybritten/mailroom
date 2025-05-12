@@ -22,7 +22,7 @@ type insertTickets struct{}
 
 func (h *insertTickets) Order() int { return 1 }
 
-func (h *insertTickets) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *insertTickets) Execute(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	// gather all our tickets and notes
 	tickets := make([]*models.Ticket, 0, len(scenes))
 	notes := make(map[*models.Ticket]string, len(scenes))
