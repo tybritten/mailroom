@@ -159,17 +159,18 @@ func NewCourierMsg(oa *models.OrgAssets, m *models.Msg, u *models.ContactURN, ch
 		}
 	}
 
+	if m.ReplyTo != nil {
+		msg.ResponseToExternalID = m.ReplyTo.ExtID
+	}
 	if m.Contact != nil && m.Contact.LastSeenOn() != nil {
 		msg.ContactLastSeenOn = m.Contact.LastSeenOn()
 	}
-
 	if m.Session != nil {
 		msg.Session = &Session{
 			UUID:       m.Session.UUID(),
 			Status:     m.Session.Status(),
 			SprintUUID: m.Session.LastSprintUUID(),
 		}
-		msg.ResponseToExternalID = string(m.Session.IncomingMsgExternalID())
 
 		if m.LastInSprint && m.Session.Timeout() != nil {
 			// This field is set on the last outgoing message in a session's sprint. In the case

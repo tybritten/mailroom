@@ -359,7 +359,7 @@ func StartIVRFlow(
 			Build()
 	}
 
-	sessions, err := runner.StartFlow(ctx, rt, oa, flow, []*models.Contact{c}, []flows.Trigger{trigger}, nil, true, models.NilStartID, call, models.NilMsgID)
+	sessions, err := runner.StartFlow(ctx, rt, oa, flow, []*models.Contact{c}, []flows.Trigger{trigger}, nil, true, models.NilStartID, call, nil)
 	if err != nil {
 		return fmt.Errorf("error starting flow: %w", err)
 	}
@@ -444,7 +444,7 @@ func ResumeIVRFlow(
 		return HandleAsFailure(ctx, rt.DB, svc, call, w, fmt.Errorf("error finding input for request: %w", err))
 	}
 
-	var msg *models.Msg
+	var msg *models.MsgInRef
 	var resume flows.Resume
 	var svcErr error
 	switch res := ivrResume.(type) {
@@ -468,12 +468,7 @@ func ResumeIVRFlow(
 		return svc.WriteErrorResponse(w, fmt.Errorf("no resume found, ending call"))
 	}
 
-	var msgID models.MsgID
-	if msg != nil {
-		msgID = msg.ID()
-	}
-
-	session, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, call, msgID, nil)
+	session, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, call, msg, nil)
 	if err != nil {
 		return fmt.Errorf("error resuming ivr flow: %w", err)
 	}
@@ -503,7 +498,7 @@ func buildDialResume(oa *models.OrgAssets, contact *flows.Contact, resume DialRe
 func buildMsgResume(
 	ctx context.Context, rt *runtime.Runtime,
 	svc Service, channel *models.Channel, contact *flows.Contact, urn urns.URN,
-	call *models.Call, oa *models.OrgAssets, resume InputResume) (*models.Msg, flows.Resume, error, error) {
+	call *models.Call, oa *models.OrgAssets, resume InputResume) (*models.MsgInRef, flows.Resume, error, error) {
 	// our msg UUID
 	msgUUID := flows.NewMsgUUID()
 
@@ -556,7 +551,7 @@ func buildMsgResume(
 	}
 
 	// create our msg resume event
-	return msg, resumes.NewMsg(oa.Env(), contact, msgIn), nil, nil
+	return &models.MsgInRef{ID: msg.ID()}, resumes.NewMsg(oa.Env(), contact, msgIn), nil, nil
 }
 
 // HandleIVRStatus is called on status callbacks for an IVR call. We let the service decide whether the call has

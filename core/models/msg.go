@@ -119,6 +119,11 @@ func (t *Templating) Value() (driver.Value, error) {
 	return json.Marshal(t)
 }
 
+type MsgInRef struct {
+	ID    MsgID
+	ExtID string
+}
+
 // Msg is our type for mailroom messages
 type Msg struct {
 	m struct {
@@ -162,6 +167,7 @@ type Msg struct {
 	}
 
 	// transient fields set during message creation that provide extra data when queuing to courier
+	ReplyTo      *MsgInRef
 	Contact      *flows.Contact
 	Session      *Session
 	LastInSprint bool
@@ -312,13 +318,13 @@ func NewOutgoingIVR(cfg *runtime.Config, orgID OrgID, call *Call, out *flows.Msg
 }
 
 // NewOutgoingOptInMsg creates an outgoing optin message
-func NewOutgoingOptInMsg(rt *runtime.Runtime, orgID OrgID, session *Session, flow *Flow, optIn *OptIn, channel *Channel, urn urns.URN, replyingTo MsgID, createdOn time.Time) *Msg {
+func NewOutgoingOptInMsg(rt *runtime.Runtime, orgID OrgID, session *Session, flow *Flow, optIn *OptIn, channel *Channel, urn urns.URN, replyTo *MsgInRef, createdOn time.Time) *Msg {
 	msg := &Msg{}
 	m := &msg.m
 	m.UUID = flows.NewMsgUUID()
 	m.OrgID = orgID
 	m.ContactID = session.ContactID()
-	m.HighPriority = replyingTo != NilMsgID
+	m.HighPriority = replyTo != nil
 	m.Direction = DirectionOut
 	m.Status = MsgStatusQueued
 	m.Visibility = VisibilityVisible
@@ -337,32 +343,33 @@ func NewOutgoingOptInMsg(rt *runtime.Runtime, orgID OrgID, session *Session, flo
 	}
 
 	// set transient fields which we'll use when queuing to courier
+	msg.ReplyTo = replyTo
 	msg.Session = session
 
 	return msg
 }
 
 // NewOutgoingFlowMsg creates an outgoing message for the passed in flow message
-func NewOutgoingFlowMsg(rt *runtime.Runtime, org *Org, channel *Channel, session *Session, flow *Flow, out *flows.MsgOut, replyingTo MsgID, createdOn time.Time) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, session.Contact(), out, session, flow, NilBroadcastID, NilTicketID, NilOptInID, NilUserID, replyingTo, createdOn)
+func NewOutgoingFlowMsg(rt *runtime.Runtime, org *Org, channel *Channel, session *Session, flow *Flow, out *flows.MsgOut, replyTo *MsgInRef, createdOn time.Time) (*Msg, error) {
+	return newOutgoingTextMsg(rt, org, channel, session.Contact(), out, session, flow, NilBroadcastID, NilTicketID, NilOptInID, NilUserID, replyTo, createdOn)
 }
 
 // NewOutgoingBroadcastMsg creates an outgoing message which is part of a broadcast
 func NewOutgoingBroadcastMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, b *Broadcast) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, b.ID, NilTicketID, b.OptInID, b.CreatedByID, NilMsgID, dates.Now())
+	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, b.ID, NilTicketID, b.OptInID, b.CreatedByID, nil, dates.Now())
 }
 
 // NewOutgoingTicketMsg creates an outgoing message from a ticket
 func NewOutgoingTicketMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, ticketID TicketID, userID UserID) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, NilBroadcastID, ticketID, NilOptInID, userID, NilMsgID, dates.Now())
+	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, NilBroadcastID, ticketID, NilOptInID, userID, nil, dates.Now())
 }
 
 // NewOutgoingChatMsg creates an outgoing message from chat
 func NewOutgoingChatMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, userID UserID) (*Msg, error) {
-	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, NilBroadcastID, NilTicketID, NilOptInID, userID, NilMsgID, dates.Now())
+	return newOutgoingTextMsg(rt, org, channel, contact, out, nil, nil, NilBroadcastID, NilTicketID, NilOptInID, userID, nil, dates.Now())
 }
 
-func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, session *Session, flow *Flow, broadcastID BroadcastID, ticketID TicketID, optInID OptInID, userID UserID, replyingTo MsgID, createdOn time.Time) (*Msg, error) {
+func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact *flows.Contact, out *flows.MsgOut, session *Session, flow *Flow, broadcastID BroadcastID, ticketID TicketID, optInID OptInID, userID UserID, replyTo *MsgInRef, createdOn time.Time) (*Msg, error) {
 	msg := &Msg{}
 	m := &msg.m
 	m.UUID = out.UUID()
@@ -425,7 +432,7 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 	}
 
 	// if we're a chat/ticket message, or we're responding to an incoming message in a flow, send as high priority
-	if (broadcastID == NilBroadcastID && session == nil) || (session != nil && replyingTo != NilMsgID) {
+	if (broadcastID == NilBroadcastID && session == nil) || (session != nil && replyTo != nil) {
 		m.HighPriority = true
 	}
 
@@ -439,6 +446,7 @@ func newOutgoingTextMsg(rt *runtime.Runtime, org *Org, channel *Channel, contact
 	}
 
 	// set transient fields which we'll use when queuing to courier
+	msg.ReplyTo = replyTo
 	msg.Contact = contact
 	msg.Session = session
 

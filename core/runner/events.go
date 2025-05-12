@@ -47,25 +47,25 @@ func newSprintEndedEvent(c *models.Contact, resumed bool) *SprintEndedEvent {
 
 // Scene represents the context that events are occurring in
 type Scene struct {
-	contact       *flows.Contact
-	session       *models.Session
-	fs            flows.Session
-	call          *models.Call
-	userID        models.UserID
-	incomingMsgID models.MsgID
+	contact     *flows.Contact
+	session     *models.Session
+	fs          flows.Session
+	call        *models.Call
+	userID      models.UserID
+	incomingMsg *models.MsgInRef
 
 	preCommits  map[PreCommitHook][]any
 	postCommits map[PostCommitHook][]any
 }
 
 // NewSceneForSession creates a new scene for the passed in session
-func NewSceneForSession(session *models.Session, fs flows.Session, call *models.Call, incomingMsgID models.MsgID) *Scene {
+func NewSceneForSession(session *models.Session, fs flows.Session, call *models.Call, incomingMsg *models.MsgInRef) *Scene {
 	return &Scene{
-		contact:       session.Contact(),
-		session:       session,
-		fs:            fs,
-		call:          call,
-		incomingMsgID: incomingMsgID,
+		contact:     session.Contact(),
+		session:     session,
+		fs:          fs,
+		call:        call,
+		incomingMsg: incomingMsg,
 
 		preCommits:  make(map[PreCommitHook][]any),
 		postCommits: make(map[PostCommitHook][]any),
@@ -97,7 +97,7 @@ func (s *Scene) ContactUUID() flows.ContactUUID { return s.contact.UUID() }
 func (s *Scene) Session() *models.Session       { return s.session }
 func (s *Scene) Call() *models.Call             { return s.call }
 func (s *Scene) UserID() models.UserID          { return s.userID }
-func (s *Scene) IncomingMsgID() models.MsgID    { return s.incomingMsgID }
+func (s *Scene) IncomingMsg() *models.MsgInRef  { return s.incomingMsg }
 
 // LocateEvent finds the flow and node UUID for an event belonging to this session
 func (s *Scene) LocateEvent(e flows.Event) (*models.Flow, flows.NodeUUID) {

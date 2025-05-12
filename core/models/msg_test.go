@@ -44,7 +44,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 		Topic        flows.MsgTopic
 		Unsendable   flows.UnsendableReason
 		Flow         *testdata.Flow
-		ResponseTo   models.MsgID
+		ResponseTo   *models.MsgInRef
 		SuspendedOrg bool
 
 		ExpectedStatus       models.MsgStatus
@@ -60,7 +60,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 			URNID:                models.URNID(0),
 			Content:              &flows.MsgContent{Text: "hello"},
 			Flow:                 testdata.Favorites,
-			ResponseTo:           models.MsgID(123425),
+			ResponseTo:           &models.MsgInRef{ID: 123425},
 			ExpectedStatus:       models.MsgStatusQueued,
 			ExpectedFailedReason: models.NilMsgFailedReason,
 			ExpectedMetadata:     `{}`,
@@ -236,7 +236,7 @@ func TestNewOutgoingFlowMsg(t *testing.T) {
 	newOutgoing := func(text string) *models.Msg {
 		content := &flows.MsgContent{Text: text}
 		flowMsg := flows.NewMsgOut(urns.URN(fmt.Sprintf("tel:+250700000001?id=%d", testdata.Cathy.URNID)), assets.NewChannelReference(testdata.TwilioChannel.UUID, "Twilio"), content, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg, models.NilMsgID, dates.Now())
+		msg, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, flowMsg, nil, dates.Now())
 		require.NoError(t, err)
 		return msg
 	}
@@ -615,12 +615,12 @@ func TestMsgTemplating(t *testing.T) {
 
 	// create a message with templating
 	out1 := flows.NewMsgOut(testdata.Cathy.URN, chRef, &flows.MsgContent{Text: "Hello"}, templating1, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out1, models.NilMsgID, dates.Now())
+	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out1, nil, dates.Now())
 	require.NoError(t, err)
 
 	// create a message without templating
 	out2 := flows.NewMsgOut(testdata.Cathy.URN, chRef, &flows.MsgContent{Text: "Hello"}, nil, flows.NilMsgTopic, i18n.NilLocale, flows.NilUnsendableReason)
-	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out2, models.NilMsgID, dates.Now())
+	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), channel, session, flow, out2, nil, dates.Now())
 	require.NoError(t, err)
 
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg1, msg2})
