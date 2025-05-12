@@ -4,20 +4,14 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"log/slog"
 	"maps"
 	"slices"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/goflow/flows"
 	"github.com/nyaruka/goflow/flows/events"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/runtime"
-)
-
-const (
-	postCommitTimeout = time.Minute
 )
 
 // TypeSprintEnded is a pseudo event that lets add hooks for changes to a contacts current flow or flow history
@@ -48,8 +42,8 @@ type Scene struct {
 	userID        models.UserID
 	incomingMsgID models.MsgID
 
-	preCommits  map[SceneHook][]any
-	postCommits map[SceneHook][]any
+	preCommits  map[PreCommitHook][]any
+	postCommits map[PostCommitHook][]any
 }
 
 // NewSceneForSession creates a new scene for the passed in session
@@ -61,8 +55,8 @@ func NewSceneForSession(session *models.Session, fs flows.Session, call *models.
 		call:          call,
 		incomingMsgID: incomingMsgID,
 
-		preCommits:  make(map[SceneHook][]any),
-		postCommits: make(map[SceneHook][]any),
+		preCommits:  make(map[PreCommitHook][]any),
+		postCommits: make(map[PostCommitHook][]any),
 	}
 }
 
@@ -72,8 +66,8 @@ func NewSceneForContact(contact *flows.Contact, userID models.UserID) *Scene {
 		contact: contact,
 		userID:  userID,
 
-		preCommits:  make(map[SceneHook][]any),
-		postCommits: make(map[SceneHook][]any),
+		preCommits:  make(map[PreCommitHook][]any),
+		postCommits: make(map[PostCommitHook][]any),
 	}
 }
 
@@ -101,12 +95,12 @@ func (s *Scene) LocateEvent(e flows.Event) (*models.Flow, flows.NodeUUID) {
 }
 
 // AttachPreCommitHook adds an item to be handled by the given pre commit hook
-func (s *Scene) AttachPreCommitHook(hook SceneHook, item any) {
+func (s *Scene) AttachPreCommitHook(hook PreCommitHook, item any) {
 	s.preCommits[hook] = append(s.preCommits[hook], item)
 }
 
 // AttachPostCommitHook adds an item to be handled by the given post commit hook
-func (s *Scene) AttachPostCommitHook(hook SceneHook, item any) {
+func (s *Scene) AttachPostCommitHook(hook PostCommitHook, item any) {
 	s.postCommits[hook] = append(s.postCommits[hook], item)
 }
 
@@ -141,16 +135,22 @@ func RegisterEventHandler(eventType string, handler EventHandler) {
 	eventHandlers[eventType] = handler
 }
 
-// SceneHook defines a callback that will accept a certain type of events across session, either before or after committing
-type SceneHook interface {
+// PreCommitHook is a hook that turns the output from event handlers into database changes applied in a transaction.
+type PreCommitHook interface {
 	Order() int
 	Apply(context.Context, *runtime.Runtime, *sqlx.Tx, *models.OrgAssets, map[*Scene][]any) error
+}
+
+// PostCommitHook is a hook that runs after the transaction has been committed.
+type PostCommitHook interface {
+	Order() int
+	Apply(context.Context, *runtime.Runtime, *models.OrgAssets, map[*Scene][]any) error
 }
 
 // ApplyPreCommitHooks applies through all the pre commit hooks for the given scenes
 func ApplyPreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes []*Scene) error {
 	// gather all our hook events together across our sessions
-	byHook := make(map[SceneHook]map[*Scene][]any)
+	byHook := make(map[PreCommitHook]map[*Scene][]any)
 	for _, s := range scenes {
 		for hook, args := range s.preCommits {
 			byScene, found := byHook[hook]
@@ -163,7 +163,7 @@ func ApplyPreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	}
 
 	// get hooks by their declared order
-	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 SceneHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
+	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 PreCommitHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
 
 	// and apply them in that order
 	for _, hook := range hookTypes {
@@ -175,10 +175,14 @@ func ApplyPreCommitHooks(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, 
 	return nil
 }
 
-// applies through all the post commit hooks for the given scenes in the given transaction
-func applyPostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes []*Scene) error {
+// ApplyPostCommitHooks applies through all the post commit hooks for the given scenes
+func ApplyPostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes []*Scene) error {
+	if len(scenes) == 0 {
+		return nil
+	}
+
 	// gather all our hook events together across our sessions
-	byHook := make(map[SceneHook]map[*Scene][]any)
+	byHook := make(map[PostCommitHook]map[*Scene][]any)
 	for _, s := range scenes {
 		for hook, args := range s.postCommits {
 			byScene, found := byHook[hook]
@@ -191,65 +195,12 @@ func applyPostCommitHooksTx(ctx context.Context, rt *runtime.Runtime, tx *sqlx.T
 	}
 
 	// get hooks by their declared order
-	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 SceneHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
+	hookTypes := slices.SortedStableFunc(maps.Keys(byHook), func(h1, h2 PostCommitHook) int { return cmp.Compare(h1.Order(), h2.Order()) })
 
 	// and apply them in that order
 	for _, hook := range hookTypes {
-		if err := hook.Apply(ctx, rt, tx, oa, byHook[hook]); err != nil {
+		if err := hook.Apply(ctx, rt, oa, byHook[hook]); err != nil {
 			return fmt.Errorf("error applying scene post commit hook: %T: %w", hook, err)
-		}
-	}
-
-	return nil
-}
-
-// ApplyPostCommitHooks applies the post commit hooks for the given scenes
-func ApplyPostCommitHooks(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes []*Scene) error {
-	if len(scenes) == 0 {
-		return nil
-	}
-
-	txCTX, cancel := context.WithTimeout(ctx, postCommitTimeout*time.Duration(len(scenes)))
-	defer cancel()
-
-	tx, err := rt.DB.BeginTxx(txCTX, nil)
-	if err != nil {
-		return fmt.Errorf("error beginning transaction: %w", err)
-	}
-
-	err = applyPostCommitHooksTx(txCTX, rt, tx, oa, scenes)
-	if err == nil {
-		err = tx.Commit()
-	}
-
-	if err != nil {
-		tx.Rollback()
-
-		// we failed with our post commit hooks, try one at a time, logging those errors
-		for _, scene := range scenes {
-			log := slog.With("contact", scene.ContactUUID(), "session", scene.SessionUUID())
-
-			txCTX, cancel := context.WithTimeout(ctx, postCommitTimeout)
-			defer cancel()
-
-			tx, err := rt.DB.BeginTxx(txCTX, nil)
-			if err != nil {
-				tx.Rollback()
-				log.Error("error beginning transaction for retry", "error", err)
-				continue
-			}
-
-			if err := applyPostCommitHooksTx(ctx, rt, tx, oa, []*Scene{scene}); err != nil {
-				tx.Rollback()
-				log.Error("error applying post commit hook", "error", err)
-				continue
-			}
-
-			if err := tx.Commit(); err != nil {
-				tx.Rollback()
-				log.Error("error committing post commit hook", "error", err)
-				continue
-			}
 		}
 	}
 

@@ -16,7 +16,7 @@ type TicketAndNote struct {
 }
 
 // InsertTickets is our hook for inserting tickets
-var InsertTickets runner.SceneHook = &insertTickets{}
+var InsertTickets runner.PreCommitHook = &insertTickets{}
 
 type insertTickets struct{}
 

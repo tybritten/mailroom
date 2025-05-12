@@ -11,7 +11,7 @@ import (
 )
 
 // InsertHTTPLogs is our hook for inserting classifier logs
-var InsertHTTPLogs runner.SceneHook = &insertHTTPLogs{}
+var InsertHTTPLogs runner.PreCommitHook = &insertHTTPLogs{}
 
 type insertHTTPLogs struct{}
 

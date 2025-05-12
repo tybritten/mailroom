@@ -12,7 +12,7 @@ import (
 )
 
 // UpdateContactLanguage is our hook for contact language changes
-var UpdateContactLanguage runner.SceneHook = &updateContactLanguage{}
+var UpdateContactLanguage runner.PreCommitHook = &updateContactLanguage{}
 
 type updateContactLanguage struct{}
 

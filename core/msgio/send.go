@@ -21,8 +21,8 @@ type contactAndChannel struct {
 }
 
 // QueueMessages tries to queue the given messages to courier or trigger Android channel syncs
-func QueueMessages(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, msgs []*models.Msg) {
-	queued := tryToQueue(ctx, rt, db, msgs)
+func QueueMessages(ctx context.Context, rt *runtime.Runtime, msgs []*models.Msg) {
+	queued := tryToQueue(ctx, rt, msgs)
 
 	if len(queued) != len(msgs) {
 		retry := make([]*models.Msg, 0, len(msgs)-len(queued))
@@ -34,14 +34,14 @@ func QueueMessages(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, m
 
 		// any messages that failed to queue should be moved back to initializing(I) (they are queued(Q) at creation to
 		// save an update in the common case)
-		err := models.MarkMessagesForRequeuing(ctx, db, retry)
+		err := models.MarkMessagesForRequeuing(ctx, rt.DB, retry)
 		if err != nil {
 			slog.Error("error marking messages as initializing", "error", err)
 		}
 	}
 }
 
-func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, msgs []*models.Msg) []*models.Msg {
+func tryToQueue(ctx context.Context, rt *runtime.Runtime, msgs []*models.Msg) []*models.Msg {
 	// messages that have been successfully queued
 	queued := make([]*models.Msg, 0, len(msgs))
 
@@ -49,7 +49,7 @@ func tryToQueue(ctx context.Context, rt *runtime.Runtime, db models.DBorTx, msgs
 	urnIDs := getMessageURNIDs(msgs)
 	urnsByID := make(map[models.URNID]*models.ContactURN, len(urnIDs))
 	for batch := range slices.Chunk(urnIDs, 1000) {
-		urns, err := models.LoadContactURNs(ctx, db, batch)
+		urns, err := models.LoadContactURNs(ctx, rt.DB, batch)
 		if err != nil {
 			slog.Error("error getting contact URNs", "error", err)
 			return nil

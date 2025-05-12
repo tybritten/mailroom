@@ -11,7 +11,7 @@ import (
 )
 
 // AddMessageLabels is our hook for input labels being added
-var AddMessageLabels runner.SceneHook = &addMessageLabels{}
+var AddMessageLabels runner.PreCommitHook = &addMessageLabels{}
 
 type addMessageLabels struct{}
 

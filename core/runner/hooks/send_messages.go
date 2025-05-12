@@ -3,7 +3,6 @@ package hooks
 import (
 	"context"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/mailroom/core/models"
 	"github.com/nyaruka/mailroom/core/msgio"
 	"github.com/nyaruka/mailroom/core/runner"
@@ -11,13 +10,13 @@ import (
 )
 
 // SendMessages is our hook for sending scene messages
-var SendMessages runner.SceneHook = &sendMessages{}
+var SendMessages runner.PostCommitHook = &sendMessages{}
 
 type sendMessages struct{}
 
 func (h *sendMessages) Order() int { return 1 }
 
-func (h *sendMessages) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.Tx, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
+func (h *sendMessages) Apply(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, scenes map[*runner.Scene][]any) error {
 	msgs := make([]*models.Msg, 0, 1)
 
 	// for each scene gather all our messages
@@ -34,6 +33,6 @@ func (h *sendMessages) Apply(ctx context.Context, rt *runtime.Runtime, tx *sqlx.
 		msgs = append(msgs, sceneMsgs...)
 	}
 
-	msgio.QueueMessages(ctx, rt, tx, msgs)
+	msgio.QueueMessages(ctx, rt, msgs)
 	return nil
 }

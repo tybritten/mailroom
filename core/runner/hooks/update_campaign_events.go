@@ -14,7 +14,7 @@ import (
 )
 
 // UpdateCampaignEvents is our hook to update any campaign events
-var UpdateCampaignEvents runner.SceneHook = &updateCampaignEvents{}
+var UpdateCampaignEvents runner.PreCommitHook = &updateCampaignEvents{}
 
 type updateCampaignEvents struct{}
 
