@@ -23,14 +23,14 @@ func handleInputLabelsAdded(ctx context.Context, rt *runtime.Runtime, oa *models
 
 	slog.Debug("input labels added", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "labels", event.Labels)
 
-	if inputMsg := scene.IncomingMsg(); inputMsg != nil {
+	if scene.IncomingMsg != nil {
 		for _, l := range event.Labels {
 			label := oa.LabelByUUID(l.UUID)
 			if label == nil {
 				return fmt.Errorf("unable to find label with UUID: %s", l.UUID)
 			}
 
-			scene.AttachPreCommitHook(hooks.AddMessageLabels, &models.MsgLabelAdd{MsgID: inputMsg.ID, LabelID: label.ID()})
+			scene.AttachPreCommitHook(hooks.AddMessageLabels, &models.MsgLabelAdd{MsgID: scene.IncomingMsg.ID, LabelID: label.ID()})
 		}
 	}
 

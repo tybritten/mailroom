@@ -47,7 +47,6 @@ func (t *MsgReceivedTask) UseReadOnly() bool {
 }
 
 func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, mc *models.Contact) error {
-	msgRef := &models.MsgInRef{ID: t.MsgID, ExtID: t.MsgExternalID}
 	channel := oa.ChannelByID(t.ChannelID)
 
 	// fetch the attachments on the message (i.e. ask courier to fetch them)
@@ -161,6 +160,10 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 		}
 	}
 
+	sceneInit := func(scene *runner.Scene) {
+		scene.IncomingMsg = &models.MsgInRef{ID: t.MsgID, ExtID: t.MsgExternalID}
+	}
+
 	// build our hook to mark a flow message as handled
 	flowMsgHook := func(ctx context.Context, tx *sqlx.Tx, rp *redis.Pool, oa *models.OrgAssets, sessions []*models.Session) error {
 		// set our incoming message event on our session
@@ -200,7 +203,8 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 
 			// otherwise build the trigger and start the flow directly
 			trigger := tb.Build()
-			_, err = runner.StartFlow(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{trigger}, flowMsgHook, flow.FlowType().Interrupts(), models.NilStartID, nil, msgRef)
+
+			_, err = runner.StartFlow(ctx, rt, oa, flow, []*models.Contact{mc}, []flows.Trigger{trigger}, flow.FlowType().Interrupts(), models.NilStartID, sceneInit, flowMsgHook)
 			if err != nil {
 				return fmt.Errorf("error starting flow for contact: %w", err)
 			}
@@ -211,7 +215,7 @@ func (t *MsgReceivedTask) Perform(ctx context.Context, rt *runtime.Runtime, oa *
 	// if there is a session, resume it
 	if session != nil && flow != nil {
 		resume := resumes.NewMsg(oa.Env(), fc, msgIn)
-		_, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, nil, msgRef, flowMsgHook)
+		_, err = runner.ResumeFlow(ctx, rt, oa, session, mc, resume, sceneInit, flowMsgHook)
 		if err != nil {
 			return fmt.Errorf("error resuming flow for contact: %w", err)
 		}

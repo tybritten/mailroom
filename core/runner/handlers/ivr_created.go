@@ -24,17 +24,16 @@ func handleIVRCreated(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAs
 	slog.Debug("ivr created", "contact", scene.ContactUUID(), "session", scene.SessionUUID(), "text", event.Msg.Text())
 
 	// get our call
-	call := scene.Call()
-	if call == nil {
+	if scene.Call == nil {
 		return fmt.Errorf("ivr session must have a call set")
 	}
 
 	// if our call is no longer in progress, return
-	if call.Status() != models.CallStatusWired && call.Status() != models.CallStatusInProgress {
+	if scene.Call.Status() != models.CallStatusWired && scene.Call.Status() != models.CallStatusInProgress {
 		return nil
 	}
 
-	msg := models.NewOutgoingIVR(rt.Config, oa.OrgID(), call, event.Msg, event.CreatedOn())
+	msg := models.NewOutgoingIVR(rt.Config, oa.OrgID(), scene.Call, event.Msg, event.CreatedOn())
 
 	// register to have this message committed
 	scene.AttachPreCommitHook(hooks.InsertIVRMessages, msg)

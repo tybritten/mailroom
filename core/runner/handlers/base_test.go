@@ -192,12 +192,13 @@ func RunTestCases(t *testing.T, ctx context.Context, rt *runtime.Runtime, tcs []
 		}
 
 		for _, c := range []*testdata.Contact{testdata.Cathy, testdata.Bob, testdata.George, testdata.Alexandria} {
-			var msgIn *models.MsgInRef
-			if msg := msgsByContactID[c.ID]; msg != nil {
-				msgIn = &models.MsgInRef{ID: msg.ID}
+			sceneInit := func(scene *runner.Scene) {
+				if msg := msgsByContactID[c.ID]; msg != nil {
+					scene.IncomingMsg = &models.MsgInRef{ID: msg.ID}
+				}
 			}
 
-			_, err := runner.StartFlowWithLock(ctx, rt, oa, flow.(*models.Flow), []models.ContactID{c.ID}, options, models.NilStartID, msgIn)
+			_, err := runner.StartFlowWithLock(ctx, rt, oa, flow.(*models.Flow), []models.ContactID{c.ID}, options, models.NilStartID, sceneInit)
 			require.NoError(t, err)
 		}
 
@@ -272,7 +273,7 @@ func RunFlowAndApplyEvents(t *testing.T, ctx context.Context, rt *runtime.Runtim
 	err = tx.Commit()
 	require.NoError(t, err)
 
-	scene := runner.NewSceneForSession(session, fs, nil, nil)
+	scene := runner.NewSceneForSession(session, fs, nil)
 
 	err = scene.AddEvents(ctx, rt, oa, sprint.Events())
 	require.NoError(t, err)
