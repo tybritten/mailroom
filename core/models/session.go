@@ -67,8 +67,6 @@ type Session struct {
 		CallID         CallID            `db:"call_id"`
 	}
 
-	incomingExternalID null.String
-
 	// time after our last message is sent that we should timeout
 	timeout *time.Duration
 
@@ -81,18 +79,17 @@ type Session struct {
 	sprint flows.Sprint
 }
 
-func (s *Session) UUID() flows.SessionUUID            { return s.s.UUID }
-func (s *Session) ContactID() ContactID               { return s.s.ContactID }
-func (s *Session) SessionType() FlowType              { return s.s.SessionType }
-func (s *Session) Status() SessionStatus              { return s.s.Status }
-func (s *Session) LastSprintUUID() flows.SprintUUID   { return flows.SprintUUID(s.s.LastSprintUUID) }
-func (s *Session) Output() string                     { return string(s.s.Output) }
-func (s *Session) OutputURL() string                  { return string(s.s.OutputURL) }
-func (s *Session) CreatedOn() time.Time               { return s.s.CreatedOn }
-func (s *Session) EndedOn() *time.Time                { return s.s.EndedOn }
-func (s *Session) CurrentFlowID() FlowID              { return s.s.CurrentFlowID }
-func (s *Session) CallID() CallID                     { return s.s.CallID }
-func (s *Session) IncomingMsgExternalID() null.String { return s.incomingExternalID }
+func (s *Session) UUID() flows.SessionUUID          { return s.s.UUID }
+func (s *Session) ContactID() ContactID             { return s.s.ContactID }
+func (s *Session) SessionType() FlowType            { return s.s.SessionType }
+func (s *Session) Status() SessionStatus            { return s.s.Status }
+func (s *Session) LastSprintUUID() flows.SprintUUID { return flows.SprintUUID(s.s.LastSprintUUID) }
+func (s *Session) Output() string                   { return string(s.s.Output) }
+func (s *Session) OutputURL() string                { return string(s.s.OutputURL) }
+func (s *Session) CreatedOn() time.Time             { return s.s.CreatedOn }
+func (s *Session) EndedOn() *time.Time              { return s.s.EndedOn }
+func (s *Session) CurrentFlowID() FlowID            { return s.s.CurrentFlowID }
+func (s *Session) CallID() CallID                   { return s.s.CallID }
 
 // StoragePath returns the path for the session
 func (s *Session) StoragePath(orgID OrgID) string {
@@ -137,11 +134,6 @@ func (s *Session) Timeout() *time.Duration {
 // OutputMD5 returns the md5 of the passed in session
 func (s *Session) OutputMD5() string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(s.s.Output)))
-}
-
-// SetIncomingMsg set the incoming message that this session should be associated with in this sprint
-func (s *Session) SetIncomingMsg(externalID string) {
-	s.incomingExternalID = null.String(externalID)
 }
 
 // FlowSession creates a flow session for the passed in session object. It also populates the runs we know about

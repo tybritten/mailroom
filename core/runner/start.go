@@ -107,7 +107,7 @@ func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 		TriggerBuilder: triggerBuilder,
 	}
 
-	sessions, err := StartFlowWithLock(ctx, rt, oa, flow, batch.ContactIDs, options, batch.StartID, models.NilMsgID)
+	sessions, err := StartFlowWithLock(ctx, rt, oa, flow, batch.ContactIDs, options, batch.StartID, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error starting flow batch: %w", err)
 	}
@@ -116,7 +116,7 @@ func StartFlowBatch(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAsse
 }
 
 // StartFlowWithLock starts the given contacts in the given flow after obtaining locks for them.
-func StartFlowWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, flow *models.Flow, contactIDs []models.ContactID, options *StartOptions, startID models.StartID, incomingMsgID models.MsgID) ([]*models.Session, error) {
+func StartFlowWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, flow *models.Flow, contactIDs []models.ContactID, options *StartOptions, startID models.StartID, incomingMsg *models.MsgInRef) ([]*models.Session, error) {
 	if len(contactIDs) == 0 {
 		return nil, nil
 	}
@@ -133,7 +133,7 @@ func StartFlowWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.OrgA
 			return sessions, ctx.Err()
 		}
 
-		ss, skipped, err := tryToStartWithLock(ctx, rt, oa, flow, remaining, options, startID, incomingMsgID)
+		ss, skipped, err := tryToStartWithLock(ctx, rt, oa, flow, remaining, options, startID, incomingMsg)
 		if err != nil {
 			return nil, err
 		}
@@ -151,7 +151,7 @@ func StartFlowWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.OrgA
 
 // tries to start the given contacts, returning sessions for those we could, and the ids that were skipped because we
 // couldn't get their locks
-func tryToStartWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, flow *models.Flow, ids []models.ContactID, options *StartOptions, startID models.StartID, incomingMsgID models.MsgID) ([]*models.Session, []models.ContactID, error) {
+func tryToStartWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets, flow *models.Flow, ids []models.ContactID, options *StartOptions, startID models.StartID, incomingMsg *models.MsgInRef) ([]*models.Session, []models.ContactID, error) {
 	// try to get locks for these contacts, waiting for up to a second for each contact
 	locks, skipped, err := models.LockContacts(ctx, rt, oa.OrgID(), ids, time.Second)
 	if err != nil {
@@ -179,7 +179,7 @@ func tryToStartWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 		triggers = append(triggers, trigger)
 	}
 
-	ss, err := StartFlow(ctx, rt, oa, flow, contacts, triggers, options.CommitHook, options.Interrupt, startID, nil, incomingMsgID)
+	ss, err := StartFlow(ctx, rt, oa, flow, contacts, triggers, options.CommitHook, options.Interrupt, startID, nil, incomingMsg)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error starting flow for contacts: %w", err)
 	}
@@ -190,7 +190,7 @@ func tryToStartWithLock(ctx context.Context, rt *runtime.Runtime, oa *models.Org
 // StartFlow starts the given contacts in the given flow. It's assumed that the contacts are already locked.
 func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 	flow *models.Flow, contacts []*models.Contact, triggers []flows.Trigger, hook models.SessionCommitHook, interrupt bool,
-	startID models.StartID, call *models.Call, incomingMsgID models.MsgID) ([]*models.Session, error) {
+	startID models.StartID, call *models.Call, incomingMsg *models.MsgInRef) ([]*models.Session, error) {
 
 	if len(triggers) == 0 {
 		return nil, nil
@@ -254,7 +254,7 @@ func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 	// make scenes and add events to them
 	scenes := make([]*Scene, len(dbSessions))
 	for i, s := range dbSessions {
-		scenes[i] = NewSceneForSession(s, sessions[i], call, incomingMsgID)
+		scenes[i] = NewSceneForSession(s, sessions[i], call, incomingMsg)
 
 		var eventsToHandle []flows.Event
 
@@ -323,7 +323,7 @@ func StartFlow(ctx context.Context, rt *runtime.Runtime, oa *models.OrgAssets,
 
 			eventsToHandle = append(eventsToHandle, newSprintEndedEvent(contact, false))
 
-			scene := NewSceneForSession(dbSession[0], session, call, incomingMsgID)
+			scene := NewSceneForSession(dbSession[0], session, call, incomingMsg)
 
 			if err := scene.AddEvents(ctx, rt, oa, eventsToHandle); err != nil {
 				return nil, fmt.Errorf("error applying events for session %s: %w", session.UUID(), err)

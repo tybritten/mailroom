@@ -70,7 +70,7 @@ func TestNewCourierMsg(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, session)
 
-	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), facebook, session, flow, flowMsg1, models.NilMsgID, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
+	msg1, err := models.NewOutgoingFlowMsg(rt, oa.Org(), facebook, session, flow, flowMsg1, nil, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	require.NoError(t, err)
 
 	// insert to db so that it gets an id and time field values
@@ -124,8 +124,7 @@ func TestNewCourierMsg(t *testing.T) {
 		flows.NilUnsendableReason,
 	)
 	in1 := testdata.InsertIncomingMsg(rt, testdata.Org1, testdata.TwilioChannel, testdata.Cathy, "test", models.MsgStatusHandled)
-	session.SetIncomingMsg("EX123")
-	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), twilio, session, flow, flowMsg2, in1.ID, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
+	msg2, err := models.NewOutgoingFlowMsg(rt, oa.Org(), twilio, session, flow, flowMsg2, &models.MsgInRef{ID: in1.ID, ExtID: "EX123"}, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	require.NoError(t, err)
 
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg2})
@@ -180,7 +179,7 @@ func TestNewCourierMsg(t *testing.T) {
 		"uuid": "%s"
 	}`, msg3.CreatedOn().Format(time.RFC3339Nano), testdata.Admin.ID, msg3.UUID()))
 
-	msg4 := models.NewOutgoingOptInMsg(rt, testdata.Org1.ID, session, flow, optIn, twilio, "tel:+16055741111?id=10000", in1.ID, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
+	msg4 := models.NewOutgoingOptInMsg(rt, testdata.Org1.ID, session, flow, optIn, twilio, "tel:+16055741111?id=10000", &models.MsgInRef{ID: in1.ID, ExtID: "EX123"}, time.Date(2021, 11, 9, 14, 3, 30, 0, time.UTC))
 	err = models.InsertMessages(ctx, rt.DB, []*models.Msg{msg4})
 	require.NoError(t, err)
 
