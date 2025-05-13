@@ -360,7 +360,12 @@ func LoadContacts(ctx context.Context, db Queryer, oa *OrgAssets, ids []ContactI
 			cv, found := e.Fields[field.UUID()]
 			if found {
 				value := flows.NewValue(
-					cv.Text,
+					func() *types.XText {
+						if cv.Text == nil {
+							return types.NewXText("")
+						}
+						return cv.Text
+					}(),
 					cv.Datetime,
 					cv.Number,
 					cv.State,
